@@ -1,0 +1,183 @@
+[
+ {
+  "id": 1035,
+  "name": "سكين الجمر",
+  "description": "<mainText><stats></stats><br><br> <passive>7%</passive> علاج كامن ضد وحوش الأدغال<br><li><passive>الحرق:</passive> إلحاق الضرر بوحوش الأدغال يحرقهم مقابل <magicDamage>0 ضرر سحر</magicDamage> خلال 5ث.<li><passive>مسار التحدي:</passive> إلقاء صاعقة سماء 5 مرات <status>يستهلك</status> هذا العنصر ويرقي صاعقة السماء الخاصة بك إلى <attention>صاعقة سماء متحدية</attention>، مما يزيد من الضرر الذي تلحقه بالوحوش إلى <trueDamage>900</trueDamage> والذي تلحقه بالأتباع إلى <trueDamage>500 +10% من الصحة القصوى للهدف</trueDamage>. توسم صاعقة السماء المتحدية البطل لمدة 4ث. يؤدي إلحاق الضرر بالبطل الموسوم إلى إلحاق <trueDamage>0 ضرر حقيقي</trueDamage> إضافيًا به خلال 2.5ث. تتلقى 10% ضرر مخفَّض من الأبطال الموسومين.<li><passive>الصياد:</passive> يمنح قتل وحوش الأدغال الكبيرة تجربة إضافية.<li><passive>الاسترداد:</passive> تجدد ما يصل إلى <scaleMana>0 مانا</scaleMana> (بناءً على المانا الناقصة) لكل ثانية عند التواجد في الأدغال أو النهر. <br><br><rules><status>إستخدام</status> هذا العنصر يمنحك تأثيرات العنصر بشكل دائم ويزيد من ضرر صاعقة السماء على الوحوش. إذا كنت قد اكتسبت ذهبًا من الأتباع أكثر منه من وحوش الأدغال، فإن الذهب والخبرة المكتسبة من الأتباع ستتقلص بشكل كبير. لا يتمّ تقليص العلاج في هجمات منطقة التأثير. إذا كنت متأخرًا بمستويين عن معدّل مستوى الأبطال في اللعبة، فسيمنحك قتل الوحوش خبرة إضافية. </rules><br><rules>الهجمات والقدرات فقط هي التي تطبق حرق صاعقة السماء المتحدية</rules></mainText>",
+  "active": false,
+  "inStore": false,
+  "from": [],
+  "to": [],
+  "categories": [
+   "LifeSteal",
+   "SpellVamp",
+   "Jungle"
+  ],
+  "maxStacks": 1,
+  "requiredChampion": "",
+  "requiredAlly": "",
+  "requiredBuffCurrencyName": "",
+  "requiredBuffCurrencyCost": 0,
+  "specialRecipe": 0,
+  "isEnchantment": false,
+  "price": 350,
+  "priceTotal": 350,
+  "displayInItemSets": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/1035_Alll_T1_EmberKnife.png"
+ },
+ {
+  "id": 1500,
+  "name": "الرصاصات النافذة",
+  "description": "GeneratedTip_Item_1500_ExternalDescription",
+  "active": false,
+  "inStore": false,
+  "from": [],
+  "to": [],
+  "categories": [
+   "HealthRegen",
+   "ManaRegen",
+   "OnHit"
+  ],
+  "maxStacks": 1,
+  "requiredChampion": "",
+  "requiredAlly": "",
+  "requiredBuffCurrencyName": "",
+  "requiredBuffCurrencyCost": 0,
+  "specialRecipe": 0,
+  "isEnchantment": false,
+  "price": 0,
+  "priceTotal": 0,
+  "displayInItemSets": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/3056_Ohmwrecker.png"
+ },
+ {
+  "id": 3031,
+  "name": "السيف الأبدي",
+  "description": "<mainText><stats><attention> 75</attention> ضرر هجوم<br><attention> 25%</attention> فرصة ضربة حرجة<br><attention> 30%</attention> ضرر الضربة الحرجة</stats><br><br></mainText>",
+  "active": false,
+  "inStore": true,
+  "from": [
+   1038,
+   1037,
+   1018
+  ],
+  "to": [],
+  "categories": [
+   "CriticalStrike",
+   "Damage"
+  ],
+  "maxStacks": 1,
+  "requiredChampion": "",
+  "requiredAlly": "",
+  "requiredBuffCurrencyName": "",
+  "requiredBuffCurrencyCost": 0,
+  "specialRecipe": 0,
+  "isEnchantment": false,
+  "price": 725,
+  "priceTotal": 3500,
+  "displayInItemSets": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/3031_Marksman_T3_InfinityEdge.png"
+ },
+ {
+  "id": 3157,
+  "name": "ساعة زونيا الرملية",
+  "description": "<mainText><stats><attention> 105</attention> قوة القدرة<br><attention> 50</attention> الدروع</stats><br><br><br> <br><active>إيقاف الزمن</active><br>تدخل حالة <keyword>سبات</keyword> لمدة 2.5ث.</mainText>",
+  "active": true,
+  "inStore": true,
+  "from": [
+   1058,
+   2420
+  ],
+  "to": [],
+  "categories": [
+   "Armor",
+   "SpellDamage",
+   "Active"
+  ],
+  "maxStacks": 1,
+  "requiredChampion": "",
+  "requiredAlly": "",
+  "requiredBuffCurrencyName": "",
+  "requiredBuffCurrencyCost": 0,
+  "specialRecipe": 0,
+  "isEnchantment": false,
+  "price": 450,
+  "priceTotal": 3250,
+  "displayInItemSets": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/3157_Mage_T3_ZhonyasHourglass.png"
+ },
+ {
+  "id": 6653,
+  "name": "عذاب لياندري",
+  "description": "<mainText><stats><attention> 60</attention> قوة القدرة<br><attention> 300</attention> صحة</stats><br><br><passive>العذاب</passive><br>تتسبب قدرات إلحاق الضرر في حرق الأعداء بنسبة <magicDamage>2% من الصحة القصوى على شكل ضرر سحر</magicDamage> كل ثانية لمدة 3ث.<br><br><passive>المعاناة</passive><br>مقابل كل ثانية في القتال مع الأبطال المعادين، تلحق 2% ضرر إضافي، لحد أقصاه 6%.</mainText>",
+  "active": false,
+  "inStore": true,
+  "from": [
+   3147,
+   2508
+  ],
+  "to": [],
+  "categories": [
+   "Health",
+   "SpellDamage"
+  ],
+  "maxStacks": 1,
+  "requiredChampion": "",
+  "requiredAlly": "",
+  "requiredBuffCurrencyName": "",
+  "requiredBuffCurrencyCost": 0,
+  "specialRecipe": 0,
+  "isEnchantment": false,
+  "price": 800,
+  "priceTotal": 3000,
+  "displayInItemSets": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/6653_Mage_T4_LiandrysAnguish.png"
+ },
+ {
+  "id": 223031,
+  "name": "السيف الأبدي",
+  "description": "<mainText><stats><attention> 75</attention> ضرر هجوم<br><attention> 25%</attention> فرصة ضربة حرجة<br><attention> 30%</attention> ضرر الضربة الحرجة</stats><br><br></mainText>",
+  "active": false,
+  "inStore": true,
+  "from": [],
+  "to": [],
+  "categories": [
+   "CriticalStrike",
+   "Damage"
+  ],
+  "maxStacks": 1,
+  "requiredChampion": "",
+  "requiredAlly": "",
+  "requiredBuffCurrencyName": "",
+  "requiredBuffCurrencyCost": 0,
+  "specialRecipe": 0,
+  "isEnchantment": false,
+  "price": 2500,
+  "priceTotal": 2500,
+  "displayInItemSets": false,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/3031_Marksman_T3_InfinityEdge.png"
+ },
+ {
+  "id": 226660,
+  "name": "Item_226660_Name",
+  "description": "<mainText><stats><attention> 550</attention> صحة<br><attention> 5</attention> تسارع القدرة</stats><br><br><passive>الإحراق</passive><br>بعد تلقي ضررٍ أو إلحاقه، تلحق <magicDamage>ضرر سحرٍ</magicDamage> بالأعداء في الجوار لمدة 3ث.</mainText>",
+  "active": false,
+  "inStore": false,
+  "from": [],
+  "to": [],
+  "categories": [
+   "Health",
+   "AbilityHaste"
+  ],
+  "maxStacks": 1,
+  "requiredChampion": "",
+  "requiredAlly": "",
+  "requiredBuffCurrencyName": "",
+  "requiredBuffCurrencyCost": 0,
+  "specialRecipe": 0,
+  "isEnchantment": false,
+  "price": 0,
+  "priceTotal": 0,
+  "displayInItemSets": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/6660_Tank_T2_BamisCinder.png"
+ }
+]

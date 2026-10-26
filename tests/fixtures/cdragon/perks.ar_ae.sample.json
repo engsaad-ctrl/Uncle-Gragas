@@ -1,0 +1,116 @@
+[
+ {
+  "id": 8446,
+  "name": "الهدم",
+  "majorChangePatchVersion": "",
+  "tooltip": "يلحق هجومك الثالث على الأبراج <scaleAD>@DamageCalc@</scaleAD> ضرر مادي إضافي.<br><br>إجمالي الضرر الإضافي: <scaleAD>@f1@</scaleAD><br>مرات التفعيل الإجمالية: <scaleAD>@f2@</scaleAD><br>فترة التبريد: 30ث",
+  "shortDesc": "يلحق هجومك الثالث على أبراج الحماية ضررًا إضافيًا.",
+  "longDesc": "يلحق هجومك الثالث على الأبراج [85 (+28% صحة قصوى) قتال قريب || 50 (+20% صحة قصوى) قتال بعيد] ضرر مادي إضافي.<br><br>فترة التبريد: 30ث",
+  "recommendationDescriptor": "",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Resolve/Demolish/Demolish.png",
+  "endOfGameStatDescs": [
+   "إجمالي الضرر الإضافي: @eogvar1@"
+  ],
+  "recommendationDescriptorAttributes": {
+   "kUtility": 10
+  }
+ },
+ {
+  "id": 8112,
+  "name": "الصعقة الكهربائية",
+  "majorChangePatchVersion": "",
+  "tooltip": "تؤدي إصابة بطل بـ 3 هجمات أو قدرات <b>منفصلة</b> خلال 3ث إلى إلحاق <font color='#48C4B7'>@TotalDamage@</font> زيادة <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'><font color='#48C4B7'>ضرر متكيف</font></lol-uikit-tooltipped-keyword>.<br>فترة التبريد: 20ث<br><hr><br>إجمالي الضرر الملحق: <scaleAD>@f1@</scaleAD>",
+  "shortDesc": "تؤدي إصابة بطل بـ 3 هجمات أو قدرات <b>منفصلة</b> خلال 3ث إلى إلحاق زيادة <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'>ضرر متكيف</lol-uikit-tooltipped-keyword>.",
+  "longDesc": "تؤدي إصابة بطل بـ 3 هجمات أو قدرات <b>منفصلة</b> ضمن 3ث إلى إلحاق <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'><font color='#48C4B7'>ضرر متكيف</font></lol-uikit-tooltipped-keyword> إضافي.<br><br>الضرر: 70 - 240 (+0.1 ضرر هجوم إضافي، +0.05 قوة قدرة) ضرر.<br>فترة التبريد: 20ث<br><br><i>'أطلقنا عليهم اسم أسياد الرعد، فالحديث عن صواعق برقهم كان بمثابة دعوة للكارثة.'</i>",
+  "recommendationDescriptor": "ضرر الضربات المتتالية",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/Electrocute/Electrocute.png",
+  "endOfGameStatDescs": [
+   "إجمالي الضرر الملحق: @eogvar1@"
+  ],
+  "recommendationDescriptorAttributes": {}
+ },
+ {
+  "id": 8360,
+  "name": "كتاب التعويذات المفتوح",
+  "majorChangePatchVersion": "8.9",
+  "tooltip": "استبدل إحدى تعويذات المستدعي المجهزة لديك بتعويذة مستدع جديدة قابلة للاستعمال مرة واحدة. تؤدي كل عملية تبديل تعويذة مستدع مختلفة إلى تخفيض دائم لفترة تبريد عملية التبديل بمقدار 25ث (فترة تبريد عملية التبديل الأولية هي @f3@ث). <br><br>تتوفر عملية التبديل الأولى عند 6د. <br><rules><br>يمكن تبديل تعويذات المستدعي خارج القتال فقط. <br>بعد استخدام تعويذة مستدع مستبدَلة، سيتعين عليك التبديل 3 من المرات قبل التمكن من اختيار التعويذة الأولى مجددًا.<br>يزيد ضرر صاعقة السماء بعد عمليتي تبديل تعويذة مستدعٍ. </rules><hr><br>تعويذات المستدعي الفريدة المستخدمة: @f4@/@f8@<br>فترة تبريد التبديل الحالية: @f3@ ثانية",
+  "shortDesc": "يمكن تبديل تعويذات المستدعي خارج القتال. يؤدي التبديل إلى تعويذات المستدعي الفريدة إلى زيادة معدل عمليات تبديلك المحتملة في المستقبل.",
+  "longDesc": "استبدل إحدى تعويذات المستدعي المجهزة لديك بتعويذة مستدع جديدة قابلة للاستعمال مرة واحدة. تؤدي كل عملية تبديل تعويذة مستدع مختلفة إلى تخفيض دائم لفترة تبريد عملية التبديل بمقدار 25ث (فترة تبريد عملية التبديل الأولية هي @f3@ث). <br><br>تتوفر عملية التبديل الأولى عند 6د. <br><rules><br>يمكن تبديل تعويذات المستدعي خارج القتال فقط. <br>بعد استخدام تعويذة مستدع مستبدَلة، سيتعين عليك التبديل 3 من المرات قبل التمكن من اختيار التعويذة الأولى مجددًا.<br>يزيد ضرر صاعقة السماء بعد عمليتي تبديل تعويذة مستدعٍ. </rules>",
+  "recommendationDescriptor": "إلقاء المزيد من المستدعين",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Inspiration/UnsealedSpellbook/UnsealedSpellbook.png",
+  "endOfGameStatDescs": [
+   "تعويذات المستدعي المستبدلة: @eogvar1@"
+  ],
+  "recommendationDescriptorAttributes": {}
+ },
+ {
+  "id": 8004,
+  "name": "المثالي الوقح",
+  "majorChangePatchVersion": "",
+  "tooltip": "<pathPrecision>دقة</pathPrecision> + <pathSorcery>شعوذة</pathSorcery><br>+0% سرعة هجوم<br>+0 ضرر هجوم أو +0 قوة قدرة، <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'><font color='#48C4B7'>متكيفة</font></lol-uikit-tooltipped-keyword><br>المكافأة الحالية: <scaleAD>+@f1@ <scaleAD>ضرر الهجوم</scaleAD></scaleAD>",
+  "shortDesc": "<pathBonus><pathPrecision>دقة</pathPrecision> + <pathSorcery>شعوذة</pathSorcery> مكافأة طاقم</pathBonus>",
+  "longDesc": "+0% سرعة هجوم<br>+0 ضرر هجوم أو +0 قوة قدرة، <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'><font color='#48C4B7'>متكيفة</font></lol-uikit-tooltipped-keyword>",
+  "recommendationDescriptor": "",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/RunesIcon.png",
+  "endOfGameStatDescs": [],
+  "recommendationDescriptorAttributes": {}
+ },
+ {
+  "id": 8141,
+  "name": "كاشف الأعماق",
+  "majorChangePatchVersion": "14.1",
+  "tooltip": "تصبح كواشفك في أدغال العدو <keywordMajor>عميقة</keywordMajor>. تكسب الكواشف <keywordMajor>العميقة</keywordMajor> +1 صحة إضافية و +[@DurationIncrease@ث مدة إضافية (+@TrinketDurationIncrease@ث لكواشف التخفي من الحلي).<br><br>المستوى 9: تصبح الكواشف في النهر أيضًا <keywordMajor>عميقة</keywordMajor>.<br><hr><br>كواشف الأعماق: @f1@",
+  "shortDesc": "تصبح كواشفك في أدغال العدو <keywordMajor>عميقة</keywordMajor>، فتكسب الصحة والمدة.<br><br>المستوى 9: تصبح الكواشف في النهر أيضًا <keywordMajor>عميقة</keywordMajor>.",
+  "longDesc": "تصبح كواشفك في أدغال العدو <keywordMajor>عميقة</keywordMajor>. تكسب الكواشف <keywordMajor>العميقة</keywordMajor> +1 صحة إضافية و +[30 - 45]ث مدة إضافية (+[45 - 150]ث لكواشف التخفي من الحلي).<br><br>المستوى 9: تصبح الكواشف في النهر أيضًا <keywordMajor>عميقة</keywordMajor>.",
+  "recommendationDescriptor": "",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/DeepWard/DeepWard.png",
+  "endOfGameStatDescs": [
+   "كواشف الأعماق: @eogvar1@"
+  ],
+  "recommendationDescriptorAttributes": {
+   "kGold": 2,
+   "kUtility": 8
+  }
+ },
+ {
+  "id": 8008,
+  "name": "الإيقاع الفتاك",
+  "majorChangePatchVersion": "",
+  "tooltip": "تمنحك مهاجمة بطل معاد %i:scaleAS%@ASPerStack@ سرعة هجوم لمدة 6ث، بحدٍ أقصاه 6. عند بلوغ التكدسات القصوى، تلحق @NoteDamage@ (%i:scaleAS%) <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'><font color='#48C4B7'>ضرر متكيف إضافي</font></lol-uikit-tooltipped-keyword> %i:OnHit% <OnHit>لدى الهجوم</OnHit>.<br><br>فترة عمل التكدسات القصوى: @f1@ث<br>الضرر الملحق: @f2@<br><br>يتعقب هذا الرون كذلك النسبة المئوية لهجماتك الأساسية ضد الأبطال التي تم شنها في غضون 0.25ث منذ جهوزية هجومك بعد مهاجمة بطلٍ سابقًا: @f3@% (@f4@ من @f5@)",
+  "shortDesc": "تمنحك مهاجمة بطل عدو سرعة هجوم، وصولًا إلى 6 من التكدسات كحد أقصى. عند بلوغ الحد الأقصى من التكدسات، تلحق <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'><font color='#48C4B7'>ضررًا متكيفًا إضافيًا</font></lol-uikit-tooltipped-keyword> عند الهجوم.",
+  "longDesc": "تمنحك مهاجمة بطل عدو سرعة هجوم بمقدار [6% للقتال القريب || 4% للقتال بعيد المدى] لمدة 6ث، وحتى 6 من التكدسات. عند بلوغ الحد الأقصى من التكدسات، تلحق [9 - 30 للقتال القريب || 6 - 24 للقتال بعيد المدى] <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'>ضرر متكيف إضافي عند الهجوم، يزداد بنسبة 1% لكل 1% سرعة هجوم إضافية</lol-uikit-tooltipped-keyword>.",
+  "recommendationDescriptor": "سرعة الهجوم المتزايدة",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Precision/LethalTempo/LethalTempoTemp.png",
+  "endOfGameStatDescs": [
+   "فترة تفعيل سرعة الهجوم القصوى: @eogvar1@:@eogvar2@<br>الضرر الملحق: @eogvar2@"
+  ],
+  "recommendationDescriptorAttributes": {}
+ },
+ {
+  "id": 7000,
+  "name": "Template",
+  "majorChangePatchVersion": "",
+  "tooltip": "",
+  "shortDesc": "",
+  "longDesc": "",
+  "recommendationDescriptor": "",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Template/7000.png",
+  "endOfGameStatDescs": [],
+  "recommendationDescriptorAttributes": {}
+ },
+ {
+  "id": 8437,
+  "name": "قبضة الخالدين",
+  "majorChangePatchVersion": "",
+  "tooltip": "كل 4ث في القتال، يتكفل هجومك الأساسي التالي على بطل في:<li>إلحاق <magicDamage>@DamageCalc@ ضرر سحر إضافي</magicDamage>.<li>علاجك بنسبة <healing>@HealCalc@ من الصحة</healing>.<li>زيادة صحتك بشكل دائم بمقدار <healing>5</healing> لأبطال القتال القريب و <healing>2</healing> لأبطال المدى البعيد.<br><br>الصحة القصوى المكتسبة: <scaleHealth>@f4@</scaleHealth><br>الضرر المُلحق بالأبطال: <scaleHealth>@f1@</scaleHealth><br>العلاج الإجمالي: <scaleHealth>@f2@</scaleHealth><br>عدد مرات الاستخدام: @f3@",
+  "shortDesc": "كل 4ث، يلحق هجومك التالي على بطل ما ضرر سحر إضافي، كما يعالجك ويزيد صحتك بشكل دائم.",
+  "longDesc": "كل 4ث في القتال، يتسبب هجومك الأساسي التالي على بطل في:<li>إلحاق ضرر سحر إضافي يعادل 3.5% من صحتك القصوى<li>علاجك بنسبة 1.3% من صحتك القصوى<li>زيادة صحتك بشكل دائم بمقدار 5<br><rules><i>أبطال المدى البعيد:</i> تكون المقادير المكتسبة من الضرر والعلاج والصحة الدائمة فعالة بنسبة 40%.</rules>",
+  "recommendationDescriptor": "استنزاف الخصوم",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Resolve/GraspOfTheUndying/GraspOfTheUndying.png",
+  "endOfGameStatDescs": [
+   "إجمالي الضرر: @eogvar1@",
+   "إجمالي العلاج: @eogvar2@"
+  ],
+  "recommendationDescriptorAttributes": {}
+ }
+]
