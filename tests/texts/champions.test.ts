@@ -8,7 +8,7 @@ import spellsEn from '../fixtures/cdragon/summoner-spells.default.sample.json' w
 import stylesAr from '../fixtures/cdragon/perkstyles.ar_ae.json' with { type: 'json' };
 import stylesEn from '../fixtures/cdragon/perkstyles.default.json' with { type: 'json' };
 import { assetUrl } from '../../src/texts/assets.js';
-import { buildChampionDetail, buildChampionList, buildSpellTexts, buildStyleTexts } from '../../src/texts/champions.js';
+import { buildChampionDetail, buildChampionList, buildSpellTexts, buildStyleTrees } from '../../src/texts/champions.js';
 
 const ASSETS = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/';
 
@@ -43,15 +43,19 @@ describe('buildChampionDetail', () => {
   });
 });
 
-describe('buildSpellTexts / buildStyleTexts', () => {
+describe('buildSpellTexts / buildStyleTrees', () => {
   it('builds summoner spells with both names', () => {
     const s = buildSpellTexts(spellsAr, spellsEn);
     expect(s.get(4)).toMatchObject({ id: 4, name: 'الانتقال الخاطف', enName: 'Flash' });
     expect(s.get(4)!.html).toContain('تنقلك');
     expect(s.get(4)!.iconUrl).toBe(`${ASSETS}data/spells/icons2d/summoner_flash.png`);
   });
-  it('builds rune trees', () => {
-    const t = buildStyleTexts(stylesAr.styles, stylesEn.styles);
+  it('builds rune trees with their rows', () => {
+    const t = buildStyleTrees(stylesAr.styles, stylesEn.styles);
     expect(t.get(8100)).toMatchObject({ name: 'سيطرة', enName: 'Domination', html: '' });
+    expect(t.get(8100)!.slots.map((s) => s.type)).toEqual([
+      'kKeyStone', 'kMixedRegularSplashable', 'kMixedRegularSplashable', 'kMixedRegularSplashable', 'kStatMod', 'kStatMod', 'kStatMod',
+    ]);
+    expect(t.get(8100)!.slots[0].perks).toEqual([8112, 8128, 9923]); // Electrocute, Dark Harvest, Hail of Blades
   });
 });

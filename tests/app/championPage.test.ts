@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import detailAr from '../fixtures/cdragon/champion-103.ar_ae.json' with { type: 'json' };
 import detailEn from '../fixtures/cdragon/champion-103.default.json' with { type: 'json' };
 import itemsAr from '../fixtures/cdragon/items.ar_ae.sample.json' with { type: 'json' };
-import perksAr from '../fixtures/cdragon/perks.ar_ae.sample.json' with { type: 'json' };
+import perksAr from '../fixtures/cdragon/perks.ar_ae.page.json' with { type: 'json' };
 import spellsAr from '../fixtures/cdragon/summoner-spells.ar_ae.sample.json' with { type: 'json' };
 import spellsEn from '../fixtures/cdragon/summoner-spells.default.sample.json' with { type: 'json' };
 import stylesAr from '../fixtures/cdragon/perkstyles.ar_ae.json' with { type: 'json' };
@@ -12,7 +12,7 @@ import { composeChampionPage } from '../../src/app/championPage.js';
 import { parseOpgg } from '../../src/stats/opggFormat.js';
 import { toBuild, toMayhemAugments } from '../../src/stats/opgg.js';
 import type { AugmentText } from '../../src/texts/augments.js';
-import { buildChampionDetail, buildSpellTexts, buildStyleTexts } from '../../src/texts/champions.js';
+import { buildChampionDetail, buildSpellTexts, buildStyleTrees } from '../../src/texts/champions.js';
 import { buildItemTexts, type RawItem } from '../../src/texts/items.js';
 import { buildRuneTexts, type RawPerk } from '../../src/texts/runes.js';
 
@@ -20,7 +20,7 @@ const opgg = (f: string) => parseOpgg(readFileSync(new URL(`../fixtures/opgg/${f
 const texts = {
   items: buildItemTexts(itemsAr as RawItem[], []),
   runes: buildRuneTexts(perksAr as RawPerk[], []),
-  styles: buildStyleTexts(stylesAr.styles, stylesEn.styles),
+  styles: buildStyleTrees(stylesAr.styles, stylesEn.styles),
   spells: buildSpellTexts(spellsAr, spellsEn),
 };
 const champion = buildChampionDetail(detailAr, detailEn);
@@ -48,11 +48,29 @@ describe('composeChampionPage', () => {
     expect(page.core!.items[0].iconUrl).toMatch(/^https:\/\/raw\.communitydragon\.org\//);
   });
 
-  it('resolves spells, rune trees and runes', () => {
+  it('resolves summoner spells', () => {
     expect(page.spells.map((s) => s.enName)).toEqual(['Flash', 'Ignite']);
-    expect(page.runes!.primary).toMatchObject({ id: 8100, enName: 'Domination' });
-    expect(page.runes!.sub).toMatchObject({ id: 8200, enName: 'Sorcery' });
-    expect(page.runes!.perks.map((p) => p.id)).toEqual([8112]); // only Electrocute is in the perk fixture
+  });
+
+  it('lays out the full primary tree with the chosen runes marked', () => {
+    const t = page.runes!.primary!;
+    expect(t.style).toMatchObject({ id: 8100, enName: 'Domination' });
+    expect(t.rows.map((r) => r.keystone)).toEqual([true, false, false, false]);
+    expect(t.rows[0].options.map((o) => [o.id, o.selected])).toEqual([[8112, true], [8128, false], [9923, false]]);
+    expect(t.rows.map((r) => r.options.filter((o) => o.selected).map((o) => o.id))).toEqual([[8112], [8139], [8140], [8106]]);
+  });
+
+  it('lays out the secondary tree without its keystone row', () => {
+    const t = page.runes!.sub!;
+    expect(t.style.id).toBe(8200);
+    expect(t.rows).toHaveLength(3);
+    expect(t.rows.flatMap((r) => r.options.filter((o) => o.selected).map((o) => o.id))).toEqual([8226, 8210]); // Manaflow row comes before Transcendence
+  });
+
+  it('marks stat shards per row (the same shard can sit in two rows)', () => {
+    const s = page.runes!.shards;
+    expect(s).toHaveLength(3);
+    expect(s.map((r) => r.options.filter((o) => o.selected).map((o) => o.id))).toEqual([[5005], [5008], [5001]]);
   });
 
   it('keeps skill order and priority', () => {
@@ -71,6 +89,13 @@ describe('composeChampionPage', () => {
     expect(p.augments.map((a) => a.id)).toEqual([2127, 1323]);
     expect(p.augments[0]).toMatchObject({ performance: 88.9, popularity: 0.2 });
     expect(p.stale).toBe(true);
+  });
+
+  it('shows no build and no error for Arena (OP.GG has none)', () => {
+    const p = composeChampionPage({ champion, mode: 'arena', position: null, ...texts, build: null, augments: [], mayhem: null });
+    expect(p.buildError).toBeNull();
+    expect(p.runes).toBeNull();
+    expect(p.fetchedAt).toBeNull();
   });
 
   it('still shows the champion when the build failed', () => {

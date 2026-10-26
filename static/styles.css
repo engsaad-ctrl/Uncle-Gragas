@@ -117,3 +117,43 @@ h1 .accent, .accent { color: var(--muted); font-weight: 400; }
 .t-armor { color: var(--armor); } .t-mr { color: var(--mr); } .t-mana { color: var(--mana); }
 .t-status { color: var(--status); } .t-rarity { color: var(--prism); }
 .t-var { padding: 0 5px; color: var(--bg); background: var(--goldtxt); border-radius: 3px; cursor: help; }
+
+/* Full rune page: chosen runes lit, the rest dimmed */
+.tree { min-width: 220px; }
+.rune-row { display: flex; justify-content: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.tree-head + .rune-row { border-top: 0; }
+.rune-row.keystone .ic img { width: 50px; height: 50px; border-radius: 50%; }
+.rune-row.small .ic img { width: 30px; height: 30px; border-radius: 50%; }
+.ic.rune { border-radius: 50%; }
+.ic.rune img { border-radius: 50%; }
+.ic.rune.on { border-color: var(--goldtxt); box-shadow: 0 0 0 2px #e6c35c55, 0 0 14px #e6c35c55; }
+.ic.rune.off { filter: grayscale(1); opacity: .35; border-color: transparent; }
+.ic.rune.off:hover { filter: none; opacity: .9; }
+.shards .tree-head { color: var(--muted); }
+.note { color: var(--muted); }
+.link { color: var(--accent); font-weight: 700; }
+
+/* Motion */
+@keyframes fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pop-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes slide-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+#view > * { animation: fade-up .35s ease both; }
+#view > *:nth-child(2) { animation-delay: .04s; } #view > *:nth-child(3) { animation-delay: .08s; }
+#view > *:nth-child(4) { animation-delay: .12s; } #view > *:nth-child(5) { animation-delay: .16s; }
+#view > *:nth-child(n+6) { animation-delay: .2s; }
+.chip, .champ { animation: pop-in .28s ease both; animation-delay: var(--delay, 0ms); }
+.cell.on { animation: pop-in .25s ease both; animation-delay: calc(.25s + var(--delay, 0ms)); }
+.detail.enter { animation: slide-down .22s ease both; }
+.chip, .champ, .pill, .ic, .ability, .tabs a, .more { transition: transform .15s ease, border-color .15s, background-color .15s, box-shadow .2s, opacity .2s, filter .2s, color .15s; }
+.chip:hover { transform: translateY(-2px); box-shadow: 0 6px 14px #0007; }
+.champ:hover { transform: translateY(-4px); box-shadow: 0 10px 20px #0008; }
+.champ img { transition: transform .2s ease; }
+.champ:hover img { transform: scale(1.06); }
+.ic:hover, .ability:hover { transform: scale(1.1); }
+.pill:active, .chip:active, .ic:active { transform: scale(.96); }
+.status:empty { display: none; }
+.status.loading::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-inline-end: 8px; vertical-align: -2px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

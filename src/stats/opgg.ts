@@ -34,7 +34,8 @@ export function mcpCaller(fetchImpl?: typeof fetch): CallTool {
   };
 }
 
-export type BuildMode = 'ranked' | 'aram';
+// URF and Nexus Blitz exist upstream, but OP.GG's MCP tool rejects every position value for them (2026-10).
+export type BuildMode = 'ranked' | 'flex' | 'aram';
 export type Position = 'top' | 'jungle' | 'mid' | 'adc' | 'support';
 
 export interface Pick {

@@ -39,3 +39,10 @@
 
 - Read champion select from the League client (lockfile → LCU) and open the right champion page automatically.
 - A "تصدير التشخيص" button that saves raw LCU answers, so fixes can be made from real data.
+
+## Follow-up (owner feedback: animation, more modes, a real rune page)
+
+- **Full rune page.** `perkstyles.json` slots (`kKeyStone`, `kMixedRegularSplashable` ×3, `kStatMod` ×3) are turned into `RuneTree` rows. Every rune is shown, the build's choices are lit, the rest are dimmed. Stat shards are matched by row index, because one shard id can sit in two rows.
+- **Modes.** Flex works like Ranked (position pills). Arena, URF and Nexus Blitz have tabs with no build. For Arena, OP.GG has no data, and the tab links to `#/augments/arena`. For URF and Nexus Blitz, OP.GG's MCP tool demands `position = NONE` upstream but rejects `none`/`NONE` in its own enum (verified 2026-10-26), so no position value works.
+- **Motion.** Views fade up; chips, champion cards and skill-path cells pop in with a stagger (`--delay` set via CSSOM, which the CSP allows). Cards lift on hover, the detail panel slides in on every pick, and loading lines get a spinner. Everything is switched off under `prefers-reduced-motion`.
+- **Verified.** 96 tests pass. The Electron smoke shows 9 lit runes (4 + 2 + 3) and 21 dimmed, all 63 images on Ahri's page load, Flex and URF behave as described, and the Arena link opens the 272 Arena augments.

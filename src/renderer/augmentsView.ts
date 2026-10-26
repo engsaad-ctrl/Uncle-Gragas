@@ -1,5 +1,5 @@
 import type { AugmentText, Mode, Rarity } from '../texts/augments.js';
-import { detailPanel, el, icon, isError, nameEl, otherName, pills, searchBox, shownName, getNameLang } from './dom.js';
+import { detailPanel, el, icon, isError, nameEl, otherName, pills, searchBox, shownName, getNameLang, stagger } from './dom.js';
 import { filterAugments } from './search.js';
 
 export const RARITY_LABEL: Record<Rarity, string> = { prismatic: 'موشوري', gold: 'ذهبي', silver: 'فضي', event: 'خاص' };
@@ -25,7 +25,7 @@ export function augmentChip(a: AugmentText, selected: boolean, onPick: () => voi
   return chip;
 }
 
-export async function augmentsView(root: HTMLElement, alive: () => boolean) {
+export async function augmentsView(root: HTMLElement, alive: () => boolean, initialMode = 'all') {
   const head = el('div', 'view-head');
   const title = el('div', 'title');
   const patch = el('span', 'pill static', 'باتش …');
@@ -34,9 +34,9 @@ export async function augmentsView(root: HTMLElement, alive: () => boolean) {
   const filters = el('nav', 'filters');
   const search = searchBox('ابحث عن تعزيز');
   let rarity = 'all';
-  let mode = 'all';
+  let mode = initialMode;
   let selected: AugmentText | undefined;
-  const status = el('p', 'status', 'جاري تحميل بيانات التعزيزات… أول مرة قد تستغرق دقيقة.');
+  const status = el('p', 'status loading', 'جاري تحميل بيانات التعزيزات… أول مرة قد تستغرق دقيقة.');
   const list = el('div', 'list');
   const detail = detailPanel();
   head.append(title, sub, filters);
@@ -44,6 +44,7 @@ export async function augmentsView(root: HTMLElement, alive: () => boolean) {
 
   const reply = await window.lolh.getAugments();
   if (!alive()) return;
+  status.classList.remove('loading');
   if (isError(reply)) {
     status.textContent = `تعذّر تحميل البيانات: ${reply.error}`;
     return;
@@ -60,7 +61,7 @@ export async function augmentsView(root: HTMLElement, alive: () => boolean) {
         const items = shown.filter((a) => a.rarity === r);
         if (!items.length) return [];
         const grid = el('div', 'grid');
-        grid.append(...items.map((a) => augmentChip(a, a === selected, () => ((selected = a), render()))));
+        grid.append(...items.map((a, i) => stagger(augmentChip(a, a === selected, () => ((selected = a), render())), i)));
         const section = el('section', 'panel');
         section.append(el('h2', '', `${t} (${items.length})`), grid);
         return [section];

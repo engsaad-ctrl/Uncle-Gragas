@@ -1,0 +1,226 @@
+[
+ {
+  "id": 8126,
+  "name": "تصرف رخيص",
+  "shortDesc": "تلحق ضررًا حقيقيًا إضافيًا بأبطال العدو الخاضعين لتأثير <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_ImpairAct'>إعاقة الحركة أو الأفعال</lol-uikit-tooltipped-keyword>. ",
+  "longDesc": "إن إلحاق الضرر بأبطال يمتلكون <b>إعاقة في الحركة أو الأفعال</b> سيلحق 10 - 45 ضرر حقيقي إضافي (حسب المستوى).<br><br>فترة التبريد: 4ث<br><rules>يتم التفعيل لدى وقوع الضرر بعد الإعاقة.</rules>",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/CheapShot/CheapShot.png"
+ },
+ {
+  "id": 8232,
+  "name": "السير على الماء",
+  "shortDesc": "تكسب <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_MS'>سرعة حركة</lol-uikit-tooltipped-keyword> وقوة قدرة أو ضرر هجوم، <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'>متكيفة</lol-uikit-tooltipped-keyword> في النهر.",
+  "longDesc": "تكسب <speed>10 سرعة حركة</speed> و <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'><font color='#48C4B7'>13 - 30 قوة متكيفة</font></lol-uikit-tooltipped-keyword> (حسب المستوى) لدى الوجود في النهر.<br><br><i>عسى أن تكون سريعًا كتيار الماء المتدفق ورشيقًا كسرطانة ريفت سكاتلر فزعة.</i>",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/Waterwalking/Waterwalking.png"
+ },
+ {
+  "id": 8112,
+  "name": "الصعقة الكهربائية",
+  "shortDesc": "تؤدي إصابة بطل بـ 3 هجمات أو قدرات <b>منفصلة</b> خلال 3ث إلى إلحاق زيادة <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'>ضرر متكيف</lol-uikit-tooltipped-keyword>.",
+  "longDesc": "تؤدي إصابة بطل بـ 3 هجمات أو قدرات <b>منفصلة</b> ضمن 3ث إلى إلحاق <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'><font color='#48C4B7'>ضرر متكيف</font></lol-uikit-tooltipped-keyword> إضافي.<br><br>الضرر: 70 - 240 (+0.1 ضرر هجوم إضافي، +0.05 قوة قدرة) ضرر.<br>فترة التبريد: 20ث<br><br><i>'أطلقنا عليهم اسم أسياد الرعد، فالحديث عن صواعق برقهم كان بمثابة دعوة للكارثة.'</i>",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/Electrocute/Electrocute.png"
+ },
+ {
+  "id": 8234,
+  "name": "السرعة",
+  "shortDesc": "تعتبر كل الإضافات على <speed>سرعة الحركة</speed> أكثر تأثيرًا عليك بنسبة 7% وتكسب <speed>1% سرعة حركة</speed>.",
+  "longDesc": "تعتبر كل الإضافات على الحركة أكثر تأثيرًا عليك بنسبة 7% وتكسب <speed>1% سرعة حركة</speed>.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/Celerity/CelerityTemp.png"
+ },
+ {
+  "id": 8128,
+  "name": "حصاد الظلام",
+  "shortDesc": "يؤدي إلحاق الضرر ببطل ذي صحة منخفضة إلى إلحاق <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'>ضرر متكيف</lol-uikit-tooltipped-keyword> ويحصد روحًا من الضحية.",
+  "longDesc": "يؤدي إلحاق الضرر ببطل يملك أقل من 50% صحة إلى إلحاق <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'>ضرر متكيف</lol-uikit-tooltipped-keyword> ويحصد روحه، مما يزيد بشكل دائم ضرر حصاد الظلام بمقدار 11.<br><br>ضرر حصاد الظلام: 30 (+11 ضرر لكل روح) (+0.1 ضرر هجوم إضافي) (+0.05 قوة قدرة)<br>فترة التبريد: 35ث (يعاد ضبطها إلى 1.0ث عند الإطاحة)",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/DarkHarvest/DarkHarvest.png"
+ },
+ {
+  "id": 8214,
+  "name": "استدعاء آوري",
+  "shortDesc": "ترسل هجماتك وقدراتك آوري نحو هدف ما، فتلحق الضرر بالأعداء أو تدرع الحلفاء.",
+  "longDesc": "يؤدي إلحاق الضرر بالأبطال المعادين باستخدام الهجمات الأساسية أو القدرات إلى إرسال آوري نحوهم، مما يلحق 10 - 50 حسب المستوى (+<scaleAP>0.05 قوة قدرة</scaleAP>) (+<scaleAD>0.1 ضرر هجوم إضافي</scaleAD>).<br><br>يؤدي تعزيز حلفائك أو حمايتهم باستخدام القدرات إلى إرسال آوري نحوهم، فتمنحهم درعًا بقيمة تتراوح بين 20 - 100 حسب المستوى (+<scaleAP>0.05 قوة قدرة</scaleAP>) (+<scaleAD>0.1 ضرر هجوم إضافي</scaleAD>).<br><br>لا يمكن إرسال آوري مجددًا إلى أن تعود إليك.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/SummonAery/SummonAery.png"
+ },
+ {
+  "id": 8141,
+  "name": "كاشف الأعماق",
+  "shortDesc": "تصبح كواشفك في أدغال العدو <keywordMajor>عميقة</keywordMajor>، فتكسب الصحة والمدة.<br><br>المستوى 9: تصبح الكواشف في النهر أيضًا <keywordMajor>عميقة</keywordMajor>.",
+  "longDesc": "تصبح كواشفك في أدغال العدو <keywordMajor>عميقة</keywordMajor>. تكسب الكواشف <keywordMajor>العميقة</keywordMajor> +1 صحة إضافية و +[30 - 45]ث مدة إضافية (+[45 - 150]ث لكواشف التخفي من الحلي).<br><br>المستوى 9: تصبح الكواشف في النهر أيضًا <keywordMajor>عميقة</keywordMajor>.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/DeepWard/DeepWard.png"
+ },
+ {
+  "id": 8237,
+  "name": "الإحراق",
+  "shortDesc": "تتكفل أول إصابة قدرة ضرر لديك كل 10ث بإحراق الأبطال.",
+  "longDesc": "تتكفل إصابة قدرة إلحاق الضرر التالية لديك بإشعال النار بالأبطال، فتلحق 20 - 40 ضرر سحر إضافي حسب المستوى بعد 1ث.<br><br>فترة التبريد: 10ث",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/Scorch/Scorch.png"
+ },
+ {
+  "id": 8139,
+  "name": "مذاق الدم",
+  "shortDesc": "تتمكن من العلاج لدى إلحاقك الضرر ببطل معاد.",
+  "longDesc": "تتمكن من العلاج لدى إلحاقك الضرر ببطل معاد.<br><br>العلاج: 16-40 (+0.1 ضرر هجوم إضافي، +0.05 قوة قدرة) صحة (حسب المستوى)<br><br>فترة التبريد: 20ث",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/TasteOfBlood/GreenTerror_TasteOfBlood.png"
+ },
+ {
+  "id": 8106,
+  "name": "الصياد الخارق",
+  "shortDesc": "<b>تأثير فريد</b> تمنح <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Takedown'>الإطاحات</lol-uikit-tooltipped-keyword> تقليص فترة تبريد دائمة لتعويذتك الخارقة. ",
+  "longDesc": "تكسب قدرتك الخارقة <attention>6</attention> تسارع قدرة، بالإضافة إلى زيادة مقدارها <attention>5</attention> تسارع قدرة لكل تكدس <i>صياد جوائز</i>. يتم كسب تكدسات <i>صياد الجوائز</i> كلما حققت إطاحة بأي بطلٍ معادٍ لأول مرة.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/UltimateHunter/UltimateHunter.png"
+ },
+ {
+  "id": 8224,
+  "name": "سحر الأسرار المبدئي",
+  "shortDesc": "تمتلك قدرتك الخارقة زيادة في الضرر والعلاج والتدريع. تؤدي الإطاحة ببطل معادٍ إلى تقليص فترة التبريد الحالية لقدرتك الخارقة.",
+  "longDesc": "تمتلك قدرتك الخارقة 12% زيادة في الضرر والعلاج والتدريع. <br>(يتم تقليص الزيادة في ضرر منطقة التأثير لتصبح بنسبة 8%)<br><br>تؤدي الإطاحة ببطل معادٍ إلى تقليص فترة التبريد الحالية لقدرتك الخارقة بنسبة 7%.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/NullifyingOrb/Axiom_Arcanist.png"
+ },
+ {
+  "id": 8210,
+  "name": "التسامي",
+  "shortDesc": "عند بلوغ المستويات التالية يتم كسب إضافات على الإحصاءات بالشكل التالي:<br>المستوى 5: +5 <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_CDR'>تسارع قدرة</lol-uikit-tooltipped-keyword> <br>المستوى 8: +5 <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_CDR'>تسارع قدرة</lol-uikit-tooltipped-keyword> <br>المستوى 11: عند الإطاحة ببطل، يتم تخفيض فترة التبريد المتبقية للقدرات الأساسية بنسبة 20%.",
+  "longDesc": "يتم كسب مكافآت عند بلوغ المستويات التالية:<br>المستوى 5: +5 <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_CDR'>تسارع قدرة</lol-uikit-tooltipped-keyword> <br>المستوى 8: +5 <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_CDR'>تسارع قدرة</lol-uikit-tooltipped-keyword> <br>المستوى 11: عند الإطاحة ببطل، يتم تخفيض فترة التبريد المتبقية للقدرات الأساسية بنسبة 20%.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/Transcendence/Transcendence.png"
+ },
+ {
+  "id": 8137,
+  "name": "الحاسة السادسة",
+  "shortDesc": "خلال فترة تبريدٍ طويلة، ترصد تلقائيًا كاشفًا غير متعقَبولم تتم رؤيته، وتتعقبه لصالح الفريق. <br><br>المستوى 11: تكشف أيضًا عن الكاشف لمدة 10ث.",
+  "longDesc": "ترصد تلقائيًا كاشفًا غير متعقَب لم تتم رؤيته، وتتعقبه لصالح الفريق. <br><br>المستوى 11: تكشف أيضًا عن الكاشف لمدة 10ث.<br><br>يمتلك هذا التأثير فترة تبريد مدتها 250ث.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/SixthSense/SixthSense.png"
+ },
+ {
+  "id": 8135,
+  "name": "صياد الكنوز",
+  "shortDesc": "<b>التأثير الفريد</b> تمنح<lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Takedown'>الإطاحات</lol-uikit-tooltipped-keyword> ذهبًا إضافيًا في أول مرة يتم الحصول عليه. ",
+  "longDesc": "تكسب إضافةً مقدارها <gold>50 ذهب</gold> في المرة التالية التي تحصل فيها على تكدس <i>صياد جوائز</i>. يزيد الذهب المُكتسب بمقدار <gold>20 ذهب</gold> لكل تكدس <i>صياد جوائز</i>، إلى حدٍ أقصاه <gold>130 ذهب</gold>.<br><br>يتم كسب تكدسات <i>صياد الجوائز</i> كلما حققت إطاحة بأيٍ من الأبطال المعادين لأول مرة.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/TreasureHunter/TreasureHunter.png"
+ },
+ {
+  "id": 8105,
+  "name": "الصياد الجبار",
+  "shortDesc": "<b>تأثير فريد</b> تمنح<lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Takedown'>الإطاحات</lol-uikit-tooltipped-keyword> <b>بشكل دائم خارج القتال <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_MS'>سرعة حركة</lol-uikit-tooltipped-keyword></b>. ",
+  "longDesc": "تكسب <speed>8 سرعة حركة</speed> خارج القتال لكل تكدس <i>صياد جوائز</i>. يتم كسب تكدسات <i>صياد الجوائز</i> كلما حققت إطاحة بأي بطلٍ معادٍ لأول مرة.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/RelentlessHunter/RelentlessHunter.png"
+ },
+ {
+  "id": 8275,
+  "name": "عباءة السحاب القاتم",
+  "shortDesc": "بعد إلقاء تعويذة مستدعٍ، تكسب زيادة <speed>سرعة حركة</speed> لفترةٍ قصيرة تسمح لك بالمرور عبر الوحدات.",
+  "longDesc": "بعد إلقاء تعويذة مستدعٍ، يمكنك كسب زيادة <speed>سرعة حركة</speed> تدوم لمدة 2ث، وتسمح لك بالمرور عبر الوحدات.<br><br>الزيادة: <speed>15% - 45% سرعة حركة</speed> حسب فترة تبريد تعويذة المستدعي. (تمنح تعويذات المستدعي ذات فترات التبريد الأطول المزيد من <speed>سرعة الحركة</speed>). ",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/NimbusCloak/6361.png"
+ },
+ {
+  "id": 5011,
+  "name": "الصحة",
+  "shortDesc": "+65 صحة",
+  "longDesc": "+65 صحة",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/StatMods/StatModsHealthScalingIcon.png"
+ },
+ {
+  "id": 5013,
+  "name": "التماسك ومقاومة الإبطاء",
+  "shortDesc": "+15% التماسك ومقاومة الإبطاء",
+  "longDesc": "+15% التماسك ومقاومة الإبطاء",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/StatMods/StatModsTenacityIcon.png"
+ },
+ {
+  "id": 5008,
+  "name": "القوة المتكيفة",
+  "shortDesc": "+9 <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'><font color='#48C4B7'>قوة متكيفة</font></lol-uikit-tooltipped-keyword>",
+  "longDesc": "+9 <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'><font color='#48C4B7'>قوة متكيفة</font></lol-uikit-tooltipped-keyword>",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/StatMods/StatModsAdaptiveForceIcon.png"
+ },
+ {
+  "id": 5001,
+  "name": "تزايد الصحة",
+  "shortDesc": "+10-180 صحة (حسب المستوى)",
+  "longDesc": "+10-180 صحة (حسب المستوى)",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/StatMods/StatModsHealthPlusIcon.png"
+ },
+ {
+  "id": 5007,
+  "name": "تسارع القدرة",
+  "shortDesc": "+8 <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_CDR'>تسارع قدرة</lol-uikit-tooltipped-keyword> ",
+  "longDesc": "+8 <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_CDR'>تسارع قدرة</lol-uikit-tooltipped-keyword> ",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/StatMods/StatModsCDRScalingIcon.png"
+ },
+ {
+  "id": 8226,
+  "name": "حزام تدفق المانا",
+  "shortDesc": "تتكفل إصابة بطل معاد بقدرة بزيادة الحد الأقصى من المانا لديك بشكل دائم بمقدار 25، حتى 250 مانا.<br><br>وبعد بلوغ 250 مانا إضافية، تسترد 1% من المانا الناقصة لديك كل 5ث.",
+  "longDesc": "تتكفل إصابة بطل معاد بقدرة بزيادة الحد الأقصى من المانا لديك بشكل دائم بمقدار 25، حتى 250 مانا.<br><br>وبعد بلوغ 250 مانا إضافية، يمكنك استعادة 1% من المانا الناقصة لديك كل 5 ث.<br><br>فترة التبريد: 15 ث",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/ManaflowBand/ManaflowBand.png"
+ },
+ {
+  "id": 8230,
+  "name": "اندفاع مُغير العاصفة",
+  "shortDesc": "يؤدي إلحاق ضرر بنسبة 25% من الصحة القصوى لبطل إلى منح دفقة <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_MS'>سرعة حركة</lol-uikit-tooltipped-keyword> ومقاومة إبطاء. ",
+  "longDesc": "يؤدي إلحاق ضررٍ بنسبة 25% من صحة البطل القصوى خلال 3ث إلى منح <speed>48% سرعة حركة</speed> و <status>50% مقاومة إبطاء</status> لمدة 4ث. سرعة الحركة فعالةٌ بنسبة 75% لأبطال المدى البعيد.<br>فترة التبريد: 20ث - 10ث",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/PhaseRush/StormraidersSurgeRuneIcon2.png"
+ },
+ {
+  "id": 8236,
+  "name": "بوادر العاصفة",
+  "shortDesc": "تكسب مقادير متزايدة من ضرر الهجوم أو قوة القدرة، <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'>تتكيف</lol-uikit-tooltipped-keyword> على مدار المباراة.",
+  "longDesc": "كل 10د تكسب قوة قدرة أو ضرر هجوم، <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'><font color='#48C4B7'>متكيف</font></lol-uikit-tooltipped-keyword>.<br><br><i>10د</i>: +8 قوة قدرة أو 5 ضرر هجوم <br><i>20د</i>: +24 قوة قدرة أو 14 ضرر هجوم<br><i>30د</i>: +48 قوة قدرة أو 29 ضرر هجوم<br><i>40د</i>: +80 قوة قدرة أو 48 ضرر هجوم<br><i>50د</i>: +120 قوة قدرة أو 72 ضرر هجوم<br><i>60د</i>: +168 قوة قدرة أو 101 ضرر هجوم<br>إلخ...",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/GatheringStorm/GatheringStorm.png"
+ },
+ {
+  "id": 5005,
+  "name": "سرعة الهجوم",
+  "shortDesc": "+10% سرعة هجوم",
+  "longDesc": "+10% سرعة هجوم",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/StatMods/StatModsAttackSpeedIcon.png"
+ },
+ {
+  "id": 8992,
+  "name": "لمسة نار الموت",
+  "shortDesc": "يؤدي إلحاق الضرر ببطل باستخدام قدرة إلى حرقه بمرور الوقت.",
+  "longDesc": "يؤدي إلحاق الضرر ببطل باستخدام قدرة إلى حرقه بمقدار 3 - 12 حسب المستوى (+<scaleAP>2.5% قوة قدرة</scaleAP>) (+<scaleAD>7% ضرر هجوم إضافي</scaleAD>) على شكل ضرر سحر كل ثانية. بعد تعرضه للحرق لمدة 3ث، يزداد ضرر الحرق بنسبة 75% ما دام مشتعلًا.<br><rules><br>المدة:<br>الهدف المنفرد: 4ث<br>منطقة التأثير: 2ث<br>الضرر بمرور الوقت: 1ث<br></rules>",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/DeathfireTouch/DEATHFIRE_TOUCH_KEYSTONE.png"
+ },
+ {
+  "id": 5010,
+  "name": "سرعة الحركة",
+  "shortDesc": "+2.5% <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_MS'>سرعة حركة</lol-uikit-tooltipped-keyword>",
+  "longDesc": "+2.5% <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_MS'>سرعة حركة</lol-uikit-tooltipped-keyword>",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/StatMods/StatModsMovementSpeedIcon.png"
+ },
+ {
+  "id": 8140,
+  "name": "تذكارات مروّعة",
+  "shortDesc": "اجمع 1 من التذكارات عند تحقيق <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Takedown'>إطاحات</lol-uikit-tooltipped-keyword> بالأبطال، لحد أقصاه 18 إجمالًا.<br><br>تكسب 6 تسارع حلية لكل تذكار تم جمعه.",
+  "longDesc": "اجمع 1 من التذكارات عند تحقيق <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Takedown'>إطاحات</lol-uikit-tooltipped-keyword> بالأبطال، لحد أقصاه 18 إجمالًا.<br><br>تكسب 6 تسارع حلية لكل تذكار تم جمعه. في أنماط اللعب التي لا توجد فيها حلي رؤية، تكسب 3 تسارع تعويذة مستدعٍ بدلًا عما سبق.",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/GrislyMementos/GrislyMementos.png"
+ },
+ {
+  "id": 8143,
+  "name": "الصدمة المفاجئة",
+  "shortDesc": "يلحق ضرر الهجمات الأساسية والقدرات ضررًا حقيقيًا إضافيًا بأبطال العدو بعد استخدام اندفاع أو وثبة أو ومضة أو انتقال سريع أو عند الخروج من طور التخفي.",
+  "longDesc": "يلحق ضرر الهجمات الأساسية والقدرات <trueDamage>20 - 80 ضرر حقيقي إضافي</trueDamage> حسب المستوى بأبطال العدو بعد استخدام اندفاع أو وثبة أو ومضة أو انتقال سريع أو عند الخروج من طور التخفي لمدة 4ث.<br><br>فترة التبريد: 10ث",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/SuddenImpact/SuddenImpact.png"
+ },
+ {
+  "id": 9923,
+  "name": "وابل النصال",
+  "shortDesc": "تكسب قدرًا كبيرًا من سرعة الهجوم و<trueDamage>ضررًا حقيقيًا إضافيًا</trueDamage> في أول 3 من الهجمات المنفذة ضد الأبطال المعادين.",
+  "longDesc": "تكسب 90% (60% لأبطال المدى البعيد) سرعة هجوم و<trueDamage>ضررًا حقيقيًا إضافيًا</trueDamage> عندما تهاجم بطلًا معاديًا بعددٍ أقصاه 3 من الهجمات.<br><br>لا يمكن انقضاء أكثر من 3ث بين الهجمات، وإلا سينتهي هذا التأثير.<br><br>فترة التبريد: 10ث.<br>ضرر الإصابة: 2 - 20 (+0.12 ضرر هجوم إضافي، +0.1 قوة قدرة) ضرر.<br><br><rules>تؤدي عمليات إعادة ضبط الهجوم إلى زيادة حد الهجوم بمقدار 1.<br>تسمح لك بتجاوزٍ مؤقتٍ لحد سرعة الهجوم.</rules>",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Domination/HailOfBlades/HailOfBlades.png"
+ },
+ {
+  "id": 8233,
+  "name": "التركيز المطلق",
+  "shortDesc": "عندما تكون الصحة أعلى من 70%، يُكتسَب <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'>ضرر متكيف</lol-uikit-tooltipped-keyword> إضافي.",
+  "longDesc": "عندما تكون صحتك أعلى من 70%، تكتسب زيادة <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'><font color='#48C4B7'>متكيفة</font></lol-uikit-tooltipped-keyword> تصل إلى 18 ضرر هجوم أو 30 قوة قدرة (حسب المستوى). <br><br>تمنح 1.8 ضرر هجوم أو 3 قوة قدرة عند المستوى 1. ",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/AbsoluteFocus/AbsoluteFocus.png"
+ },
+ {
+  "id": 8229,
+  "name": "المذنب الغامض",
+  "shortDesc": "يتكفل إلحاق الضرر ببطل عبر قدرة برمي مذنّب ملحق للضرر على موقعه.",
+  "longDesc": "يؤدي إلحاق الضرر ببطل عبر قدرة إلى رمي مذنّب على موقعه، مما يلحق ضررًا متزايدًا بناءً على المسافة.<br><br><lol-uikit-tooltipped-keyword key='LinkTooltip_Description_AdaptiveDmg'><font color='#48C4B7'>الضرر المتكيف</font></lol-uikit-tooltipped-keyword>: 15 - 100 حسب المستوى (<scaleAP>+0.05 قوة قدرة</scaleAP> و <scaleAD>+0.1 ضرر هجوم إضافي</scaleAD>)<br>فترة التبريد: 20 - 8ث<br><rules><br>يتزايد تضخيم الضرر إلى حدٍ أقصاه 100% عند بلوغ مدى قدره 750.<br></rules>",
+  "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/ArcaneComet/ArcaneComet.png"
+ }
+]

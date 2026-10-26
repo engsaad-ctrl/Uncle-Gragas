@@ -115,4 +115,29 @@ function buildNamed(ar: RawNamed[], en: RawNamed[]): Map<number, NamedText> {
 }
 
 export const buildSpellTexts = (ar: RawNamed[], en: RawNamed[]) => buildNamed(ar, en);
-export const buildStyleTexts = (ar: RawNamed[], en: RawNamed[]) => buildNamed(ar, en);
+
+export interface StyleSlot {
+  /** kKeyStone, kMixedRegularSplashable or kStatMod */
+  type: string;
+  label: string;
+  perks: number[];
+}
+
+/** A rune tree (Precision, Domination…) with its rows, as the client lays it out. */
+export interface StyleTree extends NamedText {
+  slots: StyleSlot[];
+}
+
+interface RawStyle extends RawNamed {
+  slots?: { type: string; slotLabel?: string; perks: number[] }[];
+}
+
+export function buildStyleTrees(ar: RawStyle[], en: RawStyle[]): Map<number, StyleTree> {
+  const named = buildNamed(ar, en);
+  return new Map(
+    ar.map((s) => [
+      s.id,
+      { ...named.get(s.id)!, slots: (s.slots ?? []).map((sl) => ({ type: sl.type, label: sl.slotLabel ?? '', perks: sl.perks })) },
+    ]),
+  );
+}

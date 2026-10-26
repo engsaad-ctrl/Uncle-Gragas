@@ -22,7 +22,11 @@ const spells = (l) => read(`cdragon/${l}/summoner-spells.json`).filter((s) => [4
 out('tests/fixtures/cdragon/summoner-spells.ar_ae.sample.json', spells('ar_ae'));
 out('tests/fixtures/cdragon/summoner-spells.default.sample.json', spells('default'));
 
-const styles = (l) => ({ styles: read(`cdragon/${l}/perkstyles.json`).styles.map(({ id, name, iconPath }) => ({ id, name, iconPath })) });
+const styles = (l) => ({
+  styles: read(`cdragon/${l}/perkstyles.json`).styles.map(({ id, name, iconPath, slots }) => ({
+    id, name, iconPath, slots: slots.map(({ type, slotLabel, perks }) => ({ type, slotLabel, perks })),
+  })),
+});
 out('tests/fixtures/cdragon/perkstyles.ar_ae.json', styles('ar_ae'));
 out('tests/fixtures/cdragon/perkstyles.default.json', styles('default'));
 
@@ -30,3 +34,10 @@ out('tests/fixtures/opgg/ahri-ranked-mid.txt', readFileSync(P + 'opgg/ana-ahri-r
 out('tests/fixtures/opgg/ahri-aram.txt', readFileSync(P + 'opgg/ana-ahri-aram.txt', 'utf8'));
 out('tests/fixtures/opgg/ahri-mayhem-augments.txt', read('opgg/deep-mayhem_aug.json').content[0].text);
 console.log('fixtures written');
+
+// Every perk of Ahri's two trees (Domination 8100, Sorcery 8200) plus stat shards, for the rune-page test.
+const trees = read('cdragon/ar_ae/perkstyles.json').styles.filter((s) => [8100, 8200].includes(s.id));
+const pageIds = new Set(trees.flatMap((s) => s.slots.flatMap((sl) => sl.perks)));
+out('tests/fixtures/cdragon/perks.ar_ae.page.json', read('cdragon/ar_ae/perks.json').filter((p) => pageIds.has(p.id))
+  .map(({ id, name, shortDesc, longDesc, iconPath }) => ({ id, name, shortDesc, longDesc, iconPath })));
+console.log('page perks', pageIds.size);

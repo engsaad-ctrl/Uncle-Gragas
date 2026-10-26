@@ -1,19 +1,29 @@
-import type { ChampionPage, ItemChoice, PageMode, RatedAugment } from '../app/championPage.js';
+import type { ChampionPage, ItemChoice, PageMode, RatedAugment, RuneRow, RuneTree } from '../app/championPage.js';
 import type { Position } from '../stats/opgg.js';
 import type { Rarity } from '../texts/augments.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
-import { detailPanel, el, icon, isError, nameEl, pct, shownName, type Describable } from './dom.js';
+import { detailPanel, el, icon, isError, nameEl, pct, shownName, stagger, type Describable } from './dom.js';
 
-const MODES: [PageMode, string][] = [['ranked', 'Ranked'], ['aram', 'ARAM'], ['mayhem', 'ARAM Mayhem']];
+const MODES: [PageMode, string][] = [
+  ['ranked', 'Ranked'], ['flex', 'Flex'], ['aram', 'ARAM'], ['mayhem', 'ARAM Mayhem'],
+  ['arena', 'Arena'], ['urf', 'URF'], ['nexus', 'Nexus Blitz'],
+];
+/** Modes OP.GG gives no build for (Arena: no data; URF and Nexus Blitz: its tool rejects every position). */
+const NO_BUILD: Partial<Record<PageMode, string>> = {
+  arena: 'OP.GG لا يقدم بناءات Arena. أوصاف تعزيزات Arena في تبويب التعزيزات.',
+  urf: 'OP.GG لا يقدم بناء URF حالياً (خلل في أداته يرفض كل قيم المسار).',
+  nexus: 'OP.GG لا يقدم بناء Nexus Blitz حالياً (خلل في أداته يرفض كل قيم المسار).',
+};
 const POSITIONS: [Position, string][] = [['top', 'Top'], ['jungle', 'Jungle'], ['mid', 'Mid'], ['adc', 'ADC'], ['support', 'Support']];
 const AUGMENT_GROUPS: [Rarity, string][] = [['prismatic', 'أفضل التعزيزات الموشورية'], ['gold', 'أفضل التعزيزات الذهبية'], ['silver', 'أفضل التعزيزات الفضية']];
 
 export async function championView(root: HTMLElement, alive: () => boolean, id: number, mode: PageMode, position: Position) {
-  const status = el('p', 'status', 'جاري جلب البناء من OP.GG…');
+  const status = el('p', 'status loading', 'جاري جلب البناء من OP.GG…');
   root.replaceChildren(status);
   const reply = await window.lolh.championPage(id, mode, position);
   if (!alive()) return;
+  status.classList.remove('loading');
   if (isError(reply)) {
     status.textContent = `تعذّر فتح صفحة البطل: ${reply.error}`;
     return;
@@ -60,11 +70,11 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     tabs.append(a);
   }
   const top: HTMLElement[] = [head, tabs];
-  if (p.mode === 'ranked') {
+  if (p.mode === 'ranked' || p.mode === 'flex') {
     const pos = el('nav', 'pills');
     for (const [value, label] of POSITIONS) {
       const a = el('a', `pill${value === p.position ? ' active' : ''}`, label);
-      a.href = `#/champion/${c.id}/ranked/${value}`;
+      a.href = `#/champion/${c.id}/${p.mode}/${value}`;
       pos.append(a);
     }
     top.push(pos);
@@ -81,6 +91,16 @@ function renderPage(p: ChampionPage): HTMLElement[] {
   if (p.fetchedAt) notes.push(`آخر تحديث ${new Date(p.fetchedAt).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'short', timeStyle: 'short' })}`);
   top.push(el('p', 'status', notes.join(' · ')));
   if (p.buildError) top.push(el('p', 'status error', `تعذّر جلب البناء من OP.GG: ${p.buildError}`));
+  const noBuild = NO_BUILD[p.mode];
+  if (noBuild) {
+    const note = el('p', 'panel note', noBuild);
+    if (p.mode === 'arena') {
+      const link = el('a', 'link', ' افتح تعزيزات Arena ←');
+      link.href = '#/augments/arena';
+      note.append(link);
+    }
+    top.push(note);
+  }
 
   const body: HTMLElement[] = [];
 
@@ -98,8 +118,8 @@ function renderPage(p: ChampionPage): HTMLElement[] {
           const list = p.augments.filter((a) => a.rarity === rarity).slice(0, limit);
           if (!list.length) return [];
           const grid = el('div', 'grid');
-          grid.append(...list.map((a: RatedAugment) => {
-            const chip = augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `${a.performance.toFixed(0)}`);
+          grid.append(...list.map((a: RatedAugment, i) => {
+            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `${a.performance.toFixed(0)}`), i);
             chip.title += ` · الأداء ${a.performance} · الشعبية ${pct(a.popularity)}`;
             return chip;
           }));
@@ -153,7 +173,10 @@ function renderPage(p: ChampionPage): HTMLElement[] {
         const label = el('div', 'skill-label');
         if (a) label.append(icon(a.iconUrl), nameEl('span', a));
         grid.append(label);
-        for (let lvl = 0; lvl < 18; lvl++) grid.append(el('div', p.skillOrder[lvl] === key ? 'cell on' : 'cell', p.skillOrder[lvl] === key ? String(lvl + 1) : ''));
+        for (let lvl = 0; lvl < 18; lvl++) {
+          const on = p.skillOrder[lvl] === key;
+          grid.append(on ? stagger(el('div', 'cell on', String(lvl + 1)), lvl, 45) : el('div', 'cell'));
+        }
       }
       path.append(grid);
       row.append(path);
@@ -202,29 +225,33 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     body.push(items);
   }
 
-  // Runes.
+  // Runes: both trees laid out like the client, chosen runes lit, the rest dimmed.
   if (p.runes) {
     const r = p.runes;
     const s = el('section', 'panel');
-    s.append(el('h2', '', `الرونز · ${pct(r.winRate)} فوز`));
-    const tree = (style: NamedText | null, perks: NamedText[], keystone = false) => {
-      const t = el('div', 'tree');
-      if (style) {
-        const h = el('div', 'tree-head');
-        h.append(iconButton(style, 'ic style'), nameEl('span', style));
-        t.append(h);
-      }
-      const ic = el('div', 'icons');
-      ic.append(...perks.map((x, i) => iconButton(x, keystone && i === 0 ? 'ic keystone' : 'ic')));
-      t.append(ic);
-      return t;
+    s.append(el('h2', '', `صفحة الرونز · ${pct(r.winRate)} فوز · ${r.games.toLocaleString('en')} مباراة`));
+    const rowsEl = (rows: RuneRow[], className = '') =>
+      rows.map((row) => {
+        const line = el('div', `rune-row ${className}${row.keystone ? ' keystone' : ''}`);
+        line.append(...row.options.map((o) => iconButton(o, `ic rune${o.selected ? ' on' : ' off'}`)));
+        return line;
+      });
+    const treeEl = (t: RuneTree | null) => {
+      const box = el('div', 'tree');
+      if (!t) return box;
+      const h = el('div', 'tree-head');
+      h.append(iconButton(t.style, 'ic style'), nameEl('span', t.style));
+      box.append(h, ...rowsEl(t.rows));
+      return box;
     };
-    const rows = el('div', 'runes');
-    rows.append(tree(r.primary, r.perks.slice(0, 4), true), tree(r.sub, r.perks.slice(4)), tree(null, r.statMods));
-    s.append(rows);
+    const shards = el('div', 'tree shards');
+    shards.append(el('div', 'tree-head', 'الإحصائيات'), ...rowsEl(r.shards, 'small'));
+    const trees = el('div', 'runes');
+    trees.append(treeEl(r.primary), treeEl(r.sub), shards);
+    s.append(trees);
     body.push(s);
   }
 
-  if (!body.length && !p.buildError) body.push(el('p', 'missing', 'لا تتوفر بيانات بناء لهذا البطل في هذا الوضع.'));
+  if (!body.length && !p.buildError && !noBuild) body.push(el('p', 'missing', 'لا تتوفر بيانات بناء لهذا البطل في هذا الوضع.'));
   return [...top, detail.node, ...body];
 }

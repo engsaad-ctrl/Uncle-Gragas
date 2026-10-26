@@ -3,13 +3,14 @@ import { mcpCaller, OpggStats, type CallTool, type Position } from '../stats/opg
 import { loadAugments, type AugmentsResult } from '../texts/augmentsLoader.js';
 import { loadCdragonJson, type Locale } from '../texts/cdragon.js';
 import {
-  buildChampionDetail, buildChampionList, buildSpellTexts, buildStyleTexts,
+  buildChampionDetail, buildChampionList, buildSpellTexts, buildStyleTrees,
   type ChampionListEntry, type RawChampion, type RawChampionSummary,
 } from '../texts/champions.js';
 import { buildItemTexts, type RawItem } from '../texts/items.js';
 import { buildRuneTexts, type RawPerk } from '../texts/runes.js';
 
-const MODES: PageMode[] = ['ranked', 'aram', 'mayhem'];
+const MODES: PageMode[] = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
+const NO_BUILD: PageMode[] = ['arena', 'urf', 'nexus']; // see BuildMode in stats/opgg.ts
 const POSITIONS: Position[] = ['top', 'jungle', 'mid', 'adc', 'support'];
 
 /** IPC input is untrusted: accept only known values. */
@@ -42,13 +43,13 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const [items, perks, styles, spells] = await Promise.all([
       both<RawItem[]>('items.json'),
       both<RawPerk[]>('perks.json'),
-      both<{ styles: { id: number; name: string; iconPath: string }[] }>('perkstyles.json'),
+      both<{ styles: { id: number; name: string; iconPath: string; slots: { type: string; slotLabel: string; perks: number[] }[] }[] }>('perkstyles.json'),
       both<{ id: number; name: string; description: string; iconPath: string }[]>('summoner-spells.json'),
     ]);
     return {
       items: buildItemTexts(...items),
       runes: buildRuneTexts(...perks),
-      styles: buildStyleTexts(styles[0].styles, styles[1].styles),
+      styles: buildStyleTrees(styles[0].styles, styles[1].styles),
       spells: buildSpellTexts(...spells),
     };
   });
@@ -57,14 +58,19 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const entry = (await champions()).find((c) => c.id === id);
     if (!entry) throw new Error(`unknown champion ${id}`);
     const [[ar, en], t] = await Promise.all([both<RawChampion>(`champions/${id}.json`), texts()]);
-    const buildPosition = mode === 'ranked' ? position : 'mid'; // OP.GG requires a position even for ARAM
+    const laned = mode === 'ranked' || mode === 'flex';
+    const loadBuild = () =>
+      stats
+        // OP.GG requires a position even for ARAM, where it is ignored
+        .build(entry.alias, laned ? mode : 'aram', laned ? position : 'mid')
+        .catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))));
     const [build, mayhem, augs] = await Promise.all([
-      stats.build(entry.alias, mode === 'ranked' ? 'ranked' : 'aram', buildPosition).catch((e: unknown) => (e instanceof Error ? e : new Error(String(e)))),
+      NO_BUILD.includes(mode) ? Promise.resolve(null) : loadBuild(),
       mode === 'mayhem' ? stats.mayhemAugments(id).catch(() => null) : Promise.resolve(null),
       mode === 'mayhem' ? augments().then((r) => r.augments, () => []) : Promise.resolve([]),
     ]);
     return composeChampionPage({
-      champion: buildChampionDetail(ar, en), mode, position: mode === 'ranked' ? position : null,
+      champion: buildChampionDetail(ar, en), mode, position: laned ? position : null,
       build, mayhem, augments: augs, ...t,
     });
   }

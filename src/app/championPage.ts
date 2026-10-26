@@ -1,16 +1,32 @@
 import type { ChampionBuild, Fetched, MayhemAugmentStat, Pick, Position } from '../stats/opgg.js';
 import { assetUrl } from '../texts/assets.js';
 import type { AugmentText } from '../texts/augments.js';
-import type { ChampionDetail, NamedText } from '../texts/champions.js';
+import type { ChampionDetail, NamedText, StyleSlot, StyleTree } from '../texts/champions.js';
 import type { ItemText } from '../texts/items.js';
 import type { RuneText } from '../texts/runes.js';
 
-export type PageMode = 'ranked' | 'aram' | 'mayhem';
+export type PageMode = 'ranked' | 'flex' | 'aram' | 'mayhem' | 'arena' | 'urf' | 'nexus';
 
 export interface ItemChoice {
   items: NamedText[];
   games: number;
   winRate: number;
+}
+
+export interface RuneOption extends NamedText {
+  selected: boolean;
+}
+
+export interface RuneRow {
+  label: string;
+  keystone: boolean;
+  options: RuneOption[];
+}
+
+/** One rune tree as the client shows it, with the build's choices marked. */
+export interface RuneTree {
+  style: NamedText;
+  rows: RuneRow[];
 }
 
 export interface RatedAugment extends AugmentText {
@@ -33,7 +49,7 @@ export interface ChampionPage {
   fourth: ItemChoice[];
   fifth: ItemChoice[];
   sixth: ItemChoice[];
-  runes: { primary: NamedText | null; sub: NamedText | null; perks: NamedText[]; statMods: NamedText[]; games: number; winRate: number } | null;
+  runes: { primary: RuneTree | null; sub: RuneTree | null; shards: RuneRow[]; games: number; winRate: number } | null;
   augments: RatedAugment[];
   fetchedAt: number | null;
   stale: boolean;
@@ -43,12 +59,13 @@ export interface PageSources {
   champion: ChampionDetail;
   mode: PageMode;
   position: Position | null;
-  build: Fetched<ChampionBuild> | Error;
+  /** null: no build for this mode (Arena, URF, Nexus Blitz). */
+  build: Fetched<ChampionBuild> | Error | null;
   mayhem: Fetched<MayhemAugmentStat[]> | null;
   augments: AugmentText[];
   items: Map<number, ItemText>;
   runes: Map<number, RuneText>;
-  styles: Map<number, NamedText>;
+  styles: Map<number, StyleTree>;
   spells: Map<number, NamedText>;
 }
 
@@ -63,8 +80,43 @@ function resolve<T>(ids: number[], map: Map<number, T>, to: (t: T) => NamedText)
   });
 }
 
+function runeRow(slot: StyleSlot, runes: Map<number, RuneText>, isSelected: (id: number) => boolean): RuneRow {
+  return {
+    label: slot.label,
+    keystone: slot.type === 'kKeyStone',
+    options: slot.perks.flatMap((id) => {
+      const t = runes.get(id);
+      return t ? [{ ...fromRune(t), selected: isSelected(id) }] : [];
+    }),
+  };
+}
+
+function composeRunes(r: NonNullable<ChampionBuild['runes']>, styles: Map<number, StyleTree>, runes: Map<number, RuneText>) {
+  const chosen = new Set(r.perks);
+  const tree = (styleId: number, withKeystone: boolean): RuneTree | null => {
+    const s = styles.get(styleId);
+    if (!s) return null;
+    const { slots, ...style } = s;
+    return {
+      style,
+      rows: slots
+        .filter((sl) => sl.type !== 'kStatMod' && (withKeystone || sl.type !== 'kKeyStone'))
+        .map((sl) => runeRow(sl, runes, (id) => chosen.has(id))),
+    };
+  };
+  // Shard rows can repeat an id (adaptive force sits in two rows), so match by row index.
+  const shardSlots = styles.get(r.primaryStyle)?.slots.filter((sl) => sl.type === 'kStatMod') ?? [];
+  return {
+    primary: tree(r.primaryStyle, true),
+    sub: tree(r.subStyle, false),
+    shards: shardSlots.map((sl, i) => runeRow(sl, runes, (id) => r.statMods[i] === id)),
+    games: r.games,
+    winRate: r.winRate,
+  };
+}
+
 export function composeChampionPage(src: PageSources): ChampionPage {
-  const build = src.build instanceof Error ? null : src.build.data;
+  const build = src.build && !(src.build instanceof Error) ? src.build.data : null;
   const choice = (p: Pick | null): ItemChoice | null =>
     p ? { items: resolve(p.ids, src.items, fromItem), games: p.games, winRate: p.winRate } : null;
   const choices = (ps: Pick[]) => ps.map(choice).filter((c): c is ItemChoice => c !== null && c.items.length > 0);
@@ -79,7 +131,7 @@ export function composeChampionPage(src: PageSources): ChampionPage {
     .sort((x, y) => y.performance - x.performance);
 
   const fetched: { fetchedAt: number; stale: boolean }[] = [];
-  if (!(src.build instanceof Error)) fetched.push(src.build);
+  if (src.build && !(src.build instanceof Error)) fetched.push(src.build);
   if (src.mayhem) fetched.push(src.mayhem);
   return {
     champion: src.champion,
@@ -96,16 +148,7 @@ export function composeChampionPage(src: PageSources): ChampionPage {
     fourth: choices(build?.fourth ?? []),
     fifth: choices(build?.fifth ?? []),
     sixth: choices(build?.sixth ?? []),
-    runes: build?.runes
-      ? {
-          primary: src.styles.get(build.runes.primaryStyle) ?? null,
-          sub: src.styles.get(build.runes.subStyle) ?? null,
-          perks: resolve(build.runes.perks, src.runes, fromRune),
-          statMods: resolve(build.runes.statMods, src.runes, fromRune),
-          games: build.runes.games,
-          winRate: build.runes.winRate,
-        }
-      : null,
+    runes: build?.runes ? composeRunes(build.runes, src.styles, src.runes) : null,
     augments,
     fetchedAt: fetched.length ? Math.min(...fetched.map((f) => f.fetchedAt)) : null,
     stale: fetched.some((f) => f.stale),

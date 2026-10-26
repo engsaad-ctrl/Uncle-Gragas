@@ -5,19 +5,19 @@ import { championsView } from './championsView.js';
 import { championView } from './championView.js';
 import { byId, getNameLang, pills, setNameLang } from './dom.js';
 
-const MODES = ['ranked', 'aram', 'mayhem'];
+const MODES = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
 const POSITIONS = ['top', 'jungle', 'mid', 'adc', 'support'];
 const root = byId('view');
 let renderId = 0;
 
-/** Routes: #/champions (default), #/champion/<id>[/<mode>[/<position>]], #/augments */
+/** Routes: #/champions (default), #/champion/<id>[/<mode>[/<position>]], #/augments[/<arena|mayhem>] */
 function route() {
   const token = ++renderId;
   const alive = () => token === renderId; // a newer route started: drop late results
   const [, view, id, mode, position] = location.hash.split('/');
   for (const a of byId('tabs').querySelectorAll('a')) a.classList.toggle('active', a.dataset.tab === (view === 'augments' ? 'augments' : 'champions'));
   window.scrollTo(0, 0);
-  if (view === 'augments') void augmentsView(root, alive);
+  if (view === 'augments') void augmentsView(root, alive, id === 'arena' || id === 'mayhem' ? id : 'all');
   else if (view === 'champion' && Number(id) > 0) {
     void championView(
       root,

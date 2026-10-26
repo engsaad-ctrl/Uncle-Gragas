@@ -78,6 +78,8 @@ export function detailPanel() {
       node.hidden = !x;
       if (!x) return;
       node.className = `panel detail ${opts.className ?? ''}`;
+      void node.offsetWidth; // restart the slide-in animation for each new pick
+      node.classList.add('enter');
       const title = nameEl('h3', x);
       title.append(...(opts.tags ?? []));
       const other = el('div', 'en', otherName(x));
@@ -124,3 +126,9 @@ export function searchBox(placeholder: string): { node: HTMLElement; input: HTML
 }
 
 export const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
+
+/** Sets the entry-animation delay for the i-th element of a list (capped so long lists don't drag). */
+export function stagger<T extends HTMLElement>(node: T, i: number, stepMs = 14): T {
+  node.style.setProperty('--delay', `${Math.min(i, 40) * stepMs}ms`);
+  return node;
+}
