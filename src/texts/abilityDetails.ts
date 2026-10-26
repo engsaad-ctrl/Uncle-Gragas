@@ -25,23 +25,33 @@ interface CharacterRecord {
   primaryAbilityResource?: { arType?: number };
 }
 
-/** Riot markup, still to go through cleanText: a stats line and, when every value resolved, the full tooltip. */
+/** One line of the per-level table: a label and one value per ability level (level 1 first). */
+export interface RankRow {
+  label: string;
+  values: string[];
+}
+
+/** Cooldown/cost per level, and (Riot markup, still to go through cleanText) the full tooltip when every value resolved. */
 export interface AbilityDetail {
-  head: string;
+  ranks: RankRow[];
   body?: string;
 }
 
 const RESOURCE: Record<number, string> = { 0: 'المانا', 1: 'الطاقة' }; // other resources: the number alone
 const KEYS: AbilityKey[] = ['Q', 'W', 'E', 'R'];
 
-function headLine(s: RawSpellDetail, ranks: number, resource: string): string {
-  const parts: string[] = [];
+// A table, not "9/8/7/6/5": in right-to-left text a slash list reads backwards and hides which level is which.
+function rankRows(s: RawSpellDetail, ranks: number, resource: string): RankRow[] {
+  const rows: RankRow[] = [];
   const cd = s.cooldownCoefficients?.slice(0, ranks) ?? [];
-  if (cd.some((x) => x > 0)) parts.push(`التبريد: ${perRank(cd, 2, '')}ث`);
+  if (cd.some((x) => x > 0)) rows.push({ label: 'التبريد', values: cd.map((x) => `${perRank([x], 2, '')}ث`) });
   const cost = s.costCoefficients?.slice(0, ranks) ?? [];
-  if (s.cost?.includes('@Cost@') && cost.some((x) => x > 0))
-    parts.push(`التكلفة: ${s.cost.replace('@Cost@', perRank(cost, 2, '')).replace('@AbilityResourceName@', resource).trim()}`);
-  return parts.length ? `<stats>${parts.join(' · ')}</stats>` : '';
+  if (s.cost?.includes('@Cost@') && cost.some((x) => x > 0)) {
+    // What is left around @Cost@ names the resource ("المانا", "من الصحة" …)
+    const unit = s.cost.replace('@Cost@', '').replace('@AbilityResourceName@', resource).replace(/<[^>]*>|@\w+@/g, '').trim();
+    rows.push({ label: unit ? `التكلفة (${unit})` : 'التكلفة', values: cost.map((x) => perRank([x], 2, '')) });
+  }
+  return rows;
 }
 
 export function buildAbilityDetails(spells: RawSpellDetail[], gameBin: Record<string, unknown>, strings: (key: string) => string | undefined): Map<AbilityKey, AbilityDetail> {
@@ -66,11 +76,11 @@ export function buildAbilityDetails(spells: RawSpellDetail[], gameBin: Record<st
     const s = spells[i];
     if (!s) return;
     const ranks = spell?.mClientData?.mTooltipData?.mLists?.LevelUp?.levelCount ?? (key === 'R' ? 3 : 5);
-    out.set(key, { head: headLine(s, ranks, resource), body: resolve(s.dynamicDescription, spell, ranks) });
+    out.set(key, { ranks: rankRows(s, ranks, resource), body: resolve(s.dynamicDescription, spell, ranks) });
   });
 
   const passive = bin[record.mCharacterPassiveSpell ?? '']?.mSpell;
   const passiveKey = passive?.mClientData?.mTooltipData?.mLocKeys?.keyTooltip;
-  out.set('P', { head: '', body: resolve(passiveKey ? strings(passiveKey) : undefined, passive, 1) });
+  out.set('P', { ranks: [], body: resolve(passiveKey ? strings(passiveKey) : undefined, passive, 1) });
   return out;
 }

@@ -192,10 +192,14 @@ function evalCalc(calc: SpellCalculation, c: Ctx): Value | null {
 
 const fmt = (n: number, precision: number) => String(Number(n.toFixed(precision)));
 
-/** "70/120/170/220/270", or one number when every rank is the same. */
+/**
+ * "70 / 120 / 170 / 220 / 270", or one number when every rank is the same.
+ * The spaces matter: "70/120" is one left-to-right number run, so in Arabic text level 1 lands on the left;
+ * spaced out, each number is its own run and level 1 comes first when read right to left.
+ */
 export function perRank(values: number[], precision: number, unit: string): string {
   const shown = values.map((x) => `${fmt(x, precision)}${unit}`);
-  return shown.every((x) => x === shown[0]) ? shown[0] : shown.join('/');
+  return shown.every((x) => x === shown[0]) ? shown[0] : shown.join(' / ');
 }
 
 /** Display data for one placeholder: the value and how the game prints it. */

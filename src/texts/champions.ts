@@ -1,4 +1,4 @@
-import type { AbilityDetail, RawSpellDetail } from './abilityDetails.js';
+import type { AbilityDetail, RankRow, RawSpellDetail } from './abilityDetails.js';
 import { assetUrl } from './assets.js';
 import { cleanText, isUntranslated, pickText } from './clean.js';
 
@@ -42,6 +42,8 @@ export interface AbilityText {
   enName: string;
   html: string;
   iconUrl: string;
+  /** Cooldown and cost per ability level, shown as a small table. */
+  ranks?: RankRow[];
 }
 
 interface RawAbility extends RawSpellDetail {
@@ -78,7 +80,7 @@ export function buildChampionDetail(ar: RawChampion, en: RawChampion | undefined
   const ability = (key: AbilityKey, a: RawAbility, e: RawAbility | undefined): AbilityText => {
     const d = details?.get(key);
     const text = d?.body ?? pickText(a.description, e?.description).text;
-    return { key, name: a.name, enName: e?.name ?? '', html: cleanText([d?.head, text].filter(Boolean).join('<br><br>')), iconUrl: assetUrl(a.abilityIconPath) };
+    return { key, name: a.name, enName: e?.name ?? '', html: cleanText(text), iconUrl: assetUrl(a.abilityIconPath), ...(d?.ranks.length ? { ranks: d.ranks } : {}) };
   };
   return {
     id: ar.id,

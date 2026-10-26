@@ -6,6 +6,7 @@ import type { TierRow } from '../app/tierList.js';
 import type { LcuState } from '../lcu/state.js';
 import type { AppMode, Listed } from '../main/services.js';
 import type { LanePosition } from '../stats/opgg.js';
+import type { RankRow } from '../texts/abilityDetails.js';
 import type { ChampionListEntry } from '../texts/champions.js';
 
 export type Reply<T> = T | { error: string };
@@ -98,6 +99,31 @@ export function nameEl<K extends keyof HTMLElementTagNameMap>(tag: K, x: Named, 
 export interface Describable extends Named {
   html: string;
   iconUrl: string;
+  ranks?: RankRow[];
+}
+
+/**
+ * Cooldown/cost per level. Rows equal at every level become one "التبريد: 7ث" line;
+ * the rest share a table whose first column (on the right) is level 1.
+ */
+export function rankTable(rows: RankRow[] | undefined): HTMLElement | null {
+  if (!rows?.length) return null;
+  const box = el('div', 'ranks');
+  const varying = rows.filter((r) => r.values.some((v) => v !== r.values[0]));
+  for (const r of rows.filter((x) => !varying.includes(x))) box.append(el('div', 'rank-line', `${r.label}: ${r.values[0]}`));
+  if (varying.length) {
+    const table = el('table', 'rank-table');
+    const head = el('tr');
+    head.append(el('th', '', 'المستوى'), ...varying[0].values.map((_, i) => el('th', '', String(i + 1))));
+    table.append(head);
+    for (const r of varying) {
+      const tr = el('tr');
+      tr.append(el('th', '', r.label), ...r.values.map((v) => el('td', '', v)));
+      table.append(tr);
+    }
+    box.append(table);
+  }
+  return box;
 }
 
 /** The sticky panel that shows one item/rune/ability/augment: name, other-language name, Arabic description. */
@@ -123,7 +149,7 @@ export function detailPanel() {
         desc.textContent = opts.missing ?? 'لا يوجد وصف.';
       }
       const body = el('div');
-      body.append(title, other, desc);
+      body.append(...[title, other, rankTable(x.ranks), desc].filter((n): n is HTMLElement => n !== null));
       node.replaceChildren(icon(x.iconUrl), body);
     },
   };
@@ -221,7 +247,7 @@ function showTip(anchor: Element, c: TipContent) {
     desc.className = 'tip-body missing';
     desc.textContent = c.missing ?? 'لا يوجد وصف.';
   }
-  tipEl.replaceChildren(head, desc);
+  tipEl.replaceChildren(...[head, rankTable(c.x.ranks), desc].filter((n): n is HTMLElement => n !== null));
   placeTip(anchor);
   tipEl.classList.add('show');
 }

@@ -65,7 +65,7 @@ describe('resolveSpellValues (real augment spells)', () => {
     };
     const r = resolveSpellValues('@Dmg@ | @Sweet@ | @Same@ | @Effect1Amount@ | @Pct@', spell, { ranks: 5 });
     expect(r).toEqual({
-      text: '70/120/170/220/270 <scaleAP><nowrap>(+60% من قوة القدرة)</nowrap></scaleAP> | 140/240/340/440/540 <scaleAP><nowrap>(+120% من قوة القدرة)</nowrap></scaleAP> | 2 | 1/2/3/4/5 | 4% <scaleAP><nowrap>(+1% لكل 100 قوة القدرة)</nowrap></scaleAP>',
+      text: '70 / 120 / 170 / 220 / 270 <scaleAP><nowrap>(+60% من قوة القدرة)</nowrap></scaleAP> | 140 / 240 / 340 / 440 / 540 <scaleAP><nowrap>(+120% من قوة القدرة)</nowrap></scaleAP> | 2 | 1 / 2 / 3 / 4 / 5 | 4% <scaleAP><nowrap>(+1% لكل 100 قوة القدرة)</nowrap></scaleAP>',
       unresolved: 0,
     });
   });

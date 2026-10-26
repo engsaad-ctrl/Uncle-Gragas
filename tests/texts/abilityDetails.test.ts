@@ -15,14 +15,18 @@ describe('buildAbilityDetails (real Ahri files, 2026-10)', () => {
   const d = buildAbilityDetails(spells, bin, lookup);
 
   it('fills every rank and the AP ratio, like the in-game tooltip', () => {
-    expect(d.get('Q')!.body).toContain('<magicDamage>35/60/85/110/135 <scaleAP><nowrap>(+50% من قوة القدرة)</nowrap></scaleAP> ضرر السحر</magicDamage>');
-    expect(d.get('R')!.body).toContain('75/125/175 <scaleAP><nowrap>(+35% من قوة القدرة)</nowrap></scaleAP>');
+    expect(d.get('Q')!.body).toContain('<magicDamage>35 / 60 / 85 / 110 / 135 <scaleAP><nowrap>(+50% من قوة القدرة)</nowrap></scaleAP> ضرر السحر</magicDamage>');
+    expect(d.get('R')!.body).toContain('75 / 125 / 175 <scaleAP><nowrap>(+35% من قوة القدرة)</nowrap></scaleAP>');
   });
 
-  it('adds cooldown and cost per rank, R with its 3 ranks', () => {
-    expect(d.get('Q')!.head).toBe('<stats>التبريد: 7ث · التكلفة: 55/65/75/85/95 المانا</stats>');
-    expect(d.get('W')!.head).toBe('<stats>التبريد: 9/8/7/6/5ث · التكلفة: 30 المانا</stats>');
-    expect(d.get('R')!.head).toBe('<stats>التبريد: 140/120/100ث · التكلفة: 100 المانا</stats>');
+  it('adds cooldown and cost per level as table rows, R with its 3 levels', () => {
+    expect(d.get('Q')!.ranks).toEqual([
+      { label: 'التبريد', values: ['7ث', '7ث', '7ث', '7ث', '7ث'] },
+      { label: 'التكلفة (المانا)', values: ['55', '65', '75', '85', '95'] },
+    ]);
+    expect(d.get('W')!.ranks[0].values).toEqual(['9ث', '8ث', '7ث', '6ث', '5ث']);
+    expect(d.get('R')!.ranks[0].values).toEqual(['140ث', '120ث', '100ث']);
+    expect(d.get('P')!.ranks).toEqual([]);
   });
 
   it('builds the passive from the string table, with level-based values', () => {
@@ -32,8 +36,10 @@ describe('buildAbilityDetails (real Ahri files, 2026-10)', () => {
   it('feeds the champion page; without game files the short description stays', () => {
     const raw = { id: 103, name: 'آري', alias: 'Ahri', title: '', squarePortraitPath: '', passive: { name: 'p', description: 'قصير', abilityIconPath: '' }, spells } as unknown as RawChampion;
     const q = (x: ReturnType<typeof buildChampionDetail>) => x.abilities.find((a) => a.key === 'Q')!.html;
-    expect(q(buildChampionDetail(raw, undefined, d))).toMatch(/^<span class="t-stats">التبريد: 7ث.*<br><br>.*35\/60\/85\/110\/135 <span class="t-ap">/);
-    expect(q(buildChampionDetail(raw, undefined))).not.toContain('35/60');
+    const withGame = buildChampionDetail(raw, undefined, d).abilities.find((a) => a.key === 'Q')!;
+    expect(withGame.html).toMatch(/35 \/ 60 \/ 85 \/ 110 \/ 135 <span class="t-ap">/);
+    expect(withGame.ranks?.[0].label).toBe('التبريد');
+    expect(q(buildChampionDetail(raw, undefined))).not.toContain('35 / 60');
   });
 });
 
