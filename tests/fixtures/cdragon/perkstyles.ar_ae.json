@@ -1,0 +1,29 @@
+{
+ "styles": [
+  {
+   "id": 8400,
+   "name": "عزم",
+   "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/7204_Resolve.png"
+  },
+  {
+   "id": 8100,
+   "name": "سيطرة",
+   "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/7200_Domination.png"
+  },
+  {
+   "id": 8000,
+   "name": "دقة",
+   "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/7201_Precision.png"
+  },
+  {
+   "id": 8200,
+   "name": "شعوذة",
+   "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/7202_Sorcery.png"
+  },
+  {
+   "id": 8300,
+   "name": "إلهام",
+   "iconPath": "/lol-game-data/assets/v1/perk-images/Styles/7203_Whimsy.png"
+  }
+ ]
+}

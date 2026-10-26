@@ -1,0 +1,14 @@
+[
+ {
+  "id": 4,
+  "name": "الانتقال الخاطف",
+  "description": "تنقلك بسرعة لمسافة قصيرة باتجاه مؤشرك.",
+  "iconPath": "/lol-game-data/assets/DATA/Spells/Icons2D/Summoner_flash.png"
+ },
+ {
+  "id": 14,
+  "name": "الإشعال",
+  "description": "تلحق ضررًا حقيقيًا بمرور الوقت ببطل العدو المستهدف وتقلص تأثيرات العلاج لديه طيلة المدة.",
+  "iconPath": "/lol-game-data/assets/DATA/Spells/Icons2D/SummonerIgnite.png"
+ }
+]

@@ -1,0 +1,10 @@
+class LolGetChampionAnalysis: data
+class Data: summary,core_items,boots,starter_items,last_items,fourth_items,fifth_items,sixth_items,summoner_spells,runes,skills,skill_masteries
+class Summary: average_stats
+class AverageStats: play,win_rate,pick_rate,ban_rate,kda,tier,rank
+class CoreItems: ids,ids_names,play,win,pick_rate
+class Runes: id,primary_page_id,primary_page_name,primary_rune_ids,primary_rune_names,secondary_page_id,secondary_page_name,secondary_rune_ids,secondary_rune_names,stat_mod_ids,stat_mod_names,play,win,pick_rate
+class Skills: order,play,win,pick_rate
+class SkillMasteries: ids,play,win,pick_rate
+
+LolGetChampionAnalysis(Data(Summary(AverageStats(104125,0.51,0.1,0.03,2.53,1,6)),CoreItems([3118,4645,3157],["الخبث","لهيب الأشباح","ساعة زونيا الرملية"],6908,3619,0.13),CoreItems([3020],["حذاء المشعوذ"],49486,25824,0.59),CoreItems([1056,2003,2003],["خاتم دوران","ترياق صحة","ترياق صحة"],85271,43813,0.99),[CoreItems([3118],["الخبث"],58212,29918,0.64),CoreItems([4645],["لهيب الأشباح"],44445,23330,0.49),CoreItems([3157],["ساعة زونيا الرملية"],29493,16107,0.32)],[CoreItems([3089],["قبعة موت رابادون"],7279,4212,0.32),CoreItems([3157],["ساعة زونيا الرملية"],5520,3297,0.25),CoreItems([3135],["صولجان الفويد"],1917,1022,0.09)],[CoreItems([3089],["قبعة موت رابادون"],1178,739,0.2),CoreItems([3135],["صولجان الفويد"],1049,568,0.18),CoreItems([3157],["ساعة زونيا الرملية"],929,558,0.16)],[CoreItems([4629],["الحافز الكوني"],20,11,0.19),CoreItems([3135],["صولجان الفويد"],15,6,0.14),CoreItems([4646],["المد العاصف"],11,9,0.11)],CoreItems([4,14],[4,14],58462,30199,0.7),Runes(8112,8100,"سيطرة",[8112,8139,8140,8106],["الصعقة الكهربائية","مذاق الدم","تذكارات مروّعة","الصياد الخارق"],8200,"شعوذة",[8210,8226],["التسامي","حزام تدفق المانا"],[5005,5008,5001],[5005,5008,5001],42338,21447,0.48),Skills(["W","Q","E","Q","Q","R","Q","W","Q","W","R","W","W","E","E"],33698,19443,0.58),SkillMasteries(["Q","W","E"],53474,31101,0.92)))

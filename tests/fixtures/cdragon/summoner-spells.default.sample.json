@@ -1,0 +1,14 @@
+[
+ {
+  "id": 4,
+  "name": "Flash",
+  "description": "Teleports you a short distance toward your cursor.",
+  "iconPath": "/lol-game-data/assets/DATA/Spells/Icons2D/Summoner_flash.png"
+ },
+ {
+  "id": 14,
+  "name": "Ignite",
+  "description": "Deals true damage over time to target enemy champion and reduces healing effects on them for the duration.",
+  "iconPath": "/lol-game-data/assets/DATA/Spells/Icons2D/SummonerIgnite.png"
+ }
+]

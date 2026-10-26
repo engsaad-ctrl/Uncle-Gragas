@@ -1,0 +1,26 @@
+[
+ {
+  "id": -1,
+  "name": "None",
+  "alias": "None",
+  "squarePortraitPath": "/lol-game-data/assets/v1/champion-icons/-1.png"
+ },
+ {
+  "id": 62,
+  "name": "Wukong",
+  "alias": "MonkeyKing",
+  "squarePortraitPath": "/lol-game-data/assets/v1/champion-icons/62.png"
+ },
+ {
+  "id": 103,
+  "name": "Ahri",
+  "alias": "Ahri",
+  "squarePortraitPath": "/lol-game-data/assets/v1/champion-icons/103.png"
+ },
+ {
+  "id": 60001,
+  "name": "Annie",
+  "alias": "Jade_Annie",
+  "squarePortraitPath": "/lol-game-data/assets/v1/champion-icons/60001.png"
+ }
+]

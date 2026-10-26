@@ -1,0 +1,38 @@
+{
+ "id": 103,
+ "name": "Ahri",
+ "alias": "Ahri",
+ "title": "the Nine-Tailed Fox",
+ "squarePortraitPath": "/lol-game-data/assets/v1/champion-icons/103.png",
+ "passive": {
+  "name": "Essence Theft",
+  "description": "After killing 9 minions or monsters, Ahri heals.<br>After taking down an enemy champion, Ahri heals for a greater amount.",
+  "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_Passive.png"
+ },
+ "spells": [
+  {
+   "name": "Orb of Deception",
+   "description": "Ahri sends out and pulls back her orb, dealing magic damage on the way out and true damage on the way back. ",
+   "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_Q.png",
+   "spellKey": "q"
+  },
+  {
+   "name": "Fox-Fire",
+   "description": "Ahri gains a brief burst of Move Speed and releases three fox-fires, that lock onto and attack nearby enemies.",
+   "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_W.png",
+   "spellKey": "w"
+  },
+  {
+   "name": "Charm",
+   "description": "Ahri blows a kiss that damages and charms an enemy it encounters, instantly stopping movement abilities and causing them to walk harmlessly towards her.",
+   "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_E.png",
+   "spellKey": "e"
+  },
+  {
+   "name": "Spirit Rush",
+   "description": "Ahri dashes forward and fires essence bolts, damaging nearby enemies. Spirit Rush can be cast up to three times before going on cooldown, and gains additional recasts when taking down enemy champions.",
+   "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_R.png",
+   "spellKey": "r"
+  }
+ ]
+}

@@ -1,0 +1,38 @@
+{
+ "id": 103,
+ "name": "آري",
+ "alias": "Ahri",
+ "title": "الثعلبة ذات التسعة ذيول",
+ "squarePortraitPath": "/lol-game-data/assets/v1/champion-icons/103.png",
+ "passive": {
+  "name": "سرقة الجوهر",
+  "description": "بعد قتل 9 أتباع أو وحوش، يتم علاج آري.<br>وتستعيد آري مقدار أكبر من الصحة عند قتل بطل معادٍ.",
+  "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_Passive.png"
+ },
+ "spells": [
+  {
+   "name": "كرة الخداع",
+   "description": "ترمي آري كرتها ثم تسحبها لتعود إليها، فتلحق ضرر السحر في طريق خروجها والضرر الحقيقي في طريق عودتها. ",
+   "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_Q.png",
+   "spellKey": "q"
+  },
+  {
+   "name": "نار الثعلبة",
+   "description": "تكتسب آري دفقة وجيزة من سرعة الحركة وتطلق ثلاث قذائف من نارالثعلبة تستهدف الأعداء في الجوار وتهاجمهم.",
+   "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_W.png",
+   "spellKey": "w"
+  },
+  {
+   "name": "فتنة",
+   "description": "ترسل آري قبلة تلحق ضررًا بالعدو الذي تلاقيه وتفتنه، وتوقف قدرات الحركة لديه مباشرة وتجعله يسير باتجاهها دون إلحاق الأذى.",
+   "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_E.png",
+   "spellKey": "e"
+  },
+  {
+   "name": "اندفاع الروح",
+   "description": "تندفع آري إلى الأمام وتطلق صواعق جوهر، ملحقةً ضررًا بالأعداء القريبين. يمكن إلقاء تعويذة اندفاع الروح ثلاث مرات كحد أقصى قبل أن تدخل فترة التبريد، وتكسب مرات إلقاء إضافية عند هزم أبطال معادين.",
+   "abilityIconPath": "/lol-game-data/assets/ASSETS/Characters/Ahri/HUD/Icons2D/Icons_Ahri_R.png",
+   "spellKey": "r"
+  }
+ ]
+}

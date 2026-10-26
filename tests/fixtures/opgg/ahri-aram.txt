@@ -1,0 +1,11 @@
+class LolGetChampionAnalysis: data
+class Data: summary,core_items,boots,starter_items,last_items,fourth_items,fifth_items,summoner_spells,runes,skills,skill_masteries,counters_meta
+class Summary: average_stats
+class AverageStats: play,win_rate,pick_rate,ban_rate,kda,tier,rank
+class CoreItems: ids,ids_names,play,win,pick_rate
+class Runes: id,primary_page_id,primary_page_name,primary_rune_ids,primary_rune_names,secondary_page_id,secondary_page_name,secondary_rune_ids,secondary_rune_names,stat_mod_ids,stat_mod_names,play,win,pick_rate
+class Skills: order,play,win,pick_rate
+class SkillMasteries: ids,play,win,pick_rate
+class CountersMeta: message
+
+LolGetChampionAnalysis(Data(Summary(AverageStats(47371,0.52,0.11,null,3.49,2,16)),CoreItems([6655,4646,4645],["صدى لودن","المد العاصف","لهيب الأشباح"],4877,2441,0.16),CoreItems([3020],["حذاء المشعوذ"],33389,17256,0.9),CoreItems([2031,3802],["ترياق قابل لإعادة الملء","الفصل المفقود"],26078,13510,0.64),[CoreItems([6655],["صدى لودن"],31114,16162,0.71),CoreItems([4645],["لهيب الأشباح"],27519,13835,0.63),CoreItems([4646],["المد العاصف"],20620,10522,0.47)],[CoreItems([3089],["قبعة موت رابادون"],4374,2165,0.24),CoreItems([3135],["صولجان الفويد"],3479,1656,0.19),CoreItems([3157],["ساعة زونيا الرملية"],2696,1358,0.15)],[CoreItems([3089],["قبعة موت رابادون"],1174,565,0.2),CoreItems([3135],["صولجان الفويد"],932,426,0.16),CoreItems([3157],["ساعة زونيا الرملية"],842,413,0.14)],CoreItems([4,32],[4,32],22607,11624,0.58),Runes(8128,8100,"سيطرة",[8128,8126,8140,8106],["حصاد الظلام","تصرف رخيص","تذكارات مروّعة","الصياد الخارق"],8000,"دقة",[8009,8014],["البداهة الحاضرة","رصاصة الرحمة"],[5008,5008,5001],[5008,5008,5001],13707,6947,0.32),Skills(["Q","W","E","Q","Q","R","Q","W","Q","W","R","W","W","E","E"],13469,7104,0.44),SkillMasteries(["Q","W","E"],21554,11257,0.7),CountersMeta("Insufficient matchup sample. See data.summary.positions[].counters[] for raw matchup data (smaller sample).")))
