@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { z } from 'zod';
 import { fillArgs, summarizeJson } from './probe-lib.mjs';
 
 const OUT = 'probe-output';
@@ -32,7 +33,7 @@ async function getJson(url) {
 
 async function probeCdragon() {
   log('== CommunityDragon');
-  for (const loc of ['ar_ae', 'en_us']) {
+  for (const loc of ['ar_ae', 'default']) {
     for (const file of FILES) {
       try {
         const data = await getJson(`${V1(loc)}/${file}`);
@@ -64,7 +65,8 @@ async function probeOpgg() {
     log(`FAIL connect ${e.message}`);
     return;
   }
-  const { tools } = await client.listTools();
+  // Raw requests: the SDK's strict schema rejects some OP.GG outputSchema values.
+  const { tools } = await client.request({ method: 'tools/list', params: {} }, z.any());
   await save('opgg/tools.json', tools);
   log(`OK tools(${tools.length}): ${tools.map((t) => t.name).join(', ')}`);
   for (const tool of tools.filter((t) => t.name.startsWith('lol_'))) {
@@ -74,7 +76,7 @@ async function probeOpgg() {
       continue;
     }
     try {
-      const res = await client.callTool({ name: tool.name, arguments: args });
+      const res = await client.request({ method: 'tools/call', params: { name: tool.name, arguments: args } }, z.any());
       const text = JSON.stringify(res);
       await save(`opgg/${tool.name}.json`, { args, res });
       log(`${res.isError ? 'ERR' : 'OK'} ${tool.name} ${JSON.stringify(args)} ${text.length}B ${text.slice(0, 150)}`);

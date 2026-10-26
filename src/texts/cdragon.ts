@@ -3,7 +3,8 @@ import { dirname, join } from 'node:path';
 
 export const CDRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global';
 
-export type Locale = 'ar_ae' | 'en_us';
+// CommunityDragon serves English under the locale name "default".
+export type Locale = 'ar_ae' | 'default';
 
 export interface LoadOptions {
   cacheDir: string;

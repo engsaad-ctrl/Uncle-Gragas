@@ -15,9 +15,10 @@
 - Install with **npm 11** (`npx -y npm@11 install …`). npm 10.9.4 crashes on Vitest's peer set with `Cannot read properties of null (reading 'edgesOut')`.
 - Exact dependency versions are pinned; no `^` or `~` ranges.
 - `package.json` uses `"type": "module"`. TS imports between source files use the `.js` extension (`./clean.js`).
-- Arabic source: `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/{ar_ae|en_us}/v1/<file>`.
+- Arabic source: `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/{ar_ae|default}/v1/<file>`.
+  English is served under the locale name `default`; `en_us` returns 404.
 - Item text field is `description`. Rune text field is `longDesc`, falling back to `shortDesc`. Never use `tooltip`.
-- A text is untranslated when it is empty, starts with `GeneratedTip_`, or matches `Item_<digits>_Name`. Its fallback is the `en_us` text with the same id; if that is also untranslated, use the empty string (the UI hides entries with an empty name).
+- A text is untranslated when it is empty, starts with `GeneratedTip_`, or matches `Item_<digits>_Name`. Its fallback is the `default` text with the same id; if that is also untranslated, use the empty string (the UI hides entries with an empty name).
 - A dynamic value (a standalone `0`, `@…@`, `{{ … }}`) is rendered as `<span class="t-var" title="قيمة تحسبها اللعبة أثناء المباراة">؟</span>`.
 - Excluded runes: id `7000` (Template) and any perk whose `iconPath` ends with `/RunesIcon.png` (crew bonuses).
 - Cache TTL for CommunityDragon files is 24 hours. A failed fetch falls back to the stale cache, and throws only when no cache exists.
@@ -274,7 +275,7 @@ async function getJson(url) {
 
 async function probeCdragon() {
   log('== CommunityDragon');
-  for (const loc of ['ar_ae', 'en_us']) {
+  for (const loc of ['ar_ae', 'default']) {
     for (const file of FILES) {
       try {
         const data = await getJson(`${V1(loc)}/${file}`);
@@ -613,7 +614,7 @@ import arItems from '../fixtures/cdragon/items.ar_ae.sample.json' with { type: '
 import { VAR_HTML } from '../../src/texts/clean.js';
 import { buildItemTexts, type RawItem } from '../../src/texts/items.js';
 
-// en_us is not available in the sandbox; these two English entries are synthetic test input for the fallback path.
+// default is not available in the sandbox; these two English entries are synthetic test input for the fallback path.
 const en: RawItem[] = [
   { id: 1500, name: 'Penetrating Bullets', description: 'English fallback text', inStore: false, iconPath: '' },
   { id: 226660, name: 'GeneratedTip_Missing', description: '', inStore: false, iconPath: '' },
@@ -814,7 +815,7 @@ git commit -m "Add Arabic item and rune text builders with real ar_ae fixtures"
 **Interfaces:**
 - Produces:
   - `CDRAGON_BASE: string`
-  - `type Locale = 'ar_ae' | 'en_us'`
+  - `type Locale = 'ar_ae' | 'default'`
   - `interface LoadOptions { cacheDir: string; ttlMs?: number; now?: () => number; fetchImpl?: typeof fetch }`
   - `interface Loaded<T> { data: T; fetchedAt: number; stale: boolean }`
   - `loadCdragonJson<T>(locale: Locale, file: string, opts: LoadOptions): Promise<Loaded<T>>`
@@ -883,7 +884,7 @@ describe('loadCdragonJson', () => {
   });
 
   it('throws when the fetch fails and there is no cache', async () => {
-    await expect(loadCdragonJson('en_us', 'perks.json', { cacheDir, fetchImpl: failFetch })).rejects.toThrow('offline');
+    await expect(loadCdragonJson('default', 'perks.json', { cacheDir, fetchImpl: failFetch })).rejects.toThrow('offline');
   });
 });
 ```
@@ -901,7 +902,7 @@ import { dirname, join } from 'node:path';
 
 export const CDRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global';
 
-export type Locale = 'ar_ae' | 'en_us';
+export type Locale = 'ar_ae' | 'default';
 
 export interface LoadOptions {
   cacheDir: string;

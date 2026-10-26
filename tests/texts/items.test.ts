@@ -3,7 +3,7 @@ import arItems from '../fixtures/cdragon/items.ar_ae.sample.json' with { type: '
 import { VAR_HTML } from '../../src/texts/clean.js';
 import { buildItemTexts, type RawItem } from '../../src/texts/items.js';
 
-// en_us is not available in the sandbox; these two English entries are synthetic test input for the fallback path.
+// English ("default") is not in the fixtures in the sandbox; these two English entries are synthetic test input for the fallback path.
 const en: RawItem[] = [
   { id: 1500, name: 'Penetrating Bullets', description: 'English fallback text', inStore: false, iconPath: '' },
   { id: 226660, name: 'GeneratedTip_Missing', description: '', inStore: false, iconPath: '' },

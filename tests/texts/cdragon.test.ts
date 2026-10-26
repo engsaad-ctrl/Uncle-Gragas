@@ -57,6 +57,6 @@ describe('loadCdragonJson', () => {
   });
 
   it('throws when the fetch fails and there is no cache', async () => {
-    await expect(loadCdragonJson('en_us', 'perks.json', { cacheDir, fetchImpl: failFetch })).rejects.toThrow('offline');
+    await expect(loadCdragonJson('default', 'perks.json', { cacheDir, fetchImpl: failFetch })).rejects.toThrow('offline');
   });
 });
