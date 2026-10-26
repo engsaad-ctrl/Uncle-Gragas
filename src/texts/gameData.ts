@@ -78,6 +78,8 @@ export function loadChampionBin(o: Opts, version: string | null, alias: string):
 /** An item's tooltip key and its numbers, in the shape resolveSpellValues reads. */
 export interface GameItem extends SpellData {
   tooltipKey?: string;
+  /** The shop's class filters as bits (mItemAttributes): 1 fighter, 2 marksman, 4 assassin, 8 tank, 16 mage, 32 support. */
+  classes?: number;
 }
 
 interface RawItemData {
@@ -89,12 +91,14 @@ interface RawItemData {
   mItemCalculations?: SpellData['mSpellCalculations'];
   mEffectAmount?: number[];
   mItemDataClient?: { mDescription?: string };
+  mItemAttributes?: number[];
 }
 type ItemSpell = { mSpell?: SpellData & { cooldownTime?: number[] } };
 
 /** The items bin (16MB), trimmed to each item's values (its active spell's included) and tooltip key. */
 export function loadGameItems(o: Opts, version: string | null): Promise<Record<number, GameItem>> {
-  return perVersion(join(o.cacheDir, 'game', 'items.json'), version, async () => {
+  // "-v2": copies saved before the shop classes were read lack them.
+  return perVersion(join(o.cacheDir, 'game', 'items-v2.json'), version, async () => {
     const bin = await getJson<Record<string, RawItemData & ItemSpell>>(o.fetchImpl, GAME_URLS.items);
     const out: Record<number, GameItem> = {};
     for (const v of Object.values(bin)) {
@@ -103,6 +107,7 @@ export function loadGameItems(o: Opts, version: string | null): Promise<Record<n
       const spell = v.spellName ? (bin[`Items/Spells/${v.spellName}`] ?? bin[`Items/Spells/${v.spellName.replace(/Spell$/, '')}`])?.mSpell : undefined;
       out[v.itemID] = {
         tooltipKey: v.mItemDataClient?.mDescription,
+        classes: (v.mItemAttributes ?? []).reduce((a, b) => a | b, 0),
         DataValues: [
           ...(v.mDataValues ?? []).map((d) => ({ name: d.mName, values: [d.mValue ?? 0] })),
           // Item stats the text quotes directly, e.g. @FlatHPRegenMod*5@ reads mFlatHPRegenMod

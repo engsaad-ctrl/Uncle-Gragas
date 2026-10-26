@@ -14,7 +14,7 @@ import {
   type ChampionListEntry, type RawChampion, type RawChampionSummary,
 } from '../texts/champions.js';
 import { loadChampionBin, loadGameItems, loadGameVersion, loadStringTable, loadTooltipStrings } from '../texts/gameData.js';
-import { buildItemDetails, buildItemTexts, type ItemText, type RawItem } from '../texts/items.js';
+import { buildItemDetails, buildItemTexts, itemClasses, type ItemText, type RawItem } from '../texts/items.js';
 import { buildRuneTexts, type RawPerk } from '../texts/runes.js';
 
 const MODES: PageMode[] = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
@@ -110,7 +110,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   const detailedItems = once(async () => {
     const [t, v] = await Promise.all([baseTexts(), gameVersion()]);
     const [items, strings] = await Promise.all([loadGameItems(game, v), tooltipStrings()]);
-    return (detailedReady = buildItemTexts(...t.rawItems, buildItemDetails(items, (k) => strings[k.toLowerCase()])));
+    return (detailedReady = buildItemTexts(...t.rawItems, buildItemDetails(items, (k) => strings[k.toLowerCase()]), itemClasses(items)));
   });
   /** Texts for a page right now: detailed items when already built, else CommunityDragon's (the detailed ones load meanwhile). */
   const texts = async () => {

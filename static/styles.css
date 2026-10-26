@@ -361,3 +361,5 @@ body.overlay::before, body.overlay::after { display: none; }
 .ov-score { font-size: 12px; color: var(--goldtxt); }
 .ov-desc { grid-column: 1 / -1; font-size: 13px; line-height: 1.6; }
 .ov-desc .t-ico { width: 1.05em; height: 1.05em; }
+.class-pills .pill { display: inline-flex; align-items: center; gap: 6px; }
+.class-pills .class-ico { width: 18px; height: 18px; }

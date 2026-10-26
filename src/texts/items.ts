@@ -11,6 +11,15 @@ export interface RawItem {
   categories?: string[];
 }
 
+/** The in-game shop's class filters. */
+export type ItemClass = 'fighter' | 'marksman' | 'assassin' | 'mage' | 'tank' | 'support';
+// Bits of mItemAttributes, checked against the shop (2026-10): Infinity Edge 2, Youmuu's 4, Sunfire 8, Rabadon 16, Locket 32|8.
+const CLASS_BITS: [number, ItemClass][] = [[1, 'fighter'], [2, 'marksman'], [4, 'assassin'], [8, 'tank'], [16, 'mage'], [32, 'support']];
+
+export function itemClasses(items: Record<number, GameItem>): Map<number, ItemClass[]> {
+  return new Map(Object.entries(items).map(([id, it]) => [Number(id), CLASS_BITS.filter(([bit]) => ((it.classes ?? 0) & bit) !== 0).map(([, c]) => c)]));
+}
+
 export interface ItemText {
   id: number;
   name: string;
@@ -22,6 +31,8 @@ export interface ItemText {
   iconPath: string;
   /** Shop tags such as Boots, Consumable, Trinket. */
   categories: string[];
+  /** Shop classes (empty until the game files are read). */
+  classes: ItemClass[];
 }
 
 /**
@@ -80,7 +91,7 @@ function withDetail(desc: string, body: string | undefined): string {
   return `<mainText>${stats}${stats ? '<br><br>' : ''}${body}</mainText>`;
 }
 
-export function buildItemTexts(ar: RawItem[], en: RawItem[], details?: Map<number, string>): Map<number, ItemText> {
+export function buildItemTexts(ar: RawItem[], en: RawItem[], details?: Map<number, string>, classes?: Map<number, ItemClass[]>): Map<number, ItemText> {
   const enById = new Map(en.map((i) => [i.id, i]));
   const out = new Map<number, ItemText>();
   for (const a of ar) {
@@ -96,6 +107,7 @@ export function buildItemTexts(ar: RawItem[], en: RawItem[], details?: Map<numbe
       inStore: a.inStore,
       iconPath: a.iconPath,
       categories: a.categories ?? [],
+      classes: classes?.get(a.id) ?? [],
     });
   }
   return out;

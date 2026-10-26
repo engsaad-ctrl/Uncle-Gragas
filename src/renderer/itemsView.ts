@@ -1,4 +1,5 @@
 import type { ItemEntry, ItemGroup } from '../app/itemList.js';
+import type { ItemClass } from '../texts/items.js';
 import { withTooltip, detailPanel, el, getAppMode, getNameLang, icon, isError, MODE_TITLE, nameEl, otherName, searchBox, shownName, stagger } from './dom.js';
 import { normalizeArabic } from './search.js';
 
@@ -10,6 +11,12 @@ const GROUPS: [ItemGroup, string][] = [
   ['starter', 'أيتمات البداية'],
   ['consumable', 'المستهلكات والحُلي'],
 ];
+// The in-game shop's class filters, with the game's own Arabic names and the client's class icons.
+const CLASSES: [ItemClass, string][] = [
+  ['fighter', 'المقاتل'], ['marksman', 'القناص'], ['assassin', 'القاتل'], ['mage', 'الساحر'], ['tank', 'تانك'], ['support', 'الدعم'],
+];
+const classIcon = (c: ItemClass) => `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champ-select/global/default/class-icon-${c}.png`;
+
 const MAP_NAME = { normal: "Summoner's Rift", aram: 'Howling Abyss', mayhem: 'Howling Abyss', arena: 'Arena' } as const;
 
 const goldTag = (gold: number) => el('span', 'tag gold', `${gold.toLocaleString('en')} ذهب`);
@@ -36,9 +43,30 @@ export async function itemsView(root: HTMLElement, alive: () => boolean) {
     return;
   }
   let selected: ItemEntry | undefined;
+  let only: ItemClass | 'all' = 'all';
+  // Class filter bar, only when the game files gave the classes (else every item would vanish).
+  if (reply.list.some((i) => i.classes.length)) {
+    const bar = el('div', 'pills class-pills');
+    bar.setAttribute('role', 'group');
+    bar.setAttribute('aria-label', 'فئة الأيتم');
+    for (const [value, label] of [['all', 'الكل'], ...CLASSES] as [ItemClass | 'all', string][]) {
+      const b = el('button', `pill${value === only ? ' active' : ''}`);
+      b.type = 'button';
+      if (value !== 'all') b.append(icon(classIcon(value), 'class-ico'));
+      b.append(label);
+      b.addEventListener('click', () => {
+        only = value;
+        for (const other of bar.children) other.classList.toggle('active', other === b);
+        render();
+      });
+      bar.append(b);
+    }
+    filters.prepend(bar);
+  }
   const render = () => {
     const q = normalizeArabic(search.input.value);
     const shown = reply.list
+      .filter((i) => only === 'all' || i.classes.includes(only))
       .filter((i) => !q || normalizeArabic(i.name).includes(q) || normalizeArabic(i.enName).includes(q))
       .sort((a, b) => shownName(a).localeCompare(shownName(b), getNameLang()));
     if (selected && !shown.includes(selected)) selected = undefined;

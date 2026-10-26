@@ -33,7 +33,7 @@ describe('composeItemList', () => {
 
 describe('composeItemList de-duplication', () => {
   // Real pairs from OP.GG's Summoner's Rift list: Thornmail 3075/323075, Hextech Gunblade 3146/663146, pups 1101/1107.
-  const text = (id: number, enName: string): [number, ItemText] => [id, { id, name: enName, enName, html: '', translated: true, inStore: true, iconPath: '', categories: [] }];
+  const text = (id: number, enName: string): [number, ItemText] => [id, { id, name: enName, enName, html: '', translated: true, inStore: true, iconPath: '', categories: [], classes: [] }];
   const item = (id: number, gold: number) => ({ id, gold, purchasable: true, from: [1], into: [] });
   const texts = new Map([text(3075, 'Thornmail'), text(323075, 'Thornmail'), text(3146, 'Hextech Gunblade'), text(663146, 'Hextech Gunblade'),
     text(1101, 'Scorchclaw Pup'), text(1107, 'Scorchclaw Pup'), text(223031, 'Infinity Edge')]);
@@ -42,6 +42,12 @@ describe('composeItemList de-duplication', () => {
   it('keeps one entry per name: the base item, else the smallest id', () => {
     expect(list.map((i) => i.id).sort((a, b) => a - b)).toEqual([1101, 3075, 3146, 223031]);
     expect(list.find((i) => i.id === 3075)!.gold).toBe(2450);
+  });
+
+  it('groups a mode copy under its base item even when the English names differ', () => {
+    // Real ARAM case: 3072 "Bloodthirster" and 773072 "The Bloodthirster" both showed.
+    const t = new Map([text(3072, 'Bloodthirster'), text(773072, 'The Bloodthirster')]);
+    expect(composeItemList([item(773072, 3200), item(3072, 3400)], t).map((i) => i.id)).toEqual([3072]);
   });
 });
 

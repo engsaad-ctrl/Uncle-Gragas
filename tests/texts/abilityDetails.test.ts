@@ -7,6 +7,7 @@ import spells from '../fixtures/game/ahri.spells.json' with { type: 'json' };
 import strings from '../fixtures/game/ahri.strings.json' with { type: 'json' };
 import { buildAbilityDetails } from '../../src/texts/abilityDetails.js';
 import { buildChampionDetail, type RawChampion } from '../../src/texts/champions.js';
+import { itemClasses } from '../../src/texts/items.js';
 import { GAME_URLS, isTooltipKey, loadChampionBin, loadGameItems, loadTooltipStrings } from '../../src/texts/gameData.js';
 
 const lookup = (k: string) => (strings as Record<string, string>)[k.toLowerCase()];
@@ -68,7 +69,7 @@ describe('game files cache', () => {
     const cacheDir = await mkdtemp(join(tmpdir(), 'lolh-items-'));
     const itemsBin = {
       'Items/3146': {
-        __type: 'ItemData', itemID: 3146, spellName: 'HextechGunbladeSpell', mFlatMagicDamageMod: 80,
+        __type: 'ItemData', itemID: 3146, spellName: 'HextechGunbladeSpell', mFlatMagicDamageMod: 80, mItemAttributes: [16, 1],
         mDataValues: [{ mName: 'SlowAmount', mValue: 0.25 }], mItemDataClient: { mDescription: 'GeneratedTip_Item_3146_Description' },
       },
       'Items/Spells/HextechGunblade': { __type: 'SpellObject', mSpell: { cooldownTime: [60, 60, 60, 60, 60, 60, 60] } },
@@ -78,6 +79,7 @@ describe('game files cache', () => {
     const items = await loadGameItems({ cacheDir, fetchImpl }, '16.21');
     expect(Object.keys(items)).toEqual(['3146']);
     expect(items[3146].tooltipKey).toBe('GeneratedTip_Item_3146_Description');
+    expect(itemClasses(items).get(3146)).toEqual(['fighter', 'mage']); // the shop's class filters, from mItemAttributes bits
     expect(items[3146].DataValues).toEqual([
       { name: 'SlowAmount', values: [0.25] },
       { name: 'FlatMagicDamageMod', values: [80] },
