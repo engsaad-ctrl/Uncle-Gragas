@@ -1,6 +1,8 @@
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { composeItemList, type ItemEntry } from '../app/itemList.js';
+import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
+import type { RawProfile } from '../lcu/profile.js';
 import { composeTierList, type TierRow } from '../app/tierList.js';
 import { mcpCaller, OpggStats, type CallTool, type Counter, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
@@ -177,5 +179,11 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return [...picks, ...fill].slice(0, 8);
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions };
+  /** The client's profile answer with champion, item and spell names and icons. */
+  async function profilePage(raw: RawProfile, me: boolean): Promise<ProfilePage> {
+    const [list, t] = await Promise.all([champions(), texts()]);
+    return composeProfile(raw, list, t.items, t.spells, me);
+  }
+
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage };
 }

@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { applyAll, toPayloads } from '../lcu/apply.js';
 import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
+import { loadProfile, parsePuuid } from '../lcu/profile.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest } from './services.js';
 
@@ -49,6 +50,17 @@ ipcMain.handle('lcu:apply', (_e, id: unknown, mode: unknown, position: unknown) 
     const result = await applyAll(lcuCaller(watcher.creds), toPayloads(page), { inChampSelect: watcher.state.phase === 'ChampSelect', uid: randomUUID() });
     watcher.note(`apply ${r.id}/${r.mode}/${r.position}: ${JSON.stringify(result)}`);
     return result;
+  }),
+);
+// Profile and match history come from the client itself; without it there is nothing to show.
+ipcMain.handle('profile:get', (_e, puuid: unknown) =>
+  reply(async () => {
+    const id = parsePuuid(puuid);
+    if (!watcher.creds) throw new Error('افتح عميل اللعبة لعرض البروفايل وسجل المباريات.');
+    const raw = await loadProfile(lcuCaller(watcher.creds), id);
+    // Counts only, no names: enough to tell from a diagnostics export whether the client's answers were read.
+    watcher.note(`profile ${id ? 'other' : 'me'}: ranked ${raw.ranked.length}, matches ${raw.matches.length}, recent ${raw.recent.length}`);
+    return services.profilePage(raw, id === null);
   }),
 );
 ipcMain.handle('diagnostics:export', async () => {

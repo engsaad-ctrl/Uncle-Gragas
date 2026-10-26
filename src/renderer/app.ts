@@ -7,6 +7,7 @@ import { championsView } from './championsView.js';
 import { championView } from './championView.js';
 import { applyLines, byId, el, getAppMode, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setLcu, setNameLang, toast } from './dom.js';
 import { itemsView } from './itemsView.js';
+import { profileView } from './profileView.js';
 import { tierListView } from './tierListView.js';
 import { applyRandomTheme, nextTheme } from './theme.js';
 
@@ -19,7 +20,7 @@ let renderId = 0;
 
 /**
  * Routes: #/champions (default), #/champion/<id>[/<mode>[/<position>]], #/items, #/augments[/<arena|mayhem>],
- * #/tierlist[/<lane>]. The side-menu mode (normal/aram/mayhem/arena) is app-wide state, not part of the route.
+ * #/tierlist[/<lane>], #/profile[/<puuid>]. The side-menu mode (normal/aram/mayhem/arena) is app-wide state, not part of the route.
  */
 function route() {
   const token = ++renderId;
@@ -33,6 +34,7 @@ function route() {
   if (view === 'augments') void augmentsView(root, alive, id === 'arena' || id === 'mayhem' ? id : app === 'arena' || app === 'mayhem' ? app : 'all');
   else if (view === 'items') void itemsView(root, alive);
   else if (view === 'tierlist') void tierListView(root, alive, (POSITIONS.includes(id) ? id : 'mid') as LanePosition);
+  else if (view === 'profile') void profileView(root, alive, id || undefined);
   else if (view === 'champion' && Number(id) > 0) {
     void championView(root, alive, Number(id), (PAGE_MODES.includes(mode) ? mode : PAGE_MODE[app]) as PageMode, (POSITIONS.includes(position) ? position : 'mid') as Position);
   } else void championsView(root, alive);

@@ -3,6 +3,7 @@ import type { Position } from '../stats/opgg.js';
 import type { AugmentsResult } from '../texts/augmentsLoader.js';
 import type { ItemEntry } from '../app/itemList.js';
 import type { TierRow } from '../app/tierList.js';
+import type { ProfilePage } from '../app/profilePage.js';
 import type { Suggestion } from '../app/suggestions.js';
 import type { ApplyResult } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
@@ -24,6 +25,7 @@ declare global {
       lcuState(): Promise<LcuState>;
       applyToClient(id: number, mode: PageMode, position: Position): Promise<Reply<ApplyResult>>;
       suggestions(position: LanePosition, enemies: number[], taken: number[]): Promise<Reply<Suggestion[]>>;
+      profile(puuid?: string): Promise<Reply<ProfilePage>>;
       onLcuState(callback: (state: LcuState) => void): void;
       exportDiagnostics(): Promise<{ saved: string | null }>;
     };

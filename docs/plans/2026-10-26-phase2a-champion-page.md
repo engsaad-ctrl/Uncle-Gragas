@@ -176,3 +176,20 @@ All ten findings from the owner-requested review are fixed:
   - The panel sits on the champions page, which the app opens when champ select starts with nothing hovered, and refreshes on every pick change.
   - IPC input is validated (`parseIds`: at most 10 positive integers).
 - **Verified:** unit tests (scoring with real win rates, taken picks, meta order, id validation, cached builds without counters). An Electron smoke run against a fake client (me mid, Malphite taken by a teammate, Zed shown): Gwen 59% and Gragas 56% vs Zed were suggested, Malphite was left out, and the list was topped up with Ahri, Ekko, Yasuo… The Ahri page shows Smolder 63%, Cassiopeia 57%, Galio 56% / Gwen 45%, Lux 47%, Zed 49%.
+
+## Phase 6 — profile and match history (built 2026-10-26; tested against a fake client only)
+
+- **Source:** the League client's own API, the same data as its profile page. The region is known and no Riot ID lookup is needed; the catch is that the client must be open. OP.GG's profile tools would need the region code and stay possible as a fallback later.
+- **`src/lcu/profile.ts`:**
+  - Endpoints: `current-summoner` or `summoners/puuid/{puuid}`, `current-ranked-stats` or `ranked-stats/{puuid}` (Solo/Flex, unranked left out), `match-history/.../{puuid}/matches?begIndex=0&endIndex=19`, and `recently-played-summoners` (own profile only, one row per player, newest first).
+  - In match history, "my" line is the participant whose identity has the puuid.
+  - Every field is read defensively. The shapes follow the LCU documentation and are unverified on a live client.
+  - `parsePuuid` validates the window's input, so a path such as `../lol-perks…` is rejected (tested).
+- **`src/app/profilePage.ts`:** joins champions, items, spells and queue names (queue id first, then game mode), and builds the summary (wins, KDA, most played).
+- **UI (`#/profile`, `#/profile/<puuid>`, menu "حسابي"):**
+  - Rank cards, the last-N summary with most-played champions, and match rows (champion, win/loss, queue, time ago, length, K/D/A, KDA, CS/min, level, spells and items with hover cards).
+  - "آخر من لعبت معهم" cards open that player's profile.
+  - K/D/A is laid out left to right (an RTL page showed "8 / 2 / 6" as "6 / 2 / 8").
+  - Arabic counting: مباراة واحدة / مباراتان / 3–10 مباريات / 11+ مباراة.
+- **Diagnostics:** a log line with counts only (`ranked n, matches n, recent n`), no names.
+- **Verified:** unit tests (parsers, puuid validation, composition, formats) and an Electron smoke run against a fake client: own profile, rank, two matches, recent players; clicking a recent player opened their profile with Platinum IV Flex.

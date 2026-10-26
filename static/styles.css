@@ -316,3 +316,22 @@ body { display: block; }
 .champ.mini small { color: var(--muted); font-weight: 500; font-size: 11px; }
 .suggest { margin-bottom: 14px; border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
 .suggest .champ.mini { width: 120px; }
+
+/* Profile and match history */
+.profile-head { display: flex; align-items: center; gap: 16px; padding: 18px 0 10px; }
+.profile-head .pill { margin-inline-start: auto; }
+.profile-icon { width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--accent); }
+.profile-head h1 { margin: 0; } .profile-head .tag { color: var(--muted); font-weight: 500; font-size: .7em; }
+.rank { padding: 8px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.rank:last-child { border-bottom: 0; }
+.rank-queue { font-size: 12px; color: var(--muted); } .rank-tier { font-size: 17px; font-weight: 700; color: var(--goldtxt); margin: 2px 0; }
+.match { display: grid; grid-template-columns: 150px 140px 150px 1fr; align-items: center; gap: 12px; padding: 8px 10px; margin-top: 8px; border-radius: 6px; border-inline-start: 4px solid; background: color-mix(in srgb, var(--panel-2) 70%, transparent); animation: pop-in .28s ease both; animation-delay: var(--delay, 0ms); }
+.match.win { border-color: var(--heal); } .match.loss { border-color: var(--status); }
+.match.win .match-meta b { color: var(--heal); } .match.loss .match-meta b { color: var(--status); }
+.match-champ { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+.match-champ img { width: 44px; height: 44px; border-radius: 6px; }
+.match-meta, .match-score { font-size: 13px; }
+.match-items { display: flex; flex-wrap: wrap; gap: 4px; }
+.match-items .ic { width: 28px; height: 28px; border-radius: 4px; }
+.champ.mini.player span { font-size: 11px; word-break: break-all; }
+@media (max-width: 760px) { .match { grid-template-columns: 1fr 1fr; } }

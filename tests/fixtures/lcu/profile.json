@@ -1,0 +1,32 @@
+{
+  "summoner": { "puuid": "me-puuid-aaaaaaaaaaaaaaaaaaaaaaaa", "gameName": "Saad", "tagLine": "ME1", "summonerLevel": 312, "profileIconId": 29 },
+  "ranked": {
+    "queues": [
+      { "queueType": "RANKED_SOLO_5x5", "tier": "GOLD", "division": "II", "leaguePoints": 54, "wins": 30, "losses": 25 },
+      { "queueType": "RANKED_FLEX_SR", "tier": "NONE", "division": "NA", "leaguePoints": 0, "wins": 0, "losses": 0 },
+      { "queueType": "CHERRY", "tier": "", "division": "NA" }
+    ]
+  },
+  "matches": {
+    "games": {
+      "games": [
+        {
+          "gameId": 101, "gameCreation": 1761000000000, "gameDuration": 1925, "queueId": 420, "gameMode": "CLASSIC",
+          "participantIdentities": [{ "participantId": 1, "player": { "puuid": "me-puuid-aaaaaaaaaaaaaaaaaaaaaaaa", "gameName": "Saad", "tagLine": "ME1" } }],
+          "participants": [{ "participantId": 1, "championId": 103, "spell1Id": 4, "spell2Id": 14, "stats": { "win": true, "kills": 8, "deaths": 2, "assists": 6, "totalMinionsKilled": 190, "neutralMinionsKilled": 10, "champLevel": 16, "item0": 3089, "item1": 0, "item2": 3020, "item6": 3340 } }]
+        },
+        {
+          "gameId": 102, "gameCreation": 1761100000000, "gameDuration": 1100, "queueId": 2400, "gameMode": "KIWI",
+          "participantIdentities": [{ "participantId": 4, "player": { "puuid": "me-puuid-aaaaaaaaaaaaaaaaaaaaaaaa" } }],
+          "participants": [{ "participantId": 4, "championId": 238, "stats": { "win": false, "kills": 3, "deaths": 5, "assists": 9 } }]
+        }
+      ]
+    }
+  },
+  "recent": [
+    { "puuid": "p2-puuid-bbbbbbbbbbbbbbbbbbbbbbbb", "gameName": "Ally", "tagLine": "EUW", "championId": 238, "gameCreationDate": 1761100000000 },
+    { "puuid": "p2-puuid-bbbbbbbbbbbbbbbbbbbbbbbb", "gameName": "Ally", "tagLine": "EUW", "championId": 64, "gameCreationDate": 1761000000000 },
+    { "puuid": "me-puuid-aaaaaaaaaaaaaaaaaaaaaaaa", "gameName": "Saad", "championId": 103, "gameCreationDate": 1761000000000 },
+    { "puuid": "p3-puuid-cccccccccccccccccccccccc", "summonerName": "OldName", "championId": 54, "gameCreationDate": 1761200000000 }
+  ]
+}
