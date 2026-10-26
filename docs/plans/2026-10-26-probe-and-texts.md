@@ -192,6 +192,7 @@ export const HINTS = {
   tag_line: 'KR1',
 };
 
+/** @param {any} schema @param {Record<string, unknown>} [hints] */
 export function fillArgs(schema, hints = HINTS) {
   const props = schema?.properties ?? {};
   const args = {};
