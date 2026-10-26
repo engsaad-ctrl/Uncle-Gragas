@@ -59,8 +59,12 @@ const STAT_LABEL: Record<number, [total: string, bonus: string]> = {
   31: ['المدى', 'المدى الإضافي'],
 };
 const BASE_LABEL: Record<number, string> = { 2: 'ضرر الهجوم الأساسي', 12: 'الصحة الأساسية' };
-// Riot's own colour tags, so cleanText paints a ratio like the game does.
-const STAT_TAG: Record<number, string> = { 0: 'scaleAP', 1: 'scaleArmor', 2: 'scaleAD', 6: 'scaleMR', 12: 'scaleHealth' };
+// Riot's own colour tags and text icons (%i:scaleAP% …), so a ratio looks like the game's: icon instead of the stat's name.
+const STAT_TAG: Record<number, string> = {
+  0: 'scaleAP', 1: 'scaleArmor', 2: 'scaleAD', 4: 'scaleAS', 6: 'scaleMR', 7: 'scaleMS', 8: 'scaleCrit', 9: 'scaleCrit', 12: 'scaleHealth', 29: 'scaleAPen', 31: 'scaleRange',
+};
+/** What the icon alone cannot say: bonus or base stat (total needs no word). */
+const FORMULA_WORD: Record<number, string> = { 1: ' أساسي', 2: ' إضافي' };
 
 function statLabel(stat: number, formula: number): string {
   if (formula === 1) return BASE_LABEL[stat] ?? 'إحصاءات';
@@ -71,6 +75,9 @@ function statLabel(stat: number, formula: number): string {
 interface Scaling {
   label: string;
   tag?: string;
+  /** The game's text icon shown instead of the label, and the word that keeps bonus/base apart. */
+  icon?: string;
+  suffix?: string;
   coef: number[];
   /** At champion level 18, when the ratio itself grows with level. */
   coefMax?: number[];
@@ -145,7 +152,12 @@ const isType = (p: Part, name: string) => p.__type === name || p.__type === binH
 function evalPart(p: Part | undefined, c: Ctx): Value | null {
   if (!p) return null;
   const stat = (coef: number[] | undefined): Value | null =>
-    coef ? { ...plain(fill(c.ranks, 0)), scalings: [{ label: statLabel(num(p.mStat), num(p.mStatFormula)), tag: STAT_TAG[num(p.mStat)], coef }] } : null;
+    coef
+      ? {
+          ...plain(fill(c.ranks, 0)),
+          scalings: [{ label: statLabel(num(p.mStat), num(p.mStatFormula)), tag: STAT_TAG[num(p.mStat)], icon: STAT_TAG[num(p.mStat)], suffix: FORMULA_WORD[num(p.mStatFormula)], coef }],
+        }
+      : null;
   const dv = (name: unknown) => (typeof name === 'string' ? c.dataValue(name) : undefined);
   if (isType(p, 'ByCharLevelNamedDataValuesInterpolationCalculationPart')) {
     const [a, b] = [dv(field(p, 'StartDataValue')), dv(field(p, 'EndDataValue'))];
@@ -210,7 +222,7 @@ function evalPart(p: Part | undefined, c: Ctx): Value | null {
       return v;
     }
     case 'AbilityResourceByCoefficientCalculationPart': // the champion's resource bar, mana for item users
-      return { ...plain(fill(c.ranks, 0)), scalings: [{ label: 'المانا القصوى', tag: 'scaleMana', coef: fill(c.ranks, num(p.mCoefficient)) }] };
+      return { ...plain(fill(c.ranks, 0)), scalings: [{ label: 'المانا القصوى', tag: 'scaleMana', icon: 'scaleMana', coef: fill(c.ranks, num(p.mCoefficient)) }] };
     case 'BuffCounterByCoefficientCalculationPart':
     case 'BuffCounterByNamedDataValueCalculationPart': {
       // value × the stacks of a buff, which only exist in a match
@@ -288,7 +300,8 @@ function ratioText(s: Scaling, percent: boolean): string {
     ? `${fmt(s.coef[0] * k, 2)}${unit}–${fmt(max[max.length - 1] * k, 2)}${unit}`
     : perRank(s.coef.map((x) => x * k), 2, unit);
   if (s.flat) return `${nums} ${s.label}`;
-  return percent ? `${nums} لكل 100 ${s.label}` : `${nums} من ${s.label}`;
+  const stat = s.icon ? `%i:${s.icon}%${s.suffix ?? ''}` : s.label; // cleanText turns %i:…% into the game's icon
+  return percent ? `${nums} لكل 100 ${stat}` : s.icon ? `${nums} ${stat}` : `${nums} من ${stat}`;
 }
 const liveRatios = (v: Value) => v.scalings.filter((s) => s.coef.some((x) => x !== 0));
 const hasBase = (v: Value) => v.min.some((x) => x !== 0) || v.max.some((x) => x !== 0);

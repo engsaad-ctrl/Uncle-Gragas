@@ -24,8 +24,13 @@ describe('cleanText', () => {
     expect(cleanText('تكسب {{ Item_Melee_Ranged_Split }}% سرعة')).toBe(`تكسب ${VAR_HTML}% سرعة`);
   });
 
-  it('removes inline icon tokens', () => {
-    expect(cleanText('%i:scaleAS%سرعة هجوم')).toBe('سرعة هجوم');
+  it('shows the game\'s stat icons for known tokens and drops unknown ones', () => {
+    expect(cleanText('%i:scaleAS%سرعة هجوم')).toBe(
+      '<img class="t-ico" src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/ux/fonts/texticons/lol/statsicon/scaleas.png" alt="سرعة الهجوم" title="سرعة الهجوم">سرعة هجوم',
+    );
+    expect(cleanText('(%i:cooldown% 30ث)')).toContain('gameplay/cooldown.png');
+    expect(cleanText('%i:somethingNew%نص')).toBe('نص');
+    expect(cleanText('%i:scaleAP"onerror=x%')).toBe('%i:scaleAP&quot;onerror=x%'); // only \w names become icons; the rest stays escaped text
   });
 
   it('renders melee/ranged splits and plain brackets', () => {

@@ -33,7 +33,7 @@ export function buildItemDetails(items: Record<number, GameItem>, strings: (key:
   for (const [id, item] of Object.entries(items)) {
     const raw = item.tooltipKey ? strings(item.tooltipKey) : undefined;
     if (!raw) continue;
-    // Sections: title, stats (CommunityDragon has those right), then passives, active and rules.
+    // Sections: title, stats (CommunityDragon has those right; some stat fields are not in the bin), then passives, active, rules.
     const body = meleeRanged(expandRefs(raw, strings)).split(/<\/?section>/).filter((x, i) => i % 2 === 1).slice(2).filter((x) => x.trim()).join('<br><br>');
     const r = resolveSpellValues(body, item);
     if (r.text.trim() && mostlyResolved(body, r)) out.set(Number(id), r.text); // values that depend on other items stay "؟"; the ratios show
@@ -53,10 +53,30 @@ function meleeRanged(text: string): string {
   });
 }
 
-/** Keeps CommunityDragon's stats block (it has the real numbers) and swaps in the detailed body. */
+// Each stats line gets the game's icon for its stat, like the in-game shop ("<attention> 75</attention> ضرر هجوم").
+// More specific names first: "تجدد المانا" before "المانا", "سرقة صحة" before "صحة".
+const STAT_ICON: [RegExp, string][] = [
+  [/ضرر الضربة الحرجة/, 'scaleCritMult'], [/فرصة ضربة حرجة/, 'scaleCrit'], [/تجدد (?:ال)?مانا/, 'scaleManaRegen'], [/تجدد (?:ال)?صحة/, 'scaleHPRegen'],
+  [/سرقة (?:ال)?صحة/, 'scaleLS'], [/علاج كامن/, 'scaleSV'], [/علاج وقوة درع/, 'scaleHealShield'], [/اختراق (?:ال)?دروع|قوة فتك/, 'scaleAPen'],
+  [/اختراق (?:ال)?سحر/, 'scaleMPen'], [/مقاومة (?:ال)?سحر/, 'scaleMR'], [/دروع/, 'scaleArmor'], [/تسارع القدرة/, 'scaleAH'], [/قوة (?:ال)?قدرة/, 'scaleAP'],
+  [/ضرر (?:ال)?هجوم/, 'scaleAD'], [/سرعة (?:ال)?هجوم/, 'scaleAS'], [/سرعة (?:ال)?حركة/, 'scaleMS'], [/مانا/, 'scaleMana'], [/صحة/, 'scaleHealth'],
+  [/تماسك/, 'scaleTenacity'], [/قوة متكيفة/, 'scaleAdaptiveForce'], [/تقليص فترة تبريد/, 'scaleCooldown'], [/ذهب/, 'goldCoins'],
+];
+
+export function statIcons(desc: string): string {
+  return desc.replace(/<stats>([\s\S]*?)<\/stats>/, (_, block: string) =>
+    `<stats>${block.replace(/<attention>([^<]*)<\/attention>([^<]*)/g, (whole, value: string, label: string) => {
+      const icon = STAT_ICON.find(([re]) => re.test(label))?.[1];
+      return icon ? `<attention>%i:${icon}%${value}</attention>${label}` : whole;
+    })}</stats>`,
+  );
+}
+
+/** CommunityDragon's stats block (with icons), then the game's own tooltip body when it was rebuilt. */
 function withDetail(desc: string, body: string | undefined): string {
-  if (!body) return desc;
-  const stats = /<stats>[\s\S]*?<\/stats>/.exec(desc)?.[0] ?? '';
+  const withIcons = statIcons(desc);
+  if (!body) return withIcons;
+  const stats = /<stats>[\s\S]*?<\/stats>/.exec(withIcons)?.[0] ?? '';
   return `<mainText>${stats}${stats ? '<br><br>' : ''}${body}</mainText>`;
 }
 

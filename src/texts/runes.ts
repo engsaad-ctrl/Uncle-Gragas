@@ -18,11 +18,12 @@ export interface RuneText {
   iconPath: string;
 }
 
-// Runes write ratios as coefficients ("+0.1 ضرر هجوم إضافي"); the rest of the app says "+10% من ضرر الهجوم الإضافي".
+// Runes write ratios as coefficients ("+0.1 ضرر هجوم إضافي"); the rest of the app shows "+10% [AD icon] إضافي".
+// The stat shows as the game's icon (%i:…%), with "إضافي" kept for bonus AD.
 const RATIO_LABEL: [RegExp, string, string][] = [
-  [/ضرر (?:ال)?هجوم (?:ال)?إضافي/, 'ضرر الهجوم الإضافي', 'scaleAD'],
-  [/(?:قوة قدرة|قوة القدرة)/, 'قوة القدرة', 'scaleAP'],
-  [/ضرر (?:ال)?هجوم/, 'ضرر الهجوم', 'scaleAD'],
+  [/ضرر (?:ال)?هجوم (?:ال)?إضافي/, '%i:scaleAD% إضافي', 'scaleAD'],
+  [/(?:قوة قدرة|قوة القدرة)/, '%i:scaleAP%', 'scaleAP'],
+  [/ضرر (?:ال)?هجوم/, '%i:scaleAD%', 'scaleAD'],
 ];
 const RATIO = /\+\s?(\d*\.\d+)\s+(?:من\s+)?(ضرر (?:ال)?هجوم (?:ال)?إضافي|قوة قدرة|قوة القدرة|ضرر (?:ال)?هجوم)/g;
 
@@ -32,7 +33,7 @@ export function percentRatios(text: string): string {
     const hit = RATIO_LABEL.find(([re]) => re.test(label));
     if (!hit || !(k < 5)) return whole; // not a coefficient
     const [, name, tag] = hit;
-    return `<${tag}><nowrap>+${Number((k * 100).toFixed(2))}% من ${name}</nowrap></${tag}>`;
+    return `<${tag}><nowrap>+${Number((k * 100).toFixed(2))}% ${name}</nowrap></${tag}>`;
   });
 }
 

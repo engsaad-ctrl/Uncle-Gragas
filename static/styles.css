@@ -73,8 +73,8 @@ h1 .accent, .accent { color: var(--muted); font-weight: 400; }
 /* Detail panel (sticky under the app bar) */
 .detail { position: sticky; top: 52px; z-index: 2; display: flex; gap: 14px; margin-top: 12px; box-shadow: 0 6px 18px #0008; }
 .detail[hidden] { display: none; }
-.detail img { width: 64px; height: 64px; flex: none; border: 2px solid var(--silver); border-radius: 6px; }
-.detail.r-prismatic img { border-color: var(--prism); } .detail.r-gold img { border-color: var(--gold); }
+.detail > img { width: 64px; height: 64px; flex: none; border: 2px solid var(--silver); border-radius: 6px; }
+.detail.r-prismatic > img { border-color: var(--prism); } .detail.r-gold > img { border-color: var(--gold); }
 .detail h3 { margin: 0; font-size: 18px; }
 .detail .en, .en { color: var(--muted); font-size: 12px; }
 .detail p { margin: 6px 0 0; font-size: 15px; }
@@ -335,3 +335,6 @@ body { display: block; }
 .match-items .ic { width: 28px; height: 28px; border-radius: 4px; }
 .champ.mini.player span { font-size: 11px; word-break: break-all; }
 @media (max-width: 760px) { .match { grid-template-columns: 1fr 1fr; } }
+
+/* The game's stat icons inside descriptions (%i:scaleAP% …) */
+.t-ico { width: 1.05em; height: 1.05em; vertical-align: -.2em; margin-inline: .12em; }

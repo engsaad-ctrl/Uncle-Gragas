@@ -11,6 +11,7 @@ const SPAN: Record<string, string> = {
   speed: 't-speed', ms: 't-speed',
   gold: 't-gold',
   scalearmor: 't-armor', scalemr: 't-mr', scalemana: 't-mana',
+  scaleas: 't-gold', scalecrit: 't-ad', scaleapen: 't-ad', scalems: 't-speed', scalerange: 't-key',
   status: 't-status', danger: 't-status',
   nowrap: 't-nw', // ours, from spellValues: a ratio that must not wrap mid-phrase
   raritylegendary: 't-rarity', raritymythic: 't-rarity', raritygeneric: 't-rarity', prismatic: 't-rarity',
@@ -27,6 +28,33 @@ const VAR_SENTINEL = '\u0001';
 const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ESCAPES[c]);
 
+// The game's text icons (%i:scaleAP% …), served by CommunityDragon from the client's own files (2026-10).
+const ICON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/ux/fonts/texticons/lol/';
+/** Stat icons with their Arabic name (shown on hover and read by screen readers). */
+const STAT_ICONS: Record<string, string> = {
+  scalead: 'ضرر الهجوم', scaleap: 'قوة القدرة', scalearmor: 'الدروع', scalemr: 'مقاومة السحر', scalehealth: 'الصحة',
+  scaleas: 'سرعة الهجوم', scalems: 'سرعة الحركة', scalecrit: 'الضربة الحرجة', scalecritmult: 'ضرر الضربة الحرجة',
+  scaleah: 'تسارع القدرة', scalecooldown: 'التبريد', scalemana: 'المانا', scalemanaregen: 'تجدد المانا', scalehpregen: 'تجدد الصحة',
+  scaleapen: 'اختراق الدروع', scalempen: 'اختراق السحر', scalels: 'سرقة الصحة', scalesv: 'العلاج الكامن', scalehealshield: 'قوة العلاج والدروع',
+  scaletenacity: 'التماسك', scaleadaptiveforce: 'القوة المتكيفة', scalelevel: 'المستوى', scalerange: 'المدى', scalesize: 'الحجم', onhit: 'عند الإصابة',
+  miniad: 'ضرر الهجوم', miniap: 'قوة القدرة', miniarmor: 'الدروع', minimr: 'مقاومة السحر', minihealth: 'الصحة', miniadaptiveforce: 'القوة المتكيفة',
+};
+const GAMEPLAY_ICONS: Record<string, string> = {
+  cooldown: 'التبريد', activeeffect: 'تأثير نشط', goldcoins: 'الذهب', silvercoins: 'العملات', meleeactive: 'القتال القريب', rangedactive: 'القتال البعيد',
+  meleeinactive: 'القتال القريب', rangedinactive: 'القتال البعيد', stun: 'صعق',
+};
+const ICON_OPEN = '\u0002';
+const ICON_CLOSE = '\u0003';
+
+/** The <img> for a known text icon; unknown names show nothing (as before). Names are whitelisted, so the markup is safe. */
+function iconHtml(token: string): string {
+  const t = token.toLowerCase();
+  const folder = STAT_ICONS[t] ? 'statsicon' : GAMEPLAY_ICONS[t] ? 'gameplay' : null;
+  if (!folder) return '';
+  const title = STAT_ICONS[t] ?? GAMEPLAY_ICONS[t];
+  return `<img class="t-ico" src="${ICON_BASE}${folder}/${t}.png" alt="${title}" title="${title}">`;
+}
+
 /** Follows a 0 the game files really hold (written by spellValues), so the rule below keeps it as a number. */
 export const REAL_ZERO = '\u2060';
 
@@ -34,7 +62,8 @@ function cleanSegment(text: string): string {
   return escapeHtml(text)
     .replace(/(?<![\d.,])0(?![\d.,\u2060])/g, VAR_SENTINEL) // CommunityDragon's text leaves live-computed values as 0
     .replaceAll(REAL_ZERO, '')
-    .replaceAll(VAR_SENTINEL, VAR_HTML);
+    .replaceAll(VAR_SENTINEL, VAR_HTML)
+    .replace(new RegExp(`${ICON_OPEN}(\\w+)${ICON_CLOSE}`, 'g'), (_, name: string) => iconHtml(name));
 }
 
 const openTag = (name: string) => (SPAN[name] ? `<span class="${SPAN[name]}">` : `<${WRAP[name]}>`);
@@ -53,7 +82,7 @@ export function cleanText(raw: string): string {
   const pre = raw
     .replace(/@[\w.*]+@/g, VAR_SENTINEL)
     .replace(/\{\{[^}]*\}\}/g, VAR_SENTINEL)
-    .replace(/%i:\w+%/g, '')
+    .replace(/%i:(\w+)%/g, (_, name: string) => ICON_OPEN + name + ICON_CLOSE)
     .replace(/\[([^[\]|]*?)\s*\|\|\s*([^[\]]*?)\]/g, '$1 / $2')
     .replace(/\[([^[\]|]*)\]/g, '$1');
 

@@ -10,12 +10,10 @@ export async function tierListView(root: HTMLElement, alive: () => boolean, lane
   const title = el('div', 'title');
   title.append(el('h1', '', 'Tier List'), el('span', 'pill static', 'Ranked · كل الرتب'));
   head.append(title, el('p', 'sub', 'ترتيب الأبطال حسب قوتهم في الباتش الحالي. اضغط على بطل لفتح بنائه في هذا المسار.'));
+  // Only Summoner's Rift has lane tiers. Show them in every mode (the side menu may sit on ARAM after an ARAM game)
+  // rather than an empty page.
   const mode = getAppMode();
-  if (mode !== 'normal') {
-    head.append(el('p', 'panel note', `لا تتوفر Tier List لطور ${MODE_TITLE[mode]}. اختر Summoner's Rift من القائمة الجانبية لعرضها.`));
-    root.replaceChildren(head);
-    return;
-  }
+  if (mode !== 'normal') head.append(el('p', 'panel note', `لا تتوفر Tier List لطور ${MODE_TITLE[mode]}، فهذه قائمة Summoner's Rift.`));
   const filters = el('nav', 'filters');
   filters.append(pills('المسار', LANES, lane, (v) => (location.hash = `#/tierlist/${v}`)));
   head.append(filters);

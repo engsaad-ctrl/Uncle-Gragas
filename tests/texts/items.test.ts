@@ -18,8 +18,9 @@ describe('buildItemTexts', () => {
     const sword = texts.get(3031)!;
     expect(sword.name).toBe('السيف الأبدي');
     expect(sword.translated).toBe(true);
-    expect(sword.html).toBe(
-      '<span class="t-stats"><span class="t-key"> 75</span> ضرر هجوم<br><span class="t-key"> 25%</span> فرصة ضربة حرجة<br><span class="t-key"> 30%</span> ضرر الضربة الحرجة</span>',
+    // Each stat line carries the game's icon for its stat: AD, crit chance, crit damage.
+    expect(sword.html.replace(/<img [^>]*statsicon\/(\w+)\.png"[^>]*>/g, '[$1]')).toBe(
+      '<span class="t-stats"><span class="t-key">[scalead] 75</span> ضرر هجوم<br><span class="t-key">[scalecrit] 25%</span> فرصة ضربة حرجة<br><span class="t-key">[scalecritmult] 30%</span> ضرر الضربة الحرجة</span>',
     );
   });
 
@@ -56,19 +57,19 @@ describe('buildItemDetails (real game files, 2026-10)', () => {
   const d = buildItemDetails(gameFx.items as unknown as Record<number, GameItem>, strings);
 
   it('fills values CommunityDragon prints as 0, with stat ratios', () => {
-    expect(d.get(1035)).toContain('<magicDamage>60 <scaleAP><nowrap>(+30% من قوة القدرة)</nowrap></scaleAP> <scaleAD><nowrap>(+5% من ضرر الهجوم الإضافي)</nowrap></scaleAD> <scaleHealth><nowrap>(+2% من الصحة الإضافية)</nowrap></scaleHealth> ضرر سحر</magicDamage>');
+    expect(d.get(1035)).toContain('<magicDamage>60 <scaleAP><nowrap>(+30% %i:scaleAP%)</nowrap></scaleAP> <scaleAD><nowrap>(+5% %i:scaleAD% إضافي)</nowrap></scaleAD> <scaleHealth><nowrap>(+2% %i:scaleHealth% إضافي)</nowrap></scaleHealth> ضرر سحر</magicDamage>');
   });
 
   it('shows both melee and ranged values, and the active cooldown from the item spell', () => {
-    expect(d.get(3074)).toContain('<scaleAD><nowrap>40% من ضرر الهجوم</nowrap></scaleAD> (20% للمدى البعيد)');
-    expect(d.get(3146)).toMatch(/\(60ث\).*175–253 <scaleAP><nowrap>\(\+30% من قوة القدرة\)<\/nowrap><\/scaleAP>/s);
+    expect(d.get(3074)).toContain('<scaleAD><nowrap>40% %i:scaleAD%</nowrap></scaleAD> (20% للمدى البعيد)');
+    expect(d.get(3146)).toMatch(/\(60ث\).*175–253 <scaleAP><nowrap>\(\+30% %i:scaleAP%\)<\/nowrap><\/scaleAP>/s);
   });
 
-  it('keeps the stats block from CommunityDragon and swaps the body', () => {
-    const item: RawItem = { id: 1035, name: 'سكين الجمر', description: '<mainText><stats>S</stats><br><br>قديم 0</mainText>', inStore: true, iconPath: '' };
+  it('keeps CommunityDragon\'s stats block with the game\'s stat icons, and swaps the body', () => {
+    const item: RawItem = { id: 1035, name: 'سكين الجمر', description: '<mainText><stats><attention> 75</attention> ضرر هجوم<br><attention> 12%</attention> سرقة صحة</stats><br><br>قديم 0</mainText>', inStore: true, iconPath: '' };
     const html = buildItemTexts([item], [], d).get(1035)!.html;
-    expect(html.startsWith('<span class="t-stats">S</span><br><br>')).toBe(true);
-    expect(html).toContain('60 <span class="t-ap"><span class="t-nw">(+30% من قوة القدرة)</span></span>');
+    expect(html).toMatch(/^<span class="t-stats"><span class="t-key"><img class="t-ico" src="[^"]+statsicon\/scalead\.png"[^>]*> 75<\/span> ضرر هجوم<br><span class="t-key"><img [^>]+scalels\.png/);
+    expect(html).toMatch(/60 <span class="t-ap"><span class="t-nw">\(\+30% <img [^>]+scaleap\.png/);
     expect(html).not.toContain('قديم');
   });
 });

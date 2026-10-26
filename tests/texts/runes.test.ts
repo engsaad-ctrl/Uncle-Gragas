@@ -43,9 +43,9 @@ describe('buildRuneTexts', () => {
 describe('percentRatios', () => {
   it('turns rune coefficients into the percentages used everywhere else', () => {
     expect(percentRatios('الضرر: 70 - 240 (+0.1 ضرر هجوم إضافي، +0.05 قوة قدرة) ضرر.')).toBe(
-      'الضرر: 70 - 240 (<scaleAD><nowrap>+10% من ضرر الهجوم الإضافي</nowrap></scaleAD>، <scaleAP><nowrap>+5% من قوة القدرة</nowrap></scaleAP>) ضرر.',
+      'الضرر: 70 - 240 (<scaleAD><nowrap>+10% %i:scaleAD% إضافي</nowrap></scaleAD>، <scaleAP><nowrap>+5% %i:scaleAP%</nowrap></scaleAP>) ضرر.',
     );
-    expect(percentRatios('(+ 0.05 قوة قدرة )')).toBe('(<scaleAP><nowrap>+5% من قوة القدرة</nowrap></scaleAP> )');
+    expect(percentRatios('(+ 0.05 قوة قدرة )')).toBe('(<scaleAP><nowrap>+5% %i:scaleAP%</nowrap></scaleAP> )');
     expect(percentRatios('+2.5% صحة إضافية')).toBe('+2.5% صحة إضافية'); // already a percentage
   });
 });

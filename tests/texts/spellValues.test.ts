@@ -45,7 +45,7 @@ describe('resolveSpellValues (real augment spells)', () => {
       },
     };
     expect(resolveSpellValues('@Dmg@ و@OnlyStat@ و@Odd@ و@Stacks@', spell)).toEqual({
-      text: '40 <scaleAD><nowrap>(+50% من ضرر الهجوم الإضافي)</nowrap></scaleAD> و<scaleAP><nowrap>30% من قوة القدرة</nowrap></scaleAP> و5 <nowrap>(+10% من إحصاءات)</nowrap> و5 <nowrap>(+2 لكل تكديسة)</nowrap>',
+      text: '40 <scaleAD><nowrap>(+50% %i:scaleAD% إضافي)</nowrap></scaleAD> و<scaleAP><nowrap>30% %i:scaleAP%</nowrap></scaleAP> و5 <nowrap>(+10% من إحصاءات)</nowrap> و5 <nowrap>(+2 لكل تكديسة)</nowrap>',
       unresolved: 0,
     });
   });
@@ -66,7 +66,7 @@ describe('resolveSpellValues (real augment spells)', () => {
     };
     const r = resolveSpellValues('@Dmg@ | @Sweet@ | @Same@ | @Effect1Amount@ | @Pct@', spell, { ranks: 5 });
     expect(r).toEqual({
-      text: '70 / 120 / 170 / 220 / 270 <scaleAP><nowrap>(+60% من قوة القدرة)</nowrap></scaleAP> | 140 / 240 / 340 / 440 / 540 <scaleAP><nowrap>(+120% من قوة القدرة)</nowrap></scaleAP> | 2 | 1 / 2 / 3 / 4 / 5 | 4% <scaleAP><nowrap>(+1% لكل 100 قوة القدرة)</nowrap></scaleAP>',
+      text: '70 / 120 / 170 / 220 / 270 <scaleAP><nowrap>(+60% %i:scaleAP%)</nowrap></scaleAP> | 140 / 240 / 340 / 440 / 540 <scaleAP><nowrap>(+120% %i:scaleAP%)</nowrap></scaleAP> | 2 | 1 / 2 / 3 / 4 / 5 | 4% <scaleAP><nowrap>(+1% لكل 100 %i:scaleAP%)</nowrap></scaleAP>',
       unresolved: 0,
     });
   });
@@ -81,7 +81,7 @@ describe('resolveSpellValues (real augment spells)', () => {
       },
     };
     expect(resolveSpellValues('@Split@ | @M~R@ | @MeleeValue~RangedValue%@', spell).text).toBe(
-      '40 (20 للمدى البعيد) | <scaleAD><nowrap>40% من ضرر الهجوم</nowrap></scaleAD> (20% للمدى البعيد) | 10% (5% للمدى البعيد)',
+      '40 (20 للمدى البعيد) | <scaleAD><nowrap>40% %i:scaleAD%</nowrap></scaleAD> (20% للمدى البعيد) | 10% (5% للمدى البعيد)',
     );
   });
 
@@ -104,7 +104,7 @@ describe('resolveSpellValues (real augment spells)', () => {
     const other: SpellData = { DataValues: [{ name: 'Bonus', values: [0, 7, 8] }] };
     const r = resolveSpellValues('@Bp@ | @Lerp@ | @Ref@ | @Ext@ | @Formula@ | @Cond@ | @Grow@', spell, { ranks: 2, spellRef: (n) => (n === 'XE' ? other : undefined) });
     expect(r).toEqual({
-      text: '10–42 | 30–100 | 30–100 | 7 / 8 | 26–196 | 30–100 | <scaleAD><nowrap>5%–15% من ضرر الهجوم الإضافي</nowrap></scaleAD>',
+      text: '10–42 | 30–100 | 30–100 | 7 / 8 | 26–196 | 30–100 | <scaleAD><nowrap>5%–15% %i:scaleAD% إضافي</nowrap></scaleAD>',
       unresolved: 0,
     });
   });

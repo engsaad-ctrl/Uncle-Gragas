@@ -15,8 +15,8 @@ describe('buildAbilityDetails (real Ahri files, 2026-10)', () => {
   const d = buildAbilityDetails(spells, bin, lookup);
 
   it('fills every rank and the AP ratio, like the in-game tooltip', () => {
-    expect(d.get('Q')!.body).toContain('<magicDamage>35 / 60 / 85 / 110 / 135 <scaleAP><nowrap>(+50% من قوة القدرة)</nowrap></scaleAP> ضرر السحر</magicDamage>');
-    expect(d.get('R')!.body).toContain('75 / 125 / 175 <scaleAP><nowrap>(+35% من قوة القدرة)</nowrap></scaleAP>');
+    expect(d.get('Q')!.body).toContain('<magicDamage>35 / 60 / 85 / 110 / 135 <scaleAP><nowrap>(+50% %i:scaleAP%)</nowrap></scaleAP> ضرر السحر</magicDamage>');
+    expect(d.get('R')!.body).toContain('75 / 125 / 175 <scaleAP><nowrap>(+35% %i:scaleAP%)</nowrap></scaleAP>');
   });
 
   it('adds cooldown and cost per level as table rows, R with its 3 levels', () => {
@@ -30,7 +30,7 @@ describe('buildAbilityDetails (real Ahri files, 2026-10)', () => {
   });
 
   it('builds the passive from the string table, with level-based values', () => {
-    expect(d.get('P')!.body).toContain('35–95 <scaleAP><nowrap>(+20% من قوة القدرة)</nowrap></scaleAP>');
+    expect(d.get('P')!.body).toContain('35–95 <scaleAP><nowrap>(+20% %i:scaleAP%)</nowrap></scaleAP>');
   });
 
   it('feeds the champion page; without game files the short description stays', () => {
