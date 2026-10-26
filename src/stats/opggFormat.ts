@@ -13,7 +13,7 @@ export function parseOpgg(text: string): OpggValue {
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) return JSON.parse(trimmed) as OpggValue;
 
   const classes = new Map<string, string[]>();
-  const lines = trimmed.split('\n');
+  const lines = trimmed.split(/\r?\n/); // Windows line endings: '.' in the header regex would not match '\r'
   let line = 0;
   for (; line < lines.length && lines[line].startsWith('class '); line++) {
     const m = /^class (\w+):\s*(.*)$/.exec(lines[line]);

@@ -28,6 +28,10 @@ describe('parseOpgg', () => {
     expect(parseOpgg(text)).toEqual({ s: 'say "hi"', n: -2.5, e: 1000, t: true, f: false, z: null, l: [] });
   });
 
+  it('accepts Windows line endings', () => {
+    expect(parseOpgg('class A: x,y\r\nclass B: z\r\n\r\nA(1,B(2))\r\n')).toEqual({ x: 1, y: { z: 2 } });
+  });
+
   it('fills fields missing from the call with null', () => {
     expect(parseOpgg('class A: x,y\n\nA(1)')).toEqual({ x: 1, y: null });
   });
