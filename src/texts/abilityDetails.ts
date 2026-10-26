@@ -4,7 +4,7 @@
 
 import type { AbilityKey } from './champions.js';
 import { expandRefs } from './gameData.js';
-import { perRank, resolveSpellValues, type SpellData } from './spellValues.js';
+import { mostlyResolved, perRank, resolveSpellValues, type SpellData } from './spellValues.js';
 
 export interface RawSpellDetail {
   dynamicDescription?: string;
@@ -67,8 +67,9 @@ export function buildAbilityDetails(spells: RawSpellDetail[], gameBin: Record<st
   };
   const resolve = (raw: string | undefined, spell: BinSpell | undefined, ranks: number) => {
     if (!raw) return undefined;
-    const r = resolveSpellValues(expandRefs(raw.replace(/@SpellModifierDescriptionAppend@/g, ''), strings), spell, { ranks, spellRef });
-    return r.unresolved === 0 ? r.text : undefined; // a half-filled tooltip is worse than the short description
+    const text = expandRefs(raw.replace(/@SpellModifierDescriptionAppend@/g, ''), strings);
+    const r = resolveSpellValues(text, spell, { ranks, spellRef });
+    return mostlyResolved(text, r) ? r.text : undefined; // the few values left show as "؟" (computed in the match)
   };
 
   KEYS.forEach((key, i) => {

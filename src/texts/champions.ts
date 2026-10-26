@@ -9,6 +9,8 @@ export interface NamedText {
   enName: string;
   html: string;
   iconUrl: string;
+  /** Summoner spells: their cooldown. */
+  ranks?: RankRow[];
 }
 
 export interface RawChampionSummary {
@@ -116,7 +118,15 @@ function buildNamed(ar: RawNamed[], en: RawNamed[]): Map<number, NamedText> {
   );
 }
 
-export const buildSpellTexts = (ar: RawNamed[], en: RawNamed[]) => buildNamed(ar, en);
+/** Summoner spells, with their cooldown (the game files CommunityDragon serves do not hold their damage values). */
+export function buildSpellTexts(ar: (RawNamed & { cooldown?: number })[], en: RawNamed[]): Map<number, NamedText> {
+  const named = buildNamed(ar, en);
+  for (const a of ar) {
+    const t = named.get(a.id);
+    if (t && a.cooldown) t.ranks = [{ label: 'التبريد', values: [`${a.cooldown}ث`] }];
+  }
+  return named;
+}
 
 export interface StyleSlot {
   /** kKeyStone, kMixedRegularSplashable or kStatMod */

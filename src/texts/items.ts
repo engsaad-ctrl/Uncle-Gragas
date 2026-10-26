@@ -1,6 +1,6 @@
 import { cleanText, isUntranslated, pickText } from './clean.js';
 import { expandRefs, type GameItem } from './gameData.js';
-import { resolveSpellValues } from './spellValues.js';
+import { mostlyResolved, resolveSpellValues } from './spellValues.js';
 
 export interface RawItem {
   id: number;
@@ -26,7 +26,7 @@ export interface ItemText {
 
 /**
  * Item tooltips rebuilt from the game files, keyed by item id: CommunityDragon prints 0 for values the game
- * computes (burn damage, ratios…); the game's own tooltip text and numbers fill them. Only fully resolved texts are kept.
+ * computes (burn damage, ratios…); the game's own tooltip text and numbers fill them. Kept when most values resolve (see mostlyResolved).
  */
 export function buildItemDetails(items: Record<number, GameItem>, strings: (key: string) => string | undefined): Map<number, string> {
   const out = new Map<number, string>();
@@ -36,7 +36,7 @@ export function buildItemDetails(items: Record<number, GameItem>, strings: (key:
     // Sections: title, stats (CommunityDragon has those right), then passives, active and rules.
     const body = meleeRanged(expandRefs(raw, strings)).split(/<\/?section>/).filter((x, i) => i % 2 === 1).slice(2).filter((x) => x.trim()).join('<br><br>');
     const r = resolveSpellValues(body, item);
-    if (r.text.trim() && r.unresolved === 0 && !/@[^@\s]+@|\{\{/.test(r.text)) out.set(Number(id), r.text);
+    if (r.text.trim() && mostlyResolved(body, r)) out.set(Number(id), r.text); // values that depend on other items stay "؟"; the ratios show
   }
   return out;
 }

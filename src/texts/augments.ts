@@ -1,7 +1,6 @@
 import { assetUrl } from './assets.js';
 import { cleanText, isUntranslated } from './clean.js';
 import { resolveSpellValues, type SpellData } from './spellValues.js';
-import { expandRefs } from './gameData.js';
 import { stringTableKey } from './stringhash.js';
 
 export interface AugmentListEntry {
@@ -57,6 +56,16 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
   const lookup = async (key?: string) =>
     key ? (byLower.get(key.toLowerCase()) ?? src.strings[await stringTableKey(key)]) : undefined;
   const enNames = new Map(src.listEn.map((a) => [a.id, a.nameTRA]));
+  /** Replaces {{ Other_Key }} references, hashed keys included (two levels: shared texts can nest once). */
+  const expand = async (text: string) => {
+    for (let depth = 0; depth < 2; depth++) {
+      const found = new Map<string, string | undefined>();
+      for (const m of text.matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)) if (!found.has(m[1])) found.set(m[1], await lookup(m[1]));
+      if (!found.size) break;
+      text = text.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (whole, key: string) => found.get(key) ?? whole);
+    }
+    return text;
+  };
 
   const out: AugmentText[] = [];
   for (const a of src.listAr) {
@@ -66,7 +75,7 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
     const candidates: { text: string; unresolved: number }[] = [];
     for (const key of [d?.AugmentTooltipTra, d?.DescriptionTra]) {
       const raw = await lookup(key);
-      if (raw !== undefined && !isUntranslated(raw)) candidates.push(resolveSpellValues(expandRefs(raw, (k) => byLower.get(k.toLowerCase())), d?.__spell, { dropLiveLines: true }));
+      if (raw !== undefined && !isUntranslated(raw)) candidates.push(resolveSpellValues(await expand(raw), d?.__spell, { dropLiveLines: true }));
     }
     const best =
       candidates.find((c) => c.unresolved === 0) ??

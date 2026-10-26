@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import arPerks from '../fixtures/cdragon/perks.ar_ae.sample.json' with { type: 'json' };
 import { VAR_HTML } from '../../src/texts/clean.js';
-import { buildRuneTexts, type RawPerk } from '../../src/texts/runes.js';
+import { buildRuneTexts, percentRatios, type RawPerk } from '../../src/texts/runes.js';
 
 const runes = buildRuneTexts(arPerks as RawPerk[], [
   // synthetic English entry for the enName path; real English perks are not in the fixtures
@@ -37,5 +37,15 @@ describe('buildRuneTexts', () => {
 
   it('renders list items', () => {
     expect(runes.get(8437)!.html).toContain('• ');
+  });
+});
+
+describe('percentRatios', () => {
+  it('turns rune coefficients into the percentages used everywhere else', () => {
+    expect(percentRatios('الضرر: 70 - 240 (+0.1 ضرر هجوم إضافي، +0.05 قوة قدرة) ضرر.')).toBe(
+      'الضرر: 70 - 240 (<scaleAD><nowrap>+10% من ضرر الهجوم الإضافي</nowrap></scaleAD>، <scaleAP><nowrap>+5% من قوة القدرة</nowrap></scaleAP>) ضرر.',
+    );
+    expect(percentRatios('(+ 0.05 قوة قدرة )')).toBe('(<scaleAP><nowrap>+5% من قوة القدرة</nowrap></scaleAP> )');
+    expect(percentRatios('+2.5% صحة إضافية')).toBe('+2.5% صحة إضافية'); // already a percentage
   });
 });

@@ -108,3 +108,31 @@
   - The items bin is trimmed per item.
   - Champion bins are trimmed to the record and spells.
   - If a download fails, the older cache is used; with no cache at all, the short CommunityDragon texts stay.
+
+## Follow-up 8 — applied to every description in the app (owner: "عمّم على كل شي واعتمد")
+
+These rules are now the standard for every description:
+- **Display rule** (`mostlyResolved`): a detailed text is used when at most half of its values are match-only. Those values (which depend on other items, stacks or the match) show as "؟" with the hover hint, so the stat ratios the owner reads for are always there.
+- **Engine additions:**
+  - Part types the files only name by hash, matched by FNV against the real names (not guessed): `ByCharLevelNamedDataValueBreakpoints`, `ByCharLevelNamedDataValuesInterpolation`, `SpellCalculationCalculationPart`, `ExternalNamedDataValue`.
+  - `ByCharLevelFormula`.
+  - `GameCalculationConditional` uses its default.
+  - Ratios that grow with level ("5%–15% من…").
+  - Stack counters ("+2 لكل تكديسة").
+  - `@Name.1@` decimal suffixes.
+  - Spell fields `@Cooldown@`, `@Cost@`, `@MaxAmmo@`, `@AmmoRechargeTime@`.
+  - Default key bindings Q/W/E/R.
+  - `@SpellName@` → "القدرة المختارة".
+  - Quest-progress lines dropped.
+  - Loosely named item melee/ranged pairs (`@BonusAS@` → `BonusASMelee`/`BonusASRanged`, `…MeleeRangedSplit`).
+- **Readability:** cooldown and cost are a per-level table (level 1 on the right). Rank lists are spaced ("40 / 60 / 80") so they read right to left. Melee/ranged is one short aside. A ratio never wraps mid-phrase.
+- **Runes:** coefficients become percentages ("+0.1 ضرر هجوم إضافي" → "+10% من ضرر الهجوم الإضافي").
+- **Summoner spells:** cooldown added. Their damage values are not in any game file CommunityDragon serves (looked in shared, globals, map11 and common), so their text stays as is.
+- **Hover card:** its position now uses the real size (offsetWidth, not the animation-scaled rect) and the window without the scrollbar, so wide cards no longer spill off the edge.
+- **Coverage (2026-10 data):**
+
+  | Description | Detailed |
+  |---|---|
+  | Abilities | 851 of 865 |
+  | Purchasable items with "؟" | 14 (was 127), now only match-dependent values |
+  | Augments with "؟" | 14 (was 106) |

@@ -221,11 +221,14 @@ function findTip(target: EventTarget | null): [Element, TipContent] | undefined 
 function placeTip(anchor: Element) {
   if (!tipEl) return;
   const a = anchor.getBoundingClientRect();
-  const t = tipEl.getBoundingClientRect();
+  // offsetWidth/Height: the real size (getBoundingClientRect would include the entry animation's scale-down);
+  // clientWidth/Height: the window without its scrollbar.
+  const t = { width: tipEl.offsetWidth, height: tipEl.offsetHeight };
+  const { clientWidth: vw, clientHeight: vh } = document.documentElement;
   const gap = 10;
   let top = a.bottom + gap;
-  if (top + t.height > innerHeight - 8) top = Math.max(8, a.top - t.height - gap); // no room below: flip above
-  const left = Math.min(Math.max(8, a.left + a.width / 2 - t.width / 2), innerWidth - t.width - 8);
+  if (top + t.height > vh - 8) top = Math.max(8, a.top - t.height - gap); // no room below: flip above
+  const left = Math.min(Math.max(8, a.left + a.width / 2 - t.width / 2), vw - t.width - 8);
   tipEl.style.top = `${top}px`;
   tipEl.style.left = `${left}px`;
 }

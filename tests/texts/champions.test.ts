@@ -59,3 +59,10 @@ describe('buildSpellTexts / buildStyleTrees', () => {
     expect(t.get(8100)!.slots[0].perks).toEqual([8112, 8128, 9923]); // Electrocute, Dark Harvest, Hail of Blades
   });
 });
+
+describe('buildSpellTexts', () => {
+  it('adds the summoner spell cooldown', () => {
+    const s = buildSpellTexts([{ id: 4, name: 'الانتقال الخاطف', description: 'تنقلك', iconPath: '', cooldown: 300 }], []);
+    expect(s.get(4)!.ranks).toEqual([{ label: 'التبريد', values: ['300ث'] }]);
+  });
+});

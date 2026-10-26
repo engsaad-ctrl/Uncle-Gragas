@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import spells from '../fixtures/augments/spells.json' with { type: 'json' };
-import { binHash, resolveSpellValues, type SpellData } from '../../src/texts/spellValues.js';
+import { binHash, mostlyResolved, resolveSpellValues, type SpellData } from '../../src/texts/spellValues.js';
 
 const axiom = spells.ArcaneAxiom as SpellData;
 const bigShot = spells.BigShot as SpellData;
@@ -33,7 +33,7 @@ describe('resolveSpellValues (real augment spells)', () => {
     expect(r).toEqual({ text: 'يمنح 3ث.<br>', unresolved: 0 });
   });
 
-  it('names calibrated stat ratios and keeps a generic label for unknown stat ids', () => {
+  it('names calibrated stat ratios, stacks, and a generic label for unknown stat ids', () => {
     const spell: SpellData = {
       DataValues: [{ name: 'Base', values: [0, 40, 40] }],
       mSpellCalculations: {
@@ -44,7 +44,7 @@ describe('resolveSpellValues (real augment spells)', () => {
       },
     };
     expect(resolveSpellValues('@Dmg@ و@OnlyStat@ و@Odd@ و@Stacks@', spell)).toEqual({
-      text: '40 <scaleAD><nowrap>(+50% من ضرر الهجوم الإضافي)</nowrap></scaleAD> و<scaleAP><nowrap>30% من قوة القدرة</nowrap></scaleAP> و5 <nowrap>(+10% من إحصاءات)</nowrap> و5 <nowrap>(+إحصاءات)</nowrap>',
+      text: '40 <scaleAD><nowrap>(+50% من ضرر الهجوم الإضافي)</nowrap></scaleAD> و<scaleAP><nowrap>30% من قوة القدرة</nowrap></scaleAP> و5 <nowrap>(+10% من إحصاءات)</nowrap> و5 <nowrap>(+2 لكل تكديسة)</nowrap>',
       unresolved: 0,
     });
   });
@@ -82,6 +82,44 @@ describe('resolveSpellValues (real augment spells)', () => {
     expect(resolveSpellValues('@Split@ | @M~R@ | @MeleeValue~RangedValue%@', spell).text).toBe(
       '40 (20 للمدى البعيد) | <scaleAD><nowrap>40% من ضرر الهجوم</nowrap></scaleAD> (20% للمدى البعيد) | 10% (5% للمدى البعيد)',
     );
+  });
+
+  it('reads the newer part types the game files only name by hash, and conditional defaults', () => {
+    const spell: SpellData = {
+      DataValues: [
+        { name: 'Lv1', values: [0, 10, 20] }, { name: 'Per', values: [0, 1, 1] }, { name: 'Add', values: [0, 5, 5] },
+        { name: 'Start', values: [0, 30, 40] }, { name: 'End', values: [0, 90, 100] },
+      ],
+      mSpellCalculations: {
+        Bp: { mFormulaParts: [{ __type: '{4ce08984}', '{91d404a5}': 'Lv1', '{bbd778a2}': 'Per', '{9823b29a}': [{ level: 6, '{ae9b464d}': 'Add', __type: '{0333530c}' }] }] },
+        Lerp: { mFormulaParts: [{ __type: '{ee18a47b}', StartDataValue: 'Start', EndDataValue: 'End' }] },
+        Ref: { mFormulaParts: [{ __type: '{f3cbe7b2}', mSpellCalculationKey: 'Lerp' }] },
+        Ext: { mFormulaParts: [{ __type: '{9e9e2e5c}', SourceObject: 'Characters/X/Spells/XE', DataValue: 'Bonus' }] },
+        Formula: { mFormulaParts: [{ __type: 'ByCharLevelFormulaCalculationPart', values: [16, 26, 36, 46, 56, 66, 76, 86, 96, 106, 116, 126, 136, 146, 156, 166, 176, 186, 196] }] },
+        Cond: { __type: 'GameCalculationConditional', mDefaultGameCalculation: 'Lerp' },
+        Grow: { mFormulaParts: [{ __type: 'StatBySubPartCalculationPart', mStat: 2, mStatFormula: 2, mSubpart: { __type: 'ByCharLevelInterpolationCalculationPart', mStartValue: 0.05, mEndValue: 0.15 } }] },
+      },
+    };
+    const other: SpellData = { DataValues: [{ name: 'Bonus', values: [0, 7, 8] }] };
+    const r = resolveSpellValues('@Bp@ | @Lerp@ | @Ref@ | @Ext@ | @Formula@ | @Cond@ | @Grow@', spell, { ranks: 2, spellRef: (n) => (n === 'XE' ? other : undefined) });
+    expect(r).toEqual({
+      text: '10–42 | 30–100 | 30–100 | 7 / 8 | 26–196 | 30–100 | <scaleAD><nowrap>5%–15% من ضرر الهجوم الإضافي</nowrap></scaleAD>',
+      unresolved: 0,
+    });
+  });
+
+  it('finds loosely named melee/ranged pairs in item texts', () => {
+    const spell: SpellData = {
+      DataValues: [{ name: 'BonusASMelee', values: [50] }, { name: 'BonusASRanged', values: [25] }, { name: 'ShieldShred', values: [50] }, { name: 'ShieldShredRange', values: [35] }],
+    };
+    expect(resolveSpellValues('@BonusAS@% سرعة | @ShieldShredMeleeRangedSplit@%', spell).text).toBe('50% (25% للمدى البعيد) سرعة | 50% (35% للمدى البعيد)');
+  });
+
+  it('keeps a detailed text when at most half its values are match-only', () => {
+    expect(mostlyResolved('@A@ @B@ @C@', { text: 'x', unresolved: 1 })).toBe(true);
+    expect(mostlyResolved('@A@ @B@ @C@', { text: 'x', unresolved: 2 })).toBe(false);
+    expect(mostlyResolved('@A@ @f1@', { text: 'x {{ Missing }}', unresolved: 0 })).toBe(false);
+    expect(mostlyResolved('نص بلا أرقام', { text: 'نص بلا أرقام', unresolved: 0 })).toBe(true);
   });
 
   it('handles sums, products, breakpoints and multipliers', () => {

@@ -82,7 +82,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       both<RawItem[]>('items.json'),
       both<RawPerk[]>('perks.json'),
       both<{ styles: { id: number; name: string; iconPath: string; slots: { type: string; slotLabel: string; perks: number[] }[] }[] }>('perkstyles.json'),
-      both<{ id: number; name: string; description: string; iconPath: string }[]>('summoner-spells.json'),
+      both<{ id: number; name: string; description: string; iconPath: string; cooldown?: number }[]>('summoner-spells.json'),
       itemDetails(),
     ]);
     return {
