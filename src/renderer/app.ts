@@ -35,11 +35,26 @@ function icon(src: string): HTMLImageElement {
   return img;
 }
 
+// The owner plays with the English client, so English names are the default; descriptions stay Arabic.
+let nameLang = 'en';
+try {
+  nameLang = localStorage.getItem('nameLang') ?? 'en';
+} catch {
+  // storage unavailable: keep the default
+}
+const shownName = (a: AugmentText) => (nameLang === 'en' && a.enName ? a.enName : a.name);
+const otherName = (a: AugmentText) => (shownName(a) === a.name ? a.enName : a.name);
+function nameEl(tag: 'h3' | 'span', a: AugmentText) {
+  const node = el(tag, '', shownName(a));
+  node.dir = 'auto';
+  return node;
+}
+
 function showDetail(panel: HTMLElement, a: AugmentText | undefined) {
   panel.hidden = !a;
   if (!a) return;
   panel.className = `panel detail r-${a.rarity}`;
-  const title = el('h3', '', a.name);
+  const title = nameEl('h3', a);
   title.append(el('span', 'tag', RARITY_LABEL[a.rarity]), ...a.modes.map((m) => el('span', 'mode', MODE_LABEL[m])));
   const desc = el('p');
   if (a.described) desc.innerHTML = a.html; // safe: cleanText escapes text and emits only whitelisted tags
@@ -48,7 +63,9 @@ function showDetail(panel: HTMLElement, a: AugmentText | undefined) {
     desc.textContent = MISSING;
   }
   const body = el('div');
-  body.append(title, el('div', 'en', a.enName), desc);
+  const other = el('div', 'en', otherName(a));
+  other.dir = 'auto';
+  body.append(title, other, desc);
   panel.replaceChildren(icon(a.iconUrl), body);
 }
 
@@ -69,7 +86,9 @@ async function main() {
   byId('patch').textContent = `باتش ${reply.version.split('.').slice(0, 2).join('.')}`;
 
   const render = () => {
-    const shown = filterAugments(reply.augments, query.value, rarity, mode);
+    const shown = filterAugments(reply.augments, query.value, rarity, mode).sort((x, y) =>
+      shownName(x).localeCompare(shownName(y), nameLang),
+    );
     if (!selected || !shown.includes(selected)) selected = query.value.trim() ? shown[0] : undefined;
     const sections = SECTIONS.flatMap(({ rarity: r, title }) => {
       const items = shown.filter((a) => a.rarity === r);
@@ -78,8 +97,8 @@ async function main() {
       for (const a of items) {
         const chip = el('button', `chip r-${a.rarity}${a === selected ? ' selected' : ''}`);
         chip.type = 'button';
-        chip.title = `${a.name} — ${a.enName}`;
-        chip.append(icon(a.iconUrl), el('span', '', a.name));
+        chip.title = `${shownName(a)} — ${otherName(a)}`;
+        chip.append(icon(a.iconUrl), nameEl('span', a));
         if (a.modes.length === 1) chip.append(el('small', 'mode', MODE_LABEL[a.modes[0]]));
         chip.addEventListener('click', () => {
           selected = a;
@@ -110,6 +129,15 @@ async function main() {
   };
   pillGroup('rarity', (v) => (rarity = v));
   pillGroup('mode', (v) => (mode = v));
+  pillGroup('lang', (v) => {
+    nameLang = v;
+    try {
+      localStorage.setItem('nameLang', v);
+    } catch {
+      // not remembered this time; harmless
+    }
+  });
+  for (const b of byId('lang').querySelectorAll('button')) b.classList.toggle('active', b.dataset.value === nameLang);
   render();
   query.focus();
 }

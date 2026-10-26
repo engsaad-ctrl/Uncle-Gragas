@@ -1,0 +1,21 @@
+name: build-windows
+on:
+  push:
+    branches: [claude/sleepy-cerf-xyrs3s, main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npx -y npm@11 ci
+      - run: npm test
+      - run: npm run dist:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LOL_helper-windows
+          path: release/*.exe
+          if-no-files-found: error

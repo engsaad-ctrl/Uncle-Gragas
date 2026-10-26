@@ -15,16 +15,16 @@
     "probe": "node scripts/probe.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.32.1",
-    "hash-wasm": "4.12.0",
-    "zod": "4.6.7"
+    "hash-wasm": "4.12.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@types/node": "22.20.5",
     "electron": "44.7.0",
     "electron-builder": "26.17.0",
     "typescript": "6.0.3",
-    "vitest": "5.0.3"
+    "vitest": "5.0.3",
+    "zod": "4.6.7"
   },
   "build": {
     "appId": "com.engsaad.lolhelper",

@@ -1052,3 +1052,5 @@ Expected: the run is green and the artifact `LOL_helper-windows` is listed. If i
 - **Pill buttons use `data-value`** (shared handler for the rarity and mode groups). Chips are min 210px wide and show "name — English name" on hover.
 - **The real-data check needs its own Vitest config,** because the project config only includes `tests/`.
 - **npm 11.21 no longer runs install scripts by default.** Electron 44 downloads its binary on first run anyway, so nothing else was needed.
+- **The MCP SDK and zod moved to devDependencies** (only the probe uses them for now), which shrinks `app.asar` to 1.8MB. They move back when phase 2's `stats` needs them at runtime. A local `electron-builder --linux dir` build plus a smoke test of the packaged binary passed.
+- **Owner's request: English names, Arabic descriptions.** A "الأسماء: English / عربي" toggle was added, defaulting to English because the owner plays on the English client. The choice is remembered in `localStorage` (wrapped in try/catch). Search still matches both names.
