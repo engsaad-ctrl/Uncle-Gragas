@@ -1,2 +1,4 @@
 node_modules/
 probe-output/
+dist/
+release/

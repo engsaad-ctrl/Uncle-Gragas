@@ -9,15 +9,17 @@ export function normalizeArabic(s: string): string {
     .trim();
 }
 
-export function filterAugments<T extends { name: string; enName: string; rarity: string }>(
+export function filterAugments<T extends { name: string; enName: string; rarity: string; modes: string[] }>(
   list: T[],
   query: string,
   rarity: string,
+  mode = 'all',
 ): T[] {
   const q = normalizeArabic(query);
   return list.filter(
     (a) =>
       (rarity === 'all' || a.rarity === rarity) &&
+      (mode === 'all' || a.modes.includes(mode)) &&
       (!q || normalizeArabic(a.name).includes(q) || normalizeArabic(a.enName).includes(q)),
   );
 }

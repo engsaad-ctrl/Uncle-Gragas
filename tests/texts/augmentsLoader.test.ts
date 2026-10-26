@@ -1,4 +1,4 @@
-import { access, mkdtemp } from 'node:fs/promises';
+import { access, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -58,6 +58,13 @@ describe('loadAugments', () => {
     calls = [];
     const r = await loadAugments({ cacheDir, fetchImpl: fakeFetch('16.22.1') });
     expect(r.version).toBe('16.22.1');
+    expect(calls).toContain(AUGMENT_URLS.strings);
+  });
+
+  it('rebuilds a cache written in an older format even if the version matches', async () => {
+    await writeFile(join(cacheDir, 'augments.json'), JSON.stringify({ version: '16.21.1', augments: [] }));
+    const r = await loadAugments({ cacheDir, fetchImpl: fakeFetch('16.21.1') });
+    expect(r.augments).toHaveLength(6);
     expect(calls).toContain(AUGMENT_URLS.strings);
   });
 

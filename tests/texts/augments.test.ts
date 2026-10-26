@@ -52,6 +52,31 @@ describe('buildAugmentTexts', () => {
     expect(a.rarity).toBe('prismatic');
   });
 
+  it('labels ids >= 1000 as Mayhem', () => {
+    expect(byId.get(1327)!.modes).toEqual(['mayhem']);
+  });
+
+  it('labels ids < 1000 as Arena, merges identical twins and drops "???" placeholders', async () => {
+    const entry = (id: number, augmentNameId: string, nameTRA: string): AugmentListEntry => ({
+      id, augmentNameId, nameTRA, augmentSmallIconPath: '/lol-game-data/assets/x.png', rarity: 'kGold',
+    });
+    const data = (id: number, key: string) => ({ __type: 'AugmentData', AugmentPlatformId: id, DescriptionTra: key });
+    // Synthetic input mirroring real pairs: MasterofDuality 54/ARAM_MasterofDuality 1054, Typhoon 87/ARAM_Typhoon 1087.
+    const r = await buildAugmentTexts({
+      listAr: [
+        entry(54, 'MasterofDuality', 'أستاذ'), entry(1054, 'ARAM_MasterofDuality', 'أستاذ'),
+        entry(87, 'Typhoon', 'إعصار'), entry(1087, 'ARAM_Typhoon', 'إعصار'),
+        entry(1424, 'ARAM_MissingPingAugment', '???'),
+      ],
+      listEn: [],
+      bins: [{ a: data(54, 'same'), b: data(1054, 'same'), c: data(87, 'arena'), d: data(1087, 'mayhem') }],
+      strings: { same: 'نص واحد', arena: 'نص الأرينا', mayhem: 'نص مايهم' },
+    });
+    expect(r.filter((a) => a.name === 'أستاذ').map((a) => a.modes)).toEqual([['arena', 'mayhem']]);
+    expect(r.filter((a) => a.name === 'إعصار').map((a) => a.modes).sort()).toEqual([['arena'], ['mayhem']]);
+    expect(r.some((a) => a.name === '???')).toBe(false);
+  });
+
   it('builds CommunityDragon icon URLs', () => {
     expect(byId.get(1397)!.iconUrl).toBe(
       'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/ux/cherry/augments/icons/cerberus_small.png',

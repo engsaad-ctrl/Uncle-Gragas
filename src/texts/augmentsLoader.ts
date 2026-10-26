@@ -22,7 +22,11 @@ export interface AugmentsResult {
   stale: boolean;
 }
 
+// Bump when AugmentText changes shape so old caches are rebuilt.
+const CACHE_SCHEMA = 2;
+
 interface Cache {
+  schema: number;
   version: string;
   augments: AugmentText[];
 }
@@ -41,11 +45,12 @@ export async function loadAugments(opts: { cacheDir: string; fetchImpl?: typeof 
   const path = join(cacheDir, 'augments.json');
   const cached = await readFile(path, 'utf8')
     .then((s) => JSON.parse(s) as Cache)
+    .then((c) => (c.schema === CACHE_SCHEMA ? c : null))
     .catch(() => null);
 
   try {
     const { version } = await getJson<{ version: string }>(fetchImpl, AUGMENT_URLS.version);
-    if (cached?.version === version) return { ...cached, stale: false };
+    if (cached?.version === version) return { version, augments: cached.augments, stale: false };
 
     const [listAr, listEn, strings] = await Promise.all([
       getJson<AugmentListEntry[]>(fetchImpl, AUGMENT_URLS.listAr),
@@ -56,12 +61,12 @@ export async function loadAugments(opts: { cacheDir: string; fetchImpl?: typeof 
     // One at a time and trimmed right away: these files are 4–21MB each.
     for (const url of AUGMENT_URLS.bins) bins.push(augmentDataOnly(await getJson<object>(fetchImpl, url)));
 
-    const fresh: Cache = { version, augments: await buildAugmentTexts({ listAr, listEn, bins, strings }) };
+    const fresh: Cache = { schema: CACHE_SCHEMA, version, augments: await buildAugmentTexts({ listAr, listEn, bins, strings }) };
     await mkdir(cacheDir, { recursive: true });
     await writeFile(path, JSON.stringify(fresh));
-    return { ...fresh, stale: false };
+    return { version, augments: fresh.augments, stale: false };
   } catch (err) {
-    if (cached) return { ...cached, stale: true };
+    if (cached) return { version: cached.version, augments: cached.augments, stale: true };
     throw err;
   }
 }

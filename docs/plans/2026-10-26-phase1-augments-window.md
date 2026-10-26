@@ -1043,3 +1043,12 @@ Expected: the run is green and the artifact `LOL_helper-windows` is listed. If i
 
 - The owner downloads the artifact from the Actions run page, unzips it and runs `LOL_helper <version>.exe`. SmartScreen will warn ("More info" → "Run anyway").
 - Next plan (phase 2): `lcu` read-only plus `stats`, which includes the parser for OP.GG's `Class(...)` response format. Mayhem augment tiers from `lol_list_aram_augments` are added to these chips once a champion is known.
+
+## Changes made during execution (2026-10-26)
+
+- **Modes are back.** The real data showed a clean split: `map30.bin` (the Arena map) holds only augment ids < 1000, and `kiwi*.bin` (Mayhem) only ids ≥ 1000. Each `AugmentText` now has `modes: ('arena' | 'mayhem')[]`. Twins with the same name and the same text merge into one entry with both modes. Of 94 duplicate names, 47 were identical twins; in the other 47 the text differs, and they stay as two entries labelled Arena and Mayhem. The UI gained a "الطور" pill group, and chips show a small mode badge.
+- **The `???` placeholder augment (1424) is dropped.** Result: 546 augments, 512 with an official Arabic description.
+- **The cache file has a `schema` number (2),** so caches written before the shape change are rebuilt even when the game version matches.
+- **Pill buttons use `data-value`** (shared handler for the rarity and mode groups). Chips are min 210px wide and show "name — English name" on hover.
+- **The real-data check needs its own Vitest config,** because the project config only includes `tests/`.
+- **npm 11.21 no longer runs install scripts by default.** Electron 44 downloads its binary on first run anyway, so nothing else was needed.

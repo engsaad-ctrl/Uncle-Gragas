@@ -10,6 +10,7 @@ export interface AugmentListEntry {
 }
 
 export type Rarity = 'silver' | 'gold' | 'prismatic' | 'event';
+export type Mode = 'arena' | 'mayhem';
 
 export interface AugmentText {
   id: number;
@@ -18,6 +19,7 @@ export interface AugmentText {
   html: string;
   described: boolean;
   rarity: Rarity;
+  modes: Mode[];
   iconUrl: string;
 }
 
@@ -60,7 +62,7 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
     const html = isUntranslated(raw) ? '' : cleanText(raw);
     const enName = enNames.get(a.id) ?? '';
     const name = isUntranslated(a.nameTRA) ? enName : a.nameTRA;
-    if (!name) continue;
+    if (!name || /^[?؟\s]+$/.test(name)) continue; // "???" = unreleased test augment
     out.push({
       id: a.id,
       name,
@@ -68,8 +70,18 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
       html,
       described: html !== '',
       rarity: RARITY[a.rarity] ?? 'event',
+      // The Arena map file (map30) holds only ids < 1000; the Mayhem files (kiwi*) only ids >= 1000.
+      modes: [a.id < 1000 ? 'arena' : 'mayhem'],
       iconUrl: iconUrl(a.augmentSmallIconPath),
     });
   }
-  return out.sort((x, y) => x.name.localeCompare(y.name, 'ar'));
+
+  // An augment that exists in both modes with the same text is shown once.
+  const merged = new Map<string, AugmentText>();
+  for (const t of out) {
+    const twin = merged.get(`${t.name}\u0000${t.html}`);
+    if (!twin) merged.set(`${t.name}\u0000${t.html}`, t);
+    else if (!twin.modes.includes(t.modes[0])) twin.modes.push(t.modes[0]);
+  }
+  return [...merged.values()].sort((x, y) => x.name.localeCompare(y.name, 'ar'));
 }
