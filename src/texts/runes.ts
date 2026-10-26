@@ -1,4 +1,4 @@
-import { cleanText, pickText } from './clean.js';
+import { cleanText, isUntranslated, pickText } from './clean.js';
 
 export interface RawPerk {
   id: number;
@@ -11,6 +11,8 @@ export interface RawPerk {
 export interface RuneText {
   id: number;
   name: string;
+  /** English client name; the UI shows it by default next to the Arabic description. */
+  enName: string;
   html: string;
   translated: boolean;
   iconPath: string;
@@ -29,6 +31,7 @@ export function buildRuneTexts(ar: RawPerk[], en: RawPerk[]): Map<number, RuneTe
     out.set(a.id, {
       id: a.id,
       name: name.text,
+      enName: isUntranslated(e?.name) ? '' : e!.name,
       html: cleanText(desc.text),
       translated: name.translated && desc.translated,
       iconPath: a.iconPath,

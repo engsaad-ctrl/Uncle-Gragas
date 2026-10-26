@@ -1,4 +1,4 @@
-import { cleanText, pickText } from './clean.js';
+import { cleanText, isUntranslated, pickText } from './clean.js';
 
 export interface RawItem {
   id: number;
@@ -11,6 +11,8 @@ export interface RawItem {
 export interface ItemText {
   id: number;
   name: string;
+  /** English client name; the UI shows it by default next to the Arabic description. */
+  enName: string;
   html: string;
   translated: boolean;
   inStore: boolean;
@@ -27,6 +29,7 @@ export function buildItemTexts(ar: RawItem[], en: RawItem[]): Map<number, ItemTe
     out.set(a.id, {
       id: a.id,
       name: name.text,
+      enName: isUntranslated(e?.name) ? '' : e!.name,
       html: cleanText(desc.text),
       translated: name.translated && desc.translated,
       inStore: a.inStore,

@@ -30,10 +30,12 @@ describe('buildItemTexts', () => {
     expect(t.name).toBe('الرصاصات النافذة');
     expect(t.html).toBe('English fallback text');
     expect(t.translated).toBe(false);
+    expect(t.enName).toBe('Penetrating Bullets');
   });
 
   it('empties a name with no usable fallback so the UI can hide it', () => {
     expect(texts.get(226660)!.name).toBe('');
+    expect(texts.get(226660)!.enName).toBe('');
   });
 
   it('marks live-computed zeros', () => {

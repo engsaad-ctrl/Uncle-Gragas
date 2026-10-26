@@ -3,7 +3,10 @@ import arPerks from '../fixtures/cdragon/perks.ar_ae.sample.json' with { type: '
 import { VAR_HTML } from '../../src/texts/clean.js';
 import { buildRuneTexts, type RawPerk } from '../../src/texts/runes.js';
 
-const runes = buildRuneTexts(arPerks as RawPerk[], []);
+const runes = buildRuneTexts(arPerks as RawPerk[], [
+  // synthetic English entry for the enName path; real English perks are not in the fixtures
+  { id: 8112, name: 'Electrocute', shortDesc: '', longDesc: '', iconPath: '' },
+]);
 
 describe('buildRuneTexts', () => {
   it('drops the Template entry and crew bonuses', () => {
@@ -17,6 +20,8 @@ describe('buildRuneTexts', () => {
     expect(e.name).toBe('الصعقة الكهربائية');
     expect(e.html).toContain('70 - 240');
     expect(e.translated).toBe(true);
+    expect(e.enName).toBe('Electrocute');
+    expect(runes.get(8446)!.enName).toBe('');
   });
 
   it('renders melee/ranged splits', () => {
