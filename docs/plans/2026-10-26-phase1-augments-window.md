@@ -502,7 +502,8 @@ it('real', async () => {
   expect(described).toBeGreaterThan(500);
 }, 300_000);
 EOF
-NODE_USE_ENV_PROXY=1 npx vitest run --dir probe-output probe-output/real.test.ts
+printf "import { defineConfig } from 'vitest/config';\nexport default defineConfig({ test: { include: ['probe-output/*.test.ts'] } });\n" > probe-output/vitest.real.config.ts
+NODE_USE_ENV_PROXY=1 npx vitest run --config probe-output/vitest.real.config.ts  # the project config only includes tests/
 ```
 Expected: PASS, with more than 500 described augments. If the network is blocked, record it and continue.
 
