@@ -69,7 +69,8 @@ export function composeChampionPage(src: PageSources): ChampionPage {
     p ? { items: resolve(p.ids, src.items, fromItem), games: p.games, winRate: p.winRate } : null;
   const choices = (ps: Pick[]) => ps.map(choice).filter((c): c is ItemChoice => c !== null && c.items.length > 0);
 
-  const stats = new Map((src.mayhem?.data ?? []).map((s) => [s.id, s]));
+  // Popularity 0 means no real sample: OP.GG then reports placeholder performance (0 or 170), so leave those out.
+  const stats = new Map((src.mayhem?.data ?? []).filter((s) => s.popularity > 0).map((s) => [s.id, s]));
   const augments = src.augments
     .flatMap((a) => {
       const s = a.ids.map((id) => stats.get(id)).find((x) => x !== undefined);

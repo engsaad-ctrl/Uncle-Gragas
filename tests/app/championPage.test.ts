@@ -64,10 +64,11 @@ describe('composeChampionPage', () => {
     const p = composeChampionPage({
       champion, mode: 'mayhem', position: null, ...texts,
       build: { data: toBuild(opgg('ahri-aram.txt')), fetchedAt: 5, stale: false },
-      augments: [aug(2127, [127, 2127], 'gold'), aug(1323, [1323], 'silver'), aug(9, [9], 'gold')],
+      augments: [aug(2127, [127, 2127], 'gold'), aug(1323, [1323], 'silver'), aug(9, [9], 'gold'), aug(1035, [1035], 'gold')],
       mayhem: { data: toMayhemAugments(opgg('ahri-mayhem-augments.txt')), fetchedAt: 5, stale: true },
     });
-    expect(p.augments.map((a) => a.id)).toEqual([2127, 1323]); // 2127: 88.9 > 1323: 82.46; id 9 has no stats
+    // 2127: 88.9 > 1323: 82.46; id 9 has no stats; 1035 has popularity 0 and a placeholder performance of 170
+    expect(p.augments.map((a) => a.id)).toEqual([2127, 1323]);
     expect(p.augments[0]).toMatchObject({ performance: 88.9, popularity: 0.2 });
     expect(p.stale).toBe(true);
   });
