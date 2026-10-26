@@ -1,6 +1,7 @@
 import { assetUrl } from './assets.js';
 import { cleanText, isUntranslated } from './clean.js';
 import { resolveSpellValues, type SpellData } from './spellValues.js';
+import { expandRefs } from './gameData.js';
 import { stringTableKey } from './stringhash.js';
 
 export interface AugmentListEntry {
@@ -62,11 +63,10 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
     const d = data.get(a.id);
     // The tooltip has the numbers; the short description has fewer placeholders. Take the tooltip when every
     // value resolves, else whichever leaves fewer unknowns (ties go to the description).
-    // shortcut: a text that only references another key ({{Other_Key}}) still renders as ؟; resolve one level if users hit it.
     const candidates: { text: string; unresolved: number }[] = [];
     for (const key of [d?.AugmentTooltipTra, d?.DescriptionTra]) {
       const raw = await lookup(key);
-      if (raw !== undefined && !isUntranslated(raw)) candidates.push(resolveSpellValues(raw, d?.__spell));
+      if (raw !== undefined && !isUntranslated(raw)) candidates.push(resolveSpellValues(expandRefs(raw, (k) => byLower.get(k.toLowerCase())), d?.__spell, { dropLiveLines: true }));
     }
     const best =
       candidates.find((c) => c.unresolved === 0) ??

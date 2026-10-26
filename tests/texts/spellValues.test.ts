@@ -33,15 +33,41 @@ describe('resolveSpellValues (real augment spells)', () => {
     expect(r).toEqual({ text: 'يمنح 3ث.<br>', unresolved: 0 });
   });
 
-  it('marks stat scaling it cannot name instead of guessing the stat', () => {
+  it('names calibrated stat ratios and keeps a generic label for unknown stat ids', () => {
     const spell: SpellData = {
       DataValues: [{ name: 'Base', values: [0, 40, 40] }],
       mSpellCalculations: {
-        Dmg: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'Base' }, { __type: 'StatByCoefficientCalculationPart', mCoefficient: 0.5, mStat: 2 }] },
+        Dmg: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'Base' }, { __type: 'StatByCoefficientCalculationPart', mCoefficient: 0.5, mStat: 2, mStatFormula: 2 }] },
         OnlyStat: { mFormulaParts: [{ __type: 'StatByCoefficientCalculationPart', mCoefficient: 0.3 }] },
+        Odd: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 5 }, { __type: 'StatByCoefficientCalculationPart', mCoefficient: 0.1, mStat: 15 }] },
+        Stacks: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 5 }, { __type: 'BuffCounterByCoefficientCalculationPart', mCoefficient: 2 }] },
       },
     };
-    expect(resolveSpellValues('@Dmg@ و@OnlyStat@', spell)).toEqual({ text: '40 (+إحصاءات) و@OnlyStat@', unresolved: 1 });
+    expect(resolveSpellValues('@Dmg@ و@OnlyStat@ و@Odd@ و@Stacks@', spell)).toEqual({
+      text: '40 <scaleAD>(+50% من ضرر الهجوم الإضافي)</scaleAD> و<scaleAP>30% من قوة القدرة</scaleAP> و5 (+10% من إحصاءات) و5 (+إحصاءات)',
+      unresolved: 0,
+    });
+  });
+
+  it('shows every ability rank, with per-rank ratios, cooldown-style lists and old effect slots', () => {
+    const spell: SpellData = {
+      DataValues: [
+        { name: 'Base', values: [0, 70, 120, 170, 220, 270, 320] },
+        { name: 'Ratio', values: [0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6] },
+        { name: 'Same', values: [2, 2, 2, 2, 2, 2, 2] },
+      ],
+      mEffectAmount: [{ value: [0, 1, 2, 3, 4, 5, 0] }],
+      mSpellCalculations: {
+        Dmg: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'Base' }, { __type: 'StatByNamedDataValueCalculationPart', mDataValue: 'Ratio' }] },
+        Sweet: { __type: 'GameCalculationModified', mModifiedGameCalculation: 'Dmg', mMultiplier: { __type: 'NumberCalculationPart', mNumber: 2 } },
+        Pct: { mDisplayAsPercent: true, mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 0.04 }, { __type: 'StatByCoefficientCalculationPart', mCoefficient: 0.0001 }] },
+      },
+    };
+    const r = resolveSpellValues('@Dmg@ | @Sweet@ | @Same@ | @Effect1Amount@ | @Pct@', spell, { ranks: 5 });
+    expect(r).toEqual({
+      text: '70/120/170/220/270 <scaleAP>(+60% من قوة القدرة)</scaleAP> | 140/240/340/440/540 <scaleAP>(+120% من قوة القدرة)</scaleAP> | 2 | 1/2/3/4/5 | 4% <scaleAP>(+1% لكل 100 قوة القدرة)</scaleAP>',
+      unresolved: 0,
+    });
   });
 
   it('handles sums, products, breakpoints and multipliers', () => {

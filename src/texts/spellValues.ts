@@ -4,15 +4,22 @@
 type Part = { __type?: string; [field: string]: unknown };
 
 export interface SpellCalculation {
+  __type?: string;
   mFormulaParts?: Part[];
   mDisplayAsPercent?: boolean;
   mPrecision?: number;
   mMultiplier?: Part;
+  /** GameCalculationModified: another calculation of the same spell, times mMultiplier. */
+  mModifiedGameCalculation?: string;
+  /** Melee/ranged split (items): the value for ranged champions is the melee value times this. */
+  mRangedMultiplier?: Part;
 }
 
 export interface SpellData {
   DataValues?: { name: string; values?: number[] }[];
   mSpellCalculations?: Record<string, SpellCalculation>;
+  /** Older spells keep numbered values here, read by @Effect1Amount@ and EffectValueCalculationPart. */
+  mEffectAmount?: { value?: number[] }[];
 }
 
 /** Name hash used for unnamed bin fields and entries: FNV-1a 32-bit of the lowercased name. */
@@ -27,22 +34,55 @@ export function binHash(name: string): string {
 
 const sameName = (key: string, name: string) => key.toLowerCase() === name.toLowerCase() || key === binHash(name);
 
-/** A value over champion levels 1–18, plus whether part of it scales with a stat we do not name. */
-interface Range {
-  min: number;
-  max: number;
-  scales: boolean;
+// mStat ids calibrated against the DataValue names of all 173 champion bins (2026-10); mStatFormula 0 total, 1 base, 2 bonus.
+// Ids not listed here are shown with a generic label rather than a guessed one.
+const STAT_LABEL: Record<number, [total: string, bonus: string]> = {
+  0: ['قوة القدرة', 'قوة القدرة الإضافية'],
+  1: ['الدروع', 'الدروع الإضافية'],
+  2: ['ضرر الهجوم', 'ضرر الهجوم الإضافي'],
+  4: ['سرعة الهجوم', 'سرعة الهجوم الإضافية'],
+  6: ['مقاومة السحر', 'مقاومة السحر الإضافية'],
+  7: ['سرعة الحركة', 'سرعة الحركة الإضافية'],
+  8: ['الضربة الحرجة', 'الضربة الحرجة'],
+  9: ['الضربة الحرجة', 'الضربة الحرجة'],
+  12: ['الصحة القصوى', 'الصحة الإضافية'],
+  29: ['الفتك', 'الفتك'],
+  31: ['المدى', 'المدى الإضافي'],
+};
+const BASE_LABEL: Record<number, string> = { 2: 'ضرر الهجوم الأساسي', 12: 'الصحة الأساسية' };
+// Riot's own colour tags, so cleanText paints a ratio like the game does.
+const STAT_TAG: Record<number, string> = { 0: 'scaleAP', 1: 'scaleArmor', 2: 'scaleAD', 6: 'scaleMR', 12: 'scaleHealth' };
+
+function statLabel(stat: number, formula: number): string {
+  if (formula === 1) return BASE_LABEL[stat] ?? 'إحصاءات';
+  return STAT_LABEL[stat]?.[formula === 2 ? 1 : 0] ?? 'إحصاءات';
 }
 
-const SCALING_PARTS = new Set([
-  'StatByCoefficientCalculationPart', 'StatByNamedDataValueCalculationPart', 'StatBySubPartCalculationPart',
-  'BuffCounterByCoefficientCalculationPart', 'BuffCounterByNamedDataValueCalculationPart', 'AbilityResourceByCoefficientCalculationPart',
-]);
+/** One stat ratio, per rank (60% AP → coef 0.6). */
+interface Scaling {
+  label: string;
+  tag?: string;
+  coef: number[];
+}
+
+/**
+ * A value per ability rank. min/max differ when it also grows with champion level (1–18).
+ * `other` marks a part we cannot name (stacks, resource) so the reader knows the number is not the whole story.
+ */
+interface Value {
+  min: number[];
+  max: number[];
+  scalings: Scaling[];
+  other: boolean;
+}
 
 const num = (v: unknown) => (typeof v === 'number' ? v : 0);
+const fill = (ranks: number, n: number) => Array<number>(ranks).fill(n);
+const plain = (min: number[], max = min): Value => ({ min, max, scalings: [], other: false });
+const isPlain = (v: Value) => !v.scalings.length && !v.other;
 
 function breakpointsAt(p: Part, level: number): number {
-  let v = num(p.mLevel1Value);
+  let v = num(p.mLevel1Value) + num(p.mInitialBonusPerLevel) * (level - 1);
   for (const bp of (p.mBreakpoints as Part[] | undefined) ?? []) {
     const at = num(bp.mLevel);
     if (level < at) continue;
@@ -51,80 +91,197 @@ function breakpointsAt(p: Part, level: number): number {
   return v;
 }
 
-function evalPart(p: Part | undefined, dataValue: (name: string) => number | undefined): Range | null {
+function add(a: Value, b: Value): Value {
+  const scalings = a.scalings.map((s) => ({ ...s, coef: [...s.coef] }));
+  for (const s of b.scalings) {
+    const same = scalings.find((x) => x.label === s.label);
+    if (same) same.coef = same.coef.map((c, i) => c + s.coef[i]);
+    else scalings.push(s);
+  }
+  return { min: a.min.map((x, i) => x + b.min[i]), max: a.max.map((x, i) => x + b.max[i]), scalings, other: a.other || b.other };
+}
+
+/** Multiplies by a value that has no stat part of its own; anything else cannot be shown as "base + ratio". */
+function times(v: Value, k: Value): Value {
+  if (!isPlain(k)) return { min: v.min.map((x, i) => x * k.min[i]), max: v.max.map((x, i) => x * k.max[i]), scalings: [], other: true };
+  return {
+    min: v.min.map((x, i) => x * k.min[i]),
+    max: v.max.map((x, i) => x * k.max[i]),
+    scalings: v.scalings.map((s) => ({ ...s, coef: s.coef.map((c, i) => c * k.min[i]) })),
+    other: v.other,
+  };
+}
+
+interface Ctx {
+  ranks: number;
+  dataValue: (name: string) => number[] | undefined;
+  effect: (index: number) => number[] | undefined;
+  calc: (name: string) => SpellCalculation | undefined;
+  depth: number;
+}
+
+function evalPart(p: Part | undefined, c: Ctx): Value | null {
   if (!p) return null;
-  const t = p.__type ?? '';
-  if (SCALING_PARTS.has(t)) return { min: 0, max: 0, scales: true };
-  switch (t) {
+  const stat = (coef: number[] | undefined): Value | null =>
+    coef ? { ...plain(fill(c.ranks, 0)), scalings: [{ label: statLabel(num(p.mStat), num(p.mStatFormula)), tag: STAT_TAG[num(p.mStat)], coef }] } : null;
+  switch (p.__type) {
     case 'NumberCalculationPart':
-      return { min: num(p.mNumber), max: num(p.mNumber), scales: false };
+      return plain(fill(c.ranks, num(p.mNumber)));
     case 'NamedDataValueCalculationPart': {
-      const v = dataValue(String(p.mDataValue));
-      return v === undefined ? null : { min: v, max: v, scales: false };
+      const v = c.dataValue(String(p.mDataValue));
+      return v ? plain(v) : null;
+    }
+    case 'EffectValueCalculationPart': {
+      const v = c.effect(num(p.mEffectIndex));
+      return v ? plain(v) : null;
     }
     case 'ByCharLevelInterpolationCalculationPart':
-      return { min: num(p.mStartValue), max: num(p.mEndValue), scales: false };
+      return plain(fill(c.ranks, num(p.mStartValue)), fill(c.ranks, num(p.mEndValue)));
     case 'ByCharLevelBreakpointsCalculationPart':
-      return { min: breakpointsAt(p, 1), max: breakpointsAt(p, 18), scales: false };
+      return plain(fill(c.ranks, breakpointsAt(p, 1)), fill(c.ranks, breakpointsAt(p, 18)));
+    case 'StatByCoefficientCalculationPart':
+      return stat(fill(c.ranks, num(p.mCoefficient)));
+    case 'StatByNamedDataValueCalculationPart':
+      return stat(c.dataValue(String(p.mDataValue)));
+    case 'StatBySubPartCalculationPart': {
+      const sub = evalPart(p.mSubpart as Part, c);
+      if (!sub) return null;
+      return isPlain(sub) && sub.min.every((x, i) => x === sub.max[i]) ? stat(sub.min) : { ...plain(fill(c.ranks, 0)), other: true };
+    }
+    case 'AbilityResourceByCoefficientCalculationPart': // the champion's resource bar, mana for item users
+      return { ...plain(fill(c.ranks, 0)), scalings: [{ label: 'المانا القصوى', tag: 'scaleMana', coef: fill(c.ranks, num(p.mCoefficient)) }] };
+    case 'BuffCounterByCoefficientCalculationPart':
+    case 'BuffCounterByNamedDataValueCalculationPart':
+      return { ...plain(fill(c.ranks, 0)), other: true };
     case 'SumOfSubPartsCalculationPart':
-      return sum(((p.mSubparts as Part[] | undefined) ?? []).map((s) => evalPart(s, dataValue)));
+      return sumParts((p.mSubparts as Part[] | undefined) ?? [], c);
     case 'ProductOfSubPartsCalculationPart': {
-      const a = evalPart(p.mPart1 as Part, dataValue);
-      const b = evalPart(p.mPart2 as Part, dataValue);
-      return a && b ? { min: a.min * b.min, max: a.max * b.max, scales: a.scales || b.scales } : null;
+      const a = evalPart(p.mPart1 as Part, c);
+      const b = evalPart(p.mPart2 as Part, c);
+      if (!a || !b) return null;
+      return isPlain(a) ? times(b, a) : times(a, b);
     }
     default:
       return null; // unknown or unnamed part type: leave the placeholder unresolved
   }
 }
 
-function sum(parts: (Range | null)[]): Range | null {
-  if (parts.some((r) => r === null)) return null;
-  return (parts as Range[]).reduce((a, r) => ({ min: a.min + r.min, max: a.max + r.max, scales: a.scales || r.scales }), { min: 0, max: 0, scales: false });
+function sumParts(parts: Part[], c: Ctx): Value | null {
+  let total = plain(fill(c.ranks, 0));
+  for (const p of parts) {
+    const v = evalPart(p, c);
+    if (!v) return null;
+    total = add(total, v);
+  }
+  return total;
+}
+
+function evalCalc(calc: SpellCalculation, c: Ctx): Value | null {
+  if (c.depth > 4) return null; // a modified calculation could point back at itself
+  let v: Value | null;
+  if (calc.__type === 'GameCalculationModified') {
+    const inner = calc.mModifiedGameCalculation ? c.calc(calc.mModifiedGameCalculation) : undefined;
+    v = inner ? evalCalc(inner, { ...c, depth: c.depth + 1 }) : null;
+  } else if (calc.__type && calc.__type !== 'GameCalculation' && !calc.mRangedMultiplier) {
+    return null; // GameCalculationConditional: depends on an in-game buff
+  } else v = sumParts(calc.mFormulaParts ?? [], c);
+  if (!v || !calc.mMultiplier) return v;
+  const m = evalPart(calc.mMultiplier, c);
+  return m ? times(v, m) : null;
 }
 
 const fmt = (n: number, precision: number) => String(Number(n.toFixed(precision)));
 
-function formatRange(r: Range, percent: boolean, precision: number): string | null {
-  const hasBase = r.min !== 0 || r.max !== 0;
-  if (!hasBase) return null; // only stat scaling: nothing truthful to print
+/** "70/120/170/220/270", or one number when every rank is the same. */
+export function perRank(values: number[], precision: number, unit: string): string {
+  const shown = values.map((x) => `${fmt(x, precision)}${unit}`);
+  return shown.every((x) => x === shown[0]) ? shown[0] : shown.join('/');
+}
+
+function formatValue(v: Value, percent: boolean, precision: number): string | null {
   const k = percent ? 100 : 1;
   const unit = percent ? '%' : '';
-  const base = r.min === r.max ? `${fmt(r.min * k, precision)}${unit}` : `${fmt(r.min * k, precision)}${unit}–${fmt(r.max * k, precision)}${unit}`;
-  return r.scales ? `${base} (+إحصاءات)` : base;
+  const levelBased = v.min.some((x, i) => x !== v.max[i]);
+  const hasBase = v.min.some((x) => x !== 0) || v.max.some((x) => x !== 0);
+  const base = levelBased
+    ? `${fmt(v.min[0] * k, precision)}${unit}–${fmt(v.max[v.max.length - 1] * k, precision)}${unit}` // grows with champion level
+    : perRank(v.min.map((x) => x * k), precision, unit);
+  // A ratio inside a percent value reads "per 100 of the stat", as the game words it.
+  const ratios = v.scalings
+    .filter((s) => s.coef.some((x) => x !== 0))
+    .map((s) => {
+      const text = percent ? `${perRank(s.coef.map((x) => x * 10000), 2, '%')} لكل 100 ${s.label}` : `${perRank(s.coef.map((x) => x * 100), 2, '%')} من ${s.label}`;
+      return { text, tag: s.tag };
+    });
+  const paint = (text: string, tag?: string) => (tag ? `<${tag}>${text}</${tag}>` : text);
+  if (!hasBase && !ratios.length) return v.other ? null : base; // only an unnamed part: nothing truthful to print
+  if (!hasBase && !v.other) return ratios.map((r) => paint(r.text, r.tag)).join(' + ');
+  const extra = [...ratios.map((r) => paint(`(+${r.text})`, r.tag)), ...(v.other ? ['(+إحصاءات)'] : [])].join(' ');
+  return hasBase ? `${base} ${extra}`.trim() : extra;
 }
 
 const LIVE_COUNTER = /@f\d+(?:\.\d+)?@/i;
+const plainText = (html: string) => html.replace(/<[^>]*>|@[^@\s]*@/g, '').trim();
+/** A short line around a live counter is a match tracker ("الضرر الإجمالي: @f1@"); a long one is real text. */
+const isTracker = (line: string, all: boolean) => LIVE_COUNTER.test(line) && (all || plainText(line).length <= 40);
+
+export interface ResolveOptions {
+  /** Ability ranks to show (5 for Q/W/E, 3 for R). Augments and items have one. */
+  ranks?: number;
+  /** Another spell of the same champion, for @spell.OtherSpell:Value@ (Jayce, Elise, Nidalee…). */
+  spellRef?: (name: string) => SpellData | undefined;
+  /** Drop every line with a live counter, not only short tracker lines (augments: their counters are all trackers). */
+  dropLiveLines?: boolean;
+}
+
+function makeCtx(spell: SpellData | undefined, ranks: number): Ctx {
+  // Index 0 is "rank 0"; ranks start at 1. A single-value list applies to every rank.
+  const byRank = (values: number[] | undefined) =>
+    values?.length ? Array.from({ length: ranks }, (_, i) => values[i + 1] ?? values[values.length === 1 ? 0 : values.length - 1]) : undefined;
+  const values = spell?.DataValues ?? [];
+  const calcs = Object.entries(spell?.mSpellCalculations ?? {});
+  return {
+    ranks,
+    dataValue: (name) => byRank(values.find((v) => sameName(v.name, name) || sameName(name, v.name))?.values),
+    effect: (index) => byRank(spell?.mEffectAmount?.[index - 1]?.value),
+    calc: (name) => calcs.find(([key]) => sameName(key, name) || sameName(name, key))?.[1],
+    depth: 0,
+  };
+}
 
 /**
  * Returns the text with every placeholder it could fill, and how many it could not.
- * Lines that show live in-match counters (@f1@, @f2.0@ …) are dropped: they have no value outside a game.
+ * Short lines that only track live in-match counters (@f1@, @f2.0@ …) are dropped: they have no value outside a game.
+ * A counter inside real text stays for cleanText to mark as an in-game value.
  */
-export function resolveSpellValues(text: string, spell: SpellData | undefined): { text: string; unresolved: number } {
+export function resolveSpellValues(text: string, spell: SpellData | undefined, opts: ResolveOptions = {}): { text: string; unresolved: number } {
+  const ranks = Math.max(1, opts.ranks ?? 1);
   // Split keeps separators at odd indexes; a dropped line takes the break before it along.
   const parts = text.split(/(<br\s*\/?>|<hr\s*\/?>)/i);
-  let kept = parts[0] && LIVE_COUNTER.test(parts[0]) ? '' : (parts[0] ?? '');
-  for (let i = 1; i < parts.length; i += 2) if (!LIVE_COUNTER.test(parts[i + 1] ?? '')) kept += parts[i] + (parts[i + 1] ?? '');
+  const all = opts.dropLiveLines === true;
+  let kept = parts[0] && isTracker(parts[0], all) ? '' : (parts[0] ?? '');
+  for (let i = 1; i < parts.length; i += 2) if (!isTracker(parts[i + 1] ?? '', all)) kept += parts[i] + (parts[i + 1] ?? '');
 
-  const values = spell?.DataValues ?? [];
-  const dataValue = (name: string) => {
-    const d = values.find((v) => sameName(v.name, name) || sameName(name, v.name));
-    return d?.values?.[1] ?? d?.values?.[0]; // index 0 is "rank 0"; augments have one rank
-  };
-  const calcs = Object.entries(spell?.mSpellCalculations ?? {});
-
+  const own = makeCtx(spell, ranks);
   let unresolved = 0;
-  const out = kept.replace(/@([\w.]+?)(?:\*(-?[\d.]+))?@/g, (whole, name: string, mult?: string) => {
-    const k = mult ? Number(mult) : 1;
-    const calc = calcs.find(([key]) => sameName(key, name))?.[1];
+  const out = kept.replace(/@(?:spell\.(\w+):)?([\w.]+?)(?:\*(-?[\d.]+))?@/g, (whole, ref: string | undefined, name: string, mult?: string) => {
+    if (LIVE_COUNTER.test(whole)) return whole;
+    const ctx = ref ? makeCtx(opts.spellRef?.(ref), ranks) : own;
+    const k = plain(fill(ranks, mult ? Number(mult) : 1));
+    const calc = ctx.calc(name);
+    const effect = /^Effect(\d+)Amount$/i.exec(name);
     let shown: string | null = null;
     if (calc) {
-      const r = sum((calc.mFormulaParts ?? []).map((p) => evalPart(p, dataValue)));
-      const m = calc.mMultiplier ? evalPart(calc.mMultiplier, dataValue) : { min: 1, max: 1, scales: false };
-      if (r && m) shown = formatRange({ min: r.min * m.min * k, max: r.max * m.max * k, scales: r.scales || m.scales }, calc.mDisplayAsPercent === true, calc.mPrecision ?? 2);
+      const v = evalCalc(calc, ctx);
+      const precision = Math.min(Math.max(calc.mPrecision ?? 2, 0), 6); // some calcs store -1
+      const show = (x: Value) => formatValue(times(x, k), calc.mDisplayAsPercent === true, precision);
+      const rangedK = v && calc.mRangedMultiplier ? evalPart(calc.mRangedMultiplier, ctx) : null;
+      const [melee, ranged] = v && rangedK ? [show(v), show(times(v, rangedK))] : [null, null];
+      if (melee && ranged) shown = melee === ranged ? melee : `${melee} (قريب) / ${ranged} (بعيد)`;
+      else if (v && !calc.mRangedMultiplier) shown = show(v);
     } else {
-      const v = dataValue(name);
-      if (v !== undefined) shown = fmt(v * k, 2);
+      const v = ctx.dataValue(name) ?? (effect ? ctx.effect(Number(effect[1])) : undefined);
+      if (v) shown = formatValue(times(plain(v), k), false, 2);
     }
     if (shown === null) unresolved++;
     return shown ?? whole;

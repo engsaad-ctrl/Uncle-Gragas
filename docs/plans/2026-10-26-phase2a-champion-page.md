@@ -88,3 +88,23 @@
 - **Watcher** (`watcher.ts`): polls every 2s, reconnects after errors, and sends the window only real changes. The window shows a status dot in the rail. During champ select it switches the app mode and opens the champion page once per (champion, mode, lane), so the owner can still browse; this can be turned off in Settings.
 - **Diagnostics** (`diagnostics.ts`): Settings → "تصدير التشخيص" saves state, a log and the last raw answers, with names, ids, tokens and chat redacted (queue ids, game mode and champion ids are kept).
 - **Verified:** unit tests for credentials, state, scrub and the watcher, plus the HTTPS client against a local self-signed server. An end-to-end Electron smoke with a fake client (`LOLH_LCU_LOCKFILE`, test only) auto-opened Ahri mid and switched the status from "اختيار الأبطال" to "في مباراة". **Not verified:** a real League client. The real answer shapes may differ; the diagnostics export is how to find out.
+
+## Follow-up 7 — in-game style detailed tooltips (owner: "the exact in-game description with AP/AD and stats")
+
+- **Engine** (`src/texts/spellValues.ts`): values are evaluated per ability rank ("35/60/85/110/135"). Stat ratios are named from the calibrated `mStat` ids (0 AP, 1 armor, 2 AD, 4 attack speed, 6 MR, 7 move speed, 8/9 crit, 12 health, 29 lethality, 31 range; `mStatFormula` 0 total, 1 base, 2 bonus) and wrapped in Riot's colour tags ("(+50% من قوة القدرة)" in the AP colour). Unknown ids keep the generic "إحصاءات". The engine also handles `GameCalculationModified`, `EffectValueCalculationPart`/`@EffectNAmount@`, `@spell.Other:Value@` (Jayce and similar), melee/ranged split calculations, and mana ratios (`AbilityResourceByCoefficient`). Short live-counter lines are dropped; a counter inside real ability text stays as "؟" with its hover hint. Augments still drop every counter line.
+- **Abilities** (`abilityDetails.ts`):
+  - Q/W/E/R text comes from CommunityDragon's `dynamicDescription`, with numbers from the champion bin (`CharacterRecord.spells` gives the Q–R order; `mAbilities` order varies by champion).
+  - A cooldown/cost line comes from `cooldownCoefficients`/`costCoefficients`. Rank count comes from `mLists.LevelUp.levelCount`.
+  - The passive comes from the string table via `mCharacterPassiveSpell`.
+  - A tooltip is used only when every value resolves (782 of 865 across all champions); otherwise the short description stays.
+- **Items** (`items.ts`):
+  - Text is the game's `GeneratedTip_Item_<id>_Description` (passive, active, rules), with shared `{{ Item_* }}` templates expanded and both melee and ranged values shown.
+  - Numbers come from the items bin (`mDataValues`, `mItemCalculations`, quoted `mFlat*Mod` stats, and the active spell's cooldown).
+  - CommunityDragon's stats block is kept.
+  - Purchasable items showing "؟" dropped from 127 to 8.
+- **Augments** now get named ratios and expanded `{{ }}` references: those with "؟" dropped from 106 to 63 (cache schema bumped to 5).
+- **Game files** (`gameData.ts`) are cached per game version:
+  - The 38MB string table is trimmed to tooltip and template keys (about 1.5MB).
+  - The items bin is trimmed per item.
+  - Champion bins are trimmed to the record and spells.
+  - If a download fails, the older cache is used; with no cache at all, the short CommunityDragon texts stay.

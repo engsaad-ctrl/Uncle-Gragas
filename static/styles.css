@@ -208,7 +208,7 @@ a.tier-row { transition: transform .15s, background-color .15s, border-color .15
 .muted { color: var(--muted); }
 
 /* Hover card */
-.tooltip { position: fixed; z-index: 50; width: max-content; max-width: 380px; padding: 12px 14px; background: color-mix(in srgb, var(--panel-2) 94%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 32px #000a; pointer-events: none; opacity: 0; transform: translateY(6px) scale(.97); transition: opacity .16s ease, transform .16s ease; }
+.tooltip { position: fixed; z-index: 50; width: max-content; max-width: 420px; padding: 12px 14px; background: color-mix(in srgb, var(--panel-2) 94%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 32px #000a; pointer-events: none; opacity: 0; transform: translateY(6px) scale(.97); transition: opacity .16s ease, transform .16s ease; }
 .tooltip.show { opacity: 1; transform: none; }
 .tooltip.r-prismatic { border-color: var(--prism); } .tooltip.r-gold { border-color: var(--gold); }
 .tip-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }

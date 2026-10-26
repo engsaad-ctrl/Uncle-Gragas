@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import arItems from '../fixtures/cdragon/items.ar_ae.sample.json' with { type: 'json' };
 import { VAR_HTML } from '../../src/texts/clean.js';
-import { buildItemTexts, type RawItem } from '../../src/texts/items.js';
+import gameFx from '../fixtures/game/items.json' with { type: 'json' };
+import type { GameItem } from '../../src/texts/gameData.js';
+import { buildItemDetails, buildItemTexts, type RawItem } from '../../src/texts/items.js';
 
 // English ("default") is not in the fixtures in the sandbox; these two English entries are synthetic test input for the fallback path.
 const en: RawItem[] = [
@@ -46,5 +48,27 @@ describe('buildItemTexts', () => {
     for (const t of texts.values()) {
       expect(t.html).not.toMatch(/<mainText|GeneratedTip_|@\w+@/i);
     }
+  });
+});
+
+describe('buildItemDetails (real game files, 2026-10)', () => {
+  const strings = (k: string) => (gameFx.strings as Record<string, string>)[k.toLowerCase()];
+  const d = buildItemDetails(gameFx.items as unknown as Record<number, GameItem>, strings);
+
+  it('fills values CommunityDragon prints as 0, with stat ratios', () => {
+    expect(d.get(1035)).toContain('<magicDamage>60 <scaleAP>(+30% من قوة القدرة)</scaleAP> <scaleAD>(+5% من ضرر الهجوم الإضافي)</scaleAD> <scaleHealth>(+2% من الصحة الإضافية)</scaleHealth> ضرر سحر</magicDamage>');
+  });
+
+  it('shows both melee and ranged values, and the active cooldown from the item spell', () => {
+    expect(d.get(3074)).toContain('<scaleAD>40% من ضرر الهجوم</scaleAD> (قريب) / <scaleAD>20% من ضرر الهجوم</scaleAD> (بعيد)');
+    expect(d.get(3146)).toMatch(/\(60ث\).*175–253 <scaleAP>\(\+30% من قوة القدرة\)<\/scaleAP>/s);
+  });
+
+  it('keeps the stats block from CommunityDragon and swaps the body', () => {
+    const item: RawItem = { id: 1035, name: 'سكين الجمر', description: '<mainText><stats>S</stats><br><br>قديم 0</mainText>', inStore: true, iconPath: '' };
+    const html = buildItemTexts([item], [], d).get(1035)!.html;
+    expect(html.startsWith('<span class="t-stats">S</span><br><br>')).toBe(true);
+    expect(html).toContain('60 <span class="t-ap">(+30% من قوة القدرة)</span>');
+    expect(html).not.toContain('قديم');
   });
 });

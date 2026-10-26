@@ -2,13 +2,15 @@ import { composeChampionPage, type ChampionPage, type PageMode } from '../app/ch
 import { composeItemList, type ItemEntry } from '../app/itemList.js';
 import { composeTierList, type TierRow } from '../app/tierList.js';
 import { mcpCaller, OpggStats, type CallTool, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
+import { buildAbilityDetails } from '../texts/abilityDetails.js';
 import { loadAugments, type AugmentsResult } from '../texts/augmentsLoader.js';
 import { loadCdragonJson, type Locale } from '../texts/cdragon.js';
 import {
   buildChampionDetail, buildChampionList, buildSpellTexts, buildStyleTrees,
   type ChampionListEntry, type RawChampion, type RawChampionSummary,
 } from '../texts/champions.js';
-import { buildItemTexts, type RawItem } from '../texts/items.js';
+import { loadChampionBin, loadGameItems, loadGameVersion, loadTooltipStrings } from '../texts/gameData.js';
+import { buildItemDetails, buildItemTexts, type RawItem } from '../texts/items.js';
 import { buildRuneTexts, type RawPerk } from '../texts/runes.js';
 
 const MODES: PageMode[] = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
@@ -62,25 +64,51 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
 
   const augments = once<AugmentsResult>(() => loadAugments({ cacheDir, fetchImpl }));
   const champions = once<ChampionListEntry[]>(async () => buildChampionList(...(await both<RawChampionSummary[]>('champion-summary.json'))));
+  const game = { cacheDir, fetchImpl };
+  const version = once(() => loadGameVersion(game));
+  const tooltipStrings = once(async () => loadTooltipStrings(game, await version()));
+  /** Game-file item tooltips; without them items keep CommunityDragon's text (with 0 where the game computes a value). */
+  const itemDetails = async () => {
+    try {
+      const v = await version();
+      const [items, strings] = await Promise.all([loadGameItems(game, v), tooltipStrings()]);
+      return buildItemDetails(items, (k) => strings[k.toLowerCase()]);
+    } catch {
+      return undefined;
+    }
+  };
   const texts = once(async () => {
-    const [items, perks, styles, spells] = await Promise.all([
+    const [items, perks, styles, spells, details] = await Promise.all([
       both<RawItem[]>('items.json'),
       both<RawPerk[]>('perks.json'),
       both<{ styles: { id: number; name: string; iconPath: string; slots: { type: string; slotLabel: string; perks: number[] }[] }[] }>('perkstyles.json'),
       both<{ id: number; name: string; description: string; iconPath: string }[]>('summoner-spells.json'),
+      itemDetails(),
     ]);
     return {
-      items: buildItemTexts(...items),
+      items: buildItemTexts(...items, details),
       runes: buildRuneTexts(...perks),
       styles: buildStyleTrees(styles[0].styles, styles[1].styles),
       spells: buildSpellTexts(...spells),
     };
   });
 
+  /** In-game tooltips need two extra game files; without them the page keeps the short descriptions. */
+  async function abilityDetails(alias: string, spells: RawChampion['spells']) {
+    try {
+      const v = await version();
+      const [bin, strings] = await Promise.all([loadChampionBin(game, v, alias), tooltipStrings()]);
+      return buildAbilityDetails(spells, bin, (k) => strings[k.toLowerCase()]);
+    } catch {
+      return undefined;
+    }
+  }
+
   async function championPage(id: number, mode: PageMode, position: Position): Promise<ChampionPage> {
     const entry = (await champions()).find((c) => c.id === id);
     if (!entry) throw new Error(`unknown champion ${id}`);
     const [[ar, en], t] = await Promise.all([both<RawChampion>(`champions/${id}.json`), texts()]);
+    const details = await abilityDetails(entry.alias, ar.spells);
     const laned = mode === 'ranked' || mode === 'flex';
     const loadBuild = () =>
       stats
@@ -93,7 +121,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       mode === 'mayhem' ? augments().then((r) => r.augments, () => []) : Promise.resolve([]),
     ]);
     return composeChampionPage({
-      champion: buildChampionDetail(ar, en), mode, position: laned ? position : null,
+      champion: buildChampionDetail(ar, en, details), mode, position: laned ? position : null,
       build, mayhem, augments: augs, ...t,
     });
   }

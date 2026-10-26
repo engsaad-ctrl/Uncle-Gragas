@@ -1,3 +1,4 @@
+import type { AbilityDetail, RawSpellDetail } from './abilityDetails.js';
 import { assetUrl } from './assets.js';
 import { cleanText, isUntranslated, pickText } from './clean.js';
 
@@ -43,7 +44,7 @@ export interface AbilityText {
   iconUrl: string;
 }
 
-interface RawAbility {
+interface RawAbility extends RawSpellDetail {
   name: string;
   description: string;
   abilityIconPath: string;
@@ -72,14 +73,13 @@ export interface ChampionDetail {
 
 const SPELL_KEYS: AbilityKey[] = ['Q', 'W', 'E', 'R'];
 
-export function buildChampionDetail(ar: RawChampion, en: RawChampion | undefined): ChampionDetail {
-  const ability = (key: AbilityKey, a: RawAbility, e: RawAbility | undefined): AbilityText => ({
-    key,
-    name: a.name,
-    enName: e?.name ?? '',
-    html: cleanText(pickText(a.description, e?.description).text),
-    iconUrl: assetUrl(a.abilityIconPath),
-  });
+/** `details` (from the game files) adds the in-game tooltip: per-rank values, ratios, cooldown and cost. */
+export function buildChampionDetail(ar: RawChampion, en: RawChampion | undefined, details?: Map<AbilityKey, AbilityDetail>): ChampionDetail {
+  const ability = (key: AbilityKey, a: RawAbility, e: RawAbility | undefined): AbilityText => {
+    const d = details?.get(key);
+    const text = d?.body ?? pickText(a.description, e?.description).text;
+    return { key, name: a.name, enName: e?.name ?? '', html: cleanText([d?.head, text].filter(Boolean).join('<br><br>')), iconUrl: assetUrl(a.abilityIconPath) };
+  };
   return {
     id: ar.id,
     name: ar.name,
