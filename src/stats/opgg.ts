@@ -69,6 +69,30 @@ export interface MayhemAugmentStat {
   popularity: number;
 }
 
+export type LanePosition = 'top' | 'jungle' | 'mid' | 'adc' | 'support';
+
+export interface MetaRow {
+  /** English champion name as OP.GG writes it (matches CommunityDragon's default-locale name). */
+  champion: string;
+  tier: number;
+  rank: number;
+  rankPrev: number;
+  winRate: number;
+  pickRate: number;
+  banRate: number;
+  games: number;
+}
+
+export type ItemMap = 'SUMMONERS_RIFT' | 'HOWLING_ABYSS' | 'ARENA_MAP_1';
+
+export interface MapItem {
+  id: number;
+  gold: number;
+  purchasable: boolean;
+  from: number[];
+  into: number[];
+}
+
 export interface Fetched<T> {
   data: T;
   fetchedAt: number;
@@ -147,7 +171,41 @@ export function toMayhemAugments(answer: OpggValue): MayhemAugmentStat[] {
   });
 }
 
+const LANES: LanePosition[] = ['top', 'jungle', 'mid', 'adc', 'support'];
+const META_ROW = '{ban_rate,champion,is_rip,kda,kill,pick_rate,play,rank,rank_prev,rank_prev_patch,role_rate,tier,win,win_rate}';
+export const META_FIELDS = LANES.map((p) => `data.positions.${p}[].${META_ROW}`);
+
+export function toLaneMeta(answer: OpggValue): Record<LanePosition, MetaRow[]> {
+  const positions = obj(obj(obj(answer)?.data)?.positions);
+  const rows = (v: OpggValue | undefined): MetaRow[] =>
+    (Array.isArray(v) ? v : []).flatMap((x) => {
+      const r = obj(x);
+      if (!r || typeof r.champion !== 'string') return [];
+      return [{
+        champion: r.champion,
+        tier: num(r.tier) ?? 0,
+        rank: num(r.rank) ?? 0,
+        rankPrev: num(r.rank_prev) ?? 0,
+        winRate: num(r.win_rate) ?? 0,
+        pickRate: num(r.pick_rate) ?? 0,
+        banRate: num(r.ban_rate) ?? 0,
+        games: num(r.play) ?? 0,
+      }];
+    });
+  return Object.fromEntries(LANES.map((p) => [p, rows(positions?.[p])])) as Record<LanePosition, MetaRow[]>;
+}
+
+export function toMapItems(answer: OpggValue): MapItem[] {
+  const list = obj(obj(answer)?.data)?.items;
+  return (Array.isArray(list) ? list : []).flatMap((x) => {
+    const i = obj(x);
+    const id = num(i?.item_id);
+    return id === null ? [] : [{ id, gold: num(i?.gold_total) ?? 0, purchasable: i?.gold_purchasable === true, from: nums(i?.from_items), into: nums(i?.into_items) }];
+  });
+}
+
 const SIX_HOURS = 6 * 60 * 60 * 1000;
+const ONE_DAY = 24 * 60 * 60 * 1000;
 
 export class OpggStats {
   constructor(
@@ -188,12 +246,23 @@ export class OpggStats {
     );
   }
 
-  private async cached<T>(name: string, load: () => Promise<T>): Promise<Fetched<T>> {
+  laneMeta(): Promise<Fetched<Record<LanePosition, MetaRow[]>>> {
+    return this.cached('meta-all', async () =>
+      toLaneMeta(parseOpgg(await this.call('lol_list_lane_meta_champions', { position: 'all', lang: 'en_US', desired_output_fields: META_FIELDS }))),
+    );
+  }
+
+  /** Which items exist on a map (names and Arabic text come from CommunityDragon). Changes only with patches. */
+  mapItems(map: ItemMap): Promise<Fetched<MapItem[]>> {
+    return this.cached(`items-${map}`, async () => toMapItems(parseOpgg(await this.call('lol_list_items', { lang: 'en_US', map }))), ONE_DAY);
+  }
+
+  private async cached<T>(name: string, load: () => Promise<T>, ttl = SIX_HOURS): Promise<Fetched<T>> {
     const path = join(this.cacheDir, 'opgg', `${name}.json`);
     const cached = await readFile(path, 'utf8')
       .then((s) => JSON.parse(s) as { fetchedAt: number; data: T })
       .catch(() => null);
-    if (cached && this.now() - cached.fetchedAt < SIX_HOURS) return { ...cached, stale: false };
+    if (cached && this.now() - cached.fetchedAt < ttl) return { ...cached, stale: false };
     try {
       const fresh = { fetchedAt: this.now(), data: await load() };
       await mkdir(dirname(path), { recursive: true });

@@ -1,0 +1,200 @@
+[
+ {
+  "id": 1001,
+  "name": "أحذية",
+  "description": "<mainText><stats><attention> 25</attention> سرعة حركة</stats><br><br></mainText>",
+  "inStore": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/1001_Class_T1_BootsofSpeed.png",
+  "categories": [
+   "Boots"
+  ],
+  "from": [],
+  "to": [
+   3117,
+   3158,
+   3047,
+   3009,
+   3111,
+   3006,
+   3005,
+   3008,
+   3010,
+   3020
+  ]
+ },
+ {
+  "id": 1036,
+  "name": "السيف الضخم",
+  "description": "<mainText><stats><attention> 10</attention> ضرر هجوم</stats><br><br></mainText>",
+  "inStore": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/1036_Class_T1_LongSword.png",
+  "categories": [
+   "Damage",
+   "Lane"
+  ],
+  "from": [],
+  "to": [
+   3032,
+   6670,
+   1053,
+   3133,
+   3004,
+   2015,
+   2019,
+   2021,
+   2517,
+   6692,
+   3123,
+   3051,
+   6671,
+   3134,
+   323004,
+   3155,
+   3035,
+   3077,
+   2523,
+   3044,
+   4003,
+   3142,
+   6690,
+   6699,
+   6701
+  ]
+ },
+ {
+  "id": 1055,
+  "name": "خنجر دوران",
+  "description": "<mainText><stats><attention> 10</attention> ضرر هجوم<br><attention> 80</attention> صحة<br><attention> 2.5%</attention> علاج كامن</stats><br><br></mainText>",
+  "inStore": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/1055_Marksman_T1_DoransBlade.png",
+  "categories": [
+   "Health",
+   "Damage",
+   "LifeSteal",
+   "SpellVamp",
+   "Lane"
+  ],
+  "from": [],
+  "to": []
+ },
+ {
+  "id": 2003,
+  "name": "ترياق صحة",
+  "description": "<mainText><stats></stats><br><br> <active>التهام</active><br>تستعيد <healing>120 صحة</healing> خلال 15 ث.</mainText>",
+  "inStore": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/2003_Class_T1_HealthPotion.png",
+  "categories": [
+   "HealthRegen",
+   "Consumable",
+   "Lane",
+   "Jungle"
+  ],
+  "from": [],
+  "to": []
+ },
+ {
+  "id": 3020,
+  "name": "حذاء المشعوذ",
+  "description": "<mainText><stats><attention> 12</attention> اختراق سحر<br><attention> 45</attention> سرعة حركة</stats><br><br></mainText>",
+  "inStore": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/3020_Class_T2_SorcerersShoes.png",
+  "categories": [
+   "Boots",
+   "MagicPenetration"
+  ],
+  "from": [
+   1001
+  ],
+  "to": [
+   3175
+  ]
+ },
+ {
+  "id": 3031,
+  "name": "السيف الأبدي",
+  "description": "<mainText><stats><attention> 75</attention> ضرر هجوم<br><attention> 25%</attention> فرصة ضربة حرجة<br><attention> 30%</attention> ضرر الضربة الحرجة</stats><br><br></mainText>",
+  "inStore": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/3031_Marksman_T3_InfinityEdge.png",
+  "categories": [
+   "CriticalStrike",
+   "Damage"
+  ],
+  "from": [
+   1038,
+   1037,
+   1018
+  ],
+  "to": []
+ },
+ {
+  "id": 3133,
+  "name": "مطرقة كولفيلد",
+  "description": "<mainText><stats><attention> 20</attention> ضرر هجوم<br><attention> 10</attention> تسارع القدرة</stats><br><br></mainText>",
+  "inStore": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/3133_Fighter_T2_CaulfieldsWarhammer.png",
+  "categories": [
+   "Damage",
+   "CooldownReduction",
+   "AbilityHaste"
+  ],
+  "from": [
+   1036,
+   2022,
+   1036
+  ],
+  "to": [
+   6693,
+   126697,
+   3004,
+   6694,
+   3156,
+   6696,
+   2517,
+   6692,
+   6691,
+   323004,
+   3074,
+   6610,
+   6697,
+   4402,
+   3508,
+   3179,
+   6333,
+   6609,
+   6632
+  ]
+ },
+ {
+  "id": 3157,
+  "name": "ساعة زونيا الرملية",
+  "description": "<mainText><stats><attention> 105</attention> قوة القدرة<br><attention> 50</attention> الدروع</stats><br><br><br> <br><active>إيقاف الزمن</active><br>تدخل حالة <keyword>سبات</keyword> لمدة 2.5ث.</mainText>",
+  "inStore": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/3157_Mage_T3_ZhonyasHourglass.png",
+  "categories": [
+   "Armor",
+   "SpellDamage",
+   "Active"
+  ],
+  "from": [
+   1058,
+   2420
+  ],
+  "to": []
+ },
+ {
+  "id": 3340,
+  "name": "كاشف التخفي",
+  "description": "<mainText><stats></stats><br><br> <active>تأثير نشط</active>  (<scaleLevel>210 - 90</scaleLevel>ث، حد الشحنات الأقصى هو 2)<br>تنصب كاشف تخفٍ <keyword>غير مرئي</keyword> يمنح رؤية لمدة <scaleLevel>90 - 120</scaleLevel>ث.</mainText>",
+  "inStore": true,
+  "iconPath": "/lol-game-data/assets/ASSETS/Items/Icons2D/3340_Class_T1_WardingTotem.png",
+  "categories": [
+   "Active",
+   "Jungle",
+   "Lane",
+   "Trinket",
+   "Vision"
+  ],
+  "from": [],
+  "to": []
+ }
+]

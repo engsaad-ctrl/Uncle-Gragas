@@ -41,3 +41,15 @@ const pageIds = new Set(trees.flatMap((s) => s.slots.flatMap((sl) => sl.perks)))
 out('tests/fixtures/cdragon/perks.ar_ae.page.json', read('cdragon/ar_ae/perks.json').filter((p) => pageIds.has(p.id))
   .map(({ id, name, shortDesc, longDesc, iconPath }) => ({ id, name, shortDesc, longDesc, iconPath })));
 console.log('page perks', pageIds.size);
+
+// Tier list (all lanes) and per-map item lists from OP.GG; item lists trimmed to the fields the app reads.
+out('tests/fixtures/opgg/meta-all.txt', readFileSync(P + 'opgg/meta-all.txt', 'utf8'));
+for (const map of ['SUMMONERS_RIFT', 'ARENA_MAP_1']) {
+  const j = JSON.parse(readFileSync(P + `opgg/items-${map}.txt`, 'utf8'));
+  j.data.items = j.data.items.map(({ item_id, name, into_items, from_items, gold_total, gold_purchasable }) => ({ item_id, name, into_items, from_items, gold_total, gold_purchasable }));
+  out(`tests/fixtures/opgg/items-${map}.json`, JSON.stringify(j));
+}
+// The real items of a few groups, for the item-list test: boots, a basic, an epic, a legendary, a starter, a potion, a ward.
+const want = [1001, 3020, 1036, 3133, 3031, 1055, 2003, 3340, 3157];
+out('tests/fixtures/cdragon/items.ar_ae.groups.json', read('cdragon/ar_ae/items.json').filter((i) => want.includes(i.id))
+  .map(({ id, name, description, inStore, iconPath, categories, from, to }) => ({ id, name, description, inStore, iconPath, categories, from, to })));

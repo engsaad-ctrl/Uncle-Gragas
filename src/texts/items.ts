@@ -6,6 +6,7 @@ export interface RawItem {
   description: string;
   inStore: boolean;
   iconPath: string;
+  categories?: string[];
 }
 
 export interface ItemText {
@@ -17,6 +18,8 @@ export interface ItemText {
   translated: boolean;
   inStore: boolean;
   iconPath: string;
+  /** Shop tags such as Boots, Consumable, Trinket. */
+  categories: string[];
 }
 
 export function buildItemTexts(ar: RawItem[], en: RawItem[]): Map<number, ItemText> {
@@ -34,6 +37,7 @@ export function buildItemTexts(ar: RawItem[], en: RawItem[]): Map<number, ItemTe
       translated: name.translated && desc.translated,
       inStore: a.inStore,
       iconPath: a.iconPath,
+      categories: a.categories ?? [],
     });
   }
   return out;

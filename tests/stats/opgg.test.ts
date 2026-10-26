@@ -81,3 +81,28 @@ describe('OpggStats.mayhemAugments', () => {
     expect(data[0]).toEqual({ id: 2127, tier: 3, performance: 88.9, popularity: 0.2 });
   });
 });
+
+describe('OpggStats.laneMeta / mapItems', () => {
+  const metaAnswers = { lol_list_lane_meta_champions: fixture('meta-all.txt'), lol_list_items: fixture('items-SUMMONERS_RIFT.json') };
+
+  it('maps the real tier list for every lane', async () => {
+    const { data } = await new OpggStats(fake(metaAnswers), cacheDir).laneMeta();
+    expect(calls[0]).toMatchObject({ name: 'lol_list_lane_meta_champions', args: { position: 'all' } });
+    expect(Object.keys(data)).toEqual(['top', 'jungle', 'mid', 'adc', 'support']);
+    expect(data.mid[0]).toEqual({ champion: 'Ahri', tier: 1, rank: 1, rankPrev: 1, winRate: 0.51, pickRate: 0.1, banRate: 0.03, games: 100660 });
+    expect(data.jungle[0].champion).toBe("Cho'Gath");
+    expect(data.adc).toHaveLength(39);
+  });
+
+  it('maps the real item list of a map and caches it for a day', async () => {
+    let now = 0;
+    const stats = new OpggStats(fake(metaAnswers), cacheDir, () => now);
+    const { data } = await stats.mapItems('SUMMONERS_RIFT');
+    expect(calls[0]).toMatchObject({ name: 'lol_list_items', args: { map: 'SUMMONERS_RIFT' } });
+    expect(data).toHaveLength(314);
+    expect(data[0]).toEqual({ id: 1001, gold: 300, purchasable: true, from: [], into: [3005, 3047, 3008, 3006, 3009, 3010, 3020, 3111, 3117, 3158] });
+    now = 23 * 3600_000;
+    await stats.mapItems('SUMMONERS_RIFT');
+    expect(calls).toHaveLength(1);
+  });
+});
