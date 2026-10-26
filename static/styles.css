@@ -338,3 +338,10 @@ body { display: block; }
 
 /* The game's stat icons inside descriptions (%i:scaleAP% …) */
 .t-ico { width: 1.05em; height: 1.05em; vertical-align: -.2em; margin-inline: .12em; }
+
+/* Stat colours, measured from the game's own stat icons (each stat's text matches its icon) */
+.s-scalead { color: #ec8d34; } .s-scaleap, .s-scaleadaptiveforce { color: #786cff; } .s-scalearmor { color: #efba59; } .s-scalemr { color: #52dfff; }
+.s-scalehealth, .s-scalehpregen { color: #2dd17e; } .s-scalehealshield { color: #60e08f; } .s-scaleas { color: #ffe78c; }
+.s-scalecrit, .s-scalecritmult { color: #e9341b; } .s-scaleapen { color: #f75d52; } .s-scalempen { color: #cd69fd; }
+.s-scalels, .s-scalesv { color: #d52042; } .s-scalemana, .s-scalemanaregen { color: #189ae6; } .s-scaletenacity { color: #8666ff; }
+.s-scaleah, .s-scalecooldown, .s-scalems, .s-scalerange { color: #f0e6d2; }

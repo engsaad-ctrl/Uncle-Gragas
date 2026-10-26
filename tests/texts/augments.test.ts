@@ -32,7 +32,7 @@ describe('buildAugmentTexts', () => {
     expect(a.enName).toBe('Adamant');
     expect(a.described).toBe(true);
     // Tooltip chosen because every value resolved from the spell data (ResistsPerLevel etc.)
-    expect(a.html).toContain('تكسب 2–10 <span class="t-armor"> دروع</span>');
+    expect(a.html).toContain('تكسب 2–10 <span class="s-scalearmor"> دروع</span>');
     expect(a.html).toContain('لمدة 10ث');
     expect(a.html).not.toContain(VAR_HTML);
   });

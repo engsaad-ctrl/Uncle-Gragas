@@ -20,7 +20,7 @@ describe('buildItemTexts', () => {
     expect(sword.translated).toBe(true);
     // Each stat line carries the game's icon for its stat: AD, crit chance, crit damage.
     expect(sword.html.replace(/<img [^>]*statsicon\/(\w+)\.png"[^>]*>/g, '[$1]')).toBe(
-      '<span class="t-stats"><span class="t-key">[scalead] 75</span> ضرر هجوم<br><span class="t-key">[scalecrit] 25%</span> فرصة ضربة حرجة<br><span class="t-key">[scalecritmult] 30%</span> ضرر الضربة الحرجة</span>',
+      '<span class="t-stats"><span class="s-scalead">[scalead] 75 ضرر هجوم</span><br><span class="s-scalecrit">[scalecrit] 25% فرصة ضربة حرجة</span><br><span class="s-scalecritmult">[scalecritmult] 30% ضرر الضربة الحرجة</span></span>',
     );
   });
 
@@ -68,8 +68,8 @@ describe('buildItemDetails (real game files, 2026-10)', () => {
   it('keeps CommunityDragon\'s stats block with the game\'s stat icons, and swaps the body', () => {
     const item: RawItem = { id: 1035, name: 'سكين الجمر', description: '<mainText><stats><attention> 75</attention> ضرر هجوم<br><attention> 12%</attention> سرقة صحة</stats><br><br>قديم 0</mainText>', inStore: true, iconPath: '' };
     const html = buildItemTexts([item], [], d).get(1035)!.html;
-    expect(html).toMatch(/^<span class="t-stats"><span class="t-key"><img class="t-ico" src="[^"]+statsicon\/scalead\.png"[^>]*> 75<\/span> ضرر هجوم<br><span class="t-key"><img [^>]+scalels\.png/);
-    expect(html).toMatch(/60 <span class="t-ap"><span class="t-nw">\(\+30% <img [^>]+scaleap\.png/);
+    expect(html).toMatch(/^<span class="t-stats"><span class="s-scalead"><img class="t-ico" src="[^"]+statsicon\/scalead\.png"[^>]*> 75 ضرر هجوم<\/span><br><span class="s-scalels"><img [^>]+scalels\.png/);
+    expect(html).toMatch(/60 <span class="s-scaleap"><span class="t-nw">\(\+30% <img [^>]+scaleap\.png/);
     expect(html).not.toContain('قديم');
   });
 });

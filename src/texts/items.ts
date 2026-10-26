@@ -67,7 +67,7 @@ export function statIcons(desc: string): string {
   return desc.replace(/<stats>([\s\S]*?)<\/stats>/, (_, block: string) =>
     `<stats>${block.replace(/<attention>([^<]*)<\/attention>([^<]*)/g, (whole, value: string, label: string) => {
       const icon = STAT_ICON.find(([re]) => re.test(label))?.[1];
-      return icon ? `<attention>%i:${icon}%${value}</attention>${label}` : whole;
+      return icon ? `<${icon}>%i:${icon}%${value}${label}</${icon}>` : whole; // number and name in the icon's colour
     })}</stats>`,
   );
 }

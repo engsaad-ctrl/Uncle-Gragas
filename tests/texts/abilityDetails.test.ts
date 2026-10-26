@@ -37,7 +37,7 @@ describe('buildAbilityDetails (real Ahri files, 2026-10)', () => {
     const raw = { id: 103, name: 'آري', alias: 'Ahri', title: '', squarePortraitPath: '', passive: { name: 'p', description: 'قصير', abilityIconPath: '' }, spells } as unknown as RawChampion;
     const q = (x: ReturnType<typeof buildChampionDetail>) => x.abilities.find((a) => a.key === 'Q')!.html;
     const withGame = buildChampionDetail(raw, undefined, d).abilities.find((a) => a.key === 'Q')!;
-    expect(withGame.html).toMatch(/35 \/ 60 \/ 85 \/ 110 \/ 135 <span class="t-ap">/);
+    expect(withGame.html).toMatch(/35 \/ 60 \/ 85 \/ 110 \/ 135 <span class="s-scaleap">/);
     expect(withGame.ranks?.[0].label).toBe('التبريد');
     expect(q(buildChampionDetail(raw, undefined))).not.toContain('35 / 60');
   });
