@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import fx from '../fixtures/augments/sample.json' with { type: 'json' };
 import { VAR_HTML } from '../../src/texts/clean.js';
-import { buildAugmentTexts, iconUrl, type AugmentListEntry } from '../../src/texts/augments.js';
+import { assetUrl } from '../../src/texts/assets.js';
+import { buildAugmentTexts, type AugmentListEntry } from '../../src/texts/augments.js';
 import { stringTableKey } from '../../src/texts/stringhash.js';
 
 const texts = await buildAugmentTexts({
@@ -72,7 +73,7 @@ describe('buildAugmentTexts', () => {
       bins: [{ a: data(54, 'same'), b: data(1054, 'same'), c: data(87, 'arena'), d: data(1087, 'mayhem') }],
       strings: { same: 'نص واحد', arena: 'نص الأرينا', mayhem: 'نص مايهم' },
     });
-    expect(r.filter((a) => a.name === 'أستاذ').map((a) => a.modes)).toEqual([['arena', 'mayhem']]);
+    expect(r.filter((a) => a.name === 'أستاذ').map((a) => [a.modes, a.ids])).toEqual([[['arena', 'mayhem'], [54, 1054]]]);
     expect(r.filter((a) => a.name === 'إعصار').map((a) => a.modes).sort()).toEqual([['arena'], ['mayhem']]);
     expect(r.some((a) => a.name === '???')).toBe(false);
   });
@@ -81,7 +82,7 @@ describe('buildAugmentTexts', () => {
     expect(byId.get(1397)!.iconUrl).toBe(
       'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/ux/cherry/augments/icons/cerberus_small.png',
     );
-    expect(iconUrl('/lol-game-data/assets/A/B.PNG')).toBe(
+    expect(assetUrl('/lol-game-data/assets/A/B.PNG')).toBe(
       'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/a/b.png',
     );
   });

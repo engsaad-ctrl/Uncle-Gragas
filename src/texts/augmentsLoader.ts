@@ -23,7 +23,7 @@ export interface AugmentsResult {
 }
 
 // Bump when AugmentText changes shape so old caches are rebuilt.
-const CACHE_SCHEMA = 2;
+const CACHE_SCHEMA = 3;
 
 interface Cache {
   schema: number;

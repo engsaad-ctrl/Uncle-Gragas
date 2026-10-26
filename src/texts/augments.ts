@@ -1,3 +1,4 @@
+import { assetUrl } from './assets.js';
 import { cleanText, isUntranslated } from './clean.js';
 import { stringTableKey } from './stringhash.js';
 
@@ -14,6 +15,8 @@ export type Mode = 'arena' | 'mayhem';
 
 export interface AugmentText {
   id: number;
+  /** Every platform id merged into this entry (Arena and Mayhem twins share one entry). */
+  ids: number[];
   name: string;
   enName: string;
   html: string;
@@ -38,9 +41,6 @@ interface AugmentData {
 }
 
 const RARITY: Record<string, Rarity> = { kSilver: 'silver', kGold: 'gold', kPrismatic: 'prismatic', kEventChoice: 'event' };
-const ASSETS = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/';
-
-export const iconUrl = (path: string) => ASSETS + path.replace(/^\/lol-game-data\/assets\//i, '').toLowerCase();
 
 export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentText[]> {
   const data = new Map<number, AugmentData>();
@@ -65,6 +65,7 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
     if (!name || /^[?؟\s]+$/.test(name)) continue; // "???" = unreleased test augment
     out.push({
       id: a.id,
+      ids: [a.id],
       name,
       enName,
       html,
@@ -72,7 +73,7 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
       rarity: RARITY[a.rarity] ?? 'event',
       // The Arena map file (map30) holds only ids < 1000; the Mayhem files (kiwi*) only ids >= 1000.
       modes: [a.id < 1000 ? 'arena' : 'mayhem'],
-      iconUrl: iconUrl(a.augmentSmallIconPath),
+      iconUrl: assetUrl(a.augmentSmallIconPath),
     });
   }
 
@@ -81,7 +82,10 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
   for (const t of out) {
     const twin = merged.get(`${t.name}\u0000${t.html}`);
     if (!twin) merged.set(`${t.name}\u0000${t.html}`, t);
-    else if (!twin.modes.includes(t.modes[0])) twin.modes.push(t.modes[0]);
+    else {
+      twin.ids.push(t.id);
+      if (!twin.modes.includes(t.modes[0])) twin.modes.push(t.modes[0]);
+    }
   }
   return [...merged.values()].sort((x, y) => x.name.localeCompare(y.name, 'ar'));
 }
