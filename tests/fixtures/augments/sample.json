@@ -1,0 +1,292 @@
+{
+ "listAr": [
+  {
+   "id": 1397,
+   "augmentNameId": "ARAM_Cerberus",
+   "nameTRA": "سيربيروس",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Cherry/Augments/Icons/Cerberus_Small.png",
+   "rarity": "kPrismatic"
+  },
+  {
+   "id": 2006,
+   "augmentNameId": "ARAM_Dropkick",
+   "nameTRA": "الركلة القاضية",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Kiwi/Augments/Icons/Dropkick_small.png",
+   "rarity": "kPrismatic"
+  },
+  {
+   "id": 1305,
+   "augmentNameId": "ARAM_LegDay",
+   "nameTRA": "يوم تمارين الأرجل",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Cherry/Augments/Icons/LegDay_small.png",
+   "rarity": "kSilver"
+  },
+  {
+   "id": 1405,
+   "augmentNameId": "ARAM_SpeedDemon",
+   "nameTRA": "عفريت السرعة",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Kiwi/Augments/Icons/SpeedDemon_small.png",
+   "rarity": "kSilver"
+  },
+  {
+   "id": 1327,
+   "augmentNameId": "Adamant",
+   "nameTRA": "شديد الإصرار",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Kiwi/Augments/Icons/Adamant_small.png",
+   "rarity": "kSilver"
+  },
+  {
+   "id": 3118,
+   "augmentNameId": "ArcaneAxiom",
+   "nameTRA": "مبدأ السحر",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Kiwi/Augments/Icons/ArcaneAxiom_small.png",
+   "rarity": "kGold"
+  }
+ ],
+ "listEn": [
+  {
+   "id": 1397,
+   "augmentNameId": "ARAM_Cerberus",
+   "nameTRA": "Cerberus",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Cherry/Augments/Icons/Cerberus_Small.png",
+   "rarity": "kPrismatic"
+  },
+  {
+   "id": 2006,
+   "augmentNameId": "ARAM_Dropkick",
+   "nameTRA": "Dropkick",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Kiwi/Augments/Icons/Dropkick_small.png",
+   "rarity": "kPrismatic"
+  },
+  {
+   "id": 1305,
+   "augmentNameId": "ARAM_LegDay",
+   "nameTRA": "Leg Day",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Cherry/Augments/Icons/LegDay_small.png",
+   "rarity": "kSilver"
+  },
+  {
+   "id": 1405,
+   "augmentNameId": "ARAM_SpeedDemon",
+   "nameTRA": "Speed Demon",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Kiwi/Augments/Icons/SpeedDemon_small.png",
+   "rarity": "kSilver"
+  },
+  {
+   "id": 1327,
+   "augmentNameId": "Adamant",
+   "nameTRA": "Adamant",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Kiwi/Augments/Icons/Adamant_small.png",
+   "rarity": "kSilver"
+  },
+  {
+   "id": 3118,
+   "augmentNameId": "ArcaneAxiom",
+   "nameTRA": "Arcane Axiom",
+   "simpleNameTRA": "",
+   "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Kiwi/Augments/Icons/ArcaneAxiom_small.png",
+   "rarity": "kGold"
+  }
+ ],
+ "bins": {
+  "cherry": {
+   "Maps/ModeSpecificData/Augments/ARAM_SpeedDemon": {
+    "AugmentNameId": "ARAM_SpeedDemon",
+    "NameTra": "Kiwi_ARAM_SpeedDemon_Name",
+    "DescriptionTra": "Kiwi_ARAM_SpeedDemon_Description",
+    "AugmentTooltipTra": "Kiwi_ARAM_SpeedDemon_Description",
+    "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_SpeedDemon/Augment_ARAM_SpeedDemon",
+    "AdditionalSpells": [
+     "Maps/ModeSpecificData/Augments/ARAM_SpeedDemon/Augment_ARAM_SpeedDemon_Haste"
+    ],
+    "mBuildTags": 304,
+    "TooltipData": {
+     "{c4182067}": "Kiwi_ARAM_SpeedDemon_Tooltip",
+     "__type": "{5b441d9b}"
+    },
+    "AugmentLevelData": {
+     "__type": "{21dad86e}"
+    },
+    "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/speeddemon_large.tex",
+    "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/speeddemon_small.tex",
+    "AugmentDisplayTags": [
+     4
+    ],
+    "AugmentPlatformId": 1405,
+    "ResourceResolver": "Maps/ModeSpecificData/Augments/ARAM_SpeedDemon/Resources",
+    "__type": "AugmentData"
+   },
+   "Maps/ModeSpecificData/Augments/Adamant": {
+    "AugmentNameId": "Adamant",
+    "Enabled": false,
+    "NameTra": "Kiwi_Adamant_Name",
+    "DescriptionTra": "Kiwi_Adamant_Summary",
+    "AugmentTooltipTra": "Kiwi_Adamant_Tooltip",
+    "RootSpell": "Maps/ModeSpecificData/Augments/Adamant/Augment_Adamant",
+    "AdditionalSpells": [
+     "Maps/ModeSpecificData/Augments/Adamant/Augment_Adamant/Augment_AdamantBuff"
+    ],
+    "mAugmentTags": 16,
+    "mBuildTags": 296,
+    "TooltipData": {
+     "{c4182067}": "Kiwi_Adamant_Tooltip",
+     "__type": "{5b441d9b}"
+    },
+    "AugmentLevelData": {
+     "__type": "{21dad86e}"
+    },
+    "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/adamant_large.tex",
+    "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/adamant_small.tex",
+    "AugmentDisplayTags": [
+     3
+    ],
+    "AugmentPlatformId": 1327,
+    "ResourceResolver": "Maps/ModeSpecificData/Augments/Adamant/Resources",
+    "__type": "AugmentData"
+   }
+  },
+  "kiwi": {
+   "Maps/ModeSpecificData/Augments/ARAM_LegDay": {
+    "AugmentNameId": "ARAM_LegDay",
+    "NameTra": "Kiwi_ARAM_LegDay_Name",
+    "DescriptionTra": "Cherry_LegDay_Tooltip",
+    "AugmentTooltipTra": "Cherry_LegDay_Tooltip",
+    "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_LegDay/Augment_ARAM_LegDay",
+    "AugmentLargeIconPath": "assets/ux/cherry/augments/icons/legday_large.tex",
+    "AugmentSmallIconPath": "assets/ux/cherry/augments/icons/legday_small.tex",
+    "AugmentDisplayTags": [
+     4
+    ],
+    "AugmentPlatformId": 1305,
+    "__type": "AugmentData"
+   },
+   "{eed14418}": {
+    "AugmentNameId": "ArcaneAxiom",
+    "NameTra": "Kiwi_Augment_ArcaneAxiom_Name",
+    "DescriptionTra": "Kiwi_Augment_ArcaneAxiom_Description",
+    "AugmentTooltipTra": "Kiwi_Augment_ArcaneAxiom_Tooltip",
+    "RootSpell": "{45895f11}",
+    "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/arcaneaxiom_large.tex",
+    "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/arcaneaxiom_small.tex",
+    "AugmentDisplayTags": [
+     5
+    ],
+    "rarity": 1,
+    "AugmentPlatformId": 3118,
+    "__type": "AugmentData"
+   },
+   "Maps/ModeSpecificData/Augments/Adamant": {
+    "AugmentNameId": "Adamant",
+    "Enabled": false,
+    "NameTra": "Kiwi_Adamant_Name",
+    "DescriptionTra": "Kiwi_Adamant_Summary",
+    "AugmentTooltipTra": "Kiwi_Adamant_Tooltip",
+    "RootSpell": "Maps/ModeSpecificData/Augments/Adamant/Augment_Adamant",
+    "AdditionalSpells": [
+     "Maps/ModeSpecificData/Augments/Adamant/Augment_Adamant/Augment_AdamantBuff"
+    ],
+    "mAugmentTags": 16,
+    "mBuildTags": 296,
+    "TooltipData": {
+     "{c4182067}": "Kiwi_Adamant_Tooltip",
+     "__type": "{5b441d9b}"
+    },
+    "AugmentLevelData": {
+     "__type": "{21dad86e}"
+    },
+    "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/adamant_large.tex",
+    "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/adamant_small.tex",
+    "AugmentDisplayTags": [
+     3
+    ],
+    "AugmentPlatformId": 1327,
+    "ResourceResolver": "Maps/ModeSpecificData/Augments/Adamant/Resources",
+    "__type": "AugmentData"
+   }
+  },
+  "kiwi_jade": {
+   "Maps/ModeSpecificData/Augments/ARAM_LegDay": {
+    "AugmentNameId": "ARAM_LegDay",
+    "NameTra": "Kiwi_ARAM_LegDay_Name",
+    "DescriptionTra": "Cherry_LegDay_Tooltip",
+    "AugmentTooltipTra": "Cherry_LegDay_Tooltip",
+    "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_LegDay/Augment_ARAM_LegDay",
+    "AugmentLargeIconPath": "assets/ux/cherry/augments/icons/legday_large.tex",
+    "AugmentSmallIconPath": "assets/ux/cherry/augments/icons/legday_small.tex",
+    "AugmentDisplayTags": [
+     4
+    ],
+    "AugmentPlatformId": 1305,
+    "__type": "AugmentData"
+   },
+   "Maps/ModeSpecificData/Augments/ARAM_Dropkick": {
+    "AugmentNameId": "ARAM_Dropkick",
+    "NameTra": "Kiwi_ARAM_Dropkick_Name",
+    "DescriptionTra": "Kiwi_Augment_Dropkick_Summary",
+    "AugmentTooltipTra": "Kiwi_Augment_Dropkick_Tooltip",
+    "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_Dropkick/Augment_ARAM_Dropkick",
+    "mBuildTags": 256,
+    "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/dropkick_large.tex",
+    "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/dropkick_small.tex",
+    "AugmentDisplayTags": [
+     2
+    ],
+    "rarity": 2,
+    "AugmentPlatformId": 2006,
+    "ResourceResolver": "Maps/ModeSpecificData/Augments/ARAM_Dropkick/Resources",
+    "__type": "AugmentData"
+   },
+   "Maps/ModeSpecificData/Augments/Adamant": {
+    "AugmentNameId": "Adamant",
+    "Enabled": false,
+    "NameTra": "Kiwi_Adamant_Name",
+    "DescriptionTra": "Kiwi_Adamant_Summary",
+    "AugmentTooltipTra": "Kiwi_Adamant_Tooltip",
+    "RootSpell": "Maps/ModeSpecificData/Augments/Adamant/Augment_Adamant",
+    "AdditionalSpells": [
+     "Maps/ModeSpecificData/Augments/Adamant/Augment_Adamant/Augment_AdamantBuff"
+    ],
+    "mAugmentTags": 16,
+    "mBuildTags": 296,
+    "TooltipData": {
+     "{c4182067}": "Kiwi_Adamant_Tooltip",
+     "__type": "{5b441d9b}"
+    },
+    "AugmentLevelData": {
+     "__type": "{21dad86e}"
+    },
+    "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/adamant_large.tex",
+    "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/adamant_small.tex",
+    "AugmentDisplayTags": [
+     3
+    ],
+    "AugmentPlatformId": 1327,
+    "ResourceResolver": "Maps/ModeSpecificData/Augments/Adamant/Resources",
+    "__type": "AugmentData"
+   }
+  },
+  "map30": {}
+ },
+ "strings": {
+  "kiwi_adamant_name": "شديد الإصرار",
+  "kiwi_aram_speeddemon_description": "تكسب <speed>@SpeedPerHit@ سرعة حركة</speed> عند إلحاق الضرر ببطلٍ معادٍ باستخدام قدرة، تتلاشى خلال @SpeedDuration@ث.",
+  "kiwi_adamant_summary": "كلما أخضعت عدوًا لتأثير <status>شل الحركة</status> أو <status>التثبيت في الأرض</status>، تكسب <scaleArmor>دروعًا</scaleArmor> و<scaleMR>مقاومة سحر</scaleMR>.",
+  "kiwi_adamant_tooltip": "كلما أخضعت عدوًا لتأثير <status>شل الحركة</status> أو <status>التثبيت في الأرض</status>، تكسب @ResistsPerLevel@ <scaleArmor> دروع</scaleArmor> و<scaleMR>مقاومة سحر</scaleMR> لمدة @AugDuration@ث (حتى @MaxStacks@ من التكدسات).",
+  "cherry_legday_tooltip": "تكسب <speed>@MovementSpeed@ سرعة حركة</speed> و <speed>@SlowResist*100@% مقاومة إبطاء</speed>.",
+  "{2a67b4a441}": "عند موت بطلٍ ألحقت الضرر به خلال @ResetWindow@ث، تستعيد جزءًا من إجمالي فترة تبريد قدرتك الخارقة.",
+  "{1e4dde6c1c}": "عند موت بطلٍ ألحقت الضرر به خلال @ResetWindow@ث، تستعيد @UltimateRefund@ من إجمالي فترة تبريد قدرتك الخارقة.",
+  "kiwi_augment_dropkick_summary": "تُجهِز هجماتك وقدراتك على الأبطال المعادين أصحاب الصحة المنخفضة، فتُطيح بهم إلى الخلف وتسبب انفجارًا وتعالجك في هذه الأثناء.",
+  "kiwi_augment_dropkick_tooltip": "تُجهِز هجماتك وقدراتك على الأبطال المعادين الذين تقل صحتهم القصوى عن <scaleHealth>@Calc_Execute_Threshold@ </scaleHealth>، <healing>فتستعيد @Calc_Heal@ صحة</healing> و<status>تطيح بالهدف إلى الخلف</status>.<br><br>عند الاصطدام بعدو أو بتضاريس أو بلوغه محطة النهاية، ينفجر الأعداء الذين <status>أطيح بهم إلى الخلف</status> مُلحقين <magicDamage>@Calc_Damage@ ضرر سحر</magicDamage> بالأعداء في الجوار.<br><br><rules>يمكن لهذه الانفجارات أن تتسلسل.<br><br>الأعداء الذين تعرضوا للركل: @f3.0@<br>إجمالي الصحة المكتسبة: @f2.0@<br>الضرر الملحق: @f1.0@</rules>"
+ }
+}
