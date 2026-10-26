@@ -12,4 +12,8 @@ contextBridge.exposeInMainWorld('lolh', {
   profile: (puuid) => ipcRenderer.invoke('profile:get', puuid ?? null),
   onLcuState: (callback) => ipcRenderer.on('lcu:state', (_event, state) => callback(state)),
   exportDiagnostics: () => ipcRenderer.invoke('diagnostics:export'),
+  overlayData: () => ipcRenderer.invoke('overlay:data'),
+  hideOverlay: () => ipcRenderer.invoke('overlay:hide'),
+  setOverlayEnabled: (on) => ipcRenderer.invoke('overlay:enabled', on === true),
+  onOverlayShow: (callback) => ipcRenderer.on('overlay:show', () => callback()),
 });

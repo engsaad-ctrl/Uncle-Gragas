@@ -6,6 +6,7 @@ import type { RawProfile } from '../lcu/profile.js';
 import { composeTierList, type TierRow } from '../app/tierList.js';
 import { mcpCaller, OpggStats, type CallTool, type Counter, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
+import type { AugmentText } from '../texts/augments.js';
 import { loadAugments, type AugmentsResult } from '../texts/augmentsLoader.js';
 import { loadCdragonJson, type Locale } from '../texts/cdragon.js';
 import {
@@ -19,6 +20,14 @@ import { buildRuneTexts, type RawPerk } from '../texts/runes.js';
 const MODES: PageMode[] = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
 const NO_BUILD: PageMode[] = ['arena', 'urf', 'nexus']; // see BuildMode in stats/opgg.ts
 const POSITIONS: Position[] = ['top', 'jungle', 'mid', 'adc', 'support'];
+
+export interface OverlayData {
+  champion: ChampionListEntry | null;
+  mode: AppMode | null;
+  /** True when the first augments carry a performance rating for this champion. */
+  rated: boolean;
+  augments: (AugmentText & { performance?: number })[];
+}
 
 /** The app-wide mode chosen in the side menu. */
 export type AppMode = 'normal' | 'aram' | 'mayhem' | 'arena';
@@ -185,5 +194,21 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return composeProfile(raw, list, t.items, t.spells, me);
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage };
+  /**
+   * The overlay's list: for Mayhem the champion's rated augments first (best first), then the rest of Mayhem's;
+   * for Arena (no per-champion data) every Arena augment; with no pick yet, every augment.
+   */
+  async function overlayData(pick: { championId: number; mode: AppMode } | null): Promise<OverlayData> {
+    const all = (await augments()).augments;
+    const champion = pick ? ((await champions()).find((c) => c.id === pick.championId) ?? null) : null;
+    if (pick?.mode === 'mayhem') {
+      const rated = (await championPage(pick.championId, 'mayhem', 'mid')).augments;
+      const ratedIds = new Set(rated.map((a) => a.id));
+      return { champion, mode: 'mayhem', rated: true, augments: [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))] };
+    }
+    if (pick?.mode === 'arena') return { champion, mode: 'arena', rated: false, augments: all.filter((a) => a.modes.includes('arena')) };
+    return { champion, mode: pick?.mode ?? null, rated: false, augments: all };
+  }
+
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData };
 }

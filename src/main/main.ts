@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, net } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, net } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -6,7 +6,8 @@ import { applyAll, toPayloads } from '../lcu/apply.js';
 import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
 import { loadProfile, parsePuuid } from '../lcu/profile.js';
 import { LcuWatcher } from '../lcu/watcher.js';
-import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest } from './services.js';
+import { overlayWindow } from './overlay.js';
+import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest, type AppMode } from './services.js';
 
 const root = app.getAppPath();
 const cacheDir = process.env.LOLH_CACHE_DIR ?? app.getPath('userData');
@@ -39,7 +40,12 @@ ipcMain.handle('suggest:get', (_e, position: unknown, enemies: unknown, taken: u
 
 // League client: champ select → the window opens the right champion page.
 let mainWindow: BrowserWindow | undefined;
-const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) }, (state) => mainWindow?.webContents.send('lcu:state', state));
+// The client stops naming the champion once the game starts: remember the last champ-select pick for the overlay.
+let lastPick: { championId: number; mode: AppMode } | null = null;
+const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) }, (state) => {
+  if (state.championId && state.mode) lastPick = { championId: state.championId, mode: state.mode };
+  mainWindow?.webContents.send('lcu:state', state);
+});
 ipcMain.handle('lcu:state', () => watcher.state);
 // The window only names the page (champion, mode, lane); the build sent to the client is composed here.
 ipcMain.handle('lcu:apply', (_e, id: unknown, mode: unknown, position: unknown) =>
@@ -63,6 +69,16 @@ ipcMain.handle('profile:get', (_e, puuid: unknown) =>
     return services.profilePage(raw, id === null);
   }),
 );
+// Over-the-game window (F7): augments of the picked champion, ranked for Mayhem, all of them for Arena.
+const overlay = overlayWindow(root);
+const OVERLAY_KEY = 'F7';
+ipcMain.handle('overlay:data', () => reply(() => services.overlayData(lastPick)));
+ipcMain.handle('overlay:hide', () => overlay.hide());
+ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
+  globalShortcut.unregister(OVERLAY_KEY);
+  // register() returns false when another app already holds the key
+  return on === true ? globalShortcut.register(OVERLAY_KEY, () => overlay.toggle()) : false;
+});
 ipcMain.handle('diagnostics:export', async () => {
   const { canceled, filePath } = await dialog.showSaveDialog({
     title: 'تصدير التشخيص',
@@ -96,5 +112,7 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
   watcher.start();
+  overlay.prepare();
 });
+app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => app.quit());

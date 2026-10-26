@@ -77,6 +77,19 @@ try {
 } catch {
   // storage unavailable: keep the default
 }
+// The F7 window over the game (on by default). The key is held by the app only while this is on.
+let overlayOn = true;
+try {
+  overlayOn = localStorage.getItem('overlay') !== 'off';
+} catch {
+  // storage unavailable: keep the default
+}
+const overlayNote = el('p', 'hint', 'اضغط F7 أثناء المباراة لتظهر تعزيزات بطلك فوق اللعبة. يحتاج وضع العرض في اللعبة: Borderless (نافذة بلا حواف).');
+const setOverlay = async (on: boolean) => {
+  const ok = await window.lolh.setOverlayEnabled(on);
+  if (on && !ok) overlayNote.textContent = 'تعذّر حجز زر F7: برنامج آخر يستخدمه.';
+};
+void setOverlay(overlayOn);
 const exportButton = el('button', 'pill', 'تصدير التشخيص');
 exportButton.type = 'button';
 const exportNote = el('p', 'hint', 'يحفظ ملفاً بردود عميل اللعبة بدون اسمك أو معرّفات حسابك، لترسله عند وجود مشكلة.');
@@ -107,6 +120,19 @@ settings.append(
       }
     }),
     el('p', 'hint', 'تُستبدل صفحات البرنامج فقط (اسمها يبدأ بـ LOL_helper)، ولا تُمس صفحاتك.'),
+  ),
+  section(
+    'نافذة التعزيزات فوق اللعبة (F7)',
+    pills('النافذة فوق اللعبة', [['on', 'مفعّلة'], ['off', 'معطّلة']], overlayOn ? 'on' : 'off', (v) => {
+      overlayOn = v === 'on';
+      void setOverlay(overlayOn);
+      try {
+        localStorage.setItem('overlay', v);
+      } catch {
+        // not remembered this time; harmless
+      }
+    }),
+    overlayNote,
   ),
   section('التشخيص', exportButton, exportNote),
   section(

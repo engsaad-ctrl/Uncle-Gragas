@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' https://raw.communitydragon.org; style-src 'self'; script-src 'self'">
+  <title>LOL_helper</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="overlay">
+  <section class="ov-panel">
+    <header class="ov-head">
+      <img id="ov-champ" alt="">
+      <div><strong id="ov-title">التعزيزات</strong><div id="ov-sub" class="en"></div></div>
+      <button type="button" id="ov-close" aria-label="إغلاق (F7)">✕</button>
+    </header>
+    <label class="search"><input id="ov-search" type="search" placeholder="اكتب اسم التعزيز…" autocomplete="off"></label>
+    <div id="ov-list" class="ov-list"></div>
+    <p class="hint">F7 أو Esc للإخفاء · اضغط على تعزيز لوصفه</p>
+  </section>
+  <script type="module" src="../dist/renderer/overlay.js"></script>
+</body>
+</html>

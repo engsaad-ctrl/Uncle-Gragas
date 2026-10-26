@@ -193,3 +193,13 @@ All ten findings from the owner-requested review are fixed:
   - Arabic counting: مباراة واحدة / مباراتان / 3–10 مباريات / 11+ مباراة.
 - **Diagnostics:** a log line with counts only (`ranked n, matches n, recent n`), no names.
 - **Verified:** unit tests (parsers, puuid validation, composition, formats) and an Electron smoke run against a fake client: own profile, rank, two matches, recent players; clicking a recent player opened their profile with Platinum IV Flex.
+
+## Phase 7 — over-the-game augments window (owner approved, 2026-10-26)
+
+- **What it is:** an ordinary frameless, always-on-top Electron window (`src/main/overlay.ts`, `static/overlay.html`, `src/renderer/overlay.ts`), toggled with a global **F7** (Settings can turn it off, which frees the key). It sits above a Borderless/Windowed game, not over exclusive fullscreen. It reads nothing from the game; the offered augments are not exposed by any official API, so it shows a prepared list with a search box.
+- **Content** (`services.overlayData`), based on the last champ-select pick (the client stops naming the champion once the game starts):
+  - Mayhem: the champion's rated augments, best first (OP.GG performance), then the rest.
+  - Arena: every Arena augment.
+  - No pick yet: every augment.
+  - Click an augment for its description; Esc or F7 hides the window.
+- **Verified:** an Electron smoke run with a fake client in Mayhem champ select (Ahri locked). The window is always on top at the right edge, titled "تعزيزات آري", ranks #1–#4 shown; searching "Tank" left two rows and a click opened the description.
