@@ -304,3 +304,15 @@ body { display: block; }
 .toast { position: fixed; z-index: 60; bottom: 16px; left: 50%; translate: -50% 12px; padding: 10px 16px; font-size: 13px; background: color-mix(in srgb, var(--panel-2) 94%, transparent); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 32px #000a; opacity: 0; pointer-events: none; transition: opacity .2s ease, translate .2s ease; }
 .toast.show { opacity: 1; translate: -50% 0; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+/* Lane matchups and pick suggestions */
+.matchup-cols { display: flex; flex-wrap: wrap; gap: 24px; }
+.matchups { flex: 1 1 240px; }
+.matchups h3 { margin: 0 0 8px; font-size: 14px; }
+.matchups.good h3 { color: var(--heal); } .matchups.bad h3 { color: var(--status); }
+.champ-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.champ.mini { width: 92px; padding: 6px 4px; }
+.champ.mini img { width: 48px; height: 48px; }
+.champ.mini small { color: var(--muted); font-weight: 500; font-size: 11px; }
+.suggest { margin-bottom: 14px; border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.suggest .champ.mini { width: 120px; }

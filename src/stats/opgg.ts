@@ -45,6 +45,13 @@ export interface Pick {
   pickRate: number;
 }
 
+/** A lane opponent and how the analysed champion does against it (its own win rate in that matchup). */
+export interface Counter {
+  id: number;
+  games: number;
+  winRate: number;
+}
+
 export interface ChampionBuild {
   games: number;
   winRate: number;
@@ -60,6 +67,9 @@ export interface ChampionBuild {
   sixth: Pick[];
   skillOrder: string[];
   skillPriority: string[];
+  /** Opponents it beats most / that beat it most (OP.GG keeps the top 3 each; none for ARAM: sample too small). */
+  strongAgainst: Counter[];
+  weakAgainst: Counter[];
 }
 
 export interface MayhemAugmentStat {
@@ -109,6 +119,8 @@ export const BUILD_FIELDS = [
   'data.runes.{id,pick_rate,play,primary_page_id,primary_page_name,primary_rune_ids[],primary_rune_names[],secondary_page_id,secondary_page_name,secondary_rune_ids[],secondary_rune_names[],stat_mod_ids[],stat_mod_names[],win}',
   'data.skills.{order[],pick_rate,play,win}',
   'data.skill_masteries.{ids[],pick_rate,play,win}',
+  'data.strong_counters[].{champion_id,play,my_win_rate}',
+  'data.weak_counters[].{champion_id,play,my_win_rate}',
 ];
 
 type Obj = { [field: string]: OpggValue };
@@ -124,6 +136,14 @@ function pick(v: OpggValue | undefined): Pick | null {
   return { ids: nums(o.ids), games, winRate: (num(o.win) ?? 0) / games, pickRate: num(o.pick_rate) ?? 0 };
 }
 const picks = (v: OpggValue | undefined) => (Array.isArray(v) ? v.map(pick).filter((p): p is Pick => p !== null) : []);
+// my_win_rate is the analysed champion's win rate against that opponent, in both lists.
+const counters = (v: OpggValue | undefined): Counter[] =>
+  (Array.isArray(v) ? v : []).flatMap((x) => {
+    const c = obj(x);
+    const id = num(c?.champion_id);
+    const winRate = num(c?.my_win_rate);
+    return id === null || winRate === null ? [] : [{ id, games: num(c?.play) ?? 0, winRate }];
+  });
 
 export function toBuild(answer: OpggValue): ChampionBuild {
   const d = obj(obj(answer)?.data);
@@ -154,6 +174,8 @@ export function toBuild(answer: OpggValue): ChampionBuild {
     sixth: picks(d?.sixth_items),
     skillOrder: strs(obj(d?.skills)?.order),
     skillPriority: strs(obj(d?.skill_masteries)?.ids),
+    strongAgainst: counters(d?.strong_counters),
+    weakAgainst: counters(d?.weak_counters),
   };
 }
 

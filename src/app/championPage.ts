@@ -1,7 +1,7 @@
-import type { ChampionBuild, Fetched, MayhemAugmentStat, Pick, Position } from '../stats/opgg.js';
+import type { ChampionBuild, Counter, Fetched, MayhemAugmentStat, Pick, Position } from '../stats/opgg.js';
 import { assetUrl } from '../texts/assets.js';
 import type { AugmentText } from '../texts/augments.js';
-import type { ChampionDetail, NamedText, StyleSlot, StyleTree } from '../texts/champions.js';
+import type { ChampionDetail, ChampionListEntry, NamedText, StyleSlot, StyleTree } from '../texts/champions.js';
 import type { ItemText } from '../texts/items.js';
 import type { RuneText } from '../texts/runes.js';
 
@@ -29,6 +29,13 @@ export interface RuneTree {
   rows: RuneRow[];
 }
 
+/** A lane opponent, with the page champion's win rate against it. */
+export interface Matchup {
+  champion: ChampionListEntry;
+  winRate: number;
+  games: number;
+}
+
 export interface RatedAugment extends AugmentText {
   performance: number;
   popularity: number;
@@ -51,6 +58,8 @@ export interface ChampionPage {
   sixth: ItemChoice[];
   runes: { primary: RuneTree | null; sub: RuneTree | null; shards: RuneRow[]; games: number; winRate: number } | null;
   augments: RatedAugment[];
+  /** Opponents it beats most, and those that beat it most. */
+  matchups: { strong: Matchup[]; weak: Matchup[] };
   fetchedAt: number | null;
   stale: boolean;
 }
@@ -67,6 +76,7 @@ export interface PageSources {
   runes: Map<number, RuneText>;
   styles: Map<number, StyleTree>;
   spells: Map<number, NamedText>;
+  championList: ChampionListEntry[];
 }
 
 const fromItem = (t: ItemText): NamedText => ({ id: t.id, name: t.name, enName: t.enName, html: t.html, iconUrl: assetUrl(t.iconPath) });
@@ -115,6 +125,13 @@ function composeRunes(r: NonNullable<ChampionBuild['runes']>, styles: Map<number
   };
 }
 
+// Builds cached before counters were read have none (undefined): show nothing for them.
+const matchups = (list: Counter[] | undefined, champions: ChampionListEntry[]): Matchup[] =>
+  (list ?? []).flatMap((c) => {
+    const champion = champions.find((x) => x.id === c.id);
+    return champion ? [{ champion, winRate: c.winRate, games: c.games }] : [];
+  });
+
 export function composeChampionPage(src: PageSources): ChampionPage {
   const build = src.build && !(src.build instanceof Error) ? src.build.data : null;
   const choice = (p: Pick | null): ItemChoice | null =>
@@ -150,6 +167,7 @@ export function composeChampionPage(src: PageSources): ChampionPage {
     sixth: choices(build?.sixth ?? []),
     runes: build?.runes ? composeRunes(build.runes, src.styles, src.runes) : null,
     augments,
+    matchups: { strong: matchups(build?.strongAgainst, src.championList), weak: matchups(build?.weakAgainst, src.championList) },
     fetchedAt: fetched.length ? Math.min(...fetched.map((f) => f.fetchedAt)) : null,
     stale: fetched.some((f) => f.stale),
   };

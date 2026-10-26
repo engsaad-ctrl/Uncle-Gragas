@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BUILD_FIELDS, OpggStats, type CallTool } from '../../src/stats/opgg.js';
+import { parseOpgg } from '../../src/stats/opggFormat.js';
+import { BUILD_FIELDS, OpggStats, toBuild, type CallTool } from '../../src/stats/opgg.js';
 
 const fixture = (name: string) => readFileSync(new URL(`../fixtures/opgg/${name}`, import.meta.url), 'utf8');
 let cacheDir: string;
@@ -70,6 +71,15 @@ describe('OpggStats.build', () => {
     const stale = await new OpggStats(fake({}), cacheDir, () => now).build('Ahri', 'ranked', 'mid');
     expect(stale).toMatchObject({ stale: true, fetchedAt: 1_000 });
     await expect(new OpggStats(fake({}), cacheDir).build('Ahri', 'aram', 'mid')).rejects.toThrow('offline');
+  });
+});
+
+describe('toBuild counters', () => {
+  it('reads who the champion beats and who beats it, with its own win rate (real Ahri mid answer)', () => {
+    const b = toBuild(parseOpgg(readFileSync(new URL('../fixtures/opgg/ahri-counters.txt', import.meta.url), 'utf8')));
+    expect(b.strongAgainst[0]).toEqual({ id: 901, games: 134, winRate: 0.63 }); // Smolder
+    expect(b.weakAgainst.map((c) => c.id)).toEqual([887, 99, 238]); // Gwen, Lux, Zed
+    expect(b.weakAgainst[0].winRate).toBe(0.45);
   });
 });
 

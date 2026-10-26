@@ -3,6 +3,7 @@ import type { Position } from '../stats/opgg.js';
 import type { AugmentsResult } from '../texts/augmentsLoader.js';
 import type { ItemEntry } from '../app/itemList.js';
 import type { TierRow } from '../app/tierList.js';
+import type { Suggestion } from '../app/suggestions.js';
 import type { ApplyResult } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
 import type { AppMode, Listed } from '../main/services.js';
@@ -22,6 +23,7 @@ declare global {
       tierList(position: LanePosition): Promise<Reply<Listed<TierRow>>>;
       lcuState(): Promise<LcuState>;
       applyToClient(id: number, mode: PageMode, position: Position): Promise<Reply<ApplyResult>>;
+      suggestions(position: LanePosition, enemies: number[], taken: number[]): Promise<Reply<Suggestion[]>>;
       onLcuState(callback: (state: LcuState) => void): void;
       exportDiagnostics(): Promise<{ saved: string | null }>;
     };
@@ -186,6 +188,15 @@ export function searchBox(placeholder: string): { node: HTMLElement; input: HTML
 }
 
 export const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
+
+/** A small champion card that opens its page: portrait, name, and an optional line under it. */
+export function champLink(c: ChampionListEntry, href: string, caption = '', className = 'champ mini'): HTMLAnchorElement {
+  const a = el('a', className);
+  a.href = href;
+  a.append(icon(c.portraitUrl), nameEl('span', c));
+  if (caption) a.append(el('small', '', caption));
+  return a;
+}
 
 // Latest League client state, kept here so any view can read it; app.ts feeds it.
 let lcu: LcuState | undefined;

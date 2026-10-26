@@ -13,7 +13,10 @@ const select = (me: Record<string, unknown>) => ({
 describe('toLcuState', () => {
   it('reads my hovered champion, lane and mode in ranked', () => {
     const s = toLcuState('ChampSelect', flow('CLASSIC', 420), select({ championId: 0, championPickIntent: 103, assignedPosition: 'middle' }));
-    expect(s).toEqual({ phase: 'ChampSelect', mode: 'normal', queueId: 420, gameMode: 'CLASSIC', championId: 103, locked: false, position: 'mid' });
+    expect(s).toEqual({
+      phase: 'ChampSelect', mode: 'normal', queueId: 420, gameMode: 'CLASSIC', championId: 103, locked: false, position: 'mid',
+      enemies: [238], allies: [99], // the teammate's pick, not mine; the enemy's shown pick
+    });
   });
 
   it('prefers the locked champion over the hover and maps every lane name', () => {

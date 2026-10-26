@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseAppMode, parseLane, parsePageRequest } from '../../src/main/services.js';
+import { parseAppMode, parseIds, parseLane, parsePageRequest } from '../../src/main/services.js';
 
 describe('parsePageRequest', () => {
   it('accepts known values', () => {
@@ -22,5 +22,13 @@ describe('parseAppMode / parseLane', () => {
     expect(() => parseAppMode('urf')).toThrow(/bad mode/);
     expect(() => parseLane('bottom')).toThrow(/bad position/);
     expect(() => parseAppMode(undefined)).toThrow(/bad mode/);
+  });
+});
+
+describe('parseIds', () => {
+  it('accepts up to 10 positive integers only', () => {
+    expect(parseIds([238, 103])).toEqual([238, 103]);
+    expect(parseIds([])).toEqual([]);
+    for (const bad of [[0], [1.5], ['238'], 'x', null, Array(11).fill(1)]) expect(() => parseIds(bad)).toThrow(/bad ids/);
   });
 });

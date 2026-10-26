@@ -10,9 +10,14 @@ export interface LcuState {
   championId: number | null;
   locked: boolean;
   position: Position | null;
+  /** Champions the enemy team has shown (locked), and those taken by teammates: for pick suggestions. */
+  enemies: number[];
+  allies: number[];
 }
 
-export const DISCONNECTED: LcuState = { phase: 'Disconnected', mode: null, queueId: null, gameMode: null, championId: null, locked: false, position: null };
+export const DISCONNECTED: LcuState = {
+  phase: 'Disconnected', mode: null, queueId: null, gameMode: null, championId: null, locked: false, position: null, enemies: [], allies: [],
+};
 
 // shortcut: KIWI (Mayhem) is inferred from the mode's internal code name; confirm with a real diagnostics export.
 const MODES: Record<string, AppMode> = { CLASSIC: 'normal', ARAM: 'aram', KIWI: 'mayhem', CHERRY: 'arena' };
@@ -30,7 +35,9 @@ export function toLcuState(phase: string, gameflow: unknown, champSelect: unknow
 
   const session = obj(champSelect);
   const cell = num(session?.localPlayerCellId);
-  const me = (Array.isArray(session?.myTeam) ? session.myTeam : []).map(obj).find((p) => num(p?.cellId) === cell);
+  const team = (v: unknown) => (Array.isArray(v) ? v : []).map(obj);
+  const me = team(session?.myTeam).find((p) => num(p?.cellId) === cell);
+  const picked = (list: Json[]) => list.map((p) => num(p?.championId) || 0).filter((id) => id > 0);
   const locked = num(me?.championId) || 0;
   const hover = num(me?.championPickIntent) || 0;
   return {
@@ -38,5 +45,7 @@ export function toLcuState(phase: string, gameflow: unknown, champSelect: unknow
     championId: locked || hover || null,
     locked: locked > 0,
     position: LANES[String(me?.assignedPosition ?? '')] ?? null,
+    enemies: picked(team(session?.theirTeam)),
+    allies: picked(team(session?.myTeam).filter((p) => p !== me)),
   };
 }

@@ -1,7 +1,8 @@
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { composeItemList, type ItemEntry } from '../app/itemList.js';
+import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
 import { composeTierList, type TierRow } from '../app/tierList.js';
-import { mcpCaller, OpggStats, type CallTool, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
+import { mcpCaller, OpggStats, type CallTool, type Counter, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
 import { loadAugments, type AugmentsResult } from '../texts/augmentsLoader.js';
 import { loadCdragonJson, type Locale } from '../texts/cdragon.js';
@@ -36,6 +37,12 @@ export function parseAppMode(mode: unknown): AppMode {
 export function parseLane(position: unknown): LanePosition {
   if (!POSITIONS.includes(position as Position)) throw new Error('bad position');
   return position as LanePosition;
+}
+
+/** Champion ids from the window (enemy picks, taken picks): at most 10 positive integers. */
+export function parseIds(v: unknown): number[] {
+  if (!Array.isArray(v) || v.length > 10 || !v.every((x) => Number.isInteger(x) && x > 0)) throw new Error('bad ids');
+  return v as number[];
 }
 
 /** IPC input is untrusted: accept only known values. */
@@ -123,15 +130,17 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         .catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))));
     // Everything at once: the build, the champion's texts and its game file do not depend on each other.
     const champion = both<RawChampion>(`champions/${id}.json`);
-    const [[ar, en], details, t, build, mayhem, augs] = await Promise.all([
+    const [[ar, en], details, t, build, mayhem, augs, championList] = await Promise.all([
       champion,
       champion.then(([ar]) => abilityDetails(entry.alias, ar.spells)),
       texts(),
       NO_BUILD.includes(mode) ? Promise.resolve(null) : loadBuild(),
       mode === 'mayhem' ? stats.mayhemAugments(id).catch(() => null) : Promise.resolve(null),
       mode === 'mayhem' ? augments().then((r) => r.augments, () => []) : Promise.resolve([]),
+      champions(),
     ]);
     return composeChampionPage({
+      championList,
       champion: buildChampionDetail(ar, en, details), mode, position: laned ? position : null,
       build, mayhem, augments: augs, ...t,
     });
@@ -148,5 +157,25 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { list: composeTierList(meta.data[position], list), fetchedAt: meta.fetchedAt, stale: meta.stale };
   }
 
-  return { augments, champions, championPage, items, tierList };
+  /** Champ select: answers to the enemy picks shown so far in this lane, else the lane's best tiers. */
+  async function suggestions(position: LanePosition, enemies: number[], taken: number[]): Promise<Suggestion[]> {
+    const list = await champions();
+    const takenSet = new Set([...taken, ...enemies]);
+    const meta = async () => metaPicks(composeTierList((await stats.laneMeta()).data[position], list), list, takenSet);
+    if (!enemies.length) return meta();
+    const beatenBy = new Map<number, Counter[]>();
+    await Promise.all(
+      enemies.map(async (id) => {
+        const enemy = list.find((c) => c.id === id);
+        const b = enemy ? await stats.build(enemy.alias, 'ranked', position).catch(() => null) : null;
+        if (b) beatenBy.set(id, b.data.weakAgainst ?? []); // builds cached before counters were read have none
+      }),
+    );
+    // OP.GG names only 3 answers per enemy: fill the rest of the list with the lane's best tiers.
+    const picks = counterPicks(beatenBy, list, takenSet);
+    const fill = (await meta().catch(() => [])).filter((m) => !picks.some((p) => p.champion.id === m.champion.id));
+    return [...picks, ...fill].slice(0, 8);
+  }
+
+  return { augments, champions, championPage, items, tierList, suggestions };
 }

@@ -22,7 +22,7 @@ const page = composeChampionPage({
   items: buildItemTexts(itemsAr as RawItem[], []), runes: buildRuneTexts(perksAr as RawPerk[], []),
   styles: buildStyleTrees(stylesAr.styles, stylesEn.styles), spells: buildSpellTexts(spellsAr, spellsEn),
   build: { data: toBuild(parseOpgg(readFileSync(new URL('../fixtures/opgg/ahri-ranked-mid.txt', import.meta.url), 'utf8'))), fetchedAt: 5, stale: false },
-  augments: [], mayhem: null,
+  augments: [], mayhem: null, championList: [],
 });
 
 /** A fake client that records requests and answers from a table (method + path). */

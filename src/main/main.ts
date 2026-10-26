@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { applyAll, toPayloads } from '../lcu/apply.js';
 import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
 import { LcuWatcher } from '../lcu/watcher.js';
-import { createServices, parseAppMode, parseLane, parsePageRequest } from './services.js';
+import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest } from './services.js';
 
 const root = app.getAppPath();
 const cacheDir = process.env.LOLH_CACHE_DIR ?? app.getPath('userData');
@@ -32,6 +32,9 @@ ipcMain.handle('champion:page', (_e, id: unknown, mode: unknown, position: unkno
 
 ipcMain.handle('items:list', (_e, mode: unknown) => reply(() => services.items(parseAppMode(mode))));
 ipcMain.handle('tierlist:get', (_e, position: unknown) => reply(() => services.tierList(parseLane(position))));
+ipcMain.handle('suggest:get', (_e, position: unknown, enemies: unknown, taken: unknown) =>
+  reply(() => services.suggestions(parseLane(position), parseIds(enemies), parseIds(taken))),
+);
 
 // League client: champ select → the window opens the right champion page.
 let mainWindow: BrowserWindow | undefined;

@@ -1,0 +1,6 @@
+class LolGetChampionAnalysis: data,_field_diagnostics
+class Data: strong_counters,weak_counters
+class StrongCounter: champion_id,champion_name,play,win,my_win_rate,counter_win_rate,win_rate
+class FieldDiagnostics: unmatched_fields,hint
+
+LolGetChampionAnalysis(Data([StrongCounter(901,"Smolder",134,85,0.63,0.37,0.63),StrongCounter(69,"Cassiopeia",394,223,0.57,0.43,0.57),StrongCounter(3,"Galio",1411,789,0.56,0.44,0.56)],[StrongCounter(887,"Gwen",216,97,0.45,0.55,0.55),StrongCounter(99,"Lux",1749,826,0.47,0.53,0.53),StrongCounter(238,"Zed",3013,1477,0.49,0.51,0.51)]),FieldDiagnostics(["data.counters_meta"],"These field names did not match the response and were skipped. Check the names against this tool's field list. Array fields need \"[]\" before the dot (e.g. \"strong_counters[].win\", not \"strong_counters.win\"); nesting uses \".\", and names are case-sensitive. To get the full response instead, send an empty array."))

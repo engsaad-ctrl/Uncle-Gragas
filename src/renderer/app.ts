@@ -136,10 +136,15 @@ const PHASE_TEXT: Record<string, string> = {
 let championNames: Map<number, { name: string; enName: string }> | undefined;
 let lastAutoKey = '';
 let lastApplyKey = '';
+let lastPhase = '';
 async function onLcu(state: LcuState) {
   setLcu(state);
   // A new champ select starts fresh: the same champion next game must open and apply again.
   if (state.phase !== 'ChampSelect') lastAutoKey = lastApplyKey = '';
+  // Entering champ select with nothing hovered yet: show the champions page, where the pick suggestions are.
+  const entering = state.phase === 'ChampSelect' && lastPhase !== 'ChampSelect';
+  lastPhase = state.phase;
+  if (entering && autoOpen && !state.championId && !location.hash.startsWith('#/champions')) location.hash = '#/champions';
   const status = byId('lcu-status');
   status.classList.toggle('on', state.phase !== 'Disconnected');
   status.classList.toggle('live', state.phase === 'ChampSelect' || state.phase === 'InProgress');

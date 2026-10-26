@@ -12,7 +12,7 @@ import { composeChampionPage } from '../../src/app/championPage.js';
 import { parseOpgg } from '../../src/stats/opggFormat.js';
 import { toBuild, toMayhemAugments } from '../../src/stats/opgg.js';
 import type { AugmentText } from '../../src/texts/augments.js';
-import { buildChampionDetail, buildSpellTexts, buildStyleTrees } from '../../src/texts/champions.js';
+import { buildChampionDetail, buildSpellTexts, buildStyleTrees, type ChampionListEntry } from '../../src/texts/champions.js';
 import { buildItemTexts, type RawItem } from '../../src/texts/items.js';
 import { buildRuneTexts, type RawPerk } from '../../src/texts/runes.js';
 
@@ -22,6 +22,7 @@ const texts = {
   runes: buildRuneTexts(perksAr as RawPerk[], []),
   styles: buildStyleTrees(stylesAr.styles, stylesEn.styles),
   spells: buildSpellTexts(spellsAr, spellsEn),
+  championList: [] as ChampionListEntry[],
 };
 const champion = buildChampionDetail(detailAr, detailEn);
 const aug = (id: number, ids: number[], rarity: AugmentText['rarity']): AugmentText => ({
@@ -103,5 +104,25 @@ describe('composeChampionPage', () => {
     expect(p.buildError).toBe('OP.GG down');
     expect(p.core).toBeNull();
     expect(p.champion.abilities).toHaveLength(5);
+  });
+});
+
+describe('matchups', () => {
+  const entry = (id: number, enName: string): ChampionListEntry => ({ id, name: enName, enName, alias: enName, portraitUrl: '' });
+  const base = toBuild(opgg('ahri-ranked-mid.txt'));
+  const page = (b: object) =>
+    composeChampionPage({
+      champion, mode: 'ranked', position: 'mid', ...texts, championList: [entry(901, 'Smolder'), entry(887, 'Gwen')],
+      build: { data: { ...base, ...b }, fetchedAt: 5, stale: false }, augments: [], mayhem: null,
+    });
+
+  it('names the opponents it beats and those that beat it, skipping unknown ids', () => {
+    const m = page({ strongAgainst: [{ id: 901, games: 134, winRate: 0.63 }, { id: 1, games: 5, winRate: 0.9 }], weakAgainst: [{ id: 887, games: 216, winRate: 0.45 }] }).matchups;
+    expect(m.strong.map((x) => [x.champion.enName, x.winRate])).toEqual([['Smolder', 0.63]]);
+    expect(m.weak.map((x) => [x.champion.enName, x.winRate])).toEqual([['Gwen', 0.45]]);
+  });
+
+  it('copes with builds cached before counters were read', () => {
+    expect(page({ strongAgainst: undefined, weakAgainst: undefined }).matchups).toEqual({ strong: [], weak: [] });
   });
 });

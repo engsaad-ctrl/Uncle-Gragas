@@ -164,3 +164,15 @@ All ten findings from the owner-requested review are fixed:
 7. **String table:** downloaded once per version (`game/strings-full.json`) and shared by the augments and tooltip builders.
 8. & 9. **One disk cache** (`src/diskCache.ts`) replaces four copies: concurrent calls for a file share one load, and writes go through a temp file and rename. `getJson` exists once.
 10. **Nothing to apply:** a clear message replaces an empty "طُبّق في العميل:".
+
+## Phase 4 — matchups and pick suggestions (built 2026-10-26)
+
+- **Data:** `lol_get_champion_analysis` now also asks for `strong_counters` and `weak_counters` (`champion_id, play, my_win_rate`). OP.GG keeps the top 3 of each, for Ranked only; ARAM has "insufficient matchup sample". `toBuild` reads them as `strongAgainst` / `weakAgainst` (tested on a real Ahri mid answer). Builds cached before this have none, and every reader treats that as empty.
+- **Champion page:** "المواجهات في المسار" shows whom it beats and who beats it, with its win rate in each matchup. Each card opens that champion's page.
+- **Champ select** (`LcuState.enemies` / `allies` from `theirTeam` / `myTeam`), via `services.suggestions` and `src/app/suggestions.ts`:
+  - For each visible enemy, it reads that enemy's `weakAgainst` in my lane. The answers win at 1 − the enemy's rate, and each scores Σ(win − 50%) over the enemies it answers.
+  - Taken picks (teammates, mine, enemies) are skipped, and the list is topped up with the lane's best Tier List ranks.
+  - With no enemy shown it gives the Tier List picks only.
+  - The panel sits on the champions page, which the app opens when champ select starts with nothing hovered, and refreshes on every pick change.
+  - IPC input is validated (`parseIds`: at most 10 positive integers).
+- **Verified:** unit tests (scoring with real win rates, taken picks, meta order, id validation, cached builds without counters). An Electron smoke run against a fake client (me mid, Malphite taken by a teammate, Zed shown): Gwen 59% and Gragas 56% vs Zed were suggested, Malphite was left out, and the list was topped up with Ahri, Ekko, Yasuo… The Ahri page shows Smolder 63%, Cassiopeia 57%, Galio 56% / Gwen 45%, Lux 47%, Zed 49%.

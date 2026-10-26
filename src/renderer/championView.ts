@@ -1,10 +1,10 @@
-import type { ChampionPage, ItemChoice, PageMode, RatedAugment, RuneRow, RuneTree } from '../app/championPage.js';
+import type { ChampionPage, ItemChoice, Matchup, PageMode, RatedAugment, RuneRow, RuneTree } from '../app/championPage.js';
 import type { Position } from '../stats/opgg.js';
 import type { Rarity } from '../texts/augments.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
-import { applyLines, detailPanel, el, icon, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import { applyLines, champLink, detailPanel, el, icon, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
 
 const MODES: [PageMode, string][] = [
   ['ranked', 'Ranked'], ['flex', 'Flex'], ['aram', 'ARAM'], ['mayhem', 'ARAM Mayhem'],
@@ -278,6 +278,24 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     const trees = el('div', 'runes');
     trees.append(treeEl(r.primary), treeEl(r.sub), shards);
     s.append(trees);
+    body.push(s);
+  }
+
+  // Lane matchups: whom it beats, who beats it (its own win rate in each matchup).
+  if (p.matchups.strong.length || p.matchups.weak.length) {
+    const s = el('section', 'panel');
+    s.append(el('h2', '', 'المواجهات في المسار'));
+    const half = (title: string, list: Matchup[], cls: string) => {
+      const box = el('div', `matchups ${cls}`);
+      box.append(el('h3', '', title));
+      const grid = el('div', 'champ-row');
+      grid.append(...list.map((m) => champLink(m.champion, `#/champion/${m.champion.id}/${p.mode}/${p.position ?? 'mid'}`, `${pct(m.winRate)} فوز`)));
+      box.append(list.length ? grid : el('p', 'missing', 'لا توجد عينة كافية.'));
+      return box;
+    };
+    const both = el('div', 'matchup-cols');
+    both.append(half('يتفوق على', p.matchups.strong, 'good'), half('يعاني أمام', p.matchups.weak, 'bad'));
+    s.append(both, el('p', 'hint', `نسبة الفوز هي نسبة فوز ${shownName(c)} في كل مواجهة.`));
     body.push(s);
   }
 
