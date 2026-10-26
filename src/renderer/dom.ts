@@ -3,6 +3,7 @@ import type { Position } from '../stats/opgg.js';
 import type { AugmentsResult } from '../texts/augmentsLoader.js';
 import type { ItemEntry } from '../app/itemList.js';
 import type { TierRow } from '../app/tierList.js';
+import type { ApplyResult } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
 import type { AppMode, Listed } from '../main/services.js';
 import type { LanePosition } from '../stats/opgg.js';
@@ -20,6 +21,7 @@ declare global {
       listItems(mode: AppMode): Promise<Reply<Listed<ItemEntry>>>;
       tierList(position: LanePosition): Promise<Reply<Listed<TierRow>>>;
       lcuState(): Promise<LcuState>;
+      applyToClient(id: number, mode: PageMode, position: Position): Promise<Reply<ApplyResult>>;
       onLcuState(callback: (state: LcuState) => void): void;
       exportDiagnostics(): Promise<{ saved: string | null }>;
     };
@@ -184,6 +186,31 @@ export function searchBox(placeholder: string): { node: HTMLElement; input: HTML
 }
 
 export const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
+
+// Latest League client state, kept here so any view can read it; app.ts feeds it.
+let lcu: LcuState | undefined;
+export const lcuNow = () => lcu;
+export function setLcu(s: LcuState) {
+  lcu = s;
+  document.dispatchEvent(new CustomEvent<LcuState>('lcu', { detail: s }));
+}
+
+const PART: [keyof ApplyResult, string][] = [['runes', 'الرونز'], ['items', 'الأيتمات'], ['spells', 'تعاويذ المستدعي']];
+/** One line per written part: "✓ الرونز", or the reason it failed. Parts with nothing to write are left out. */
+export function applyLines(r: ApplyResult): { ok: boolean; text: string }[] {
+  return PART.flatMap(([k, label]) => (r[k] === 'none' ? [] : [{ ok: r[k] === 'ok', text: r[k] === 'ok' ? `✓ ${label}` : `✗ ${label}: ${r[k]}` }]));
+}
+
+let toastEl: HTMLElement | undefined;
+let toastTimer: number | undefined;
+/** A short notice at the bottom of the window (used when runes are applied automatically). */
+export function toast(lines: string[]) {
+  toastEl ??= document.body.appendChild(el('div', 'toast'));
+  toastEl.replaceChildren(...lines.map((l) => el('div', '', l)));
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toastEl?.classList.remove('show'), 6000);
+}
 
 /** Sets the entry-animation delay for the i-th element of a list (capped so long lists don't drag). */
 export function stagger<T extends HTMLElement>(node: T, i: number, stepMs = 14): T {

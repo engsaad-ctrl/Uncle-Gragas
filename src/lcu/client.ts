@@ -4,30 +4,39 @@ import { request } from 'node:https';
 import { findCredentials, type LcuCredentials } from './credentials.js';
 import type { LcuGet } from './watcher.js';
 
-/** GET against the client's local API. 404 means "nothing there right now" (e.g. no champ select) → null. */
-export function lcuGetter(creds: LcuCredentials, host = '127.0.0.1'): LcuGet {
+export type LcuMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export type LcuCall = (method: LcuMethod, path: string, body?: unknown) => Promise<unknown>;
+
+/** A request to the client's local API. 404 means "nothing there right now" (e.g. no champ select) → null. */
+export function lcuCaller(creds: LcuCredentials, host = '127.0.0.1'): LcuCall {
   const auth = `Basic ${Buffer.from(`riot:${creds.password}`).toString('base64')}`;
-  return (path) =>
+  return (method, path, body) =>
     new Promise((resolve, reject) => {
+      const payload = body === undefined ? undefined : JSON.stringify(body);
       const req = request(
         {
           host,
           port: creds.port,
           path,
-          method: 'GET',
-          headers: { Authorization: auth, Accept: 'application/json' },
+          method,
+          headers: {
+            Authorization: auth,
+            Accept: 'application/json',
+            ...(payload === undefined ? {} : { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }),
+          },
           rejectUnauthorized: false, // the client serves a Riot self-signed certificate, on this machine only
-          timeout: 3000,
+          timeout: 5000,
         },
         (res) => {
-          let body = '';
+          let text = '';
           res.setEncoding('utf8');
-          res.on('data', (chunk: string) => (body += chunk));
+          res.on('data', (chunk: string) => (text += chunk));
           res.on('end', () => {
             if (res.statusCode === 404) return resolve(null);
-            if (!res.statusCode || res.statusCode >= 400) return reject(new Error(`LCU ${path}: HTTP ${res.statusCode}`));
+            // The client explains refusals in the body ("max pages reached" …): keep it for the diagnostics log.
+            if (!res.statusCode || res.statusCode >= 400) return reject(new Error(`LCU ${method} ${path}: HTTP ${res.statusCode} ${text.slice(0, 200)}`));
             try {
-              resolve(body ? JSON.parse(body) : null);
+              resolve(text ? JSON.parse(text) : null);
             } catch (err) {
               reject(err);
             }
@@ -36,9 +45,14 @@ export function lcuGetter(creds: LcuCredentials, host = '127.0.0.1'): LcuGet {
       );
       req.on('timeout', () => req.destroy(new Error(`LCU ${path}: timeout`)));
       req.on('error', reject);
-      req.end();
+      req.end(payload);
     });
 }
+
+export const lcuGetter = (creds: LcuCredentials, host?: string): LcuGet => {
+  const call = lcuCaller(creds, host);
+  return (path) => call('GET', path);
+};
 
 /** Command line of the running LeagueClientUx.exe (Windows only), via PowerShell/CIM. */
 function processCommandLine(): Promise<string | null> {

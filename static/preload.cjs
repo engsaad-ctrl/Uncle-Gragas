@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('lolh', {
   listItems: (mode) => ipcRenderer.invoke('items:list', mode),
   tierList: (position) => ipcRenderer.invoke('tierlist:get', position),
   lcuState: () => ipcRenderer.invoke('lcu:state'),
+  applyToClient: (id, mode, position) => ipcRenderer.invoke('lcu:apply', id, mode, position),
   onLcuState: (callback) => ipcRenderer.on('lcu:state', (_event, state) => callback(state)),
   exportDiagnostics: () => ipcRenderer.invoke('diagnostics:export'),
 });

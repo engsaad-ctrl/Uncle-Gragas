@@ -5,7 +5,7 @@ import type { LanePosition, Position } from '../stats/opgg.js';
 import { augmentsView } from './augmentsView.js';
 import { championsView } from './championsView.js';
 import { championView } from './championView.js';
-import { byId, el, getAppMode, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setNameLang } from './dom.js';
+import { applyLines, byId, el, getAppMode, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setLcu, setNameLang, toast } from './dom.js';
 import { itemsView } from './itemsView.js';
 import { tierListView } from './tierListView.js';
 import { applyRandomTheme, nextTheme } from './theme.js';
@@ -68,6 +68,13 @@ try {
 } catch {
   // storage unavailable: keep the default
 }
+// Write runes/items into the client when a champion is locked in (on by default, like the stat-site apps).
+let autoApply = true;
+try {
+  autoApply = localStorage.getItem('autoApply') !== 'off';
+} catch {
+  // storage unavailable: keep the default
+}
 const exportButton = el('button', 'pill', 'تصدير التشخيص');
 exportButton.type = 'button';
 const exportNote = el('p', 'hint', 'يحفظ ملفاً بردود عميل اللعبة بدون اسمك أو معرّفات حسابك، لترسله عند وجود مشكلة.');
@@ -86,6 +93,18 @@ settings.append(
         // not remembered this time; harmless
       }
     }),
+  ),
+  section(
+    'تطبيق الرونز والأيتمات تلقائياً عند تثبيت البطل',
+    pills('التطبيق التلقائي', [['on', 'مفعّل'], ['off', 'معطّل']], autoApply ? 'on' : 'off', (v) => {
+      autoApply = v === 'on';
+      try {
+        localStorage.setItem('autoApply', v);
+      } catch {
+        // not remembered this time; harmless
+      }
+    }),
+    el('p', 'hint', 'تُستبدل صفحات البرنامج فقط (اسمها يبدأ بـ LOL_helper)، ولا تُمس صفحاتك.'),
   ),
   section('التشخيص', exportButton, exportNote),
   section(
@@ -116,7 +135,9 @@ const PHASE_TEXT: Record<string, string> = {
 };
 let championNames: Map<number, { name: string; enName: string }> | undefined;
 let lastAutoKey = '';
+let lastApplyKey = '';
 async function onLcu(state: LcuState) {
+  setLcu(state);
   const status = byId('lcu-status');
   status.classList.toggle('on', state.phase !== 'Disconnected');
   status.classList.toggle('live', state.phase === 'ChampSelect' || state.phase === 'InProgress');
@@ -131,6 +152,18 @@ async function onLcu(state: LcuState) {
   }
   if (state.mode) text += ` · ${MODE_TITLE[state.mode]}`;
   status.querySelector('span')!.textContent = text;
+
+  // Write the build once per locked (champion, mode, lane).
+  if (state.phase === 'ChampSelect' && state.locked && state.championId && state.mode && autoApply) {
+    const key = `${state.championId}/${state.mode}/${state.position}`;
+    if (key !== lastApplyKey) {
+      lastApplyKey = key;
+      // Not awaited: opening the page below should not wait for the client.
+      void window.lolh
+        .applyToClient(state.championId, PAGE_MODE[state.mode], state.position ?? 'mid')
+        .then((r) => toast(isError(r) ? [`✗ ${r.error}`] : ['طُبّق في العميل:', ...applyLines(r).map((l) => l.text)]));
+    }
+  }
 
   // Open the page once per (champion, mode, lane) so the user can still browse elsewhere.
   if (state.phase !== 'ChampSelect' || !state.championId || !autoOpen) return;

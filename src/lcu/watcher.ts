@@ -12,6 +12,8 @@ export interface WatcherDeps {
 /** Polls the client's gameflow and champ select; calls onChange only when the state really changes. */
 export class LcuWatcher {
   state: LcuState = DISCONNECTED;
+  /** The client found at the last connect, for requests other than polling (writing runes and item sets). */
+  creds: LcuCredentials | undefined;
   private get: LcuGet | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private lastRaw: Record<string, unknown> = {};
@@ -29,6 +31,7 @@ export class LcuWatcher {
         const creds = await this.deps.find();
         if (!creds) return this.set(DISCONNECTED);
         this.get = this.deps.connect(creds);
+        this.creds = creds;
         this.note(`connected (${creds.source}, port ${creds.port})`);
       }
       const phase = await this.get('/lol-gameflow/v1/gameflow-phase');
@@ -40,6 +43,7 @@ export class LcuWatcher {
     } catch (err) {
       this.note(`error: ${err instanceof Error ? err.message : String(err)}`);
       this.get = undefined; // client closed or restarted: find it again next tick
+      this.creds = undefined;
       this.set(DISCONNECTED);
     }
   }
@@ -74,7 +78,8 @@ export class LcuWatcher {
     this.onChange(s);
   }
 
-  private note(line: string) {
+  /** Adds a line to the diagnostics log (also used by the rune/item writer). */
+  note(line: string) {
     this.log.push(`${new Date().toISOString()} ${line}`);
     if (this.log.length > 200) this.log.splice(0, this.log.length - 200);
   }

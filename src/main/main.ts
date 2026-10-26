@@ -1,7 +1,9 @@
 import { app, BrowserWindow, dialog, ipcMain, net } from 'electron';
 import { writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
-import { findClient, lcuGetter } from '../lcu/client.js';
+import { applyAll, toPayloads } from '../lcu/apply.js';
+import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import { createServices, parseAppMode, parseLane, parsePageRequest } from './services.js';
 
@@ -35,6 +37,17 @@ ipcMain.handle('tierlist:get', (_e, position: unknown) => reply(() => services.t
 let mainWindow: BrowserWindow | undefined;
 const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) }, (state) => mainWindow?.webContents.send('lcu:state', state));
 ipcMain.handle('lcu:state', () => watcher.state);
+// The window only names the page (champion, mode, lane); the build sent to the client is composed here.
+ipcMain.handle('lcu:apply', (_e, id: unknown, mode: unknown, position: unknown) =>
+  reply(async () => {
+    const r = parsePageRequest(id, mode, position);
+    if (!watcher.creds) throw new Error('عميل اللعبة غير مفتوح.');
+    const page = await services.championPage(r.id, r.mode, r.position);
+    const result = await applyAll(lcuCaller(watcher.creds), toPayloads(page), { inChampSelect: watcher.state.phase === 'ChampSelect', uid: randomUUID() });
+    watcher.note(`apply ${r.id}/${r.mode}/${r.position}: ${JSON.stringify(result)}`);
+    return result;
+  }),
+);
 ipcMain.handle('diagnostics:export', async () => {
   const { canceled, filePath } = await dialog.showSaveDialog({
     title: 'تصدير التشخيص',

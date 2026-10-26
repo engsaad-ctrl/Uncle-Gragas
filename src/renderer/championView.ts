@@ -3,7 +3,8 @@ import type { Position } from '../stats/opgg.js';
 import type { Rarity } from '../texts/augments.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
-import { detailPanel, el, icon, isError, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import type { LcuState } from '../lcu/state.js';
+import { applyLines, detailPanel, el, icon, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
 
 const MODES: [PageMode, string][] = [
   ['ranked', 'Ranked'], ['flex', 'Flex'], ['aram', 'ARAM'], ['mayhem', 'ARAM Mayhem'],
@@ -29,6 +30,35 @@ export async function championView(root: HTMLElement, alive: () => boolean, id: 
     return;
   }
   root.replaceChildren(...renderPage(reply));
+}
+
+/** "تطبيق في العميل": writes this page's runes, item set and (in champ select) summoner spells into the client. */
+function applyControl(p: ChampionPage): HTMLElement {
+  const box = el('div', 'apply');
+  if (!p.runes && !p.starter && !p.core) return box; // nothing to write for this mode
+  const btn = el('button', 'pill apply-btn', 'تطبيق في العميل');
+  btn.type = 'button';
+  const note = el('div', 'apply-note');
+  const refresh = (s: LcuState | undefined) => {
+    btn.disabled = !s || s.phase === 'Disconnected';
+    btn.title = btn.disabled ? 'افتح عميل اللعبة أولاً' : 'يكتب صفحة رونز وقائمة أيتمات في العميل، وتعاويذ المستدعي أثناء شاشة الاختيار';
+  };
+  refresh(lcuNow());
+  const onLcu = (e: Event) => (btn.isConnected ? refresh((e as CustomEvent<LcuState>).detail) : document.removeEventListener('lcu', onLcu));
+  document.addEventListener('lcu', onLcu);
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    note.textContent = 'جاري التطبيق…';
+    const r = await window.lolh.applyToClient(p.champion.id, p.mode, p.position ?? 'mid');
+    refresh(lcuNow());
+    if (isError(r)) {
+      note.textContent = `✗ ${r.error}`;
+      return;
+    }
+    note.replaceChildren(...applyLines(r).map((l) => el('div', l.ok ? 'ok' : 'bad', l.text)));
+  });
+  box.append(btn, note);
+  return box;
 }
 
 function renderPage(p: ChampionPage): HTMLElement[] {
@@ -59,7 +89,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     abilities.append(b);
   }
   info.append(title, el('div', 'en', c.title), abilities);
-  head.append(portrait, info);
+  head.append(portrait, info, applyControl(p));
 
   // Mode tabs + position pills.
   const tabs = el('nav', 'tabs mode-tabs');

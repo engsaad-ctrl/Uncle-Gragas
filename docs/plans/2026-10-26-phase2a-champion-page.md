@@ -136,3 +136,18 @@ These rules are now the standard for every description:
   | Abilities | 851 of 865 |
   | Purchasable items with "؟" | 14 (was 127), now only match-dependent values |
   | Augments with "؟" | 14 (was 106) |
+
+## Phase 3 — writing the build into the League client (built 2026-10-26; tested against a fake client only)
+
+- **Requests:** `src/lcu/client.ts` `lcuCaller` handles GET/POST/PUT/PATCH/DELETE with a JSON body. Refusal bodies are kept for the diagnostics log. `watcher.creds` is the client found at the last connect.
+- **`src/lcu/apply.ts`:**
+  - `toPayloads(page)` builds a rune page (4 primary, 2 secondary, 3 shards; otherwise nothing, since the client rejects partial pages), an item set and the two summoner spells.
+  - The item set has blocks for starters, core, boots and 4th–6th options, on map 11, 12 or 30 by mode.
+  - Rune page: deletes only pages named `LOL_helper…`, then POSTs the new page as current. A refusal is explained in Arabic (usually no free page slot).
+  - Item set: reads the player's sets, removes only this app's earlier set for the same champion, and PUTs the whole list back (the endpoint replaces everything).
+  - Spells: PATCH `my-selection`, during champ select only.
+- **Main** (`lcu:apply`): the window only names (champion, mode, lane); the main process composes the build itself, so the window cannot send arbitrary data to the client. Results are logged for the diagnostics export.
+- **UI:**
+  - A "تطبيق في العميل" button in the champion header, disabled while no client is found; it shows ✓/✗ per part.
+  - Settings → "تطبيق الرونز والأيتمات تلقائياً عند تثبيت البطل" (on by default) runs once per locked (champion, mode, lane) and shows a short notice.
+- **Verified:** unit tests (payloads from the real Ahri build, own-page-only deletion, item sets kept, spells only in champ select). An Electron smoke run against a fake client that records writes: the auto apply on lock-in and the button both wrote the page, the set and the spells, the player's page and set were kept, and a second apply replaced the app's own page instead of adding one. **Not verified:** the real League client's answers.
