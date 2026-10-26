@@ -8,32 +8,44 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <aside class="side">
+  <aside id="side" class="side">
     <div class="brand"><img src="icon.png" alt=""><span class="name">LOL<span>_helper</span></span></div>
     <nav id="menu" class="menu" aria-label="القائمة الرئيسية">
-      <a href="#/champions" data-tab="champions">
+      <a href="#/champions" data-tab="champions" aria-label="الأبطال">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
         <span>الأبطال</span>
       </a>
-      <a href="#/items" data-tab="items">
+      <a href="#/items" data-tab="items" aria-label="الأيتمات">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3l7 7-9 9-7-7z"/><path d="M3 21l4-4"/></svg>
         <span>الأيتمات</span>
       </a>
-      <a href="#/augments" data-tab="augments">
+      <a href="#/augments" data-tab="augments" aria-label="التعزيزات">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 8l2 4-2 4-2-4z"/></svg>
         <span>التعزيزات</span>
       </a>
-      <a href="#/tierlist" data-tab="tierlist">
+      <a href="#/tierlist" data-tab="tierlist" aria-label="Tier List">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h11M4 18h6"/></svg>
         <span>Tier List</span>
       </a>
     </nav>
-    <div class="menu-title">الأطوار</div>
+    <div class="menu-title"><span>الأطوار</span></div>
     <nav id="modes" class="menu modes" aria-label="الأطوار">
-      <button type="button" data-mode="normal"><b class="dot"></b><span>Summoner's Rift</span></button>
-      <button type="button" data-mode="aram"><b class="dot"></b><span>ARAM</span></button>
-      <button type="button" data-mode="mayhem"><b class="dot"></b><span>ARAM Mayhem</span></button>
-      <button type="button" data-mode="arena"><b class="dot"></b><span>Arena</span></button>
+      <button type="button" data-mode="normal" aria-label="Summoner's Rift">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4M4 4l6 6M14 14l6 6M3 17l4 4M17 3l4 4"/></svg>
+        <span>Summoner's Rift</span>
+      </button>
+      <button type="button" data-mode="aram" aria-label="ARAM">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9 4.5l3 2 3-2M9 19.5l3-2 3 2"/></svg>
+        <span>ARAM</span>
+      </button>
+      <button type="button" data-mode="mayhem" aria-label="ARAM Mayhem">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"/></svg>
+        <span>ARAM Mayhem</span>
+      </button>
+      <button type="button" data-mode="arena" aria-label="Arena">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>
+        <span>Arena</span>
+      </button>
     </nav>
     <div class="side-foot">
       <div id="settings" class="settings-pop" hidden></div>

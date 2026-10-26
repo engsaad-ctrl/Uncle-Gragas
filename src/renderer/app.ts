@@ -75,6 +75,7 @@ const setSettingsOpen = (open: boolean) => {
   settings.hidden = !open;
   settingsBtn.setAttribute('aria-expanded', String(open));
   settingsBtn.classList.toggle('active', open);
+  byId('side').classList.toggle('pinned', open); // keep the rail expanded while settings are open
 };
 settingsBtn.addEventListener('click', () => setSettingsOpen(settings.hidden !== false)); // hidden may also be 'until-found'
 document.addEventListener('click', (e) => {

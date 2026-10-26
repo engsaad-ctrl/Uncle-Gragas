@@ -75,3 +75,8 @@
 - **Clearer art:** no blur, a lighter veil (72% → 15% across the window), panels at 66% opacity with a 12px backdrop blur, and a text shadow on headings and menu text for readability.
 - **Settings:** a gear button at the bottom of the side menu opens a panel with the name language (English/عربي) and "تغيير الخلفية" (next image). It closes on an outside click or Esc.
 - The "العادي" mode is labelled **Summoner's Rift**.
+
+## Follow-up 6 (owner: side menu collapses to icons, expands on hover)
+
+- **Collapsed:** the side menu is a fixed 68px icon rail. On hover it widens to 236px over the page (the content does not move), labels fade in, and a shadow separates it. It stays open while the settings panel is open (`.pinned`).
+- **Mode icons:** each mode got its own icon (crossed swords: Summoner's Rift, snowflake: ARAM, flame: Mayhem, ring: Arena), and the active mode's icon glows in the theme accent. The "الأطوار" title becomes a thin divider when collapsed. Links have `aria-label`s, so the rail stays accessible with labels hidden.
