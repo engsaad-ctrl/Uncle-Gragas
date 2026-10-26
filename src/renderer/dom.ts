@@ -3,6 +3,7 @@ import type { Position } from '../stats/opgg.js';
 import type { AugmentsResult } from '../texts/augmentsLoader.js';
 import type { ItemEntry } from '../app/itemList.js';
 import type { TierRow } from '../app/tierList.js';
+import type { LcuState } from '../lcu/state.js';
 import type { AppMode, Listed } from '../main/services.js';
 import type { LanePosition } from '../stats/opgg.js';
 import type { ChampionListEntry } from '../texts/champions.js';
@@ -17,6 +18,9 @@ declare global {
       championPage(id: number, mode: PageMode, position: Position): Promise<Reply<ChampionPage>>;
       listItems(mode: AppMode): Promise<Reply<Listed<ItemEntry>>>;
       tierList(position: LanePosition): Promise<Reply<Listed<TierRow>>>;
+      lcuState(): Promise<LcuState>;
+      onLcuState(callback: (state: LcuState) => void): void;
+      exportDiagnostics(): Promise<{ saved: string | null }>;
     };
   }
 }

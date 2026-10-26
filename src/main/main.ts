@@ -1,5 +1,8 @@
-import { app, BrowserWindow, ipcMain, net } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, net } from 'electron';
+import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { findClient, lcuGetter } from '../lcu/client.js';
+import { LcuWatcher } from '../lcu/watcher.js';
 import { createServices, parseAppMode, parseLane, parsePageRequest } from './services.js';
 
 const root = app.getAppPath();
@@ -28,6 +31,21 @@ ipcMain.handle('champion:page', (_e, id: unknown, mode: unknown, position: unkno
 ipcMain.handle('items:list', (_e, mode: unknown) => reply(() => services.items(parseAppMode(mode))));
 ipcMain.handle('tierlist:get', (_e, position: unknown) => reply(() => services.tierList(parseLane(position))));
 
+// League client: champ select → the window opens the right champion page.
+let mainWindow: BrowserWindow | undefined;
+const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) }, (state) => mainWindow?.webContents.send('lcu:state', state));
+ipcMain.handle('lcu:state', () => watcher.state);
+ipcMain.handle('diagnostics:export', async () => {
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    title: 'تصدير التشخيص',
+    defaultPath: join(app.getPath('desktop'), `lol-helper-diagnostics-${Date.now()}.json`),
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  });
+  if (canceled || !filePath) return { saved: null };
+  await writeFile(filePath, JSON.stringify(watcher.report(app.getVersion()), null, 2));
+  return { saved: filePath };
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1100,
@@ -43,8 +61,12 @@ function createWindow() {
       sandbox: true,
     },
   });
+  mainWindow = win;
   void win.loadFile(join(root, 'static/index.html'));
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  watcher.start();
+});
 app.on('window-all-closed', () => app.quit());

@@ -275,3 +275,12 @@ body { display: block; }
 .modes .dot, .modes small { display: none; }
 .modes button.active svg { color: var(--accent); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 60%, transparent)); }
 .settings-pop { min-width: calc(var(--rail-open) - 20px); }
+
+/* League client connection status (in the rail) */
+.lcu-status { display: flex; align-items: center; gap: 10px; padding: 8px 13px 6px; color: var(--muted); font-size: 12px; white-space: nowrap; text-shadow: 0 1px 3px #000c; }
+.lcu-status .dot { flex: none; width: 10px; height: 10px; margin-inline: 5px; border-radius: 50%; background: #6b6b80; }
+.lcu-status.on .dot { background: var(--heal); }
+.lcu-status.live .dot { background: var(--accent); box-shadow: 0 0 0 0 var(--accent); animation: pulse 1.6s ease-out infinite; }
+.lcu-status span { min-width: 0; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity .18s ease; }
+.side:hover .lcu-status span, .side.pinned .lcu-status span { opacity: 1; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }

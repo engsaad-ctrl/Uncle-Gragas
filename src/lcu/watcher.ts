@@ -1,0 +1,81 @@
+import type { LcuCredentials } from './credentials.js';
+import { scrub } from './diagnostics.js';
+import { DISCONNECTED, toLcuState, type LcuState } from './state.js';
+
+export type LcuGet = (path: string) => Promise<unknown>;
+
+export interface WatcherDeps {
+  find: () => Promise<(LcuCredentials & { source: 'process' | 'lockfile' }) | null>;
+  connect: (creds: LcuCredentials) => LcuGet;
+}
+
+/** Polls the client's gameflow and champ select; calls onChange only when the state really changes. */
+export class LcuWatcher {
+  state: LcuState = DISCONNECTED;
+  private get: LcuGet | undefined;
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private lastRaw: Record<string, unknown> = {};
+  private lastChampSelect: unknown = null;
+  private log: string[] = [];
+
+  constructor(
+    private readonly deps: WatcherDeps,
+    private readonly onChange: (s: LcuState) => void,
+  ) {}
+
+  async tick(): Promise<void> {
+    try {
+      if (!this.get) {
+        const creds = await this.deps.find();
+        if (!creds) return this.set(DISCONNECTED);
+        this.get = this.deps.connect(creds);
+        this.note(`connected (${creds.source}, port ${creds.port})`);
+      }
+      const phase = await this.get('/lol-gameflow/v1/gameflow-phase');
+      const flow = await this.get('/lol-gameflow/v1/session');
+      const champSelect = phase === 'ChampSelect' ? await this.get('/lol-champ-select/v1/session') : null;
+      this.lastRaw = { at: new Date().toISOString(), phase, gameflowSession: flow, champSelectSession: champSelect };
+      if (champSelect) this.lastChampSelect = champSelect;
+      this.set(toLcuState(typeof phase === 'string' ? phase : 'None', flow, champSelect));
+    } catch (err) {
+      this.note(`error: ${err instanceof Error ? err.message : String(err)}`);
+      this.get = undefined; // client closed or restarted: find it again next tick
+      this.set(DISCONNECTED);
+    }
+  }
+
+  start(intervalMs = 2000) {
+    const loop = async () => {
+      await this.tick();
+      this.timer = setTimeout(loop, intervalMs);
+    };
+    void loop();
+  }
+
+  stop() {
+    clearTimeout(this.timer);
+  }
+
+  /** What "تصدير التشخيص" saves: state, recent log and the last raw answers, with identities removed. */
+  report(appVersion: string): unknown {
+    return {
+      app: appVersion,
+      generatedAt: new Date().toISOString(),
+      state: this.state,
+      log: this.log.slice(-50),
+      last: scrub(this.lastRaw),
+      lastChampSelect: scrub(this.lastChampSelect),
+    };
+  }
+
+  private set(s: LcuState) {
+    if (JSON.stringify(s) === JSON.stringify(this.state)) return;
+    this.state = s;
+    this.onChange(s);
+  }
+
+  private note(line: string) {
+    this.log.push(`${new Date().toISOString()} ${line}`);
+    if (this.log.length > 200) this.log.splice(0, this.log.length - 200);
+  }
+}

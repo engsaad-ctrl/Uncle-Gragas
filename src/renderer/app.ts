@@ -1,10 +1,11 @@
 import type { PageMode } from '../app/championPage.js';
+import type { LcuState } from '../lcu/state.js';
 import type { AppMode } from '../main/services.js';
 import type { LanePosition, Position } from '../stats/opgg.js';
 import { augmentsView } from './augmentsView.js';
 import { championsView } from './championsView.js';
 import { championView } from './championView.js';
-import { byId, el, getAppMode, getNameLang, PAGE_MODE, pills, setAppMode, setNameLang } from './dom.js';
+import { byId, el, getAppMode, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setNameLang } from './dom.js';
 import { itemsView } from './itemsView.js';
 import { tierListView } from './tierListView.js';
 import { applyRandomTheme, nextTheme } from './theme.js';
@@ -60,7 +61,33 @@ const section = (title: string, ...body: HTMLElement[]) => {
 const bgButton = el('button', 'pill', 'تغيير الخلفية');
 bgButton.type = 'button';
 bgButton.addEventListener('click', () => nextTheme());
+// Auto-open the champion page during champ select (on by default).
+let autoOpen = true;
+try {
+  autoOpen = localStorage.getItem('autoOpen') !== 'off';
+} catch {
+  // storage unavailable: keep the default
+}
+const exportButton = el('button', 'pill', 'تصدير التشخيص');
+exportButton.type = 'button';
+const exportNote = el('p', 'hint', 'يحفظ ملفاً بردود عميل اللعبة بدون اسمك أو معرّفات حسابك، لترسله عند وجود مشكلة.');
+exportButton.addEventListener('click', async () => {
+  const r = await window.lolh.exportDiagnostics();
+  if (r.saved) exportNote.textContent = `حُفظ في: ${r.saved}`;
+});
 settings.append(
+  section(
+    'فتح صفحة البطل تلقائياً في شاشة الاختيار',
+    pills('الفتح التلقائي', [['on', 'مفعّل'], ['off', 'معطّل']], autoOpen ? 'on' : 'off', (v) => {
+      autoOpen = v === 'on';
+      try {
+        localStorage.setItem('autoOpen', v);
+      } catch {
+        // not remembered this time; harmless
+      }
+    }),
+  ),
+  section('التشخيص', exportButton, exportNote),
   section(
     'لغة أسماء الأيتمات والرونز والتعزيزات',
     pills('لغة الأسماء', [['en', 'English'], ['ar', 'عربي']], getNameLang(), (v) => {
@@ -82,5 +109,41 @@ document.addEventListener('click', (e) => {
   if (!settings.hidden && !settings.contains(e.target as Node) && !settingsBtn.contains(e.target as Node)) setSettingsOpen(false);
 });
 document.addEventListener('keydown', (e) => e.key === 'Escape' && setSettingsOpen(false));
+// League client status + auto-open.
+const PHASE_TEXT: Record<string, string> = {
+  Disconnected: 'غير متصل باللعبة', None: 'متصل باللعبة', Lobby: 'في اللوبي', Matchmaking: 'يبحث عن مباراة',
+  ReadyCheck: 'تم إيجاد مباراة', ChampSelect: 'اختيار الأبطال', InProgress: 'في مباراة', EndOfGame: 'نهاية المباراة',
+};
+let championNames: Map<number, { name: string; enName: string }> | undefined;
+let lastAutoKey = '';
+async function onLcu(state: LcuState) {
+  const status = byId('lcu-status');
+  status.classList.toggle('on', state.phase !== 'Disconnected');
+  status.classList.toggle('live', state.phase === 'ChampSelect' || state.phase === 'InProgress');
+  let text = PHASE_TEXT[state.phase] ?? 'متصل باللعبة';
+  if (state.championId) {
+    if (!championNames) {
+      const list = await window.lolh.listChampions();
+      if (!isError(list)) championNames = new Map(list.map((c) => [c.id, c]));
+    }
+    const c = championNames?.get(state.championId);
+    if (c) text += ` · ${getNameLang() === 'ar' ? c.name : c.enName}`;
+  }
+  if (state.mode) text += ` · ${MODE_TITLE[state.mode]}`;
+  status.querySelector('span')!.textContent = text;
+
+  // Open the page once per (champion, mode, lane) so the user can still browse elsewhere.
+  if (state.phase !== 'ChampSelect' || !state.championId || !autoOpen) return;
+  const key = `${state.championId}/${state.mode}/${state.position}`;
+  if (key === lastAutoKey) return;
+  lastAutoKey = key;
+  if (state.mode && state.mode !== getAppMode()) setAppMode(state.mode);
+  const target = `#/champion/${state.championId}/${PAGE_MODE[getAppMode()]}/${state.position ?? 'mid'}`;
+  if (location.hash === target) route();
+  else location.hash = target;
+}
+window.lolh.onLcuState((s) => void onLcu(s));
+void window.lolh.lcuState().then(onLcu);
+
 window.addEventListener('hashchange', route);
 route();

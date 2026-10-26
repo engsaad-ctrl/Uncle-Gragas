@@ -80,3 +80,11 @@
 
 - **Collapsed:** the side menu is a fixed 68px icon rail. On hover it widens to 236px over the page (the content does not move), labels fade in, and a shadow separates it. It stays open while the settings panel is open (`.pinned`).
 - **Mode icons:** each mode got its own icon (crossed swords: Summoner's Rift, snowflake: ARAM, flame: Mayhem, ring: Arena), and the active mode's icon glows in the theme accent. The "الأطوار" title becomes a thin divider when collapsed. Links have `aria-label`s, so the rail stays accessible with labels hidden.
+
+## Phase 2b — League client connection (built 2026-10-26; needs a real test on the owner's PC)
+
+- **Finding the client** (`src/lcu/credentials.ts`, `client.ts`): the port and one-time password come from the running `LeagueClientUx.exe` command line (PowerShell/CIM, Windows only), or else from `lockfile` in `C:`, `D:` or `E:\Riot Games\League of Legends`. Requests are HTTPS to 127.0.0.1 with `riot:<password>` basic auth, and the client's self-signed certificate is accepted for the loopback host only. A 404 means "nothing right now".
+- **State** (`state.ts`): gameflow phase + `/lol-gameflow/v1/session` queue (`gameMode`: CLASSIC → Summoner's Rift, ARAM, CHERRY → Arena, KIWI → Mayhem) + `/lol-champ-select/v1/session` (my cell, locked or hovered champion, `assignedPosition`). KIWI = Mayhem is inferred from the mode's code name and must be confirmed with a real export.
+- **Watcher** (`watcher.ts`): polls every 2s, reconnects after errors, and sends the window only real changes. The window shows a status dot in the rail. During champ select it switches the app mode and opens the champion page once per (champion, mode, lane), so the owner can still browse; this can be turned off in Settings.
+- **Diagnostics** (`diagnostics.ts`): Settings → "تصدير التشخيص" saves state, a log and the last raw answers, with names, ids, tokens and chat redacted (queue ids, game mode and champion ids are kept).
+- **Verified:** unit tests for credentials, state, scrub and the watcher, plus the HTTPS client against a local self-signed server. An end-to-end Electron smoke with a fake client (`LOLH_LCU_LOCKFILE`, test only) auto-opened Ahri mid and switched the status from "اختيار الأبطال" to "في مباراة". **Not verified:** a real League client. The real answer shapes may differ; the diagnostics export is how to find out.
