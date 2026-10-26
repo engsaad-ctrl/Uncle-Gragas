@@ -9,8 +9,8 @@ import {
   buildChampionDetail, buildChampionList, buildSpellTexts, buildStyleTrees,
   type ChampionListEntry, type RawChampion, type RawChampionSummary,
 } from '../texts/champions.js';
-import { loadChampionBin, loadGameItems, loadGameVersion, loadTooltipStrings } from '../texts/gameData.js';
-import { buildItemDetails, buildItemTexts, type RawItem } from '../texts/items.js';
+import { loadChampionBin, loadGameItems, loadGameVersion, loadStringTable, loadTooltipStrings } from '../texts/gameData.js';
+import { buildItemDetails, buildItemTexts, type ItemText, type RawItem } from '../texts/items.js';
 import { buildRuneTexts, type RawPerk } from '../texts/runes.js';
 
 const MODES: PageMode[] = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
@@ -62,41 +62,49 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   const both = <T>(file: string) => Promise.all([cd<T>('ar_ae', file), cd<T>('default', file)]);
   const stats = new OpggStats(opts.call ?? mcpCaller(fetchImpl), cacheDir);
 
-  const augments = once<AugmentsResult>(() => loadAugments({ cacheDir, fetchImpl }));
-  const champions = once<ChampionListEntry[]>(async () => buildChampionList(...(await both<RawChampionSummary[]>('champion-summary.json'))));
   const game = { cacheDir, fetchImpl };
+  // null when it cannot be fetched: the game-file caches then use whatever copy they have (once() retries next call).
   const version = once(() => loadGameVersion(game));
-  const tooltipStrings = once(async () => loadTooltipStrings(game, await version()));
-  /** Game-file item tooltips; without them items keep CommunityDragon's text (with 0 where the game computes a value). */
-  const itemDetails = async () => {
-    try {
-      const v = await version();
-      const [items, strings] = await Promise.all([loadGameItems(game, v), tooltipStrings()]);
-      return buildItemDetails(items, (k) => strings[k.toLowerCase()]);
-    } catch {
-      return undefined;
-    }
-  };
-  const texts = once(async () => {
-    const [items, perks, styles, spells, details] = await Promise.all([
+  const gameVersion = () => version().catch(() => null);
+  const augments = once<AugmentsResult>(async () =>
+    loadAugments({ cacheDir, fetchImpl, strings: async () => loadStringTable(game, await gameVersion()) }),
+  );
+  const champions = once<ChampionListEntry[]>(async () => buildChampionList(...(await both<RawChampionSummary[]>('champion-summary.json'))));
+  const tooltipStrings = once(async () => loadTooltipStrings(game, await gameVersion()));
+
+  const baseTexts = once(async () => {
+    const [items, perks, styles, spells] = await Promise.all([
       both<RawItem[]>('items.json'),
       both<RawPerk[]>('perks.json'),
       both<{ styles: { id: number; name: string; iconPath: string; slots: { type: string; slotLabel: string; perks: number[] }[] }[] }>('perkstyles.json'),
       both<{ id: number; name: string; description: string; iconPath: string; cooldown?: number }[]>('summoner-spells.json'),
-      itemDetails(),
     ]);
     return {
-      items: buildItemTexts(...items, details),
+      rawItems: items,
+      items: buildItemTexts(...items),
       runes: buildRuneTexts(...perks),
       styles: buildStyleTrees(styles[0].styles, styles[1].styles),
       spells: buildSpellTexts(...spells),
     };
   });
+  /** Items with the game-file tooltips. Fails (and is retried next time) when those files cannot be had. */
+  let detailedReady: Map<number, ItemText> | undefined;
+  const detailedItems = once(async () => {
+    const [t, v] = await Promise.all([baseTexts(), gameVersion()]);
+    const [items, strings] = await Promise.all([loadGameItems(game, v), tooltipStrings()]);
+    return (detailedReady = buildItemTexts(...t.rawItems, buildItemDetails(items, (k) => strings[k.toLowerCase()])));
+  });
+  /** Texts for a page right now: detailed items when already built, else CommunityDragon's (the detailed ones load meanwhile). */
+  const texts = async () => {
+    const t = await baseTexts();
+    if (!detailedReady) void detailedItems().catch(() => undefined);
+    return { items: detailedReady ?? t.items, runes: t.runes, styles: t.styles, spells: t.spells };
+  };
 
   /** In-game tooltips need two extra game files; without them the page keeps the short descriptions. */
   async function abilityDetails(alias: string, spells: RawChampion['spells']) {
     try {
-      const v = await version();
+      const v = await gameVersion();
       const [bin, strings] = await Promise.all([loadChampionBin(game, v, alias), tooltipStrings()]);
       return buildAbilityDetails(spells, bin, (k) => strings[k.toLowerCase()]);
     } catch {
@@ -107,15 +115,18 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   async function championPage(id: number, mode: PageMode, position: Position): Promise<ChampionPage> {
     const entry = (await champions()).find((c) => c.id === id);
     if (!entry) throw new Error(`unknown champion ${id}`);
-    const [[ar, en], t] = await Promise.all([both<RawChampion>(`champions/${id}.json`), texts()]);
-    const details = await abilityDetails(entry.alias, ar.spells);
     const laned = mode === 'ranked' || mode === 'flex';
     const loadBuild = () =>
       stats
         // OP.GG requires a position even for ARAM, where it is ignored
         .build(entry.alias, laned ? mode : 'aram', laned ? position : 'mid')
         .catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))));
-    const [build, mayhem, augs] = await Promise.all([
+    // Everything at once: the build, the champion's texts and its game file do not depend on each other.
+    const champion = both<RawChampion>(`champions/${id}.json`);
+    const [[ar, en], details, t, build, mayhem, augs] = await Promise.all([
+      champion,
+      champion.then(([ar]) => abilityDetails(entry.alias, ar.spells)),
+      texts(),
       NO_BUILD.includes(mode) ? Promise.resolve(null) : loadBuild(),
       mode === 'mayhem' ? stats.mayhemAugments(id).catch(() => null) : Promise.resolve(null),
       mode === 'mayhem' ? augments().then((r) => r.augments, () => []) : Promise.resolve([]),
@@ -127,8 +138,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   }
 
   async function items(mode: AppMode): Promise<Listed<ItemEntry>> {
-    const [m, t] = await Promise.all([stats.mapItems(ITEM_MAP[mode]), texts()]);
-    return { list: composeItemList(m.data, t.items), fetchedAt: m.fetchedAt, stale: m.stale };
+    // The items page is where the detailed tooltips matter most: wait for them, or fall back to CommunityDragon's.
+    const [m, list] = await Promise.all([stats.mapItems(ITEM_MAP[mode]), detailedItems().catch(async () => (await baseTexts()).items)]);
+    return { list: composeItemList(m.data, list), fetchedAt: m.fetchedAt, stale: m.stale };
   }
 
   async function tierList(position: LanePosition): Promise<Listed<TierRow>> {

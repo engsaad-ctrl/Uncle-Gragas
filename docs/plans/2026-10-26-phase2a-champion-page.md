@@ -151,3 +151,16 @@ These rules are now the standard for every description:
   - A "تطبيق في العميل" button in the champion header, disabled while no client is found; it shows ✓/✗ per part.
   - Settings → "تطبيق الرونز والأيتمات تلقائياً عند تثبيت البطل" (on by default) runs once per locked (champion, mode, lane) and shows a short notice.
 - **Verified:** unit tests (payloads from the real Ahri build, own-page-only deletion, item sets kept, spells only in champ select). An Electron smoke run against a fake client that records writes: the auto apply on lock-in and the button both wrote the page, the set and the spells, the player's page and set were kept, and a second apply replaced the app's own page instead of adding one. **Not verified:** the real League client's answers.
+
+## Full review (2026-10-26) and fixes
+
+All ten findings from the owner-requested review are fixed:
+1. **Item sets:** never PUT when the current list cannot be read; the PUT replaces every set, so a 404 would have wiped the player's own sets (tested).
+2. **Summoner spells:** stay on the player's keys (`arrangeSpells`: Flash on F stays on F; tested).
+3. **Auto open/apply:** re-armed each champ select. The same champion next game used to do nothing.
+4. **Real zeros:** a 0 computed from the game files is marked (`REAL_ZERO`, a word joiner) so cleanText keeps it. Ten ability texts showed "؟ / 10 / 20".
+5. **Champion page:** loads the build, the champion texts and its game file in parallel. Detailed item tooltips load in the background (the items page waits for them, with a fallback). With an empty cache the page opened in 3s instead of waiting for about 55MB.
+6. **Version unavailable:** the game-file caches use the saved copy (`perVersion` with `null`), and failures are retried instead of being remembered for the session.
+7. **String table:** downloaded once per version (`game/strings-full.json`) and shared by the augments and tooltip builders.
+8. & 9. **One disk cache** (`src/diskCache.ts`) replaces four copies: concurrent calls for a file share one load, and writes go through a temp file and rename. `getJson` exists once.
+10. **Nothing to apply:** a clear message replaces an empty "طُبّق في العميل:".

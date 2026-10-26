@@ -1,8 +1,8 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { z } from 'zod';
+import { diskCache, type Cached } from '../diskCache.js';
 import { parseOpgg, type OpggValue } from './opggFormat.js';
 
 export const OPGG_MCP_URL = 'https://mcp-api.op.gg/mcp';
@@ -93,11 +93,7 @@ export interface MapItem {
   into: number[];
 }
 
-export interface Fetched<T> {
-  data: T;
-  fetchedAt: number;
-  stale: boolean;
-}
+export type Fetched<T> = Cached<T>;
 
 // Exact strings from the tool's closed field list (OP.GG rejects anything else).
 const PICK = '{ids[],ids_names[],pick_rate,play,win}';
@@ -257,20 +253,7 @@ export class OpggStats {
     return this.cached(`items-${map}`, async () => toMapItems(parseOpgg(await this.call('lol_list_items', { lang: 'en_US', map }))), ONE_DAY);
   }
 
-  private async cached<T>(name: string, load: () => Promise<T>, ttl = SIX_HOURS): Promise<Fetched<T>> {
-    const path = join(this.cacheDir, 'opgg', `${name}.json`);
-    const cached = await readFile(path, 'utf8')
-      .then((s) => JSON.parse(s) as { fetchedAt: number; data: T })
-      .catch(() => null);
-    if (cached && this.now() - cached.fetchedAt < ttl) return { ...cached, stale: false };
-    try {
-      const fresh = { fetchedAt: this.now(), data: await load() };
-      await mkdir(dirname(path), { recursive: true });
-      await writeFile(path, JSON.stringify(fresh));
-      return { ...fresh, stale: false };
-    } catch (err) {
-      if (cached) return { ...cached, stale: true };
-      throw err;
-    }
+  private cached<T>(name: string, load: () => Promise<T>, ttl = SIX_HOURS): Promise<Fetched<T>> {
+    return diskCache(join(this.cacheDir, 'opgg', `${name}.json`), (e) => this.now() - e.fetchedAt < ttl, load, { now: this.now });
   }
 }

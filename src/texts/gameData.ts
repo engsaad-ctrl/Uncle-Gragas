@@ -1,8 +1,8 @@
 // Game files used for in-game style ability and item tooltips, cached per game version.
 // The string table is 38MB; only the tooltip and spell-name keys (about 1MB) are kept.
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
+import { diskCache, getJson } from '../diskCache.js';
 import type { SpellData } from './spellValues.js';
 
 const RAW = 'https://raw.communitydragon.org/latest';
@@ -18,27 +18,18 @@ interface Opts {
   fetchImpl: typeof fetch;
 }
 
-async function getJson<T>(fetchImpl: typeof fetch, url: string): Promise<T> {
-  const res = await fetchImpl(url);
-  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
-  return (await res.json()) as T;
-}
-
-/** Disk cache that is valid for one game version; a failed refresh falls back to the older copy. */
-async function perVersion<T>(path: string, version: string, load: () => Promise<T>): Promise<T> {
-  const cached = await readFile(path, 'utf8')
-    .then((s) => JSON.parse(s) as { version: string; data: T })
-    .catch(() => null);
-  if (cached?.version === version) return cached.data;
-  try {
-    const data = await load();
-    await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, JSON.stringify({ version, data }));
-    return data;
-  } catch (err) {
-    if (cached) return cached.data;
-    throw err;
-  }
+/**
+ * Disk cache valid for one game version. With no version (it could not be fetched), any saved copy is used:
+ * offline or a CommunityDragon outage should not cost the detailed descriptions already on disk.
+ */
+async function perVersion<T>(path: string, version: string | null, load: () => Promise<T>): Promise<T> {
+  const r = await diskCache(
+    path,
+    (e) => version === null || e.key === version,
+    version === null ? () => Promise.reject(new Error('تعذّر معرفة نسخة اللعبة، ولا توجد نسخة محفوظة.')) : load,
+    { key: version ?? undefined },
+  );
+  return r.data;
 }
 
 export const loadGameVersion = (o: Opts) => getJson<{ version: string }>(o.fetchImpl, GAME_URLS.version).then((m) => m.version);
@@ -58,15 +49,21 @@ export function expandRefs(text: string, strings: (key: string) => string | unde
   return out;
 }
 
-export function loadTooltipStrings(o: Opts, version: string): Promise<Record<string, string>> {
-  return perVersion(join(o.cacheDir, 'game', 'tooltip-strings.json'), version, async () => {
-    const { entries } = await getJson<{ entries: Record<string, string> }>(o.fetchImpl, GAME_URLS.strings);
-    return Object.fromEntries(Object.entries(entries).filter(([k]) => isTooltipKey(k.toLowerCase())));
-  });
+/** The full game string table (38MB), saved once per version so the augments and tooltip builders share one download. */
+export function loadStringTable(o: Opts, version: string | null): Promise<Record<string, string>> {
+  return perVersion(join(o.cacheDir, 'game', 'strings-full.json'), version, async () =>
+    (await getJson<{ entries: Record<string, string> }>(o.fetchImpl, GAME_URLS.strings)).entries,
+  );
+}
+
+export function loadTooltipStrings(o: Opts, version: string | null): Promise<Record<string, string>> {
+  return perVersion(join(o.cacheDir, 'game', 'tooltip-strings.json'), version, async () =>
+    Object.fromEntries(Object.entries(await loadStringTable(o, version)).filter(([k]) => isTooltipKey(k.toLowerCase()))),
+  );
 }
 
 /** The champion's bin, trimmed to what the tooltips read: the character record and its spells' data. */
-export function loadChampionBin(o: Opts, version: string, alias: string): Promise<Record<string, object>> {
+export function loadChampionBin(o: Opts, version: string | null, alias: string): Promise<Record<string, object>> {
   const a = alias.toLowerCase();
   return perVersion(join(o.cacheDir, 'game', 'champions', `${a}.json`), version, async () => {
     const bin = await getJson<Record<string, { __type?: string; mSpell?: unknown }>>(o.fetchImpl, GAME_URLS.championBin(a));
@@ -96,7 +93,7 @@ interface RawItemData {
 type ItemSpell = { mSpell?: SpellData & { cooldownTime?: number[] } };
 
 /** The items bin (16MB), trimmed to each item's values (its active spell's included) and tooltip key. */
-export function loadGameItems(o: Opts, version: string): Promise<Record<number, GameItem>> {
+export function loadGameItems(o: Opts, version: string | null): Promise<Record<number, GameItem>> {
   return perVersion(join(o.cacheDir, 'game', 'items.json'), version, async () => {
     const bin = await getJson<Record<string, RawItemData & ItemSpell>>(o.fetchImpl, GAME_URLS.items);
     const out: Record<number, GameItem> = {};

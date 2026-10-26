@@ -60,6 +60,8 @@ describe('game files cache', () => {
     expect(Object.keys(b)).toHaveLength(Object.keys(bin).length);
     const offline = (async () => { throw new Error('offline'); }) as typeof fetch;
     expect(await loadTooltipStrings({ cacheDir, fetchImpl: offline }, '16.22')).toEqual({ buff_ahrip_tooltip: 'x' }); // stale copy beats nothing
+    expect(await loadTooltipStrings({ cacheDir, fetchImpl: offline }, null)).toEqual({ buff_ahrip_tooltip: 'x' }); // version unknown: saved copy
+    await expect(loadTooltipStrings({ cacheDir: `${cacheDir}-empty`, fetchImpl: offline }, null)).rejects.toThrow(/نسخة اللعبة/);
   });
 
   it('trims the items bin to values, quoted stats and the active spell cooldown', async () => {
