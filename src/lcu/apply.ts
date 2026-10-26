@@ -86,8 +86,10 @@ export async function applyItemSet(call: LcuCall, set: ItemSetPayload, uid: stri
   const me = (await call('GET', '/lol-summoner/v1/current-summoner')) as { summonerId?: number } | null;
   if (!me?.summonerId) throw new Error('تعذّر معرفة الحساب المسجّل في العميل.');
   const path = `/lol-item-sets/v1/item-sets/${me.summonerId}/sets`;
-  const current = ((await call('GET', path)) as ClientItemSets | null) ?? {};
-  const kept = (current.itemSets ?? []).filter((s) => !(s.title?.startsWith(TAG) && s.associatedChampions?.includes(set.championId)));
+  const current = (await call('GET', path)) as ClientItemSets | null;
+  // The PUT below replaces every set: without a real list to keep, writing would wipe the player's own sets.
+  if (!current || !Array.isArray(current.itemSets)) throw new Error('تعذّر قراءة قوائم الأيتمات الحالية من العميل، فلم يُكتب شيء حتى لا تضيع قوائمك.');
+  const kept = current.itemSets.filter((s) => !(s.title?.startsWith(TAG) && s.associatedChampions?.includes(set.championId)));
   const mine = {
     uid,
     title: set.title,
@@ -105,7 +107,22 @@ export async function applyItemSet(call: LcuCall, set: ItemSetPayload, uid: stri
   await call('PUT', path, { ...current, itemSets: [...kept, mine] });
 }
 
-export async function applySpells(call: LcuCall, [spell1Id, spell2Id]: [number, number]): Promise<void> {
+/**
+ * Puts the build's two spells on the player's keys without moving the ones they already have:
+ * Flash on F stays on F. Spells the player does not have yet fill the remaining slots in build order.
+ */
+export function arrangeSpells(build: [number, number], current: [number, number] | null): [number, number] {
+  if (!current) return build;
+  const slots: (number | null)[] = current.map((id) => (build.includes(id) ? id : null));
+  const rest = build.filter((id) => !slots.includes(id));
+  return slots.map((id) => id ?? rest.shift()!) as [number, number];
+}
+
+export async function applySpells(call: LcuCall, build: [number, number]): Promise<void> {
+  const session = (await call('GET', '/lol-champ-select/v1/session')) as { localPlayerCellId?: number; myTeam?: { cellId?: number; spell1Id?: number; spell2Id?: number }[] } | null;
+  const me = session?.myTeam?.find((p) => p.cellId === session.localPlayerCellId);
+  const current = me?.spell1Id && me.spell2Id ? ([me.spell1Id, me.spell2Id] as [number, number]) : null;
+  const [spell1Id, spell2Id] = arrangeSpells(build, current);
   await call('PATCH', '/lol-champ-select/v1/session/my-selection', { spell1Id, spell2Id });
 }
 

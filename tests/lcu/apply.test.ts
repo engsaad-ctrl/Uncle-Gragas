@@ -9,7 +9,7 @@ import spellsEn from '../fixtures/cdragon/summoner-spells.default.sample.json' w
 import stylesAr from '../fixtures/cdragon/perkstyles.ar_ae.json' with { type: 'json' };
 import stylesEn from '../fixtures/cdragon/perkstyles.default.json' with { type: 'json' };
 import { composeChampionPage } from '../../src/app/championPage.js';
-import { applyAll, applyItemSet, applyRunePage, TAG, toPayloads } from '../../src/lcu/apply.js';
+import { applyAll, applyItemSet, applyRunePage, arrangeSpells, TAG, toPayloads } from '../../src/lcu/apply.js';
 import type { LcuCall } from '../../src/lcu/client.js';
 import { parseOpgg } from '../../src/stats/opggFormat.js';
 import { toBuild } from '../../src/stats/opgg.js';
@@ -88,11 +88,27 @@ describe('writing into the client', () => {
     expect(body.itemSets[2].blocks).toEqual([{ type: 'الحذاء', items: [{ id: '3020', count: 1 }] }]);
   });
 
+  it('never writes item sets when the current list cannot be read (the PUT would wipe them)', async () => {
+    const c = fakeClient({ 'GET /lol-summoner/v1/current-summoner': { summonerId: 42 } }); // sets answer: 404 → null
+    await expect(applyItemSet(c.call, { title: `${TAG} Ahri mid`, championId: 103, mapId: 11, blocks: [] }, 'u')).rejects.toThrow(/لم يُكتب شيء/);
+    expect(c.calls.some((x) => x.method === 'PUT')).toBe(false);
+  });
+
+  it('keeps each spell the player already has on its key', () => {
+    expect(arrangeSpells([4, 14], [14, 4])).toEqual([14, 4]); // Flash stays on F
+    expect(arrangeSpells([4, 14], [7, 4])).toEqual([14, 4]); // Heal swapped for Ignite, Flash untouched
+    expect(arrangeSpells([4, 14], [7, 3])).toEqual([4, 14]); // nothing shared: build order
+    expect(arrangeSpells([4, 14], null)).toEqual([4, 14]);
+  });
+
   it('sets summoner spells only during champ select, and reports each part', async () => {
-    const c = fakeClient({ 'GET /lol-summoner/v1/current-summoner': { summonerId: 42 } });
+    const c = fakeClient({
+      'GET /lol-summoner/v1/current-summoner': { summonerId: 42 },
+      'GET /lol-champ-select/v1/session': { localPlayerCellId: 2, myTeam: [{ cellId: 2, spell1Id: 14, spell2Id: 4 }] },
+    });
     const p = { runePage, itemSet: null, spells: [4, 14] as [number, number] };
     expect(await applyAll(c.call, p, { inChampSelect: false, uid: 'u' })).toEqual({ runes: 'ok', items: 'none', spells: 'none' });
     expect(await applyAll(c.call, p, { inChampSelect: true, uid: 'u' })).toEqual({ runes: 'ok', items: 'none', spells: 'ok' });
-    expect(c.calls.at(-1)).toEqual({ method: 'PATCH', path: '/lol-champ-select/v1/session/my-selection', body: { spell1Id: 4, spell2Id: 14 } });
+    expect(c.calls.at(-1)).toEqual({ method: 'PATCH', path: '/lol-champ-select/v1/session/my-selection', body: { spell1Id: 14, spell2Id: 4 } });
   });
 });

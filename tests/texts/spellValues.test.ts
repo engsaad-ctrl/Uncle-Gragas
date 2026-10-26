@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import spells from '../fixtures/augments/spells.json' with { type: 'json' };
+import { cleanText } from '../../src/texts/clean.js';
 import { binHash, mostlyResolved, resolveSpellValues, type SpellData } from '../../src/texts/spellValues.js';
 
 const axiom = spells.ArcaneAxiom as SpellData;
@@ -120,6 +121,13 @@ describe('resolveSpellValues (real augment spells)', () => {
     expect(mostlyResolved('@A@ @B@ @C@', { text: 'x', unresolved: 2 })).toBe(false);
     expect(mostlyResolved('@A@ @f1@', { text: 'x {{ Missing }}', unresolved: 0 })).toBe(false);
     expect(mostlyResolved('نص بلا أرقام', { text: 'نص بلا أرقام', unresolved: 0 })).toBe(true);
+  });
+
+  it('keeps a computed 0 as a number after cleanText (only CommunityDragon zeros mean "unknown")', () => {
+    const spell: SpellData = { DataValues: [{ name: 'Bonus', values: [0, 0, 10, 20] }] };
+    const r = resolveSpellValues('يكسب @Bonus@ سرعة', spell, { ranks: 3 });
+    expect(cleanText(r.text)).toBe('يكسب 0 / 10 / 20 سرعة');
+    expect(cleanText('يلحق 0 ضرر')).toContain('؟');
   });
 
   it('handles sums, products, breakpoints and multipliers', () => {

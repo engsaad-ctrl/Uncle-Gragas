@@ -27,9 +27,13 @@ const VAR_SENTINEL = '\u0001';
 const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ESCAPES[c]);
 
+/** Follows a 0 the game files really hold (written by spellValues), so the rule below keeps it as a number. */
+export const REAL_ZERO = '\u2060';
+
 function cleanSegment(text: string): string {
   return escapeHtml(text)
-    .replace(/(?<![\d.,])0(?![\d.,])/g, VAR_SENTINEL) // the client leaves live-computed values as 0
+    .replace(/(?<![\d.,])0(?![\d.,\u2060])/g, VAR_SENTINEL) // CommunityDragon's text leaves live-computed values as 0
+    .replaceAll(REAL_ZERO, '')
     .replaceAll(VAR_SENTINEL, VAR_HTML);
 }
 

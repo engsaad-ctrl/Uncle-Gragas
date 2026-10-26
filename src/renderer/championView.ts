@@ -55,7 +55,8 @@ function applyControl(p: ChampionPage): HTMLElement {
       note.textContent = `✗ ${r.error}`;
       return;
     }
-    note.replaceChildren(...applyLines(r).map((l) => el('div', l.ok ? 'ok' : 'bad', l.text)));
+    const lines = applyLines(r);
+    note.replaceChildren(...(lines.length ? lines.map((l) => el('div', l.ok ? 'ok' : 'bad', l.text)) : [el('div', 'bad', 'لا يوجد ما يُطبَّق.')]));
   });
   box.append(btn, note);
   return box;

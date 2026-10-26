@@ -138,6 +138,8 @@ let lastAutoKey = '';
 let lastApplyKey = '';
 async function onLcu(state: LcuState) {
   setLcu(state);
+  // A new champ select starts fresh: the same champion next game must open and apply again.
+  if (state.phase !== 'ChampSelect') lastAutoKey = lastApplyKey = '';
   const status = byId('lcu-status');
   status.classList.toggle('on', state.phase !== 'Disconnected');
   status.classList.toggle('live', state.phase === 'ChampSelect' || state.phase === 'InProgress');
@@ -161,7 +163,10 @@ async function onLcu(state: LcuState) {
       // Not awaited: opening the page below should not wait for the client.
       void window.lolh
         .applyToClient(state.championId, PAGE_MODE[state.mode], state.position ?? 'mid')
-        .then((r) => toast(isError(r) ? [`✗ ${r.error}`] : ['طُبّق في العميل:', ...applyLines(r).map((l) => l.text)]));
+        .then((r) => {
+          const lines = isError(r) ? [] : applyLines(r);
+          toast(isError(r) ? [`✗ ${r.error}`] : lines.length ? ['طُبّق في العميل:', ...lines.map((l) => l.text)] : ['لا يوجد بناء لتطبيقه في هذا الطور.']);
+        });
     }
   }
 

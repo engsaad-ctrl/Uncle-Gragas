@@ -1,6 +1,8 @@
 // Fills tooltip placeholders (@Name@, @Name*100@) with the numbers stored in the game's spell data:
 // DataValues (plain values) and mSpellCalculations (GameCalculation formulas). Seen in the 2026-10 game files.
 
+import { REAL_ZERO } from './clean.js';
+
 type Part = { __type?: string; [field: string]: unknown };
 
 export interface SpellCalculation {
@@ -255,7 +257,11 @@ function evalCalc(calc: SpellCalculation, c: Ctx): Value | null {
   return m ? times(v, m) : null;
 }
 
-const fmt = (n: number, precision: number) => String(Number(n.toFixed(precision)));
+// A computed 0 is a real value: mark it so cleanText does not take it for CommunityDragon's "unknown" 0.
+const fmt = (n: number, precision: number) => {
+  const text = String(Number(n.toFixed(precision)));
+  return text === '0' ? `0${REAL_ZERO}` : text;
+};
 
 /**
  * "70 / 120 / 170 / 220 / 270", or one number when every rank is the same.
