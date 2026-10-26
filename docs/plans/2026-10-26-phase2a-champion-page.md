@@ -68,3 +68,10 @@
 - **Backgrounds:** four splash images the owner sent (Shamrock Malphite, Gentleman Gragas, Blitzcrank, Hillbilly Gragas), re-encoded to `static/backgrounds/*.jpg` (about 250KB total).
 - **Colours per image:** a median-cut palette (12 colours, 160px thumbnail). The accent is the colour with the highest (saturation × value)^1.5 × count^0.35, nudged to S ≥ 0.65 and L 0.55–0.65 so it reads on dark. The second accent is the next colour with a clearly different hue. Background and panel tints are dark shades of the accent hue. All of it is precomputed into `src/renderer/theme.ts` (no image work at runtime).
 - **On launch:** `applyRandomTheme()` sets the CSS variables and `--bg-image`, and never repeats the previous image (`pickThemeIndex`, tested). The art sits in `body::before` (slightly blurred), with a gradient veil in `body::after` that is lighter on the menu side. Panels are translucent with a backdrop blur, and leftover fixed colours were replaced with `color-mix()` on the theme variables.
+
+## Follow-up 5 (owner: calmer colours, clearer art, settings button, "Summoner's Rift" label)
+
+- **Calmer accents:** the hue still comes from each image, but the accent is softened to S 0.48 / L 0.64 and the second accent to S 0.42 / L 0.68. Panels are low-saturation tints of the same hue.
+- **Clearer art:** no blur, a lighter veil (72% → 15% across the window), panels at 66% opacity with a 12px backdrop blur, and a text shadow on headings and menu text for readability.
+- **Settings:** a gear button at the bottom of the side menu opens a panel with the name language (English/عربي) and "تغيير الخلفية" (next image). It closes on an outside click or Esc.
+- The "العادي" mode is labelled **Summoner's Rift**.

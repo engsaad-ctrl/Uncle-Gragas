@@ -4,10 +4,10 @@ import type { LanePosition, Position } from '../stats/opgg.js';
 import { augmentsView } from './augmentsView.js';
 import { championsView } from './championsView.js';
 import { championView } from './championView.js';
-import { byId, getAppMode, getNameLang, PAGE_MODE, pills, setAppMode, setNameLang } from './dom.js';
+import { byId, el, getAppMode, getNameLang, PAGE_MODE, pills, setAppMode, setNameLang } from './dom.js';
 import { itemsView } from './itemsView.js';
 import { tierListView } from './tierListView.js';
-import { applyRandomTheme } from './theme.js';
+import { applyRandomTheme, nextTheme } from './theme.js';
 
 applyRandomTheme();
 
@@ -49,11 +49,37 @@ byId('modes').addEventListener('click', (e) => {
   else location.hash = next;
 });
 
-byId('lang').replaceWith(
-  pills('لغة الأسماء', [['en', 'الأسماء: English'], ['ar', 'الأسماء: عربي']], getNameLang(), (v) => {
-    setNameLang(v === 'ar' ? 'ar' : 'en');
-    route();
-  }),
+// Settings panel (gear button at the bottom of the side menu).
+const settings = byId('settings');
+const settingsBtn = byId<HTMLButtonElement>('settings-btn');
+const section = (title: string, ...body: HTMLElement[]) => {
+  const s = el('section');
+  s.append(el('h4', '', title), ...body);
+  return s;
+};
+const bgButton = el('button', 'pill', 'تغيير الخلفية');
+bgButton.type = 'button';
+bgButton.addEventListener('click', () => nextTheme());
+settings.append(
+  section(
+    'لغة أسماء الأيتمات والرونز والتعزيزات',
+    pills('لغة الأسماء', [['en', 'English'], ['ar', 'عربي']], getNameLang(), (v) => {
+      setNameLang(v === 'ar' ? 'ar' : 'en');
+      route();
+    }),
+    el('p', 'hint', 'الأوصاف بالعربي دائماً.'),
+  ),
+  section('الخلفية', bgButton, el('p', 'hint', 'تتغير الخلفية تلقائياً مع كل تشغيل.')),
 );
+const setSettingsOpen = (open: boolean) => {
+  settings.hidden = !open;
+  settingsBtn.setAttribute('aria-expanded', String(open));
+  settingsBtn.classList.toggle('active', open);
+};
+settingsBtn.addEventListener('click', () => setSettingsOpen(settings.hidden !== false)); // hidden may also be 'until-found'
+document.addEventListener('click', (e) => {
+  if (!settings.hidden && !settings.contains(e.target as Node) && !settingsBtn.contains(e.target as Node)) setSettingsOpen(false);
+});
+document.addEventListener('keydown', (e) => e.key === 'Escape' && setSettingsOpen(false));
 window.addEventListener('hashchange', route);
 route();

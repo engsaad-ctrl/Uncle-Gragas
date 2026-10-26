@@ -168,7 +168,7 @@ h1 .accent, .accent { color: var(--muted); font-weight: 400; }
 
 /* Side menu (right side in RTL) */
 body { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
-.side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 6px; padding: 18px 12px; background: color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter: blur(10px); border-inline-end: 1px solid var(--line); }
+.side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 6px; padding: 18px 12px; background: color-mix(in srgb, var(--bg) 40%, transparent); backdrop-filter: blur(12px); border-inline-end: 1px solid var(--line); }
 .side .brand { padding: 0 10px 14px; font-size: 20px; font-weight: 700; letter-spacing: .3px; direction: ltr; text-align: right; }
 .side .brand span { color: var(--accent); }
 .menu { display: flex; flex-direction: column; gap: 4px; }
@@ -181,8 +181,6 @@ body { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
 .modes .dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--line); }
 .modes button.active .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .side-foot { margin-top: auto; }
-.side-foot .pills { flex-direction: column; }
-.side-foot .pill { width: 100%; }
 #view { min-width: 0; padding: 0 24px 28px; }
 .detail { top: 8px; }
 
@@ -227,12 +225,28 @@ a.tier-row { transition: transform .15s, background-color .15s, border-color .15
 :root { --accent-2: var(--accent); --bg-image: none; }
 body { position: relative; isolation: isolate; }
 body::before, body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-body::before { background: var(--bg-image) right center / cover no-repeat; filter: blur(1.5px) saturate(1.05); transform: scale(1.02); animation: bg-in .9s ease both; }
-body::after { background: linear-gradient(to right, color-mix(in srgb, var(--bg) 88%, transparent) 0%, color-mix(in srgb, var(--bg) 70%, transparent) 50%, color-mix(in srgb, var(--bg) 35%, transparent) 100%); }
+body::before { background: var(--bg-image) right center / cover no-repeat; transform: scale(1.02); animation: bg-in .9s ease both; }
+body::after { background: linear-gradient(to right, color-mix(in srgb, var(--bg) 72%, transparent) 0%, color-mix(in srgb, var(--bg) 45%, transparent) 50%, color-mix(in srgb, var(--bg) 15%, transparent) 100%); }
 @keyframes bg-in { from { opacity: 0; transform: scale(1.06); } to { opacity: 1; transform: scale(1.02); } }
-.panel, .champ, .tier-row { background: color-mix(in srgb, var(--panel) 78%, transparent); backdrop-filter: blur(8px); }
+.panel, .champ, .tier-row { background: color-mix(in srgb, var(--panel) 66%, transparent); backdrop-filter: blur(12px); }
 .tier-head { background: none; backdrop-filter: none; }
 .chip, .pill, .search { background: color-mix(in srgb, var(--panel-2) 85%, transparent); }
 .link, .more { color: var(--accent-2); }
 .status.loading::before { border-top-color: var(--accent-2); }
 .side .brand span span { color: var(--accent); }
+
+/* Readability over a brighter background */
+h1, h2, .sub, .status, .menu a, .menu button, .menu-title, .brand { text-shadow: 0 1px 3px #000c; }
+
+/* Settings */
+.side-foot { position: relative; }
+.settings-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; color: var(--muted); font: inherit; font-weight: 600; background: none; border: 0; border-radius: 6px; cursor: pointer; transition: background-color .15s, color .15s; text-shadow: 0 1px 3px #000c; }
+.settings-btn:hover, .settings-btn.active { color: var(--text); background: color-mix(in srgb, var(--accent) 16%, var(--panel)); }
+.settings-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .4s ease; }
+.settings-btn.active svg { transform: rotate(60deg); }
+.settings-pop { position: absolute; bottom: calc(100% + 8px); inset-inline: 0; z-index: 10; display: grid; gap: 14px; padding: 14px; background: color-mix(in srgb, var(--panel-2) 94%, transparent); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 30px #000a; animation: slide-down .2s ease both; }
+.settings-pop[hidden] { display: none; }
+.settings-pop h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+.settings-pop .pills { flex-wrap: nowrap; }
+.settings-pop .pill { flex: 1; }
+.settings-pop .hint { margin-top: 6px; font-size: 11px; }

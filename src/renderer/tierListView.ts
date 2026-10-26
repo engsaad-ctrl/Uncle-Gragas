@@ -12,7 +12,7 @@ export async function tierListView(root: HTMLElement, alive: () => boolean, lane
   head.append(title, el('p', 'sub', 'ترتيب الأبطال حسب قوتهم في الباتش الحالي. اضغط على بطل لفتح بنائه في هذا المسار.'));
   const mode = getAppMode();
   if (mode !== 'normal') {
-    head.append(el('p', 'panel note', `لا تتوفر Tier List لطور ${MODE_TITLE[mode]}. اختر "العادي" من القائمة الجانبية لعرضها.`));
+    head.append(el('p', 'panel note', `لا تتوفر Tier List لطور ${MODE_TITLE[mode]}. اختر Summoner's Rift من القائمة الجانبية لعرضها.`));
     root.replaceChildren(head);
     return;
   }

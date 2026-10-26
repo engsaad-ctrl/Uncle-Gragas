@@ -30,12 +30,18 @@
     </nav>
     <div class="menu-title">الأطوار</div>
     <nav id="modes" class="menu modes" aria-label="الأطوار">
-      <button type="button" data-mode="normal"><b class="dot"></b><span>العادي</span><small>Summoner's Rift</small></button>
+      <button type="button" data-mode="normal"><b class="dot"></b><span>Summoner's Rift</span></button>
       <button type="button" data-mode="aram"><b class="dot"></b><span>ARAM</span></button>
       <button type="button" data-mode="mayhem"><b class="dot"></b><span>ARAM Mayhem</span></button>
       <button type="button" data-mode="arena"><b class="dot"></b><span>Arena</span></button>
     </nav>
-    <div class="side-foot"><div id="lang"></div></div>
+    <div class="side-foot">
+      <div id="settings" class="settings-pop" hidden></div>
+      <button type="button" id="settings-btn" class="settings-btn" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        <span>الإعدادات</span>
+      </button>
+    </div>
   </aside>
   <main id="view"></main>
   <script type="module" src="../dist/renderer/app.js"></script>
