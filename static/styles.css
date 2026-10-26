@@ -39,7 +39,7 @@ h1 .accent, .accent { color: var(--muted); font-weight: 400; }
 .pill { padding: 7px 14px; color: var(--text); font: inherit; font-weight: 600; background: var(--panel-2); border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
 .pill:hover { border-color: var(--line); }
 .pill.active { border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
-.pill.static { cursor: default; font-size: 13px; background: #1f1f45; }
+.pill.static { cursor: default; font-size: 13px; background: color-mix(in srgb, var(--accent) 14%, var(--panel-2)); }
 .search { display: flex; align-items: center; gap: 8px; min-width: 260px; padding: 0 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; }
 .search input { flex: 1; padding: 8px 0; color: var(--text); font: inherit; background: none; border: 0; outline: 0; }
 .search svg { width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 2; }
@@ -64,7 +64,7 @@ h1 .accent, .accent { color: var(--muted); font-weight: 400; }
 .chip { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; color: var(--text); font: inherit; font-weight: 600; text-align: start; background: var(--panel-2); border: 1px solid var(--silver); border-radius: 4px; cursor: pointer; }
 .chip span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .chip img { width: 28px; height: 28px; flex: none; border-radius: 4px; }
-.chip:hover, .chip.selected { background: #232350; }
+.chip:hover, .chip.selected { background: color-mix(in srgb, var(--accent) 16%, var(--panel-2)); }
 .chip.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
 .r-prismatic { border-color: var(--prism); } .r-gold { border-color: var(--gold); } .r-event { border-color: var(--event); }
 .mode { flex: none; margin-inline-start: auto; padding: 0 6px; font-size: 10px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; }
@@ -168,13 +168,13 @@ h1 .accent, .accent { color: var(--muted); font-weight: 400; }
 
 /* Side menu (right side in RTL) */
 body { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
-.side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 6px; padding: 18px 12px; background: #0b0b2b; border-inline-end: 1px solid var(--line); }
+.side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 6px; padding: 18px 12px; background: color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter: blur(10px); border-inline-end: 1px solid var(--line); }
 .side .brand { padding: 0 10px 14px; font-size: 20px; font-weight: 700; letter-spacing: .3px; direction: ltr; text-align: right; }
 .side .brand span { color: var(--accent); }
 .menu { display: flex; flex-direction: column; gap: 4px; }
 .menu a, .menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; color: var(--muted); font: inherit; font-weight: 600; text-align: start; background: none; border: 0; border-radius: 6px; cursor: pointer; transition: background-color .15s, color .15s, transform .15s; }
 .menu a:hover, .menu button:hover { color: var(--text); background: var(--panel-2); }
-.menu a.active, .menu button.active { color: var(--text); background: #1d2350; box-shadow: inset -3px 0 0 var(--accent); }
+.menu a.active, .menu button.active { color: var(--text); background: color-mix(in srgb, var(--accent) 20%, var(--panel)); box-shadow: inset -3px 0 0 var(--accent); }
 .menu svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .menu-title { margin: 16px 12px 4px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .modes small { margin-inline-start: auto; font-size: 10px; font-weight: 400; }
@@ -210,7 +210,7 @@ a.tier-row { transition: transform .15s, background-color .15s, border-color .15
 .muted { color: var(--muted); }
 
 /* Hover card */
-.tooltip { position: fixed; z-index: 50; width: max-content; max-width: 380px; padding: 12px 14px; background: #15153a; border: 1px solid #3a3a6a; border-radius: 8px; box-shadow: 0 12px 32px #000a; pointer-events: none; opacity: 0; transform: translateY(6px) scale(.97); transition: opacity .16s ease, transform .16s ease; }
+.tooltip { position: fixed; z-index: 50; width: max-content; max-width: 380px; padding: 12px 14px; background: color-mix(in srgb, var(--panel-2) 94%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 32px #000a; pointer-events: none; opacity: 0; transform: translateY(6px) scale(.97); transition: opacity .16s ease, transform .16s ease; }
 .tooltip.show { opacity: 1; transform: none; }
 .tooltip.r-prismatic { border-color: var(--prism); } .tooltip.r-gold { border-color: var(--gold); }
 .tip-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
@@ -222,3 +222,17 @@ a.tier-row { transition: transform .15s, background-color .15s, border-color .15
 
 .side .brand { display: flex; align-items: center; gap: 10px; }
 .side .brand img { width: 40px; height: 40px; border-radius: 9px; box-shadow: 0 4px 12px #0008; }
+
+/* Random splash background (see src/renderer/theme.ts): the art shows through on the menu side, darker under content */
+:root { --accent-2: var(--accent); --bg-image: none; }
+body { position: relative; isolation: isolate; }
+body::before, body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+body::before { background: var(--bg-image) right center / cover no-repeat; filter: blur(1.5px) saturate(1.05); transform: scale(1.02); animation: bg-in .9s ease both; }
+body::after { background: linear-gradient(to right, color-mix(in srgb, var(--bg) 88%, transparent) 0%, color-mix(in srgb, var(--bg) 70%, transparent) 50%, color-mix(in srgb, var(--bg) 35%, transparent) 100%); }
+@keyframes bg-in { from { opacity: 0; transform: scale(1.06); } to { opacity: 1; transform: scale(1.02); } }
+.panel, .champ, .tier-row { background: color-mix(in srgb, var(--panel) 78%, transparent); backdrop-filter: blur(8px); }
+.tier-head { background: none; backdrop-filter: none; }
+.chip, .pill, .search { background: color-mix(in srgb, var(--panel-2) 85%, transparent); }
+.link, .more { color: var(--accent-2); }
+.status.loading::before { border-top-color: var(--accent-2); }
+.side .brand span span { color: var(--accent); }

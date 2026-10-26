@@ -62,3 +62,9 @@
 - **Hover cards** (`withTooltip` in `src/renderer/dom.ts`): one floating card, fed from a WeakMap, showing the icon, name, other-language name and Arabic description. It uses a 120ms delay, flips above when there is no room below, and fades and slides.
 - **App icon**: Gentleman Gragas, face cropped from the splash the owner sent, with rounded corners and a gold frame. (An earlier Hillbilly Gragas version was replaced at the owner's request.) Saved as `build/icon.ico` (16–256 px) for the exe and `static/icon.png` for the window and side menu.
 - **Not done yet**: about 35 Summoner's Rift items still show "؟". Their values live in the items bin file, not in the augment spells.
+
+## Follow-up 4 (owner: random splash background, colours taken from the image)
+
+- **Backgrounds:** four splash images the owner sent (Shamrock Malphite, Gentleman Gragas, Blitzcrank, Hillbilly Gragas), re-encoded to `static/backgrounds/*.jpg` (about 250KB total).
+- **Colours per image:** a median-cut palette (12 colours, 160px thumbnail). The accent is the colour with the highest (saturation × value)^1.5 × count^0.35, nudged to S ≥ 0.65 and L 0.55–0.65 so it reads on dark. The second accent is the next colour with a clearly different hue. Background and panel tints are dark shades of the accent hue. All of it is precomputed into `src/renderer/theme.ts` (no image work at runtime).
+- **On launch:** `applyRandomTheme()` sets the CSS variables and `--bg-image`, and never repeats the previous image (`pickThemeIndex`, tested). The art sits in `body::before` (slightly blurred), with a gradient veil in `body::after` that is lighter on the menu side. Panels are translucent with a backdrop blur, and leftover fixed colours were replaced with `color-mix()` on the theme variables.

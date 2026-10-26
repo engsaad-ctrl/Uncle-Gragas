@@ -7,6 +7,9 @@ import { championView } from './championView.js';
 import { byId, getAppMode, getNameLang, PAGE_MODE, pills, setAppMode, setNameLang } from './dom.js';
 import { itemsView } from './itemsView.js';
 import { tierListView } from './tierListView.js';
+import { applyRandomTheme } from './theme.js';
+
+applyRandomTheme();
 
 const PAGE_MODES = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
 const POSITIONS = ['top', 'jungle', 'mid', 'adc', 'support'];
