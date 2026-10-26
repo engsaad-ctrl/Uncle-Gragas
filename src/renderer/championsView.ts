@@ -1,5 +1,5 @@
 import type { ChampionListEntry } from '../texts/champions.js';
-import { el, icon, isError, nameEl, searchBox, shownName, getNameLang, stagger } from './dom.js';
+import { el, getAppMode, icon, isError, MODE_TITLE, nameEl, PAGE_MODE, searchBox, shownName, getNameLang, stagger } from './dom.js';
 import { normalizeArabic } from './search.js';
 
 let cached: ChampionListEntry[] | undefined;
@@ -7,7 +7,7 @@ let cached: ChampionListEntry[] | undefined;
 export async function championsView(root: HTMLElement, alive: () => boolean) {
   const head = el('div', 'view-head');
   const title = el('div', 'title');
-  title.append(el('h1', '', 'الأبطال'));
+  title.append(el('h1', '', 'الأبطال'), el('span', 'pill static', `بناءات ${MODE_TITLE[getAppMode()]}`));
   const search = searchBox('ابحث عن بطل');
   const filters = el('nav', 'filters');
   filters.append(search.node);
@@ -36,7 +36,7 @@ export async function championsView(root: HTMLElement, alive: () => boolean) {
     grid.replaceChildren(
       ...shown.map((c, i) => {
         const a = stagger(el('a', 'champ'), i);
-        a.href = `#/champion/${c.id}`;
+        a.href = `#/champion/${c.id}/${PAGE_MODE[getAppMode()]}`;
         a.append(icon(c.portraitUrl), nameEl('span', c));
         return a;
       }),

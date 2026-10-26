@@ -1,5 +1,7 @@
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
-import { mcpCaller, OpggStats, type CallTool, type Position } from '../stats/opgg.js';
+import { composeItemList, type ItemEntry } from '../app/itemList.js';
+import { composeTierList, type TierRow } from '../app/tierList.js';
+import { mcpCaller, OpggStats, type CallTool, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { loadAugments, type AugmentsResult } from '../texts/augmentsLoader.js';
 import { loadCdragonJson, type Locale } from '../texts/cdragon.js';
 import {
@@ -12,6 +14,27 @@ import { buildRuneTexts, type RawPerk } from '../texts/runes.js';
 const MODES: PageMode[] = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
 const NO_BUILD: PageMode[] = ['arena', 'urf', 'nexus']; // see BuildMode in stats/opgg.ts
 const POSITIONS: Position[] = ['top', 'jungle', 'mid', 'adc', 'support'];
+
+/** The app-wide mode chosen in the side menu. */
+export type AppMode = 'normal' | 'aram' | 'mayhem' | 'arena';
+const APP_MODES: AppMode[] = ['normal', 'aram', 'mayhem', 'arena'];
+const ITEM_MAP: Record<AppMode, ItemMap> = { normal: 'SUMMONERS_RIFT', aram: 'HOWLING_ABYSS', mayhem: 'HOWLING_ABYSS', arena: 'ARENA_MAP_1' };
+
+export interface Listed<T> {
+  list: T[];
+  fetchedAt: number;
+  stale: boolean;
+}
+
+export function parseAppMode(mode: unknown): AppMode {
+  if (!APP_MODES.includes(mode as AppMode)) throw new Error('bad mode');
+  return mode as AppMode;
+}
+
+export function parseLane(position: unknown): LanePosition {
+  if (!POSITIONS.includes(position as Position)) throw new Error('bad position');
+  return position as LanePosition;
+}
 
 /** IPC input is untrusted: accept only known values. */
 export function parsePageRequest(id: unknown, mode: unknown, position: unknown): { id: number; mode: PageMode; position: Position } {
@@ -75,5 +98,15 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
   }
 
-  return { augments, champions, championPage };
+  async function items(mode: AppMode): Promise<Listed<ItemEntry>> {
+    const [m, t] = await Promise.all([stats.mapItems(ITEM_MAP[mode]), texts()]);
+    return { list: composeItemList(m.data, t.items), fetchedAt: m.fetchedAt, stale: m.stale };
+  }
+
+  async function tierList(position: LanePosition): Promise<Listed<TierRow>> {
+    const [meta, list] = await Promise.all([stats.laneMeta(), champions()]);
+    return { list: composeTierList(meta.data[position], list), fetchedAt: meta.fetchedAt, stale: meta.stale };
+  }
+
+  return { augments, champions, championPage, items, tierList };
 }

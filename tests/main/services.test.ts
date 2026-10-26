@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePageRequest } from '../../src/main/services.js';
+import { parseAppMode, parseLane, parsePageRequest } from '../../src/main/services.js';
 
 describe('parsePageRequest', () => {
   it('accepts known values', () => {
@@ -12,5 +12,15 @@ describe('parsePageRequest', () => {
     [103, 'clash', 'mid'], [103, 'ranked', 'bottom'], [103, undefined, undefined],
   ])('rejects %j / %j / %j', (id, mode, position) => {
     expect(() => parsePageRequest(id, mode, position)).toThrow(/bad/);
+  });
+});
+
+describe('parseAppMode / parseLane', () => {
+  it('accepts known values only', () => {
+    expect(parseAppMode('mayhem')).toBe('mayhem');
+    expect(parseLane('adc')).toBe('adc');
+    expect(() => parseAppMode('urf')).toThrow(/bad mode/);
+    expect(() => parseLane('bottom')).toThrow(/bad position/);
+    expect(() => parseAppMode(undefined)).toThrow(/bad mode/);
   });
 });

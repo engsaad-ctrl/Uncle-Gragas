@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, net } from 'electron';
 import { join } from 'node:path';
-import { createServices, parsePageRequest } from './services.js';
+import { createServices, parseAppMode, parseLane, parsePageRequest } from './services.js';
 
 const root = app.getAppPath();
 const cacheDir = process.env.LOLH_CACHE_DIR ?? app.getPath('userData');
@@ -24,6 +24,9 @@ ipcMain.handle('champion:page', (_e, id: unknown, mode: unknown, position: unkno
     return services.championPage(r.id, r.mode, r.position);
   }),
 );
+
+ipcMain.handle('items:list', (_e, mode: unknown) => reply(() => services.items(parseAppMode(mode))));
+ipcMain.handle('tierlist:get', (_e, position: unknown) => reply(() => services.tierList(parseLane(position))));
 
 function createWindow() {
   const win = new BrowserWindow({

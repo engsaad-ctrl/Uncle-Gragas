@@ -1,6 +1,10 @@
 import type { ChampionPage, PageMode } from '../app/championPage.js';
 import type { Position } from '../stats/opgg.js';
 import type { AugmentsResult } from '../texts/augmentsLoader.js';
+import type { ItemEntry } from '../app/itemList.js';
+import type { TierRow } from '../app/tierList.js';
+import type { AppMode, Listed } from '../main/services.js';
+import type { LanePosition } from '../stats/opgg.js';
 import type { ChampionListEntry } from '../texts/champions.js';
 
 export type Reply<T> = T | { error: string };
@@ -11,6 +15,8 @@ declare global {
       getAugments(): Promise<Reply<AugmentsResult>>;
       listChampions(): Promise<Reply<ChampionListEntry[]>>;
       championPage(id: number, mode: PageMode, position: Position): Promise<Reply<ChampionPage>>;
+      listItems(mode: AppMode): Promise<Reply<Listed<ItemEntry>>>;
+      tierList(position: LanePosition): Promise<Reply<Listed<TierRow>>>;
     };
   }
 }
@@ -50,6 +56,28 @@ export function setNameLang(v: 'en' | 'ar') {
     // not remembered this time; harmless
   }
 }
+
+// The side menu's mode drives every page (items map, augment filter, champion build).
+const APP_MODES: AppMode[] = ['normal', 'aram', 'mayhem', 'arena'];
+let appMode: AppMode = 'normal';
+try {
+  const saved = localStorage.getItem('appMode') as AppMode | null;
+  if (saved && APP_MODES.includes(saved)) appMode = saved;
+} catch {
+  // storage unavailable: keep the default
+}
+export const getAppMode = () => appMode;
+export function setAppMode(v: AppMode) {
+  appMode = v;
+  try {
+    localStorage.setItem('appMode', v);
+  } catch {
+    // not remembered this time; harmless
+  }
+}
+export const MODE_TITLE: Record<AppMode, string> = { normal: 'العادي', aram: 'ARAM', mayhem: 'ARAM Mayhem', arena: 'Arena' };
+/** Champion-page build mode for an app mode ("normal" opens the ranked build). */
+export const PAGE_MODE: Record<AppMode, PageMode> = { normal: 'ranked', aram: 'aram', mayhem: 'mayhem', arena: 'arena' };
 
 interface Named {
   name: string;

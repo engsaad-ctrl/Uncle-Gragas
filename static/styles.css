@@ -1,3 +1,11 @@
+/* Inter (the stat site's font) for Latin; Noto Sans Arabic for Arabic glyphs. Both OFL, bundled for offline use. */
+@font-face { font-family: 'Inter'; font-weight: 400; font-display: swap; src: url('fonts/inter-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Noto Sans Arabic'; font-weight: 400; font-display: swap; src: url('fonts/noto-sans-arabic-arabic-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 600; font-display: swap; src: url('fonts/inter-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Noto Sans Arabic'; font-weight: 600; font-display: swap; src: url('fonts/noto-sans-arabic-arabic-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 700; font-display: swap; src: url('fonts/inter-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Noto Sans Arabic'; font-weight: 700; font-display: swap; src: url('fonts/noto-sans-arabic-arabic-700-normal.woff2') format('woff2'); }
+
 :root {
   --bg: #070720; --panel: #11112a; --panel-2: #191937; --line: #2c2c4a;
   --text: #ffffff; --muted: #9a9ac2; --accent: #3273fa;
@@ -6,7 +14,7 @@
   --armor: #ffb36b; --mr: #8fd3ff; --mana: #6fa8ff; --status: #ff7a7a;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.7 "Segoe UI", Tahoma, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.7 "Inter", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif; }
 a { color: inherit; text-decoration: none; }
 
 /* App bar */
@@ -157,3 +165,46 @@ h1 .accent, .accent { color: var(--muted); font-weight: 400; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Side menu (right side in RTL) */
+body { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 6px; padding: 18px 12px; background: #0b0b2b; border-inline-end: 1px solid var(--line); }
+.side .brand { padding: 0 10px 14px; font-size: 20px; font-weight: 700; letter-spacing: .3px; direction: ltr; text-align: right; }
+.side .brand span { color: var(--accent); }
+.menu { display: flex; flex-direction: column; gap: 4px; }
+.menu a, .menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; color: var(--muted); font: inherit; font-weight: 600; text-align: start; background: none; border: 0; border-radius: 6px; cursor: pointer; transition: background-color .15s, color .15s, transform .15s; }
+.menu a:hover, .menu button:hover { color: var(--text); background: var(--panel-2); }
+.menu a.active, .menu button.active { color: var(--text); background: #1d2350; box-shadow: inset -3px 0 0 var(--accent); }
+.menu svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.menu-title { margin: 16px 12px 4px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.modes small { margin-inline-start: auto; font-size: 10px; font-weight: 400; }
+.modes .dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--line); }
+.modes button.active .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.side-foot { margin-top: auto; }
+.side-foot .pills { flex-direction: column; }
+.side-foot .pill { width: 100%; }
+#view { min-width: 0; padding: 0 24px 28px; }
+.detail { top: 8px; }
+
+/* Items */
+.items-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.chip.item { border-color: var(--line); }
+.chip .gold, .tag.gold { color: var(--goldtxt); }
+.chip .gold { flex: none; margin-inline-start: auto; font-size: 11px; font-weight: 600; }
+.tag.gold { background: #3a2f12; }
+
+/* Tier list */
+.tier-table { display: grid; gap: 4px; }
+.tier-row { display: grid; grid-template-columns: 70px minmax(180px, 2fr) 70px repeat(3, 1fr) 1fr; align-items: center; gap: 8px; padding: 8px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; animation: fade-up .3s ease both; animation-delay: var(--delay, 0ms); }
+a.tier-row:hover { background: var(--panel-2); border-color: var(--accent); transform: translateX(-3px); }
+a.tier-row { transition: transform .15s, background-color .15s, border-color .15s; }
+.tier-head { color: var(--muted); font-size: 12px; font-weight: 700; background: none; border: 0; animation: none; }
+.tier-row .rank { font-weight: 700; }
+.tier-row .rank small { margin-inline-start: 6px; font-size: 10px; }
+.up { color: var(--heal); } .down { color: var(--status); }
+.tier-row .who { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.tier-row .who img { width: 36px; height: 36px; border-radius: 6px; }
+.tier-badge { justify-self: start; min-width: 36px; padding: 2px 8px; font-size: 12px; font-weight: 700; text-align: center; color: var(--bg); background: var(--silver); border-radius: 4px; }
+.tier-badge.t1 { background: #ff6b6b; } .tier-badge.t2 { background: #ffb347; } .tier-badge.t3 { background: #ffe066; }
+.tier-badge.t4 { background: #8ce99a; } .tier-badge.t5 { background: #74c0fc; }
+.muted { color: var(--muted); }

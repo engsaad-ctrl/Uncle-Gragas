@@ -8,7 +8,7 @@ import { composeTierList } from '../../src/app/tierList.js';
 import { parseOpgg } from '../../src/stats/opggFormat.js';
 import { toLaneMeta, toMapItems } from '../../src/stats/opgg.js';
 import { buildChampionList } from '../../src/texts/champions.js';
-import { buildItemTexts, type RawItem } from '../../src/texts/items.js';
+import { buildItemTexts, type ItemText, type RawItem } from '../../src/texts/items.js';
 
 const opgg = (f: string) => parseOpgg(readFileSync(new URL(`../fixtures/opgg/${f}`, import.meta.url), 'utf8'));
 
@@ -28,6 +28,20 @@ describe('composeItemList', () => {
     expect([group(3031), group(3157)]).toEqual(['legendary', 'legendary']);
     expect(group(1055)).toBe('starter');
     expect([group(2003), group(3340)]).toEqual(['consumable', 'consumable']);
+  });
+});
+
+describe('composeItemList de-duplication', () => {
+  // Real pairs from OP.GG's Summoner's Rift list: Thornmail 3075/323075, Hextech Gunblade 3146/663146, pups 1101/1107.
+  const text = (id: number, enName: string): [number, ItemText] => [id, { id, name: enName, enName, html: '', translated: true, inStore: true, iconPath: '', categories: [] }];
+  const item = (id: number, gold: number) => ({ id, gold, purchasable: true, from: [1], into: [] });
+  const texts = new Map([text(3075, 'Thornmail'), text(323075, 'Thornmail'), text(3146, 'Hextech Gunblade'), text(663146, 'Hextech Gunblade'),
+    text(1101, 'Scorchclaw Pup'), text(1107, 'Scorchclaw Pup'), text(223031, 'Infinity Edge')]);
+  const list = composeItemList([item(323075, 2650), item(3075, 2450), item(663146, 2500), item(3146, 3000), item(1107, 450), item(1101, 450), item(223031, 3500)], texts);
+
+  it('keeps one entry per name: the base item, else the smallest id', () => {
+    expect(list.map((i) => i.id).sort((a, b) => a - b)).toEqual([1101, 3075, 3146, 223031]);
+    expect(list.find((i) => i.id === 3075)!.gold).toBe(2450);
   });
 });
 

@@ -1,5 +1,5 @@
 import type { AugmentText, Mode, Rarity } from '../texts/augments.js';
-import { detailPanel, el, icon, isError, nameEl, otherName, pills, searchBox, shownName, getNameLang, stagger } from './dom.js';
+import { detailPanel, el, getAppMode, icon, isError, MODE_TITLE, nameEl, otherName, pills, searchBox, shownName, getNameLang, stagger } from './dom.js';
 import { filterAugments } from './search.js';
 
 export const RARITY_LABEL: Record<Rarity, string> = { prismatic: 'موشوري', gold: 'ذهبي', silver: 'فضي', event: 'خاص' };
@@ -40,6 +40,8 @@ export async function augmentsView(root: HTMLElement, alive: () => boolean, init
   const list = el('div', 'list');
   const detail = detailPanel();
   head.append(title, sub, filters);
+  const app = getAppMode();
+  if (app === 'normal' || app === 'aram') head.append(el('p', 'panel note', `طور ${MODE_TITLE[app]} ليس فيه تعزيزات. تُعرض هنا تعزيزات Arena وMayhem كلها؛ اختر أحدهما من القائمة الجانبية للتصفية.`));
   root.replaceChildren(head, detail.node, status, list);
 
   const reply = await window.lolh.getAugments();
