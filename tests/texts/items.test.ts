@@ -56,19 +56,19 @@ describe('buildItemDetails (real game files, 2026-10)', () => {
   const d = buildItemDetails(gameFx.items as unknown as Record<number, GameItem>, strings);
 
   it('fills values CommunityDragon prints as 0, with stat ratios', () => {
-    expect(d.get(1035)).toContain('<magicDamage>60 <scaleAP>(+30% من قوة القدرة)</scaleAP> <scaleAD>(+5% من ضرر الهجوم الإضافي)</scaleAD> <scaleHealth>(+2% من الصحة الإضافية)</scaleHealth> ضرر سحر</magicDamage>');
+    expect(d.get(1035)).toContain('<magicDamage>60 <scaleAP><nowrap>(+30% من قوة القدرة)</nowrap></scaleAP> <scaleAD><nowrap>(+5% من ضرر الهجوم الإضافي)</nowrap></scaleAD> <scaleHealth><nowrap>(+2% من الصحة الإضافية)</nowrap></scaleHealth> ضرر سحر</magicDamage>');
   });
 
   it('shows both melee and ranged values, and the active cooldown from the item spell', () => {
-    expect(d.get(3074)).toContain('<scaleAD>40% من ضرر الهجوم</scaleAD> (قريب) / <scaleAD>20% من ضرر الهجوم</scaleAD> (بعيد)');
-    expect(d.get(3146)).toMatch(/\(60ث\).*175–253 <scaleAP>\(\+30% من قوة القدرة\)<\/scaleAP>/s);
+    expect(d.get(3074)).toContain('<scaleAD><nowrap>40% من ضرر الهجوم</nowrap></scaleAD> (20% للمدى البعيد)');
+    expect(d.get(3146)).toMatch(/\(60ث\).*175–253 <scaleAP><nowrap>\(\+30% من قوة القدرة\)<\/nowrap><\/scaleAP>/s);
   });
 
   it('keeps the stats block from CommunityDragon and swaps the body', () => {
     const item: RawItem = { id: 1035, name: 'سكين الجمر', description: '<mainText><stats>S</stats><br><br>قديم 0</mainText>', inStore: true, iconPath: '' };
     const html = buildItemTexts([item], [], d).get(1035)!.html;
     expect(html.startsWith('<span class="t-stats">S</span><br><br>')).toBe(true);
-    expect(html).toContain('60 <span class="t-ap">(+30% من قوة القدرة)</span>');
+    expect(html).toContain('60 <span class="t-ap"><span class="t-nw">(+30% من قوة القدرة)</span></span>');
     expect(html).not.toContain('قديم');
   });
 });

@@ -198,26 +198,51 @@ export function perRank(values: number[], precision: number, unit: string): stri
   return shown.every((x) => x === shown[0]) ? shown[0] : shown.join('/');
 }
 
-function formatValue(v: Value, percent: boolean, precision: number): string | null {
+/** Display data for one placeholder: the value and how the game prints it. */
+interface Shown {
+  v: Value;
+  percent: boolean;
+  precision: number;
+}
+
+const ratioText = (s: Scaling, percent: boolean) =>
+  percent ? `${perRank(s.coef.map((x) => x * 10000), 2, '%')} لكل 100 ${s.label}` : `${perRank(s.coef.map((x) => x * 100), 2, '%')} من ${s.label}`;
+const liveRatios = (v: Value) => v.scalings.filter((s) => s.coef.some((x) => x !== 0));
+const hasBase = (v: Value) => v.min.some((x) => x !== 0) || v.max.some((x) => x !== 0);
+// <nowrap> keeps "(+50% من قوة القدرة)" on one line; cleanText turns it into a span.
+const paint = (text: string, tag?: string) => (tag ? `<${tag}><nowrap>${text}</nowrap></${tag}>` : `<nowrap>${text}</nowrap>`);
+
+function formatValue({ v, percent, precision }: Shown): string | null {
   const k = percent ? 100 : 1;
   const unit = percent ? '%' : '';
   const levelBased = v.min.some((x, i) => x !== v.max[i]);
-  const hasBase = v.min.some((x) => x !== 0) || v.max.some((x) => x !== 0);
   const base = levelBased
     ? `${fmt(v.min[0] * k, precision)}${unit}–${fmt(v.max[v.max.length - 1] * k, precision)}${unit}` // grows with champion level
     : perRank(v.min.map((x) => x * k), precision, unit);
   // A ratio inside a percent value reads "per 100 of the stat", as the game words it.
-  const ratios = v.scalings
-    .filter((s) => s.coef.some((x) => x !== 0))
-    .map((s) => {
-      const text = percent ? `${perRank(s.coef.map((x) => x * 10000), 2, '%')} لكل 100 ${s.label}` : `${perRank(s.coef.map((x) => x * 100), 2, '%')} من ${s.label}`;
-      return { text, tag: s.tag };
-    });
-  const paint = (text: string, tag?: string) => (tag ? `<${tag}>${text}</${tag}>` : text);
-  if (!hasBase && !ratios.length) return v.other ? null : base; // only an unnamed part: nothing truthful to print
-  if (!hasBase && !v.other) return ratios.map((r) => paint(r.text, r.tag)).join(' + ');
-  const extra = [...ratios.map((r) => paint(`(+${r.text})`, r.tag)), ...(v.other ? ['(+إحصاءات)'] : [])].join(' ');
-  return hasBase ? `${base} ${extra}`.trim() : extra;
+  const ratios = liveRatios(v).map((s) => ({ text: ratioText(s, percent), tag: s.tag }));
+  if (!hasBase(v) && !ratios.length) return v.other ? null : base; // only an unnamed part: nothing truthful to print
+  if (!hasBase(v) && !v.other) return ratios.map((r) => paint(r.text, r.tag)).join(' + ');
+  const extra = [...ratios.map((r) => paint(`(+${r.text})`, r.tag)), ...(v.other ? [paint('(+إحصاءات)')] : [])].join(' ');
+  return hasBase(v) ? `${base} ${extra}`.trim() : extra;
+}
+
+/**
+ * Melee/ranged split as one short aside, so the sentence still reads: "40% من ضرر الهجوم (20% للمدى البعيد)".
+ * The ranged half drops the stat name when it is the same single ratio or a plain number.
+ */
+function formatSplit(melee: Shown, ranged: Shown): string | null {
+  const m = formatValue(melee);
+  const r = formatValue(ranged);
+  if (!m || !r || m === r) return m;
+  const rs = liveRatios(ranged.v);
+  const short =
+    !ranged.v.other && !ranged.percent && rs.length === 1 && !hasBase(ranged.v) && liveRatios(melee.v)[0]?.label === rs[0].label
+      ? perRank(rs[0].coef.map((x) => x * 100), 2, '%')
+      : !rs.length && !ranged.v.other
+        ? r
+        : null;
+  return short ? `${m} (${short} للمدى البعيد)` : `${m} (للمدى البعيد: ${r})`;
 }
 
 const LIVE_COUNTER = /@f\d+(?:\.\d+)?@/i;
@@ -263,28 +288,38 @@ export function resolveSpellValues(text: string, spell: SpellData | undefined, o
   for (let i = 1; i < parts.length; i += 2) if (!isTracker(parts[i + 1] ?? '', all)) kept += parts[i] + (parts[i + 1] ?? '');
 
   const own = makeCtx(spell, ranks);
-  let unresolved = 0;
-  const out = kept.replace(/@(?:spell\.(\w+):)?([\w.]+?)(?:\*(-?[\d.]+))?@/g, (whole, ref: string | undefined, name: string, mult?: string) => {
-    if (LIVE_COUNTER.test(whole)) return whole;
-    const ctx = ref ? makeCtx(opts.spellRef?.(ref), ranks) : own;
-    const k = plain(fill(ranks, mult ? Number(mult) : 1));
+  /** A calculation or data value by name, with the "*100" multiplier applied. */
+  const lookup = (ctx: Ctx, name: string, k: Value, forcePercent: boolean): { shown: Shown; ranged?: Shown } | null => {
     const calc = ctx.calc(name);
-    const effect = /^Effect(\d+)Amount$/i.exec(name);
-    let shown: string | null = null;
     if (calc) {
       const v = evalCalc(calc, ctx);
-      const precision = Math.min(Math.max(calc.mPrecision ?? 2, 0), 6); // some calcs store -1
-      const show = (x: Value) => formatValue(times(x, k), calc.mDisplayAsPercent === true, precision);
-      const rangedK = v && calc.mRangedMultiplier ? evalPart(calc.mRangedMultiplier, ctx) : null;
-      const [melee, ranged] = v && rangedK ? [show(v), show(times(v, rangedK))] : [null, null];
-      if (melee && ranged) shown = melee === ranged ? melee : `${melee} (قريب) / ${ranged} (بعيد)`;
-      else if (v && !calc.mRangedMultiplier) shown = show(v);
-    } else {
-      const v = ctx.dataValue(name) ?? (effect ? ctx.effect(Number(effect[1])) : undefined);
-      if (v) shown = formatValue(times(plain(v), k), false, 2);
+      if (!v) return null;
+      const shown = { v: times(v, k), percent: forcePercent || calc.mDisplayAsPercent === true, precision: Math.min(Math.max(calc.mPrecision ?? 2, 0), 6) }; // some calcs store -1
+      if (!calc.mRangedMultiplier) return { shown };
+      const rk = evalPart(calc.mRangedMultiplier, ctx);
+      return rk ? { shown, ranged: { ...shown, v: times(shown.v, rk) } } : null;
     }
-    if (shown === null) unresolved++;
-    return shown ?? whole;
-  });
+    const effect = /^Effect(\d+)Amount$/i.exec(name);
+    const v = ctx.dataValue(name) ?? (effect ? ctx.effect(Number(effect[1])) : undefined);
+    return v ? { shown: { v: times(plain(v), k), percent: forcePercent, precision: 2 } } : null;
+  };
+
+  let unresolved = 0;
+  // @Name@, @Name*100@, @spell.Other:Name@; @Melee~Ranged@ (with an optional % flag) pairs two values for melee/ranged.
+  const out = kept.replace(
+    /@(?:spell\.(\w+):)?([\w.]+?)(?:~([\w.]+?))?(?:\*(-?[\d.]+))?(%)?@/g,
+    (whole, ref: string | undefined, name: string, rangedName: string | undefined, mult?: string, pct?: string) => {
+      if (LIVE_COUNTER.test(whole)) return whole;
+      const ctx = ref ? makeCtx(opts.spellRef?.(ref), ranks) : own;
+      const k = plain(fill(ranks, mult ? Number(mult) : 1));
+      const a = lookup(ctx, name, k, pct === '%');
+      const b = rangedName ? lookup(ctx, rangedName, k, pct === '%') : null;
+      let shown: string | null = null;
+      if (a && rangedName) shown = b ? formatSplit(a.shown, b.shown) : null;
+      else if (a) shown = a.ranged ? formatSplit(a.shown, a.ranged) : formatValue(a.shown);
+      if (shown === null) unresolved++;
+      return shown ?? whole;
+    },
+  );
   return { text: out, unresolved };
 }

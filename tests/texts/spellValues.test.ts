@@ -44,7 +44,7 @@ describe('resolveSpellValues (real augment spells)', () => {
       },
     };
     expect(resolveSpellValues('@Dmg@ و@OnlyStat@ و@Odd@ و@Stacks@', spell)).toEqual({
-      text: '40 <scaleAD>(+50% من ضرر الهجوم الإضافي)</scaleAD> و<scaleAP>30% من قوة القدرة</scaleAP> و5 (+10% من إحصاءات) و5 (+إحصاءات)',
+      text: '40 <scaleAD><nowrap>(+50% من ضرر الهجوم الإضافي)</nowrap></scaleAD> و<scaleAP><nowrap>30% من قوة القدرة</nowrap></scaleAP> و5 <nowrap>(+10% من إحصاءات)</nowrap> و5 <nowrap>(+إحصاءات)</nowrap>',
       unresolved: 0,
     });
   });
@@ -65,9 +65,23 @@ describe('resolveSpellValues (real augment spells)', () => {
     };
     const r = resolveSpellValues('@Dmg@ | @Sweet@ | @Same@ | @Effect1Amount@ | @Pct@', spell, { ranks: 5 });
     expect(r).toEqual({
-      text: '70/120/170/220/270 <scaleAP>(+60% من قوة القدرة)</scaleAP> | 140/240/340/440/540 <scaleAP>(+120% من قوة القدرة)</scaleAP> | 2 | 1/2/3/4/5 | 4% <scaleAP>(+1% لكل 100 قوة القدرة)</scaleAP>',
+      text: '70/120/170/220/270 <scaleAP><nowrap>(+60% من قوة القدرة)</nowrap></scaleAP> | 140/240/340/440/540 <scaleAP><nowrap>(+120% من قوة القدرة)</nowrap></scaleAP> | 2 | 1/2/3/4/5 | 4% <scaleAP><nowrap>(+1% لكل 100 قوة القدرة)</nowrap></scaleAP>',
       unresolved: 0,
     });
+  });
+
+  it('words melee/ranged splits as one short aside so the sentence still reads', () => {
+    const spell: SpellData = {
+      DataValues: [{ name: 'MeleeValue', values: [0.1] }, { name: 'RangedValue', values: [0.05] }, { name: 'Ms', values: [40] }],
+      mSpellCalculations: {
+        Split: { __type: '{e9a3c91d}', mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'Ms' }], mRangedMultiplier: { __type: 'NumberCalculationPart', mNumber: 0.5 } },
+        M: { mFormulaParts: [{ __type: 'StatByCoefficientCalculationPart', mCoefficient: 0.4, mStat: 2 }] },
+        R: { mFormulaParts: [{ __type: 'StatByCoefficientCalculationPart', mCoefficient: 0.2, mStat: 2 }] },
+      },
+    };
+    expect(resolveSpellValues('@Split@ | @M~R@ | @MeleeValue~RangedValue%@', spell).text).toBe(
+      '40 (20 للمدى البعيد) | <scaleAD><nowrap>40% من ضرر الهجوم</nowrap></scaleAD> (20% للمدى البعيد) | 10% (5% للمدى البعيد)',
+    );
   });
 
   it('handles sums, products, breakpoints and multipliers', () => {

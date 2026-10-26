@@ -12,6 +12,7 @@ const SPAN: Record<string, string> = {
   gold: 't-gold',
   scalearmor: 't-armor', scalemr: 't-mr', scalemana: 't-mana',
   status: 't-status', danger: 't-status',
+  nowrap: 't-nw', // ours, from spellValues: a ratio that must not wrap mid-phrase
   raritylegendary: 't-rarity', raritymythic: 't-rarity', raritygeneric: 't-rarity', prismatic: 't-rarity',
 };
 

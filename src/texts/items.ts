@@ -47,9 +47,9 @@ export function buildItemDetails(items: Record<number, GameItem>, strings: (key:
  */
 function meleeRanged(text: string): string {
   return text.replace(/\{\{\s*Item_Range_Mod_@ChampRange@(\w*)\s*\}\}/gi, (_, suffix: string) => {
-    if (/_Perc$/i.test(suffix)) return '@MeleeValue*100@% (قريب) / @RangedValue*100@% (بعيد)';
+    if (/_Perc$/i.test(suffix)) return '@MeleeValue~RangedValue%@';
     const letter = /_([B-D])$/i.exec(suffix)?.[1].toUpperCase() ?? '';
-    return `@MeleeItemCalcValue${letter}@ (قريب) / @RangedItemCalcValue${letter}@ (بعيد)`;
+    return `@MeleeItemCalcValue${letter}~RangedItemCalcValue${letter}@`;
   });
 }
 

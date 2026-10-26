@@ -124,6 +124,7 @@ h1 .accent, .accent { color: var(--muted); font-weight: 400; }
 .t-heal { color: var(--heal); } .t-speed { color: var(--speed); } .t-gold { color: var(--goldtxt); }
 .t-armor { color: var(--armor); } .t-mr { color: var(--mr); } .t-mana { color: var(--mana); }
 .t-status { color: var(--status); } .t-rarity { color: var(--prism); }
+.t-nw { white-space: nowrap; }
 .t-var { padding: 0 5px; color: var(--bg); background: var(--goldtxt); border-radius: 3px; cursor: help; }
 
 /* Full rune page: chosen runes lit, the rest dimmed */

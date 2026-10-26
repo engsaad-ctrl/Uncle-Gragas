@@ -98,7 +98,7 @@
   - The passive comes from the string table via `mCharacterPassiveSpell`.
   - A tooltip is used only when every value resolves (782 of 865 across all champions); otherwise the short description stays.
 - **Items** (`items.ts`):
-  - Text is the game's `GeneratedTip_Item_<id>_Description` (passive, active, rules), with shared `{{ Item_* }}` templates expanded and both melee and ranged values shown.
+  - Text is the game's `GeneratedTip_Item_<id>_Description` (passive, active, rules), with shared `{{ Item_* }}` templates expanded and melee value in the sentence with the ranged one as a short aside ("40% من ضرر الهجوم (20% للمدى البعيد)"); ratios never wrap mid-phrase (`<nowrap>` → `.t-nw`).
   - Numbers come from the items bin (`mDataValues`, `mItemCalculations`, quoted `mFlat*Mod` stats, and the active spell's cooldown).
   - CommunityDragon's stats block is kept.
   - Purchasable items showing "؟" dropped from 127 to 8.
