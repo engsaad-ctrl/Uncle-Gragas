@@ -1,28 +1,37 @@
 import { app, BrowserWindow, ipcMain, net } from 'electron';
 import { join } from 'node:path';
-import { loadAugments, type AugmentsResult } from '../texts/augmentsLoader.js';
+import { createServices, parsePageRequest } from './services.js';
 
 const root = app.getAppPath();
 const cacheDir = process.env.LOLH_CACHE_DIR ?? app.getPath('userData');
-let augments: Promise<AugmentsResult> | undefined;
+const fetchImpl = net.fetch as typeof fetch; // Chromium network stack: follows Windows proxy settings
+const services = createServices({ cacheDir, fetchImpl });
 
-ipcMain.handle('augments:get', async () => {
-  augments ??= loadAugments({ cacheDir, fetchImpl: net.fetch as typeof fetch });
+/** Errors cross IPC as { error } so the window can show them instead of hanging. */
+const reply = async <T>(work: () => Promise<T>) => {
   try {
-    return await augments;
+    return await work();
   } catch (err) {
-    augments = undefined; // let the next window load retry
     return { error: err instanceof Error ? err.message : String(err) };
   }
-});
+};
+
+ipcMain.handle('augments:get', () => reply(services.augments));
+ipcMain.handle('champions:list', () => reply(services.champions));
+ipcMain.handle('champion:page', (_e, id: unknown, mode: unknown, position: unknown) =>
+  reply(() => {
+    const r = parsePageRequest(id, mode, position);
+    return services.championPage(r.id, r.mode, r.position);
+  }),
+);
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 900,
-    height: 760,
+    width: 1100,
+    height: 860,
     title: 'LOL_helper',
     autoHideMenuBar: true,
-    backgroundColor: '#0a1428',
+    backgroundColor: '#070720',
     webPreferences: {
       preload: join(root, 'static/preload.cjs'),
       contextIsolation: true,

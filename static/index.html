@@ -4,42 +4,21 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; img-src 'self' https://raw.communitydragon.org; style-src 'self'; script-src 'self'">
-  <title>LOL_helper — التعزيزات</title>
+  <title>LOL_helper</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="top">
-    <div class="title">
-      <h1>تعزيزات Arena و<span class="accent">Mayhem</span></h1>
-      <span id="patch" class="pill static">باتش …</span>
+    <div class="bar">
+      <strong class="brand">LOL_helper</strong>
+      <nav id="tabs" class="tabs">
+        <a href="#/champions" data-tab="champions">الأبطال</a>
+        <a href="#/augments" data-tab="augments">التعزيزات</a>
+      </nav>
+      <div id="lang"></div>
     </div>
-    <p class="sub">ابحث عن أي تعزيز بالاسم العربي أو الإنجليزي، واضغط عليه لترى وصفه الرسمي بالعربي.</p>
-    <nav class="filters">
-      <span class="filters-label">تصفية</span>
-      <div id="mode" class="pills" role="group" aria-label="الطور">
-        <button type="button" class="pill active" data-value="all">كل الأطوار</button>
-        <button type="button" class="pill" data-value="arena">Arena</button>
-        <button type="button" class="pill" data-value="mayhem">Mayhem</button>
-      </div>
-      <div id="rarity" class="pills" role="group" aria-label="الندرة">
-        <button type="button" class="pill active" data-value="all">كل الندرات</button>
-        <button type="button" class="pill" data-value="prismatic">موشوري</button>
-        <button type="button" class="pill" data-value="gold">ذهبي</button>
-        <button type="button" class="pill" data-value="silver">فضي</button>
-      </div>
-      <div id="lang" class="pills" role="group" aria-label="لغة الأسماء">
-        <button type="button" class="pill" data-value="en">الأسماء: English</button>
-        <button type="button" class="pill" data-value="ar">الأسماء: عربي</button>
-      </div>
-      <label class="search">
-        <input id="q" type="search" placeholder="ابحث عن تعزيز" autocomplete="off">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
-      </label>
-    </nav>
   </header>
-  <section id="detail" class="panel detail" hidden></section>
-  <p id="status">جاري تحميل بيانات التعزيزات… أول مرة قد تستغرق دقيقة.</p>
-  <main id="list"></main>
+  <main id="view"></main>
   <script type="module" src="../dist/renderer/app.js"></script>
 </body>
 </html>

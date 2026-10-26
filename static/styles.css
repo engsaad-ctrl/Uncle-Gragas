@@ -7,25 +7,51 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.7 "Segoe UI", Tahoma, sans-serif; }
-.top { position: sticky; top: 0; z-index: 2; padding: 18px 20px 12px; background: linear-gradient(180deg, #0d0d33 0%, var(--bg) 100%); border-bottom: 1px solid var(--line); }
+a { color: inherit; text-decoration: none; }
+
+/* App bar */
+.top { position: sticky; top: 0; z-index: 3; background: #0b0b2b; border-bottom: 1px solid var(--line); }
+.bar { display: flex; align-items: center; gap: 18px; padding: 8px 20px; }
+.brand { font-size: 16px; letter-spacing: .5px; }
+.tabs { display: flex; gap: 4px; flex: 1; }
+.tabs a { padding: 8px 14px; font-weight: 700; color: var(--muted); border-bottom: 2px solid transparent; }
+.tabs a:hover { color: var(--text); }
+.tabs a.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* View header */
+#view { padding: 0 20px 28px; }
+.view-head { padding: 16px 0 10px; }
 .title { display: flex; align-items: center; gap: 12px; }
 h1 { margin: 0; font-size: 26px; font-weight: 700; }
-h1 .accent { color: var(--muted); font-weight: 400; }
+h1 .accent, .accent { color: var(--muted); font-weight: 400; }
 .sub { margin: 4px 0 12px; color: var(--muted); font-size: 13px; }
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.filters-label { color: var(--text); font-weight: 600; margin-inline-end: 4px; }
-.pills { display: flex; gap: 6px; }
+.filters-label { font-weight: 600; margin-inline-end: 4px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .pill { padding: 7px 14px; color: var(--text); font: inherit; font-weight: 600; background: var(--panel-2); border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
 .pill:hover { border-color: var(--line); }
 .pill.active { border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
 .pill.static { cursor: default; font-size: 13px; background: #1f1f45; }
-.search { display: flex; align-items: center; gap: 8px; min-width: 240px; padding: 0 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; }
+.search { display: flex; align-items: center; gap: 8px; min-width: 260px; padding: 0 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; }
 .search input { flex: 1; padding: 8px 0; color: var(--text); font: inherit; background: none; border: 0; outline: 0; }
 .search svg { width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 2; }
-#status { margin: 10px 20px; color: var(--muted); font-size: 12px; }
-#list { display: grid; gap: 14px; padding: 0 20px 24px; }
+.status { margin: 10px 0; color: var(--muted); font-size: 12px; }
+.status.error, .error { color: var(--status); }
+.hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.missing { color: var(--muted); font-style: italic; }
+
+/* Panels */
+.list { display: grid; gap: 14px; }
 .panel { padding: 14px 16px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
 .panel h2 { margin: 0 0 12px; padding-inline-start: 10px; font-size: 15px; border-inline-start: 3px solid var(--accent); }
+.sub-title { margin: 12px 0 8px; font-size: 13px; color: var(--muted); }
+#view > .panel, #view > .row { margin-top: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 14px; }
+.row > .panel { flex: 1 1 220px; }
+.row > .narrow { flex: 0 1 260px; }
+.row > .wide { flex: 3 1 520px; overflow-x: auto; }
+
+/* Augment chips */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
 .chip { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; color: var(--text); font: inherit; font-weight: 600; text-align: start; background: var(--panel-2); border: 1px solid var(--silver); border-radius: 4px; cursor: pointer; }
 .chip span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -33,18 +59,58 @@ h1 .accent { color: var(--muted); font-weight: 400; }
 .chip:hover, .chip.selected { background: #232350; }
 .chip.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
 .r-prismatic { border-color: var(--prism); } .r-gold { border-color: var(--gold); } .r-event { border-color: var(--event); }
-.detail { display: flex; gap: 14px; margin: 12px 20px 0; }
+.mode { flex: none; margin-inline-start: auto; padding: 0 6px; font-size: 10px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; }
+.more { display: block; width: 100%; margin-top: 12px; padding: 10px; color: var(--accent); font: inherit; font-weight: 700; background: var(--panel-2); border: 0; border-radius: 4px; cursor: pointer; }
+
+/* Detail panel (sticky under the app bar) */
+.detail { position: sticky; top: 52px; z-index: 2; display: flex; gap: 14px; margin-top: 12px; box-shadow: 0 6px 18px #0008; }
 .detail[hidden] { display: none; }
 .detail img { width: 64px; height: 64px; flex: none; border: 2px solid var(--silver); border-radius: 6px; }
 .detail.r-prismatic img { border-color: var(--prism); } .detail.r-gold img { border-color: var(--gold); }
 .detail h3 { margin: 0; font-size: 18px; }
-.detail .en { color: var(--muted); font-size: 12px; }
+.detail .en, .en { color: var(--muted); font-size: 12px; }
 .detail p { margin: 6px 0 0; font-size: 15px; }
+.detail .mode { margin-inline-start: 6px; font-size: 11px; vertical-align: middle; }
 .tag { margin-inline-start: 8px; padding: 1px 8px; font-size: 11px; font-weight: 600; color: var(--bg); background: var(--silver); border-radius: 10px; vertical-align: middle; }
 .r-prismatic .tag { background: var(--prism); } .r-gold .tag { background: var(--gold); } .r-event .tag { background: var(--event); }
-.missing { color: var(--muted); font-style: italic; }
-.mode { flex: none; margin-inline-start: auto; padding: 0 6px; font-size: 10px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; }
-.detail .mode { margin-inline-start: 6px; font-size: 11px; vertical-align: middle; }
+
+/* Champion picker */
+.champ-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
+.champ { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; font-size: 12px; font-weight: 600; text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.champ:hover { border-color: var(--accent); background: var(--panel-2); }
+.champ img { width: 64px; height: 64px; border-radius: 4px; }
+
+/* Champion page */
+.champ-head { display: flex; align-items: center; gap: 18px; padding: 18px 0 8px; }
+.portrait { width: 104px; height: 104px; flex: none; border: 2px solid var(--accent); border-radius: 8px; }
+.abilities { display: flex; gap: 8px; margin-top: 8px; }
+.ability, .ic { position: relative; padding: 0; color: var(--text); font: inherit; background: none; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+.ability img { display: block; width: 44px; height: 44px; border-radius: 5px; }
+.ability b { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); min-width: 18px; padding: 0 4px; font-size: 10px; line-height: 16px; background: #000c; border: 1px solid var(--line); border-radius: 8px; }
+.ic img { display: block; width: 40px; height: 40px; border-radius: 5px; }
+.ic.keystone img { width: 52px; height: 52px; border-radius: 50%; }
+.ic.style img { width: 26px; height: 26px; }
+.ic:hover, .ability:hover { border-color: var(--accent); }
+.mode-tabs { margin: 6px 0 10px; border-bottom: 1px solid var(--line); }
+.icons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.arrow { color: var(--muted); }
+.choice { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.choice small, .slot > small { color: var(--muted); font-size: 11px; }
+.items > .slot { flex: 1 1 170px; }
+
+/* Skill path grid: label column + 18 levels */
+.skill-grid { display: grid; grid-template-columns: 150px repeat(18, 26px); gap: 4px; align-items: center; }
+.skill-label { display: flex; align-items: center; gap: 6px; overflow: hidden; font-size: 12px; white-space: nowrap; }
+.skill-label img { width: 22px; height: 22px; border-radius: 4px; }
+.cell { height: 26px; font-size: 12px; font-weight: 700; line-height: 26px; text-align: center; background: var(--panel-2); border-radius: 3px; }
+.cell.on { background: var(--accent); }
+
+/* Runes */
+.runes { display: flex; flex-wrap: wrap; gap: 28px; }
+.tree-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; }
+.tree-head .ic { border: 0; }
+
+/* Text colours inside Arabic descriptions */
 .t-stats, .t-key { color: var(--goldtxt); }
 .t-ad { color: var(--ad); } .t-ap { color: var(--ap); } .t-true { color: #fff; font-weight: 700; }
 .t-heal { color: var(--heal); } .t-speed { color: var(--speed); } .t-gold { color: var(--goldtxt); }
