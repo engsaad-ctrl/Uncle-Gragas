@@ -31,14 +31,16 @@ describe('buildAugmentTexts', () => {
     expect(a.name).toBe('شديد الإصرار');
     expect(a.enName).toBe('Adamant');
     expect(a.described).toBe(true);
-    expect(a.html).toContain('<span class="t-armor">دروعًا</span>');
+    // Tooltip chosen because every value resolved from the spell data (ResistsPerLevel etc.)
+    expect(a.html).toContain('تكسب 2–10 <span class="t-armor"> دروع</span>');
+    expect(a.html).toContain('لمدة 10ث');
+    expect(a.html).not.toContain(VAR_HTML);
   });
 
   it('resolves a hashed description key', () => {
     const a = byId.get(3118)!;
     expect(a.name).toBe('مبدأ السحر');
-    expect(a.html).toContain('تستعيد جزءًا');
-    expect(a.html).toContain(VAR_HTML);
+    expect(a.html).toBe('عند موت بطلٍ ألحقت الضرر به خلال 3ث، تستعيد 15%–30% من إجمالي فترة تبريد قدرتك الخارقة.');
   });
 
   it('follows a key that points at another mode (Cherry_ key from a kiwi bin)', () => {

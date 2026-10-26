@@ -1,5 +1,5 @@
 import type { ItemEntry, ItemGroup } from '../app/itemList.js';
-import { detailPanel, el, getAppMode, getNameLang, icon, isError, MODE_TITLE, nameEl, otherName, searchBox, shownName, stagger } from './dom.js';
+import { withTooltip, detailPanel, el, getAppMode, getNameLang, icon, isError, MODE_TITLE, nameEl, otherName, searchBox, shownName, stagger } from './dom.js';
 import { normalizeArabic } from './search.js';
 
 const GROUPS: [ItemGroup, string][] = [
@@ -55,7 +55,7 @@ export async function itemsView(root: HTMLElement, alive: () => boolean) {
             chip.title = `${shownName(it)} — ${otherName(it)}`;
             chip.append(icon(it.iconUrl), nameEl('span', it), el('small', 'gold', it.gold.toLocaleString('en')));
             chip.addEventListener('click', () => ((selected = it), render()));
-            return chip;
+            return withTooltip(chip, it, { tags: () => [goldTag(it.gold)] });
           }),
         );
         const section = el('section', 'panel');

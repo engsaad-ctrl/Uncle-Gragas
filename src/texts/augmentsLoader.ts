@@ -23,7 +23,7 @@ export interface AugmentsResult {
 }
 
 // Bump when AugmentText changes shape so old caches are rebuilt.
-const CACHE_SCHEMA = 3;
+const CACHE_SCHEMA = 4;
 
 interface Cache {
   schema: number;
@@ -37,8 +37,15 @@ async function getJson<T>(fetchImpl: typeof fetch, url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-const augmentDataOnly = (bin: object) =>
-  Object.values(bin).filter((v) => (v as { __type?: string } | null)?.__type === 'AugmentData');
+/** Keeps only AugmentData entries, each with its root spell's values attached (the rest of the bin is dropped). */
+function augmentDataOnly(bin: Record<string, unknown>) {
+  return Object.values(bin).flatMap((v) => {
+    const a = v as { __type?: string; RootSpell?: string } | null;
+    if (a?.__type !== 'AugmentData') return [];
+    const spell = (a.RootSpell ? (bin[a.RootSpell] as { mSpell?: unknown } | undefined) : undefined)?.mSpell;
+    return [{ ...a, __spell: spell }];
+  });
+}
 
 export async function loadAugments(opts: { cacheDir: string; fetchImpl?: typeof fetch }): Promise<AugmentsResult> {
   const { cacheDir, fetchImpl = fetch } = opts;
@@ -59,7 +66,7 @@ export async function loadAugments(opts: { cacheDir: string; fetchImpl?: typeof 
     ]);
     const bins: object[] = [];
     // One at a time and trimmed right away: these files are 4–21MB each.
-    for (const url of AUGMENT_URLS.bins) bins.push(augmentDataOnly(await getJson<object>(fetchImpl, url)));
+    for (const url of AUGMENT_URLS.bins) bins.push(augmentDataOnly(await getJson<Record<string, unknown>>(fetchImpl, url)));
 
     const fresh: Cache = { schema: CACHE_SCHEMA, version, augments: await buildAugmentTexts({ listAr, listEn, bins, strings }) };
     await mkdir(cacheDir, { recursive: true });

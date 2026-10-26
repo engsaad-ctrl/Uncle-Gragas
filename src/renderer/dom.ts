@@ -160,3 +160,87 @@ export function stagger<T extends HTMLElement>(node: T, i: number, stepMs = 14):
   node.style.setProperty('--delay', `${Math.min(i, 40) * stepMs}ms`);
   return node;
 }
+
+// Hover card: one floating element for the whole app, filled from a WeakMap so any node can carry a description.
+interface TipContent {
+  x: Describable;
+  tags?: () => HTMLElement[];
+  className?: string;
+  missing?: string;
+}
+const tips = new WeakMap<Element, TipContent>();
+let tipEl: HTMLElement | undefined;
+let tipTimer: number | undefined;
+let tipFor: Element | undefined;
+
+/** Shows a small description card when the pointer rests on `node`. */
+export function withTooltip<T extends HTMLElement>(node: T, x: Describable, opts: Omit<TipContent, 'x'> = {}): T {
+  tips.set(node, { x, ...opts });
+  node.removeAttribute('title'); // the native tooltip would double up
+  return node;
+}
+
+function findTip(target: EventTarget | null): [Element, TipContent] | undefined {
+  for (let n = target instanceof Element ? target : null; n; n = n.parentElement) {
+    const t = tips.get(n);
+    if (t) return [n, t];
+  }
+  return undefined;
+}
+
+function placeTip(anchor: Element) {
+  if (!tipEl) return;
+  const a = anchor.getBoundingClientRect();
+  const t = tipEl.getBoundingClientRect();
+  const gap = 10;
+  let top = a.bottom + gap;
+  if (top + t.height > innerHeight - 8) top = Math.max(8, a.top - t.height - gap); // no room below: flip above
+  const left = Math.min(Math.max(8, a.left + a.width / 2 - t.width / 2), innerWidth - t.width - 8);
+  tipEl.style.top = `${top}px`;
+  tipEl.style.left = `${left}px`;
+}
+
+function showTip(anchor: Element, c: TipContent) {
+  tipEl ??= document.body.appendChild(el('div', 'tooltip'));
+  tipEl.className = `tooltip ${c.className ?? ''}`;
+  const head = el('div', 'tip-head');
+  const title = nameEl('strong', c.x);
+  title.append(...(c.tags?.() ?? []));
+  const other = el('div', 'en', otherName(c.x));
+  other.dir = 'auto';
+  const names = el('div');
+  names.append(title, other);
+  head.append(icon(c.x.iconUrl), names);
+  const desc = el('div', 'tip-body');
+  if (c.x.html) desc.innerHTML = c.x.html; // safe: produced by cleanText (escaped text, whitelisted tags only)
+  else {
+    desc.className = 'tip-body missing';
+    desc.textContent = c.missing ?? 'لا يوجد وصف.';
+  }
+  tipEl.replaceChildren(head, desc);
+  placeTip(anchor);
+  tipEl.classList.add('show');
+}
+
+export function hideTip() {
+  clearTimeout(tipTimer);
+  tipFor = undefined;
+  tipEl?.classList.remove('show');
+}
+
+document.addEventListener('pointerover', (e) => {
+  const hit = findTip(e.target);
+  if (!hit) return;
+  if (hit[0] === tipFor) return;
+  clearTimeout(tipTimer);
+  tipFor = hit[0];
+  tipTimer = window.setTimeout(() => showTip(hit[0], hit[1]), 120); // short delay: no flicker while sweeping across icons
+});
+document.addEventListener('pointerout', (e) => {
+  if (!tipFor) return;
+  const into = (e as PointerEvent).relatedTarget;
+  if (into instanceof Node && tipFor.contains(into)) return;
+  hideTip();
+});
+addEventListener('scroll', hideTip, true);
+addEventListener('hashchange', hideTip);

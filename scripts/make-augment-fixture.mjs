@@ -17,9 +17,10 @@ const bins = {};
 const keys = new Set();
 for (const f of ['cherry', 'kiwi', 'kiwi_jade', 'map30']) {
   bins[f] = {};
-  for (const [k, v] of Object.entries(read(`bins/${f}.bin.json`))) {
+  const bin = read(`bins/${f}.bin.json`);
+  for (const [k, v] of Object.entries(bin)) {
     if (v?.__type === 'AugmentData' && IDS.includes(v.AugmentPlatformId)) {
-      bins[f][k] = v;
+      bins[f][k] = { ...v, __spell: bin[v.RootSpell]?.mSpell }; // as the loader attaches it
       keys.add(v.DescriptionTra);
       keys.add(v.AugmentTooltipTra);
     }

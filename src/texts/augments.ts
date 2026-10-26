@@ -1,5 +1,6 @@
 import { assetUrl } from './assets.js';
 import { cleanText, isUntranslated } from './clean.js';
+import { resolveSpellValues, type SpellData } from './spellValues.js';
 import { stringTableKey } from './stringhash.js';
 
 export interface AugmentListEntry {
@@ -38,6 +39,8 @@ interface AugmentData {
   AugmentPlatformId?: number;
   DescriptionTra?: string;
   AugmentTooltipTra?: string;
+  /** The augment's root spell data, attached by the loader (bin[RootSpell].mSpell). */
+  __spell?: SpellData;
 }
 
 const RARITY: Record<string, Rarity> = { kSilver: 'silver', kGold: 'gold', kPrismatic: 'prismatic', kEventChoice: 'event' };
@@ -57,9 +60,18 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
   const out: AugmentText[] = [];
   for (const a of src.listAr) {
     const d = data.get(a.id);
-    // shortcut: a description that only references another key ({{Other_Key}}) renders as ؟; resolve one level if users hit it.
-    const raw = (await lookup(d?.DescriptionTra)) ?? (await lookup(d?.AugmentTooltipTra)) ?? '';
-    const html = isUntranslated(raw) ? '' : cleanText(raw);
+    // The tooltip has the numbers; the short description has fewer placeholders. Take the tooltip when every
+    // value resolves, else whichever leaves fewer unknowns (ties go to the description).
+    // shortcut: a text that only references another key ({{Other_Key}}) still renders as ؟; resolve one level if users hit it.
+    const candidates: { text: string; unresolved: number }[] = [];
+    for (const key of [d?.AugmentTooltipTra, d?.DescriptionTra]) {
+      const raw = await lookup(key);
+      if (raw !== undefined && !isUntranslated(raw)) candidates.push(resolveSpellValues(raw, d?.__spell));
+    }
+    const best =
+      candidates.find((c) => c.unresolved === 0) ??
+      candidates.reduce<(typeof candidates)[number] | undefined>((b, c) => (!b || c.unresolved <= b.unresolved ? c : b), undefined);
+    const html = best ? cleanText(best.text) : '';
     const enName = enNames.get(a.id) ?? '';
     const name = isUntranslated(a.nameTRA) ? enName : a.nameTRA;
     if (!name || /^[?؟\s]+$/.test(name)) continue; // "???" = unreleased test augment

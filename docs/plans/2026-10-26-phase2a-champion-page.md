@@ -54,3 +54,11 @@
 - **Tier List:** OP.GG `lol_list_lane_meta_champions` with `position: 'all'`, cached 6h. All 263 rows across the five lanes matched CommunityDragon English names (`src/app/tierList.ts`). Rows show the rank change since the last period and link to the champion page for that lane.
 - **Font:** Inter (the stat site's font) for Latin and Noto Sans Arabic for Arabic, both OFL, bundled under `static/fonts/` with their licences.
 - **Verified:** 105 tests pass. Smoke run covered every menu, the mode switching (Arena 272 / Mayhem 321 augments, 227 Rift items, 186 Arena items), the Tier List → champion link, and confirmed the fonts loaded (Inter and Noto Sans Arabic at 400/600/700).
+
+## Follow-up 3 (owner: too many "؟", hide OP.GG, hover cards, app icon)
+
+- **Real numbers in augment texts** (`src/texts/spellValues.ts`). `@Name@` placeholders are filled from the augment's root spell (`bin[RootSpell].mSpell`): `DataValues` (rank 1), plus `mSpellCalculations` with Number, NamedDataValue, ByCharLevelInterpolation (shown as a range), ByCharLevelBreakpoints, Sum, Product and `mMultiplier`, honouring `mDisplayAsPercent` and `mPrecision`. Stat-scaling parts print "(+إحصاءات)" instead of guessing the stat; the stat-id meanings could not be confirmed from the data. Hashed names are FNV-1a 32-bit of the lowercased name (verified: `Calc_Bonus_Crit_Damage` → `{d130a2db}`). Lines with live match counters (`@f1@`…) are dropped. The tooltip text is used when it fully resolves, otherwise whichever text has fewer unknowns. Result on 16.21: augments containing "؟" went from 306 to 106, and "؟" marks from 490 to 119. The cache schema is 4.
+- **OP.GG is not named anywhere in the UI** (owner's request). The data source is unchanged.
+- **Hover cards** (`withTooltip` in `src/renderer/dom.ts`): one floating card, fed from a WeakMap, showing the icon, name, other-language name and Arabic description. It uses a 120ms delay, flips above when there is no room below, and fades and slides.
+- **App icon**: Hillbilly Gragas (skin 79002) from CommunityDragon, face crop with rounded corners and a gold frame. Saved as `build/icon.ico` (16–256 px) for the exe and `static/icon.png` for the window and side menu.
+- **Not done yet**: about 35 Summoner's Rift items still show "؟". Their values live in the items bin file, not in the augment spells.

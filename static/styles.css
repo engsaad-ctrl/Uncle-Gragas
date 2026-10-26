@@ -208,3 +208,17 @@ a.tier-row { transition: transform .15s, background-color .15s, border-color .15
 .tier-badge.t1 { background: #ff6b6b; } .tier-badge.t2 { background: #ffb347; } .tier-badge.t3 { background: #ffe066; }
 .tier-badge.t4 { background: #8ce99a; } .tier-badge.t5 { background: #74c0fc; }
 .muted { color: var(--muted); }
+
+/* Hover card */
+.tooltip { position: fixed; z-index: 50; width: max-content; max-width: 380px; padding: 12px 14px; background: #15153a; border: 1px solid #3a3a6a; border-radius: 8px; box-shadow: 0 12px 32px #000a; pointer-events: none; opacity: 0; transform: translateY(6px) scale(.97); transition: opacity .16s ease, transform .16s ease; }
+.tooltip.show { opacity: 1; transform: none; }
+.tooltip.r-prismatic { border-color: var(--prism); } .tooltip.r-gold { border-color: var(--gold); }
+.tip-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.tip-head img { width: 40px; height: 40px; flex: none; border-radius: 6px; }
+.tip-head strong { font-size: 15px; }
+.tip-head .tag, .tip-head .mode { margin-inline-start: 6px; }
+.tip-body { font-size: 13px; line-height: 1.75; }
+@media (prefers-reduced-motion: reduce) { .tooltip { transition: none; } }
+
+.side .brand { display: flex; align-items: center; gap: 10px; }
+.side .brand img { width: 40px; height: 40px; border-radius: 9px; box-shadow: 0 4px 12px #0008; }

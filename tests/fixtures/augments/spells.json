@@ -1,0 +1,153 @@
+{
+ "ArcaneAxiom": {
+  "DataValues": [
+   {
+    "name": "ResetWindow",
+    "values": [
+     3,
+     3,
+     3,
+     3,
+     3,
+     3,
+     3
+    ],
+    "__type": "SpellDataValue"
+   }
+  ],
+  "mSpellCalculations": {
+   "UltimateRefund": {
+    "mFormulaParts": [
+     {
+      "mStartValue": 0.15000000596046448,
+      "mEndValue": 0.30000001192092896,
+      "__type": "ByCharLevelInterpolationCalculationPart"
+     }
+    ],
+    "mDisplayAsPercent": true,
+    "__type": "GameCalculation"
+   }
+  },
+  "__type": "SpellDataResource"
+ },
+ "BigShot": {
+  "DataValues": [
+   {
+    "name": "KillTrackDuration",
+    "values": [
+     3,
+     3,
+     3,
+     3,
+     3,
+     3,
+     3
+    ],
+    "__type": "SpellDataValue"
+   },
+   {
+    "name": "VFX_Breakpoint_High",
+    "values": [
+     85,
+     85,
+     85,
+     85,
+     85,
+     85,
+     85
+    ],
+    "__type": "SpellDataValue"
+   },
+   {
+    "name": "VFX_Breakpoint_Medium",
+    "values": [
+     55,
+     55,
+     55,
+     55,
+     55,
+     55,
+     55
+    ],
+    "__type": "SpellDataValue"
+   },
+   {
+    "name": "ConversionCritNum",
+    "values": [
+     0.0066999997943639755,
+     0.0066999997943639755,
+     0.0066999997943639755,
+     0.0066999997943639755,
+     0.0066999997943639755,
+     0.0066999997943639755,
+     0.0066999997943639755
+    ],
+    "__type": "SpellDataValue"
+   }
+  ],
+  "mSpellCalculations": {
+   "{cf517884}": {
+    "mSimpleTooltipCalculationDisplay": 5,
+    "mExpandedTooltipCalculationDisplay": 5,
+    "mFormulaParts": [
+     {
+      "mNumber": 0.009999999776482582,
+      "__type": "NumberCalculationPart"
+     }
+    ],
+    "mDisplayAsPercent": true,
+    "__type": "GameCalculation"
+   },
+   "{4b3b9be0}": {
+    "mSimpleTooltipCalculationDisplay": 5,
+    "mExpandedTooltipCalculationDisplay": 5,
+    "mFormulaParts": [
+     {
+      "mDataValue": "{18ca104b}",
+      "__type": "NamedDataValueCalculationPart"
+     }
+    ],
+    "mDisplayAsPercent": true,
+    "mPrecision": 1,
+    "__type": "GameCalculation"
+   },
+   "{5615d931}": {
+    "mSimpleTooltipCalculationDisplay": 5,
+    "mExpandedTooltipCalculationDisplay": 5,
+    "mFormulaParts": [
+     {
+      "mNumber": 0.75,
+      "__type": "NumberCalculationPart"
+     }
+    ],
+    "mDisplayAsPercent": true,
+    "__type": "GameCalculation"
+   },
+   "{cdab7380}": {
+    "mSimpleTooltipCalculationDisplay": 5,
+    "mExpandedTooltipCalculationDisplay": 5,
+    "mFormulaParts": [
+     {
+      "mNumber": 0.25,
+      "__type": "NumberCalculationPart"
+     }
+    ],
+    "mDisplayAsPercent": true,
+    "__type": "GameCalculation"
+   },
+   "{d130a2db}": {
+    "mSimpleTooltipCalculationDisplay": 5,
+    "mExpandedTooltipCalculationDisplay": 5,
+    "mFormulaParts": [
+     {
+      "mNumber": 0.3499999940395355,
+      "__type": "NumberCalculationPart"
+     }
+    ],
+    "mDisplayAsPercent": true,
+    "__type": "GameCalculation"
+   }
+  },
+  "__type": "SpellDataResource"
+ }
+}

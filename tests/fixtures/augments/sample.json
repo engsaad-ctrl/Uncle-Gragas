@@ -125,7 +125,102 @@
     ],
     "AugmentPlatformId": 1405,
     "ResourceResolver": "Maps/ModeSpecificData/Augments/ARAM_SpeedDemon/Resources",
-    "__type": "AugmentData"
+    "__type": "AugmentData",
+    "__spell": {
+     "DataValues": [
+      {
+       "name": "SpeedPerHit",
+       "values": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "SpeedDuration",
+       "values": [
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "MaxLevel",
+       "values": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+       ],
+       "__type": "SpellDataValue"
+      }
+     ],
+     "DataValuesModeOverride": {
+      "cherry": {
+       "SpellDataValues": [
+        {
+         "name": "SpeedPerHit",
+         "values": [
+          150,
+          150,
+          300,
+          450,
+          450,
+          450,
+          450
+         ],
+         "__type": "SpellDataValue"
+        }
+       ],
+       "__type": "SpellDataValueVector"
+      }
+     },
+     "mImgIconName": [
+      "ASSETS/Spells/Icons2D/Terrify.dds"
+     ],
+     "mResourceResolvers": [
+      "Maps/ModeSpecificData/Augments/ARAM_SpeedDemon/Resources"
+     ],
+     "mClientData": {
+      "mTooltipData": {
+       "mObjectName": "Augment_ARAM_SpeedDemon",
+       "mFormat": "{d7c27163}",
+       "mLocKeys": {
+        "keyName": "Cherry_Deft_Name",
+        "keySummary": "Cherry_Deft_Tooltip"
+       },
+       "mLists": {
+        "LevelUp": {
+         "levelCount": 2,
+         "Elements": [
+          {
+           "type": "SpeedPerHit",
+           "nameOverride": "Spell_ListType_MovementSpeed",
+           "__type": "TooltipInstanceListElement"
+          }
+         ],
+         "__type": "TooltipInstanceList"
+        }
+       },
+       "__type": "TooltipInstanceSpell"
+      },
+      "__type": "SpellDataResourceClient"
+     },
+     "__type": "SpellDataResource"
+    }
    },
    "Maps/ModeSpecificData/Augments/Adamant": {
     "AugmentNameId": "Adamant",
@@ -153,7 +248,137 @@
     ],
     "AugmentPlatformId": 1327,
     "ResourceResolver": "Maps/ModeSpecificData/Augments/Adamant/Resources",
-    "__type": "AugmentData"
+    "__type": "AugmentData",
+    "__spell": {
+     "DataValues": [
+      {
+       "name": "Resists",
+       "values": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "SpellIDCD",
+       "values": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "MaxStacks",
+       "values": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "AugDuration",
+       "values": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "MaxLevel",
+       "values": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+       ],
+       "__type": "SpellDataValue"
+      }
+     ],
+     "DataValuesModeOverride": {
+      "cherry": {
+       "SpellDataValues": [
+        {
+         "name": "Resists",
+         "values": [
+          8,
+          8,
+          12,
+          12,
+          12,
+          12,
+          12
+         ],
+         "__type": "SpellDataValue"
+        }
+       ],
+       "__type": "SpellDataValueVector"
+      }
+     },
+     "mSpellCalculations": {
+      "ResistsPerLevel": {
+       "mFormulaParts": [
+        {
+         "mStartValue": 2,
+         "mEndValue": 10,
+         "__type": "ByCharLevelInterpolationCalculationPart"
+        }
+       ],
+       "__type": "GameCalculation"
+      }
+     },
+     "mImgIconName": [
+      "ASSETS/Spells/Icons2D/Terrify.dds"
+     ],
+     "mClientData": {
+      "mTooltipData": {
+       "mObjectName": "Augment_Adamant",
+       "mFormat": "{d7c27163}",
+       "mLocKeys": {
+        "keyName": "Kiwi_Adamant_Name",
+        "keySummary": "Kiwi_Adamant_Tooltip"
+       },
+       "mLists": {
+        "LevelUp": {
+         "levelCount": 2,
+         "Elements": [
+          {
+           "type": "Resists",
+           "nameOverride": "Spell_ListType_Cherry_Resists",
+           "__type": "TooltipInstanceListElement"
+          }
+         ],
+         "__type": "TooltipInstanceList"
+        }
+       },
+       "__type": "TooltipInstanceSpell"
+      },
+      "__type": "SpellDataResourceClient"
+     },
+     "__type": "SpellDataResource"
+    }
    }
   },
   "kiwi": {
@@ -169,7 +394,53 @@
      4
     ],
     "AugmentPlatformId": 1305,
-    "__type": "AugmentData"
+    "__type": "AugmentData",
+    "__spell": {
+     "DataValues": [
+      {
+       "name": "MovementSpeed",
+       "values": [
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "SlowResist",
+       "values": [
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5
+       ],
+       "__type": "SpellDataValue"
+      }
+     ],
+     "mImgIconName": [
+      "ASSETS/Spells/Icons2D/Terrify.dds"
+     ],
+     "mClientData": {
+      "mTooltipData": {
+       "mObjectName": "Augment_ARAM_LegDay",
+       "mFormat": "{d7c27163}",
+       "mLocKeys": {
+        "keyName": "Cherry_Swift_Name",
+        "keySummary": "Cherry_Swift_Tooltip"
+       },
+       "__type": "TooltipInstanceSpell"
+      },
+      "__type": "SpellDataResourceClient"
+     },
+     "__type": "SpellDataResource"
+    }
    },
    "{eed14418}": {
     "AugmentNameId": "ArcaneAxiom",
@@ -184,7 +455,38 @@
     ],
     "rarity": 1,
     "AugmentPlatformId": 3118,
-    "__type": "AugmentData"
+    "__type": "AugmentData",
+    "__spell": {
+     "DataValues": [
+      {
+       "name": "ResetWindow",
+       "values": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+       ],
+       "__type": "SpellDataValue"
+      }
+     ],
+     "mSpellCalculations": {
+      "UltimateRefund": {
+       "mFormulaParts": [
+        {
+         "mStartValue": 0.15000000596046448,
+         "mEndValue": 0.30000001192092896,
+         "__type": "ByCharLevelInterpolationCalculationPart"
+        }
+       ],
+       "mDisplayAsPercent": true,
+       "__type": "GameCalculation"
+      }
+     },
+     "__type": "SpellDataResource"
+    }
    },
    "Maps/ModeSpecificData/Augments/Adamant": {
     "AugmentNameId": "Adamant",
@@ -212,7 +514,137 @@
     ],
     "AugmentPlatformId": 1327,
     "ResourceResolver": "Maps/ModeSpecificData/Augments/Adamant/Resources",
-    "__type": "AugmentData"
+    "__type": "AugmentData",
+    "__spell": {
+     "DataValues": [
+      {
+       "name": "Resists",
+       "values": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "SpellIDCD",
+       "values": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "MaxStacks",
+       "values": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "AugDuration",
+       "values": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "MaxLevel",
+       "values": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+       ],
+       "__type": "SpellDataValue"
+      }
+     ],
+     "DataValuesModeOverride": {
+      "cherry": {
+       "SpellDataValues": [
+        {
+         "name": "Resists",
+         "values": [
+          8,
+          8,
+          12,
+          12,
+          12,
+          12,
+          12
+         ],
+         "__type": "SpellDataValue"
+        }
+       ],
+       "__type": "SpellDataValueVector"
+      }
+     },
+     "mSpellCalculations": {
+      "ResistsPerLevel": {
+       "mFormulaParts": [
+        {
+         "mStartValue": 2,
+         "mEndValue": 10,
+         "__type": "ByCharLevelInterpolationCalculationPart"
+        }
+       ],
+       "__type": "GameCalculation"
+      }
+     },
+     "mImgIconName": [
+      "ASSETS/Spells/Icons2D/Terrify.dds"
+     ],
+     "mClientData": {
+      "mTooltipData": {
+       "mObjectName": "Augment_Adamant",
+       "mFormat": "{d7c27163}",
+       "mLocKeys": {
+        "keyName": "Kiwi_Adamant_Name",
+        "keySummary": "Kiwi_Adamant_Tooltip"
+       },
+       "mLists": {
+        "LevelUp": {
+         "levelCount": 2,
+         "Elements": [
+          {
+           "type": "Resists",
+           "nameOverride": "Spell_ListType_Cherry_Resists",
+           "__type": "TooltipInstanceListElement"
+          }
+         ],
+         "__type": "TooltipInstanceList"
+        }
+       },
+       "__type": "TooltipInstanceSpell"
+      },
+      "__type": "SpellDataResourceClient"
+     },
+     "__type": "SpellDataResource"
+    }
    }
   },
   "kiwi_jade": {
@@ -228,7 +660,53 @@
      4
     ],
     "AugmentPlatformId": 1305,
-    "__type": "AugmentData"
+    "__type": "AugmentData",
+    "__spell": {
+     "DataValues": [
+      {
+       "name": "MovementSpeed",
+       "values": [
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "SlowResist",
+       "values": [
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5
+       ],
+       "__type": "SpellDataValue"
+      }
+     ],
+     "mImgIconName": [
+      "ASSETS/Spells/Icons2D/Terrify.dds"
+     ],
+     "mClientData": {
+      "mTooltipData": {
+       "mObjectName": "Augment_ARAM_LegDay",
+       "mFormat": "{d7c27163}",
+       "mLocKeys": {
+        "keyName": "Cherry_Swift_Name",
+        "keySummary": "Cherry_Swift_Tooltip"
+       },
+       "__type": "TooltipInstanceSpell"
+      },
+      "__type": "SpellDataResourceClient"
+     },
+     "__type": "SpellDataResource"
+    }
    },
    "Maps/ModeSpecificData/Augments/ARAM_Dropkick": {
     "AugmentNameId": "ARAM_Dropkick",
@@ -245,7 +723,136 @@
     "rarity": 2,
     "AugmentPlatformId": 2006,
     "ResourceResolver": "Maps/ModeSpecificData/Augments/ARAM_Dropkick/Resources",
-    "__type": "AugmentData"
+    "__type": "AugmentData",
+    "__spell": {
+     "mSpellCalculations": {
+      "Calc_Execute_Threshold": {
+       "mFormulaParts": [
+        {
+         "mNumber": 0.03999999910593033,
+         "__type": "NumberCalculationPart"
+        },
+        {
+         "mStat": 12,
+         "mStatFormula": 2,
+         "mCoefficient": 0.000009999999747378752,
+         "__type": "StatByCoefficientCalculationPart"
+        },
+        {
+         "mStat": 2,
+         "mStatFormula": 1,
+         "mCoefficient": 0.0005499999970197678,
+         "__type": "StatByCoefficientCalculationPart"
+        }
+       ],
+       "mDisplayAsPercent": true,
+       "mPrecision": 1,
+       "__type": "GameCalculation"
+      },
+      "Calc_Damage": {
+       "mFormulaParts": [
+        {
+         "mStartValue": 150,
+         "mEndValue": 500,
+         "__type": "ByCharLevelInterpolationCalculationPart"
+        },
+        {
+         "mStat": 1,
+         "mStatFormula": 2,
+         "mCoefficient": 1,
+         "__type": "StatByCoefficientCalculationPart"
+        },
+        {
+         "mStat": 6,
+         "mStatFormula": 2,
+         "mCoefficient": 1,
+         "__type": "StatByCoefficientCalculationPart"
+        }
+       ],
+       "__type": "GameCalculation"
+      },
+      "Calc_Heal": {
+       "mFormulaParts": [
+        {
+         "mStartValue": 100,
+         "mEndValue": 300,
+         "__type": "ByCharLevelInterpolationCalculationPart"
+        },
+        {
+         "mStat": 12,
+         "mStatFormula": 2,
+         "mCoefficient": 0.25,
+         "__type": "StatByCoefficientCalculationPart"
+        }
+       ],
+       "__type": "GameCalculation"
+      }
+     },
+     "mAnimationName": "",
+     "mImgIconName": [
+      "ASSETS/Spells/Icons2D/3065_Spirit_Visage.dds"
+     ],
+     "spellCastTime": 0,
+     "spellTotalTime": 0,
+     "cooldownTime": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "Cooldown": {
+      "values": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "{0a3e0478}": 0,
+      "__type": "{0a0eddc9}"
+     },
+     "mSpellPassives": [
+      {
+       "mBuff": "Maps/ModeSpecificData/Augments/ARAM_Dropkick/Augment_ARAM_Dropkick",
+       "mRemoveWhenOnCooldown": false,
+       "__type": "SpellPassiveData"
+      }
+     ],
+     "castRange": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "castRangeValues": {
+      "values": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "{0a3e0478}": 0,
+      "__type": "{0a0eddc9}"
+     },
+     "castConeAngle": 0,
+     "castConeDistance": 0,
+     "missileSpeed": 0,
+     "mResourceResolvers": [
+      "Maps/ModeSpecificData/Augments/ARAM_Dropkick/Resources"
+     ],
+     "__type": "SpellDataResource"
+    }
    },
    "Maps/ModeSpecificData/Augments/Adamant": {
     "AugmentNameId": "Adamant",
@@ -273,7 +880,137 @@
     ],
     "AugmentPlatformId": 1327,
     "ResourceResolver": "Maps/ModeSpecificData/Augments/Adamant/Resources",
-    "__type": "AugmentData"
+    "__type": "AugmentData",
+    "__spell": {
+     "DataValues": [
+      {
+       "name": "Resists",
+       "values": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "SpellIDCD",
+       "values": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "MaxStacks",
+       "values": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "AugDuration",
+       "values": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+       ],
+       "__type": "SpellDataValue"
+      },
+      {
+       "name": "MaxLevel",
+       "values": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+       ],
+       "__type": "SpellDataValue"
+      }
+     ],
+     "DataValuesModeOverride": {
+      "cherry": {
+       "SpellDataValues": [
+        {
+         "name": "Resists",
+         "values": [
+          8,
+          8,
+          12,
+          12,
+          12,
+          12,
+          12
+         ],
+         "__type": "SpellDataValue"
+        }
+       ],
+       "__type": "SpellDataValueVector"
+      }
+     },
+     "mSpellCalculations": {
+      "ResistsPerLevel": {
+       "mFormulaParts": [
+        {
+         "mStartValue": 2,
+         "mEndValue": 10,
+         "__type": "ByCharLevelInterpolationCalculationPart"
+        }
+       ],
+       "__type": "GameCalculation"
+      }
+     },
+     "mImgIconName": [
+      "ASSETS/Spells/Icons2D/Terrify.dds"
+     ],
+     "mClientData": {
+      "mTooltipData": {
+       "mObjectName": "Augment_Adamant",
+       "mFormat": "{d7c27163}",
+       "mLocKeys": {
+        "keyName": "Kiwi_Adamant_Name",
+        "keySummary": "Kiwi_Adamant_Tooltip"
+       },
+       "mLists": {
+        "LevelUp": {
+         "levelCount": 2,
+         "Elements": [
+          {
+           "type": "Resists",
+           "nameOverride": "Spell_ListType_Cherry_Resists",
+           "__type": "TooltipInstanceListElement"
+          }
+         ],
+         "__type": "TooltipInstanceList"
+        }
+       },
+       "__type": "TooltipInstanceSpell"
+      },
+      "__type": "SpellDataResourceClient"
+     },
+     "__type": "SpellDataResource"
+    }
    }
   },
   "map30": {}

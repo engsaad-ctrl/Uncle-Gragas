@@ -9,17 +9,17 @@ export async function tierListView(root: HTMLElement, alive: () => boolean, lane
   const head = el('div', 'view-head');
   const title = el('div', 'title');
   title.append(el('h1', '', 'Tier List'), el('span', 'pill static', 'Ranked · كل الرتب'));
-  head.append(title, el('p', 'sub', 'ترتيب الأبطال حسب قوتهم في الباتش الحالي من OP.GG. اضغط على بطل لفتح بنائه في هذا المسار.'));
+  head.append(title, el('p', 'sub', 'ترتيب الأبطال حسب قوتهم في الباتش الحالي. اضغط على بطل لفتح بنائه في هذا المسار.'));
   const mode = getAppMode();
   if (mode !== 'normal') {
-    head.append(el('p', 'panel note', `OP.GG لا يقدم Tier List لطور ${MODE_TITLE[mode]}. اختر "العادي" من القائمة الجانبية لعرضها.`));
+    head.append(el('p', 'panel note', `لا تتوفر Tier List لطور ${MODE_TITLE[mode]}. اختر "العادي" من القائمة الجانبية لعرضها.`));
     root.replaceChildren(head);
     return;
   }
   const filters = el('nav', 'filters');
   filters.append(pills('المسار', LANES, lane, (v) => (location.hash = `#/tierlist/${v}`)));
   head.append(filters);
-  const status = el('p', 'status loading', 'جاري تحميل الترتيب من OP.GG…');
+  const status = el('p', 'status loading', 'جاري التحميل…');
   const table = el('div', 'tier-table');
   root.replaceChildren(head, status, table);
 

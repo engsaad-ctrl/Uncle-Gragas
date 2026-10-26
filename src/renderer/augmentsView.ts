@@ -1,5 +1,5 @@
 import type { AugmentText, Mode, Rarity } from '../texts/augments.js';
-import { detailPanel, el, getAppMode, icon, isError, MODE_TITLE, nameEl, otherName, pills, searchBox, shownName, getNameLang, stagger } from './dom.js';
+import { withTooltip, detailPanel, el, getAppMode, icon, isError, MODE_TITLE, nameEl, otherName, pills, searchBox, shownName, getNameLang, stagger } from './dom.js';
 import { filterAugments } from './search.js';
 
 export const RARITY_LABEL: Record<Rarity, string> = { prismatic: 'موشوري', gold: 'ذهبي', silver: 'فضي', event: 'خاص' };
@@ -22,7 +22,7 @@ export function augmentChip(a: AugmentText, selected: boolean, onPick: () => voi
   if (badge) chip.append(el('small', 'mode', badge));
   else if (a.modes.length === 1) chip.append(el('small', 'mode', MODE_LABEL[a.modes[0]]));
   chip.addEventListener('click', onPick);
-  return chip;
+  return withTooltip(chip, a, { tags: () => augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING });
 }
 
 export async function augmentsView(root: HTMLElement, alive: () => boolean, initialMode = 'all') {

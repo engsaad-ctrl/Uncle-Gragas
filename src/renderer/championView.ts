@@ -3,7 +3,7 @@ import type { Position } from '../stats/opgg.js';
 import type { Rarity } from '../texts/augments.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
-import { detailPanel, el, icon, isError, nameEl, pct, shownName, stagger, type Describable } from './dom.js';
+import { detailPanel, el, icon, isError, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
 
 const MODES: [PageMode, string][] = [
   ['ranked', 'Ranked'], ['flex', 'Flex'], ['aram', 'ARAM'], ['mayhem', 'ARAM Mayhem'],
@@ -11,15 +11,15 @@ const MODES: [PageMode, string][] = [
 ];
 /** Modes OP.GG gives no build for (Arena: no data; URF and Nexus Blitz: its tool rejects every position). */
 const NO_BUILD: Partial<Record<PageMode, string>> = {
-  arena: 'OP.GG لا يقدم بناءات Arena. أوصاف تعزيزات Arena في تبويب التعزيزات.',
-  urf: 'OP.GG لا يقدم بناء URF حالياً (خلل في أداته يرفض كل قيم المسار).',
-  nexus: 'OP.GG لا يقدم بناء Nexus Blitz حالياً (خلل في أداته يرفض كل قيم المسار).',
+  arena: 'لا تتوفر بناءات لطور Arena. أوصاف تعزيزات Arena في تبويب التعزيزات.',
+  urf: 'لا يتوفر بناء URF حالياً.',
+  nexus: 'لا يتوفر بناء Nexus Blitz حالياً.',
 };
 const POSITIONS: [Position, string][] = [['top', 'Top'], ['jungle', 'Jungle'], ['mid', 'Mid'], ['adc', 'ADC'], ['support', 'Support']];
 const AUGMENT_GROUPS: [Rarity, string][] = [['prismatic', 'أفضل التعزيزات الموشورية'], ['gold', 'أفضل التعزيزات الذهبية'], ['silver', 'أفضل التعزيزات الفضية']];
 
 export async function championView(root: HTMLElement, alive: () => boolean, id: number, mode: PageMode, position: Position) {
-  const status = el('p', 'status loading', 'جاري جلب البناء من OP.GG…');
+  const status = el('p', 'status loading', 'جاري التحميل…');
   root.replaceChildren(status);
   const reply = await window.lolh.championPage(id, mode, position);
   if (!alive()) return;
@@ -35,9 +35,8 @@ function renderPage(p: ChampionPage): HTMLElement[] {
   const detail = detailPanel();
   const pickable = (x: Describable, node: HTMLElement, extra: Parameters<typeof detail.show>[1] = {}) => {
     node.classList.add('pickable');
-    node.title = shownName(x);
     node.addEventListener('click', () => detail.show(x, extra));
-    return node;
+    return withTooltip(node, x, { tags: extra.tags ? () => extra.tags! : undefined, className: extra.className, missing: extra.missing });
   };
   const iconButton = (x: NamedText | Describable, className = 'ic') => {
     const b = el('button', className);
@@ -86,11 +85,11 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     if (p.stats.banRate !== null) notes.push(`نسبة الحظر ${pct(p.stats.banRate)}`);
     notes.push(`${p.stats.games.toLocaleString('en')} مباراة`);
   }
-  if (p.mode === 'mayhem') notes.push('البناء من بيانات ARAM لأن OP.GG لا يفصل بناء Mayhem');
+  if (p.mode === 'mayhem') notes.push('البناء نفسه بناء ARAM');
   if (p.stale) notes.push('بيانات محفوظة (تعذّر التحديث)');
   if (p.fetchedAt) notes.push(`آخر تحديث ${new Date(p.fetchedAt).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'short', timeStyle: 'short' })}`);
   top.push(el('p', 'status', notes.join(' · ')));
-  if (p.buildError) top.push(el('p', 'status error', `تعذّر جلب البناء من OP.GG: ${p.buildError}`));
+  if (p.buildError) top.push(el('p', 'status error', 'تعذّر تحميل البناء الآن. حاول لاحقاً.'));
   const noBuild = NO_BUILD[p.mode];
   if (noBuild) {
     const note = el('p', 'panel note', noBuild);
@@ -120,7 +119,6 @@ function renderPage(p: ChampionPage): HTMLElement[] {
           const grid = el('div', 'grid');
           grid.append(...list.map((a: RatedAugment, i) => {
             const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `${a.performance.toFixed(0)}`), i);
-            chip.title += ` · الأداء ${a.performance} · الشعبية ${pct(a.popularity)}`;
             return chip;
           }));
           const h = el('h3', 'sub-title', label);
@@ -136,7 +134,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     });
     section.append(groups);
     if (p.augments.length > 18) section.append(showAll);
-    section.append(el('p', 'hint', 'الرقم على كل تعزيز هو مؤشر الأداء من OP.GG (الأعلى أفضل). التعزيزات بلا عينة كافية مستبعدة.'));
+    section.append(el('p', 'hint', 'الرقم على كل تعزيز هو مؤشر الأداء (الأعلى أفضل). التعزيزات بلا عينة كافية مستبعدة.'));
     body.push(section);
   }
 

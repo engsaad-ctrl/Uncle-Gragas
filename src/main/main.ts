@@ -33,6 +33,7 @@ function createWindow() {
     width: 1100,
     height: 860,
     title: 'LOL_helper',
+    icon: join(root, 'static/icon.png'),
     autoHideMenuBar: true,
     backgroundColor: '#070720',
     webPreferences: {
