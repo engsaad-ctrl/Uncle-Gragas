@@ -204,6 +204,9 @@ body { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
 a.tier-row:hover { background: var(--panel-2); border-color: var(--accent); transform: translateX(-3px); }
 a.tier-row { transition: transform .15s, background-color .15s, border-color .15s; }
 .tier-head { color: var(--muted); font-size: 12px; font-weight: 700; background: none; border: 0; animation: none; }
+.tier-head .sort { padding: 0; color: inherit; font: inherit; text-align: start; background: none; border: 0; cursor: pointer; }
+.tier-head .sort:hover, .tier-head .sort.asc, .tier-head .sort.desc { color: var(--text); }
+.tier-head .sort.asc::after { content: ' ▲'; color: var(--accent); } .tier-head .sort.desc::after { content: ' ▼'; color: var(--accent); }
 .tier-row .rank { font-weight: 700; }
 .tier-row .rank small { margin-inline-start: 6px; font-size: 10px; }
 .up { color: var(--heal); } .down { color: var(--status); }
