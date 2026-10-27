@@ -51,7 +51,7 @@
     "publish": {
       "provider": "github",
       "owner": "engsaad-ctrl",
-      "repo": "LOL_helper",
+      "repo": "Uncle-Gragas",
       "releaseType": "release"
     }
   }
