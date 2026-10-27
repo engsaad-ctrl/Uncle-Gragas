@@ -41,6 +41,7 @@ function render() {
         row.append(desc);
       }
       row.addEventListener('click', () => ((open = open === a.id ? undefined : a.id), render()));
+      if (open !== a.id) withTooltip(row, a, { className: `r-${a.rarity}` }); // hover shows it too, like everywhere else
       return row;
     }),
   );
