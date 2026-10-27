@@ -17,9 +17,13 @@ jobs:
       - run: npm test
       # Every build gets a higher version, so installed copies see it as an update.
       - run: npm version 0.1.${{ github.run_number }} --no-git-tag-version
-      - run: npm run release:win
+      - run: npm run dist:win
+      # One release per build, made here in one call: electron-builder's own publishing ran two uploaders that raced
+      # to create the same release (duplicate releases, one missing latest.yml, which the installed app reads).
+      - run: gh release create "v$env:V" --title "Uncle Gragas $env:V" --notes "Build ${{ github.sha }}" --target ${{ github.sha }} release/latest.yml "release/Uncle-Gragas-Setup-$env:V.exe" "release/Uncle-Gragas-Setup-$env:V.exe.blockmap"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: 0.1.${{ github.run_number }}
       - uses: actions/upload-artifact@v4
         with:
           name: Uncle-Gragas-windows
