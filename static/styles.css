@@ -245,7 +245,7 @@ h1, h2, .sub, .status, .menu a, .menu button, .menu-title, .brand { text-shadow:
 .settings-btn:hover, .settings-btn.active { color: var(--text); background: color-mix(in srgb, var(--accent) 16%, var(--panel)); }
 .settings-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .4s ease; }
 .settings-btn.active svg { transform: rotate(60deg); }
-.settings-pop { position: absolute; bottom: calc(100% + 8px); inset-inline: 0; z-index: 10; display: grid; gap: 14px; padding: 14px; background: color-mix(in srgb, var(--panel-2) 94%, transparent); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 30px #000a; animation: slide-down .2s ease both; }
+.settings-pop { position: absolute; bottom: calc(100% + 8px); inset-inline: 0; z-index: 10; display: grid; gap: 14px; padding: 14px; background: color-mix(in srgb, var(--panel-2) 94%, transparent); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 30px #000a; animation: slide-down .2s ease both; max-height: calc(100vh - 120px); overflow-y: auto; }
 .settings-pop[hidden] { display: none; }
 .settings-pop h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
 .settings-pop .pills { flex-wrap: nowrap; }
