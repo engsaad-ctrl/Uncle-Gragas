@@ -24,6 +24,13 @@ export function overlayWindow(root: string) {
       webPreferences: { preload: join(root, 'static/preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
     });
     w.setAlwaysOnTop(true, 'screen-saver'); // above a borderless game window
+    // Clicking back into the game can push the window behind it while it still counts as visible; F7 would
+    // then "hide" an already hidden window and need a second press. Keep it on top whenever it loses focus.
+    w.on('blur', () => {
+      if (!w.isVisible()) return;
+      w.setAlwaysOnTop(true, 'screen-saver');
+      w.moveTop();
+    });
     void w.loadFile(join(root, 'static/overlay.html'));
     w.on('closed', () => (win = undefined));
     return w;
@@ -38,7 +45,9 @@ export function overlayWindow(root: string) {
       win ??= create();
       if (win.isVisible()) return win.hide();
       win.webContents.send('overlay:show'); // refresh for the current champion
+      win.setAlwaysOnTop(true, 'screen-saver'); // Windows can drop the level across hide/show
       win.show();
+      win.moveTop();
       win.focus();
     },
     hide() {
