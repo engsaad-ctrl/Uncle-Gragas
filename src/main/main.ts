@@ -119,6 +119,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+  services.warm();
   watcher.start();
   overlay.prepare();
   void updates.check();

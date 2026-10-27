@@ -219,5 +219,13 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { champion, mode: pick?.mode ?? null, rated: false, build, augments: all };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData };
+  /**
+   * At launch, in the background: the big game files (38MB string table, 16MB items bin) download once per patch and
+   * otherwise make the first champion or items page wait for them. Same promises the pages use, so nothing loads twice.
+   */
+  function warm() {
+    for (const load of [champions, augments, tooltipStrings, detailedItems]) void load().catch(() => undefined);
+  }
+
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, warm };
 }
