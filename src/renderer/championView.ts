@@ -160,9 +160,12 @@ function renderPage(p: ChampionPage): HTMLElement[] {
         }),
       );
     renderGroups(6);
+    let all = false;
     showAll.addEventListener('click', () => {
-      renderGroups(Infinity);
-      showAll.remove();
+      all = !all;
+      renderGroups(all ? Infinity : 6);
+      showAll.textContent = all ? 'عرض أقل' : 'عرض كل التعزيزات';
+      if (!all) section.scrollIntoView({ block: 'start', behavior: 'smooth' }); // back to the top of the shortened list
     });
     section.append(groups);
     // Each group shows 6 at first: offer the rest whenever any group has more.
