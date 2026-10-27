@@ -16,9 +16,9 @@ let open: number | undefined;
 
 function render() {
   if (!data) return;
-  // This champion's rated augments first, best score first; the rest by rarity, then name.
+  // This champion's rated augments first, in the recommended order; the rest by rarity, then name.
   const order = Object.keys(RARITY_LABEL);
-  const rated = (a: OverlayData['augments'][number]) => (data!.rated && a.performance !== undefined ? 0 : 1);
+  const rated = (a: OverlayData['augments'][number]) => (data!.rated && a.rank !== undefined ? 0 : 1);
   const all = filterAugments(data.augments, search.value, 'all', 'all');
   const shown = [
     ...all.filter((a) => rated(a) === 0),
@@ -33,7 +33,7 @@ function render() {
       const name = el('div', 'ov-name');
       name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
       row.append(icon(a.iconUrl), name);
-      if (rated(a) === 0) row.append(el('span', 'ov-score', `أداء ${a.performance!.toFixed(0)} · ${pct(a.popularity ?? 0)}`));
+      if (rated(a) === 0) row.append(el('span', 'ov-score', `#${a.rank} · ${pct(a.popularity ?? 0)}`));
       if (open === a.id) {
         const desc = el('div', 'ov-desc');
         if (a.html) desc.innerHTML = a.html; // safe: produced by cleanText (escaped text, whitelisted tags only)
@@ -142,9 +142,9 @@ async function load() {
   if (reply.champion) champ.src = reply.champion.portraitUrl;
   byId('ov-title').textContent = reply.champion ? shownName(reply.champion) : 'كل التعزيزات';
   byId('ov-sub').textContent = reply.build && reply.mode
-    ? `${MODE_TITLE[reply.mode]}${reply.build.position ? ` · ${reply.build.position.toUpperCase()}` : ''}${reply.rated ? ' · مع مؤشر أداء التعزيزات' : ''}`
+    ? `${MODE_TITLE[reply.mode]}${reply.build.position ? ` · ${reply.build.position.toUpperCase()}` : ''}${reply.rated ? ' · الأفضل لهذا البطل أولاً' : ''}`
     : reply.rated
-    ? 'Mayhem · مع مؤشر أداء كل تعزيز لهذا البطل'
+    ? 'Mayhem · الأفضل لهذا البطل أولاً'
     : reply.mode === 'arena'
       ? 'Arena · ابحث عن التعزيزات التي ظهرت لك'
       : 'اختر بطلاً في شاشة الاختيار ليظهر ترتيبه';

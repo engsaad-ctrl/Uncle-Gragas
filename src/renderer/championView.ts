@@ -135,7 +135,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
 
   const body: HTMLElement[] = [];
 
-  // Mayhem augments, best score first (few-games ones last), grouped by rarity.
+  // Mayhem augments in the stats site's recommended order for this champion, grouped by rarity.
   if (p.mode === 'mayhem') {
     const section = el('section', 'panel');
     section.append(el('h2', '', `أفضل تعزيزات Mayhem لـ ${shownName(c)}`));
@@ -150,7 +150,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
           if (!list.length) return [];
           const grid = el('div', 'grid');
           grid.append(...list.map((a: RatedAugment, i) => {
-            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `${a.performance.toFixed(0)} · ${pct(a.popularity)}`), i);
+            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `#${a.rank} · ${pct(a.popularity)}`), i);
             return chip;
           }));
           const h = el('h3', 'sub-title', label);
@@ -167,7 +167,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     section.append(groups);
     // Each group shows 6 at first: offer the rest whenever any group has more.
     if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
-    section.append(el('p', 'hint', 'الرقم على كل تعزيز هو مؤشر الأداء (الأعلى أفضل). التعزيزات بلا عينة كافية مستبعدة.'));
+    section.append(el('p', 'hint', '#1 هو الأفضل لهذا البطل حسب الإحصائيات، والنسبة هي كم من لاعبي البطل يختارونه. التعزيزات بلا عينة كافية مستبعدة.'));
     body.push(section);
   }
 

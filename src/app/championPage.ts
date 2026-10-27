@@ -36,11 +36,10 @@ export interface Matchup {
   games: number;
 }
 
-/** Below this pick share an augment's score rests on too few games to rank it with the others. */
-export const FEW_GAMES = 0.05;
-
 export interface RatedAugment extends AugmentText {
-  /** OP.GG's score for this champion; higher is better. */
+  /** Place in the stats site's own recommendation for this champion (1 = best): its tier, then its order. */
+  rank: number;
+  /** The site's score. Its direction is unclear (the most picked augments score lowest), so it does not rank. */
   performance: number;
   /** Share of this champion's games that took it (0.18 = 18%). */
   popularity: number;
@@ -144,15 +143,15 @@ export function composeChampionPage(src: PageSources): ChampionPage {
   const choices = (ps: Pick[]) => ps.map(choice).filter((c): c is ItemChoice => c !== null && c.items.length > 0);
 
   // Popularity 0 means no real sample: OP.GG then reports placeholder performance (0 or 170), so leave those out.
-  const stats = new Map((src.mayhem?.data ?? []).filter((s) => s.popularity > 0).map((s) => [s.id, s]));
+  // OP.GG lists a champion's augments in its own recommended order (tier, then pick rate): keep that order.
+  const stats = new Map((src.mayhem?.data ?? []).filter((s) => s.popularity > 0).map((s, i) => [s.id, { ...s, rank: i + 1 }]));
   const augments = src.augments
     .flatMap((a) => {
       const s = a.ids.map((id) => stats.get(id)).find((x) => x !== undefined);
-      return s ? [{ ...a, performance: s.performance, popularity: s.popularity }] : [];
+      return s ? [{ ...a, rank: s.rank, performance: s.performance, popularity: s.popularity }] : [];
     })
-    // Best score first. OP.GG's "tier" is only a popularity band (3: picked in 17%+ of games, 5: under 5%), not a
-    // strength grade; a score from under 5% of games rests on few games, so those go after the rest.
-    .sort((x, y) => Number(x.popularity < FEW_GAMES) - Number(y.popularity < FEW_GAMES) || y.performance - x.performance);
+    .sort((x, y) => x.rank - y.rank)
+    .map((a, i) => ({ ...a, rank: i + 1 }));
 
   const fetched: { fetchedAt: number; stale: boolean }[] = [];
   if (src.build && !(src.build instanceof Error)) fetched.push(src.build);

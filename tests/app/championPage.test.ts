@@ -79,7 +79,7 @@ describe('composeChampionPage', () => {
     expect(page.skillPriority).toEqual(['Q', 'W', 'E']);
   });
 
-  it('joins Mayhem stats to augments through any of their merged ids, best performance first', () => {
+  it('joins Mayhem stats to augments through any of their merged ids, in the stats order', () => {
     const p = composeChampionPage({
       champion, mode: 'mayhem', position: null, ...texts,
       build: { data: toBuild(opgg('ahri-aram.txt')), fetchedAt: 5, stale: false },
@@ -92,18 +92,19 @@ describe('composeChampionPage', () => {
     expect(p.stale).toBe(true);
   });
 
-  it('ranks by score, but puts augments picked in under 5% of games after the rest (OP.GG "tier" is only popularity)', () => {
+  it("keeps the stats site's own order for the champion (its recommendation), not the score", () => {
     const mayhem = [
-      { id: 1, tier: 3, performance: 80, popularity: 0.2 },
-      { id: 2, tier: 5, performance: 117, popularity: 0.01 }, // the best score, from a handful of games
-      { id: 3, tier: 4, performance: 90, popularity: 0.1 },
+      { id: 1, tier: 3, performance: 76, popularity: 0.22 }, // the most picked has the lowest score: score does not rank
+      { id: 2, tier: 3, performance: 88, popularity: 0.17 },
+      { id: 3, tier: 4, performance: 94, popularity: 0.11 },
+      { id: 4, tier: 5, performance: 170, popularity: 0 }, // no sample: left out
     ];
     const p = composeChampionPage({
       champion, mode: 'mayhem', position: null, ...texts, build: null,
-      augments: [aug(1, [1], 'gold'), aug(2, [2], 'gold'), aug(3, [3], 'gold')],
+      augments: [aug(3, [3], 'gold'), aug(1, [1], 'gold'), aug(4, [4], 'gold'), aug(2, [2], 'gold')],
       mayhem: { data: mayhem, fetchedAt: 5, stale: false },
     });
-    expect(p.augments.map((a) => a.id)).toEqual([3, 1, 2]);
+    expect(p.augments.map((a) => [a.id, a.rank])).toEqual([[1, 1], [2, 2], [3, 3]]);
   });
 
   it('shows no build and no error for Arena (OP.GG has none)', () => {
