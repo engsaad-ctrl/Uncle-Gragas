@@ -1,5 +1,5 @@
 // Background splash art picked at random on launch; UI colours were extracted from each image
-// (median-cut palette → most saturated, bright colour's hue, softened to S≈0.48/L≈0.64 so it is easy on the eyes;
+// (median-cut palette → most saturated, bright colour's hue, set to S≈0.66/L≈0.62: vivid over the art without glaring;
 // dark low-saturation tints of the same hue for panels).
 export interface Theme {
   name: string;
@@ -16,8 +16,8 @@ export const THEMES: Theme[] = [
   {
     name: 'malphite-shamrock',
     image: 'backgrounds/malphite-shamrock.jpg',
-    accent: '#77cf81',
-    accent2: '#8bd0b7',
+    accent: '#5ede6d',
+    accent2: '#5edeb0',
     bg: '#09110a',
     panel: '#141f15',
     panel2: '#1f2e20',
@@ -26,8 +26,8 @@ export const THEMES: Theme[] = [
   {
     name: 'gragas-gentleman',
     image: 'backgrounds/gragas-gentleman.jpg',
-    accent: '#cfa377',
-    accent2: '#d0a78b',
+    accent: '#de9e5e',
+    accent2: '#de925e',
     bg: '#110d09',
     panel: '#1f1914',
     panel2: '#2e261f',
@@ -36,8 +36,8 @@ export const THEMES: Theme[] = [
   {
     name: 'blitzcrank',
     image: 'backgrounds/blitzcrank.jpg',
-    accent: '#cfc177',
-    accent2: '#d0b28b',
+    accent: '#deca5e',
+    accent2: '#dea65e',
     bg: '#110f09',
     panel: '#1f1d14',
     panel2: '#2e2b1f',
@@ -46,8 +46,8 @@ export const THEMES: Theme[] = [
   {
     name: 'gragas-hillbilly',
     image: 'backgrounds/gragas-hillbilly.jpg',
-    accent: '#cf9e77',
-    accent2: '#d0b08b',
+    accent: '#de975e',
+    accent2: '#dea35e',
     bg: '#110c09',
     panel: '#1f1914',
     panel2: '#2e251f',

@@ -113,6 +113,7 @@ const UPDATE_TEXT: Record<UpdateStatus['state'], string> = {
 let updateReady = false;
 const showUpdate = (s: UpdateStatus) => {
   updateReady = s.state === 'ready';
+  updateSide.hidden = !updateReady;
   updateNote.textContent =
     s.state === 'downloading' ? `جاري تنزيل النسخة ${s.version}… ${s.percent}%`
     : s.state === 'ready' ? `النسخة ${s.version} جاهزة، وتُثبَّت عند إغلاق البرنامج.`
@@ -121,6 +122,8 @@ const showUpdate = (s: UpdateStatus) => {
   updateButton.textContent = updateReady ? 'أعد التشغيل للتحديث' : 'تحقق من التحديثات';
   updateButton.disabled = s.state === 'checking' || s.state === 'downloading' || s.state === 'unsupported';
 };
+const updateSide = byId<HTMLButtonElement>('update-btn');
+updateSide.addEventListener('click', () => void window.lolh.installUpdate());
 updateButton.addEventListener('click', async () => {
   if (updateReady) return void window.lolh.installUpdate();
   showUpdate(await window.lolh.checkUpdate());
