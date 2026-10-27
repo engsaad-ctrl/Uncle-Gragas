@@ -6,9 +6,9 @@ import type { OverlayData } from '../main/services.js';
 import { RARITY_LABEL } from './augmentsView.js';
 import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, shownName, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
-import { applyRandomTheme } from './theme.js';
+import { applyLook } from './theme.js';
 
-applyRandomTheme(); // colours only: the overlay hides the background art
+applyLook(); // colours only: the overlay hides the background art
 const search = byId<HTMLInputElement>('ov-search');
 const list = byId('ov-list');
 let data: OverlayData | undefined;

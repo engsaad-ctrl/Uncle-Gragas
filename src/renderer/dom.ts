@@ -22,7 +22,7 @@ declare global {
       listChampions(): Promise<Reply<ChampionListEntry[]>>;
       championPage(id: number, mode: PageMode, position: Position): Promise<Reply<ChampionPage>>;
       listItems(mode: AppMode): Promise<Reply<Listed<ItemEntry>>>;
-      tierList(position: LanePosition, mode: AppMode): Promise<Reply<Listed<TierRow>>>;
+      tierList(position: LanePosition | 'all', mode: AppMode): Promise<Reply<Listed<TierRow>>>;
       lcuState(): Promise<LcuState>;
       applyToClient(id: number, mode: PageMode, position: Position, flash: FlashKey | null): Promise<Reply<ApplyResult>>;
       suggestions(position: LanePosition, enemies: number[], taken: number[]): Promise<Reply<Suggestion[]>>;

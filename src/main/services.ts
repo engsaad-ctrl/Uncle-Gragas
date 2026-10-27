@@ -3,7 +3,7 @@ import { composeItemList, type ItemEntry } from '../app/itemList.js';
 import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
 import type { RawProfile } from '../lcu/profile.js';
-import { composeTierList, type TierRow } from '../app/tierList.js';
+import { composeAllLanes, composeTierList, type TierRow } from '../app/tierList.js';
 import { mcpCaller, OpggStats, type CallTool, type Counter, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
 import type { AugmentText } from '../texts/augments.js';
@@ -166,12 +166,15 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   }
 
   /** Summoner's Rift: one lane's tiers. ARAM and Mayhem (same games, no lanes): one list for every champion. */
-  async function tierList(position: LanePosition, mode: AppMode = 'normal'): Promise<Listed<TierRow>> {
+  async function tierList(position: LanePosition | 'all', mode: AppMode = 'normal'): Promise<Listed<TierRow>> {
     const list = await champions();
-    const meta = mode === 'aram' || mode === 'mayhem'
-      ? await stats.aramTiers(list)
-      : await stats.laneMeta().then((m) => ({ ...m, data: m.data[position] }));
-    return { list: composeTierList(meta.data, list), fetchedAt: meta.fetchedAt, stale: meta.stale };
+    if (mode === 'aram' || mode === 'mayhem') {
+      const aram = await stats.aramTiers(list);
+      return { list: composeTierList(aram.data, list), fetchedAt: aram.fetchedAt, stale: aram.stale };
+    }
+    const meta = await stats.laneMeta();
+    const rows = position === 'all' ? composeAllLanes(meta.data, list) : composeTierList(meta.data[position], list);
+    return { list: rows, fetchedAt: meta.fetchedAt, stale: meta.stale };
   }
 
   /** Champ select: answers to the enemy picks shown so far in this lane, else the lane's best tiers. */

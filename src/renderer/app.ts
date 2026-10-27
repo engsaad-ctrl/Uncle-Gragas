@@ -10,9 +10,9 @@ import { applyLines, byId, el, getAppMode, getFlashKey, getNameLang, isError, MO
 import { itemsView } from './itemsView.js';
 import { profileView } from './profileView.js';
 import { tierListView } from './tierListView.js';
-import { applyRandomTheme, nextTheme } from './theme.js';
+import { applyLook, getLook, nextTheme } from './theme.js';
 
-applyRandomTheme();
+applyLook();
 
 const PAGE_MODES = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
 const POSITIONS = ['top', 'jungle', 'mid', 'adc', 'support'];
@@ -34,7 +34,7 @@ function route() {
   const app = getAppMode();
   if (view === 'augments') void augmentsView(root, alive, id === 'arena' || id === 'mayhem' ? id : app === 'arena' || app === 'mayhem' ? app : 'all');
   else if (view === 'items') void itemsView(root, alive);
-  else if (view === 'tierlist') void tierListView(root, alive, (POSITIONS.includes(id) ? id : 'mid') as LanePosition);
+  else if (view === 'tierlist') void tierListView(root, alive, (POSITIONS.includes(id) ? id : 'all') as LanePosition | 'all');
   else if (view === 'profile') void profileView(root, alive, id || undefined);
   else if (view === 'champion' && Number(id) > 0) {
     void championView(root, alive, Number(id), (PAGE_MODES.includes(mode) ? mode : PAGE_MODE[app]) as PageMode, (POSITIONS.includes(position) ? position : 'mid') as Position);
@@ -64,6 +64,7 @@ const section = (title: string, ...body: HTMLElement[]) => {
 const bgButton = el('button', 'pill', 'تغيير الخلفية');
 bgButton.type = 'button';
 bgButton.addEventListener('click', () => nextTheme());
+bgButton.hidden = getLook() !== 'art';
 // Auto-open the champion page during champ select (on by default).
 let autoOpen = true;
 try {
@@ -192,7 +193,15 @@ settings.append(
     }),
     el('p', 'hint', 'الأوصاف بالعربي دائماً.'),
   ),
-  section('الخلفية', bgButton, el('p', 'hint', 'تتغير الخلفية تلقائياً مع كل تشغيل.')),
+  section(
+    'الشكل',
+    pills('الشكل', [['navy', 'كحلي (مثل u.gg)'], ['art', 'خلفيات الأبطال']], getLook(), (v) => {
+      applyLook(v === 'art' ? 'art' : 'navy');
+      bgButton.hidden = v !== 'art';
+    }),
+    bgButton,
+    el('p', 'hint', 'خلفيات الأبطال تتغير تلقائياً مع كل تشغيل.'),
+  ),
 );
 const setSettingsOpen = (open: boolean) => {
   settings.hidden = !open;

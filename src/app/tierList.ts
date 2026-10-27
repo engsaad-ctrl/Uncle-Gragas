@@ -1,4 +1,4 @@
-import type { MetaRow } from '../stats/opgg.js';
+import type { LanePosition, MetaRow } from '../stats/opgg.js';
 import type { ChampionListEntry } from '../texts/champions.js';
 
 export interface TierRow extends MetaRow {
@@ -9,6 +9,8 @@ export interface TierRow extends MetaRow {
   portraitUrl: string;
   /** Places gained since the previous period (negative = dropped). */
   change: number;
+  /** The row's lane, in the all-lanes list. */
+  lane?: LanePosition;
 }
 
 export function composeTierList(rows: MetaRow[], champions: ChampionListEntry[]): TierRow[] {
@@ -24,4 +26,15 @@ export function composeTierList(rows: MetaRow[], champions: ChampionListEntry[])
       change: r.rankPrev ? r.rankPrev - r.rank : 0,
     };
   });
+}
+
+/**
+ * Every lane in one list, like the stat sites' default view: a champion appears once per lane it is played in,
+ * best tier first, then highest win rate. Lane ranks do not compare across lanes, so rows are renumbered.
+ */
+export function composeAllLanes(byLane: Record<LanePosition, MetaRow[]>, champions: ChampionListEntry[]): TierRow[] {
+  return (Object.keys(byLane) as LanePosition[])
+    .flatMap((lane) => composeTierList(byLane[lane], champions).map((r) => ({ ...r, lane, change: 0 })))
+    .sort((a, b) => a.tier - b.tier || b.winRate - a.winRate)
+    .map((r, i) => ({ ...r, rank: i + 1 }));
 }
