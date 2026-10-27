@@ -195,7 +195,7 @@ settings.append(
   ),
   section(
     'الشكل',
-    pills('الشكل', [['navy', 'كحلي (مثل u.gg)'], ['art', 'خلفيات الأبطال']], getLook(), (v) => {
+    pills('الشكل', [['art', 'خلفيات الأبطال'], ['navy', 'كحلي (مثل u.gg)']], getLook(), (v) => {
       applyLook(v === 'art' ? 'art' : 'navy');
       bgButton.hidden = v !== 'art';
     }),
@@ -207,6 +207,7 @@ const setSettingsOpen = (open: boolean) => {
   settings.hidden = !open;
   settingsBtn.setAttribute('aria-expanded', String(open));
   settingsBtn.classList.toggle('active', open);
+  byId('side').classList.toggle('pinned', open); // keep the rail expanded while settings are open
 };
 settingsBtn.addEventListener('click', () => setSettingsOpen(settings.hidden !== false)); // hidden may also be 'until-found'
 document.addEventListener('click', (e) => {

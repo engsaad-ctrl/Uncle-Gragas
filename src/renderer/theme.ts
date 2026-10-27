@@ -97,15 +97,15 @@ export function applyRandomTheme(random = Math.random): Theme {
   return applyTheme(pickThemeIndex(last, THEMES.length, random));
 }
 
-/** u.gg's palette (the owner's design reference): solid navy, blue accent, no splash art. The default look. */
+/** u.gg's palette: solid navy, blue accent, no splash art. An option; the owner keeps the splash colours by default. */
 export const NAVY: Theme = { name: 'navy', image: '', accent: '#3273fa', accent2: '#5b8cff', bg: '#070720', panel: '#11112a', panel2: '#191937', line: '#2c2c4a' };
 
 export type Look = 'navy' | 'art';
 export function getLook(): Look {
   try {
-    return localStorage.getItem('look') === 'art' ? 'art' : 'navy';
+    return localStorage.getItem('look') === 'navy' ? 'navy' : 'art';
   } catch {
-    return 'navy';
+    return 'art';
   }
 }
 
