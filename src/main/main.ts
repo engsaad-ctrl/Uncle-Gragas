@@ -7,6 +7,7 @@ import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
 import { loadProfile, parsePuuid } from '../lcu/profile.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import { overlayWindow } from './overlay.js';
+import { appUpdater } from './updater.js';
 import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest, type AppMode } from './services.js';
 
 const root = app.getAppPath();
@@ -81,6 +82,10 @@ ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
   // register() returns false when another app already holds the key
   return on === true ? globalShortcut.register(OVERLAY_KEY, () => overlay.toggle()) : false;
 });
+const updates = appUpdater(() => mainWindow);
+ipcMain.handle('update:status', () => ({ version: app.getVersion(), status: updates.status }));
+ipcMain.handle('update:check', () => updates.check());
+ipcMain.handle('update:install', () => updates.install());
 ipcMain.handle('diagnostics:export', async () => {
   const { canceled, filePath } = await dialog.showSaveDialog({
     title: 'تصدير التشخيص',
@@ -115,6 +120,7 @@ app.whenReady().then(() => {
   createWindow();
   watcher.start();
   overlay.prepare();
+  void updates.check();
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => app.quit());

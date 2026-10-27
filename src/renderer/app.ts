@@ -1,6 +1,7 @@
 import type { PageMode } from '../app/championPage.js';
 import type { LcuState } from '../lcu/state.js';
 import type { AppMode } from '../main/services.js';
+import type { UpdateStatus } from '../main/updater.js';
 import type { LanePosition, Position } from '../stats/opgg.js';
 import { augmentsView } from './augmentsView.js';
 import { championsView } from './championsView.js';
@@ -97,7 +98,44 @@ exportButton.addEventListener('click', async () => {
   const r = await window.lolh.exportDiagnostics();
   if (r.saved) exportNote.textContent = `حُفظ في: ${r.saved}`;
 });
+const updateButton = el('button', 'pill', 'تحقق من التحديثات');
+updateButton.type = 'button';
+const updateNote = el('p', 'hint');
+const UPDATE_TEXT: Record<UpdateStatus['state'], string> = {
+  idle: '',
+  checking: 'جاري التحقق…',
+  latest: 'لديك آخر نسخة.',
+  unsupported: 'التحديث يعمل في النسخة المثبّتة فقط.',
+  downloading: '',
+  ready: '',
+  error: '',
+};
+let updateReady = false;
+const showUpdate = (s: UpdateStatus) => {
+  updateReady = s.state === 'ready';
+  updateNote.textContent =
+    s.state === 'downloading' ? `جاري تنزيل النسخة ${s.version}… ${s.percent}%`
+    : s.state === 'ready' ? `النسخة ${s.version} جاهزة، وتُثبَّت عند إغلاق البرنامج.`
+    : s.state === 'error' ? s.message
+    : UPDATE_TEXT[s.state];
+  updateButton.textContent = updateReady ? 'أعد التشغيل للتحديث' : 'تحقق من التحديثات';
+  updateButton.disabled = s.state === 'checking' || s.state === 'downloading' || s.state === 'unsupported';
+};
+updateButton.addEventListener('click', async () => {
+  if (updateReady) return void window.lolh.installUpdate();
+  showUpdate(await window.lolh.checkUpdate());
+});
+const versionNote = el('p', 'hint');
+void window.lolh.updateStatus().then((r) => {
+  versionNote.textContent = `الإصدار الحالي: ${r.version}`;
+  showUpdate(r.status);
+});
+window.lolh.onUpdateStatus((s) => {
+  showUpdate(s);
+  if (s.state === 'ready') toast([`النسخة ${s.version} جاهزة: أعد التشغيل من الإعدادات للتحديث.`]);
+});
 settings.append(
+  section('التحديثات', updateButton, updateNote, versionNote),
   section(
     'فتح صفحة البطل تلقائياً في شاشة الاختيار',
     pills('الفتح التلقائي', [['on', 'مفعّل'], ['off', 'معطّل']], autoOpen ? 'on' : 'off', (v) => {

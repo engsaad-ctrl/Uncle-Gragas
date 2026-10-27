@@ -8,6 +8,7 @@ import type { Suggestion } from '../app/suggestions.js';
 import type { ApplyResult } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
 import type { AppMode, Listed, OverlayData } from '../main/services.js';
+import type { UpdateStatus } from '../main/updater.js';
 import type { LanePosition } from '../stats/opgg.js';
 import type { RankRow } from '../texts/abilityDetails.js';
 import type { ChampionListEntry } from '../texts/champions.js';
@@ -30,6 +31,10 @@ declare global {
       hideOverlay(): Promise<void>;
       setOverlayEnabled(on: boolean): Promise<boolean>;
       onOverlayShow(callback: () => void): void;
+      updateStatus(): Promise<{ version: string; status: UpdateStatus }>;
+      checkUpdate(): Promise<UpdateStatus>;
+      installUpdate(): Promise<void>;
+      onUpdateStatus(callback: (status: UpdateStatus) => void): void;
       onLcuState(callback: (state: LcuState) => void): void;
       exportDiagnostics(): Promise<{ saved: string | null }>;
     };

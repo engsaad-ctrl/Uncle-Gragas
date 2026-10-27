@@ -11,11 +11,13 @@
     "typecheck": "tsc",
     "build": "tsc -p tsconfig.build.json",
     "start": "npm run build && electron .",
-    "dist:win": "npm run build && electron-builder --win portable --publish never",
-    "probe": "node scripts/probe.mjs"
+    "dist:win": "npm run build && electron-builder --win nsis --publish never",
+    "probe": "node scripts/probe.mjs",
+    "release:win": "npm run build && electron-builder --win nsis --publish always"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
+    "electron-updater": "6.8.10",
     "hash-wasm": "4.12.0",
     "zod": "4.6.7"
   },
@@ -38,8 +40,19 @@
       "output": "release"
     },
     "win": {
-      "target": "portable",
+      "target": "nsis",
       "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "Uncle-Gragas-Setup-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "engsaad-ctrl",
+      "repo": "LOL_helper",
+      "releaseType": "release"
     }
   }
 }

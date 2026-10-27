@@ -15,5 +15,9 @@ contextBridge.exposeInMainWorld('lolh', {
   overlayData: () => ipcRenderer.invoke('overlay:data'),
   hideOverlay: () => ipcRenderer.invoke('overlay:hide'),
   setOverlayEnabled: (on) => ipcRenderer.invoke('overlay:enabled', on === true),
+  updateStatus: () => ipcRenderer.invoke('update:status'),
+  checkUpdate: () => ipcRenderer.invoke('update:check'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  onUpdateStatus: (callback) => ipcRenderer.on('update:status', (_event, status) => callback(status)),
   onOverlayShow: (callback) => ipcRenderer.on('overlay:show', () => callback()),
 });

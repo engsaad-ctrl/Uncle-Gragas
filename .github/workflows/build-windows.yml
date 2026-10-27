@@ -3,6 +3,8 @@ on:
   push:
     branches: [claude/sleepy-cerf-xyrs3s, main]
   workflow_dispatch:
+permissions:
+  contents: write # publishes each build as a GitHub release; the installed app updates itself from the latest one
 jobs:
   build:
     runs-on: windows-latest
@@ -13,7 +15,11 @@ jobs:
           node-version: 24
       - run: npx -y npm@11 ci
       - run: npm test
-      - run: npm run dist:win
+      # Every build gets a higher version, so installed copies see it as an update.
+      - run: npm version 0.1.${{ github.run_number }} --no-git-tag-version
+      - run: npm run release:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: Uncle-Gragas-windows
