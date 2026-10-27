@@ -3,6 +3,11 @@ on:
   push:
     branches: [claude/sleepy-cerf-xyrs3s, main]
   workflow_dispatch:
+# One build at a time, in push order: two at once published 0.1.36 after 0.1.37, and GitHub's "latest" (which the
+# installed app reads) follows publish time.
+concurrency:
+  group: release
+  cancel-in-progress: false
 permissions:
   contents: write # publishes each build as a GitHub release; the installed app updates itself from the latest one
 jobs:
