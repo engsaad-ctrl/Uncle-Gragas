@@ -101,14 +101,29 @@ const fill = (ranks: number, n: number) => Array<number>(ranks).fill(n);
 const plain = (min: number[], max = min): Value => ({ min, max, scalings: [], other: false });
 const isPlain = (v: Value) => !v.scalings.length && !v.other;
 
-function breakpointsAt(p: Part, level: number): number {
-  let v = num(p.mLevel1Value) + num(p.mInitialBonusPerLevel) * (level - 1);
-  for (const bp of (p.mBreakpoints as Part[] | undefined) ?? []) {
-    const at = num(bp.mLevel);
-    if (level < at) continue;
-    v += num(bp.mAdditionalBonusAtThisLevel) + num(bp.mBonusPerLevelAtAndAfter) * (level - at + 1);
+/**
+ * A by-level formula at `level`: grows by the per-level bonus from level 2; a breakpoint adds its one-off bonus at
+ * its level, and its per-level bonus replaces the current one from there on (Jhin's passive AD: 4% → 44% at 18).
+ */
+function stepLevels(level: number, level1: number, perLevel: number, bps: { at: number; add: number; per?: number }[]): number {
+  let v = level1;
+  let per = perLevel;
+  for (let l = 2; l <= level; l++) {
+    for (const bp of bps) {
+      if (bp.at !== l) continue;
+      v += bp.add;
+      if (bp.per !== undefined) per = bp.per;
+    }
+    v += per;
   }
   return v;
+}
+
+function breakpointsAt(p: Part, level: number): number {
+  const bps = ((p.mBreakpoints as Part[] | undefined) ?? []).map((bp) => ({
+    at: num(bp.mLevel), add: num(bp.mAdditionalBonusAtThisLevel), per: bp.mBonusPerLevelAtAndAfter === undefined ? undefined : num(bp.mBonusPerLevelAtAndAfter),
+  }));
+  return stepLevels(level, num(p.mLevel1Value), num(p.mInitialBonusPerLevel), bps);
 }
 
 function add(a: Value, b: Value): Value {
@@ -170,15 +185,13 @@ function evalPart(p: Part | undefined, c: Ctx): Value | null {
     const perLevel = dv(field(p, 'InitialBonusPerLevelDataValue')) ?? zero;
     const bps = (Object.values(p).find(Array.isArray) as Part[] | undefined) ?? [];
     const at = (level: number) =>
-      level1.map((v, i) => {
-        let x = v + perLevel[i] * (level - 1);
-        for (const bp of bps) {
-          const lv = num(bp.level ?? bp.mLevel);
-          if (level < lv) continue;
-          x += (dv(field(bp, 'AdditionalBonusAtThisLevelDataValue')) ?? zero)[i] + (dv(field(bp, 'BonusPerLevelAtAndAfterDataValue')) ?? zero)[i] * (level - lv + 1);
-        }
-        return x;
-      });
+      level1.map((v, i) =>
+        stepLevels(level, v, perLevel[i], bps.map((bp) => ({
+          at: num(bp.level ?? bp.mLevel),
+          add: (dv(field(bp, 'AdditionalBonusAtThisLevelDataValue')) ?? zero)[i],
+          per: dv(field(bp, 'BonusPerLevelAtAndAfterDataValue'))?.[i],
+        }))),
+      );
     return plain(at(1), at(18));
   }
   if (isType(p, 'SpellCalculationCalculationPart')) {
@@ -292,7 +305,15 @@ interface Shown {
   precision: number;
 }
 
+/** Stats the game keeps as fractions (100% crit = 1): a percent value grows "0.35% per 1%" of them. */
+const FRACTION_STATS = new Set(['scaleAS', 'scaleCrit']);
+
 function ratioText(s: Scaling, percent: boolean): string {
+  if (percent && !s.flat && s.tag && FRACTION_STATS.has(s.tag)) {
+    const max = s.coefMax;
+    const nums = max?.some((x, i) => x !== s.coef[i]) ? `${fmt(s.coef[0], 2)}%–${fmt(max[max.length - 1], 2)}%` : perRank(s.coef, 2, '%');
+    return `${nums} لكل 1% ${s.icon ? `%i:${s.icon}%${s.suffix ?? ''}` : s.label}`;
+  }
   const k = s.flat ? (percent ? 100 : 1) : percent ? 10000 : 100;
   const unit = s.flat && !percent ? '' : '%';
   const max = s.coefMax;

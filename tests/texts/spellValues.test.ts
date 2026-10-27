@@ -142,6 +142,26 @@ describe('resolveSpellValues (real augment spells)', () => {
     expect(resolveSpellValues('@Sum@ @Prod@ @Steps@ @Mult@', spell).text).toBe('15 12 10–23 1');
   });
 
+  it("matches Jhin's passive: a breakpoint's per-level bonus replaces the earlier one, crit/AS ratios per 1%", () => {
+    // Real values from Jhin's bin (2026-10); the in-game tooltip reads 4–44% (+0.35% per 1% crit)(+0.3% per 1% bonus AS).
+    const spell: SpellData = {
+      mSpellCalculations: {
+        TotalADPercent: {
+          mDisplayAsPercent: true,
+          mFormulaParts: [
+            { __type: 'ByCharLevelBreakpointsCalculationPart', mLevel1Value: 0.04, mInitialBonusPerLevel: 0.01, mBreakpoints: [{ mLevel: 10, mBonusPerLevelAtAndAfter: 0.02 }, { mLevel: 12, mBonusPerLevelAtAndAfter: 0.04 }] },
+            { __type: 'StatByCoefficientCalculationPart', mStat: 8, mCoefficient: 0.35 },
+            { __type: 'StatByCoefficientCalculationPart', mStat: 4, mStatFormula: 2, mCoefficient: 0.3 },
+          ],
+        },
+      },
+    };
+    const text = resolveSpellValues('@TotalADPercent@', spell).text;
+    expect(text).toMatch(/^4%–44% /);
+    expect(text).toContain('0.35% لكل 1% %i:scaleCrit%');
+    expect(text).toContain('0.3% لكل 1% %i:scaleAS% إضافي');
+  });
+
   it('leaves text without placeholders untouched', () => {
     expect(resolveSpellValues('نص عادي', undefined)).toEqual({ text: 'نص عادي', unresolved: 0 });
   });
