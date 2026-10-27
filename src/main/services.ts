@@ -28,7 +28,7 @@ export interface OverlayData {
   rated: boolean;
   /** The picked champion's build page (runes, spells, skills, items) for the game's mode; null in Arena or with no pick. */
   build: ChampionPage | null;
-  augments: (AugmentText & { tier?: number; performance?: number })[];
+  augments: (AugmentText & { performance?: number; popularity?: number })[];
 }
 
 /** The app-wide mode chosen in the side menu. */

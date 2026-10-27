@@ -92,6 +92,20 @@ describe('composeChampionPage', () => {
     expect(p.stale).toBe(true);
   });
 
+  it('ranks by score, but puts augments picked in under 5% of games after the rest (OP.GG "tier" is only popularity)', () => {
+    const mayhem = [
+      { id: 1, tier: 3, performance: 80, popularity: 0.2 },
+      { id: 2, tier: 5, performance: 117, popularity: 0.01 }, // the best score, from a handful of games
+      { id: 3, tier: 4, performance: 90, popularity: 0.1 },
+    ];
+    const p = composeChampionPage({
+      champion, mode: 'mayhem', position: null, ...texts, build: null,
+      augments: [aug(1, [1], 'gold'), aug(2, [2], 'gold'), aug(3, [3], 'gold')],
+      mayhem: { data: mayhem, fetchedAt: 5, stale: false },
+    });
+    expect(p.augments.map((a) => a.id)).toEqual([3, 1, 2]);
+  });
+
   it('shows no build and no error for Arena (OP.GG has none)', () => {
     const p = composeChampionPage({ champion, mode: 'arena', position: null, ...texts, build: null, augments: [], mayhem: null });
     expect(p.buildError).toBeNull();

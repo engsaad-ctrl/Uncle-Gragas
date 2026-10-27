@@ -36,11 +36,13 @@ export interface Matchup {
   games: number;
 }
 
+/** Below this pick share an augment's score rests on too few games to rank it with the others. */
+export const FEW_GAMES = 0.05;
+
 export interface RatedAugment extends AugmentText {
-  /** OP.GG's tier for this champion (lower is better); the main ranking. */
-  tier: number;
-  /** Score within a tier. */
+  /** OP.GG's score for this champion; higher is better. */
   performance: number;
+  /** Share of this champion's games that took it (0.18 = 18%). */
   popularity: number;
 }
 
@@ -146,10 +148,11 @@ export function composeChampionPage(src: PageSources): ChampionPage {
   const augments = src.augments
     .flatMap((a) => {
       const s = a.ids.map((id) => stats.get(id)).find((x) => x !== undefined);
-      return s ? [{ ...a, tier: s.tier || 9, performance: s.performance, popularity: s.popularity }] : [];
+      return s ? [{ ...a, performance: s.performance, popularity: s.popularity }] : [];
     })
-    // OP.GG ranks by tier first; the performance score only orders augments within a tier.
-    .sort((x, y) => x.tier - y.tier || y.performance - x.performance);
+    // Best score first. OP.GG's "tier" is only a popularity band (3: picked in 17%+ of games, 5: under 5%), not a
+    // strength grade; a score from under 5% of games rests on few games, so those go after the rest.
+    .sort((x, y) => Number(x.popularity < FEW_GAMES) - Number(y.popularity < FEW_GAMES) || y.performance - x.performance);
 
   const fetched: { fetchedAt: number; stale: boolean }[] = [];
   if (src.build && !(src.build instanceof Error)) fetched.push(src.build);

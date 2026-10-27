@@ -4,7 +4,7 @@ import type { Rarity } from '../texts/augments.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
-import { applyLines, champLink, detailPanel, el, getFlashKey, icon, TIER_LETTER, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import { applyLines, champLink, detailPanel, el, getFlashKey, icon, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
 import { placeFlash } from '../lcu/apply.js';
 
 const MODES: [PageMode, string][] = [
@@ -135,7 +135,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
 
   const body: HTMLElement[] = [];
 
-  // Mayhem augments, best tier first (then performance), grouped by rarity.
+  // Mayhem augments, best score first (few-games ones last), grouped by rarity.
   if (p.mode === 'mayhem') {
     const section = el('section', 'panel');
     section.append(el('h2', '', `أفضل تعزيزات Mayhem لـ ${shownName(c)}`));
@@ -150,7 +150,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
           if (!list.length) return [];
           const grid = el('div', 'grid');
           grid.append(...list.map((a: RatedAugment, i) => {
-            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `${TIER_LETTER[a.tier] ?? ''} · ${a.performance.toFixed(0)}`), i);
+            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `${a.performance.toFixed(0)} · ${pct(a.popularity)}`), i);
             return chip;
           }));
           const h = el('h3', 'sub-title', label);
