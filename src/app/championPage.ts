@@ -37,6 +37,9 @@ export interface Matchup {
 }
 
 export interface RatedAugment extends AugmentText {
+  /** OP.GG's tier for this champion (lower is better); the main ranking. */
+  tier: number;
+  /** Score within a tier. */
   performance: number;
   popularity: number;
 }
@@ -143,9 +146,10 @@ export function composeChampionPage(src: PageSources): ChampionPage {
   const augments = src.augments
     .flatMap((a) => {
       const s = a.ids.map((id) => stats.get(id)).find((x) => x !== undefined);
-      return s ? [{ ...a, performance: s.performance, popularity: s.popularity }] : [];
+      return s ? [{ ...a, tier: s.tier || 9, performance: s.performance, popularity: s.popularity }] : [];
     })
-    .sort((x, y) => y.performance - x.performance);
+    // OP.GG ranks by tier first; the performance score only orders augments within a tier.
+    .sort((x, y) => x.tier - y.tier || y.performance - x.performance);
 
   const fetched: { fetchedAt: number; stale: boolean }[] = [];
   if (src.build && !(src.build instanceof Error)) fetched.push(src.build);

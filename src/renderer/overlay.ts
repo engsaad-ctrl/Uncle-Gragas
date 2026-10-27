@@ -4,7 +4,7 @@ import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import { placeFlash } from '../lcu/apply.js';
 import type { OverlayData } from '../main/services.js';
 import { RARITY_LABEL } from './augmentsView.js';
-import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, shownName, withTooltip, type Describable } from './dom.js';
+import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, TIER_LETTER, pct, shownName, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
 import { applyLook } from './theme.js';
 
@@ -16,11 +16,16 @@ let open: number | undefined;
 
 function render() {
   if (!data) return;
-  // Rarity first (prismatic, gold, silver, special), then name, like the augments page.
+  // This champion's rated augments first, in OP.GG's order (tier, then performance); the rest by rarity, then name.
   const order = Object.keys(RARITY_LABEL);
-  const shown = filterAugments(data.augments, search.value, 'all', 'all').sort(
-    (x, y) => order.indexOf(x.rarity) - order.indexOf(y.rarity) || shownName(x).localeCompare(shownName(y), getNameLang()),
-  );
+  const rated = (a: OverlayData['augments'][number]) => (data!.rated && a.tier !== undefined ? 0 : 1);
+  const all = filterAugments(data.augments, search.value, 'all', 'all');
+  const shown = [
+    ...all.filter((a) => rated(a) === 0),
+    ...all.filter((a) => rated(a) === 1).sort(
+      (x, y) => order.indexOf(x.rarity) - order.indexOf(y.rarity) || shownName(x).localeCompare(shownName(y), getNameLang()),
+    ),
+  ];
   list.replaceChildren(
     ...shown.slice(0, 60).map((a) => {
       const row = el('button', `ov-row r-${a.rarity}${open === a.id ? ' open' : ''}`);
@@ -28,7 +33,7 @@ function render() {
       const name = el('div', 'ov-name');
       name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
       row.append(icon(a.iconUrl), name);
-      if (data!.rated && a.performance !== undefined) row.append(el('span', 'ov-score', `أداء ${a.performance.toFixed(0)}`));
+      if (rated(a) === 0) row.append(el('span', 'ov-score', `${TIER_LETTER[a.tier!] ?? ''} · ${a.performance!.toFixed(0)}`));
       if (open === a.id) {
         const desc = el('div', 'ov-desc');
         if (a.html) desc.innerHTML = a.html; // safe: produced by cleanText (escaped text, whitelisted tags only)

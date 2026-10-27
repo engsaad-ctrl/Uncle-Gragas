@@ -1,7 +1,7 @@
 import type { TierRow } from '../app/tierList.js';
 import type { AppMode } from '../main/services.js';
 import type { LanePosition } from '../stats/opgg.js';
-import { el, getAppMode, icon, isError, MODE_TITLE, nameEl, PAGE_MODE, pct, pills, shownName, stagger } from './dom.js';
+import { el, getAppMode, icon, isError, MODE_TITLE, TIER_LETTER, nameEl, PAGE_MODE, pct, pills, shownName, stagger } from './dom.js';
 import { timeAgo } from './format.js';
 import { normalizeArabic } from './search.js';
 
@@ -12,8 +12,6 @@ const LANES: [Lane, string][] = [['all', 'كل المسارات'], ['top', 'Top'
 // The client's own position icons.
 const LANE_ICON: Record<LanePosition, string> = { top: 'top', jungle: 'jungle', mid: 'middle', adc: 'bottom', support: 'utility' };
 const laneIcon = (l: LanePosition) => `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/svg/position-${LANE_ICON[l]}.svg`;
-// Letter grades as the stat sites show them (OP.GG's tier 1 = the best).
-const TIER_LABEL: Record<number, string> = { 1: 'S+', 2: 'S', 3: 'A', 4: 'B', 5: 'C' };
 /** Win rate colour, as on u.gg: the further above 50%, the warmer. */
 const winClass = (w: number) => (w >= 0.54 ? 'wr-top' : w >= 0.52 ? 'wr-great' : w >= 0.505 ? 'wr-good' : w < 0.48 ? 'wr-low' : '');
 
@@ -109,7 +107,7 @@ export async function tierListView(root: HTMLElement, alive: () => boolean, lane
       c.append(nameEl('span', r));
       return c;
     } },
-    { label: 'المستوى', width: '70px', value: (r) => r.tier, cell: (r) => ltr(el('span', `tier-letter t${r.tier}`, TIER_LABEL[r.tier] ?? String(r.tier))) },
+    { label: 'المستوى', width: '70px', value: (r) => r.tier, cell: (r) => ltr(el('span', `tier-letter t${r.tier}`, TIER_LETTER[r.tier] ?? String(r.tier))) },
     { label: 'نسبة الفوز', width: '1fr', value: (r) => r.winRate, desc: true, cell: (r) => el('span', winClass(r.winRate), pct(r.winRate)) },
     { label: 'نسبة الاختيار', width: '1fr', value: (r) => r.pickRate, desc: true, cell: (r) => el('span', '', pct(r.pickRate)) },
     // ARAM has no bans.
@@ -124,7 +122,7 @@ export async function tierListView(root: HTMLElement, alive: () => boolean, lane
     const tiers = [...new Set(rows.map((r) => r.tier))].sort((a, b) => a - b);
     table.replaceChildren(...tiers.map((t) => {
       const band = el('section', `tier-band t${t}`);
-      band.append(ltr(el('h3', '', TIER_LABEL[t] ?? String(t))));
+      band.append(ltr(el('h3', '', TIER_LETTER[t] ?? String(t))));
       const grid = el('div', 'band-grid');
       rows.filter((r) => r.tier === t).forEach((r, i) => {
         const a = stagger(el(r.id ? 'a' : 'div', 'band-champ'), i, 8);

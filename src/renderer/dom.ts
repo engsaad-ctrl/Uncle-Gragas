@@ -113,6 +113,8 @@ export function setAppMode(v: AppMode) {
     // not remembered this time; harmless
   }
 }
+/** Tier numbers (1 = best) as the stat sites' letter grades. */
+export const TIER_LETTER: Record<number, string> = { 1: 'S+', 2: 'S', 3: 'A', 4: 'B', 5: 'C' };
 export const MODE_TITLE: Record<AppMode, string> = { normal: "Summoner's Rift", aram: 'ARAM', mayhem: 'ARAM Mayhem', arena: 'Arena' };
 /** Champion-page build mode for an app mode ("normal" opens the ranked build). */
 export const PAGE_MODE: Record<AppMode, PageMode> = { normal: 'ranked', aram: 'aram', mayhem: 'mayhem', arena: 'arena' };
