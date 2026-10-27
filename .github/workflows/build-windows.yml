@@ -16,6 +16,6 @@ jobs:
       - run: npm run dist:win
       - uses: actions/upload-artifact@v4
         with:
-          name: LOL_helper-windows
+          name: Uncle-Gragas-windows
           path: release/*.exe
           if-no-files-found: error

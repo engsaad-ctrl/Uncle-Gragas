@@ -10,6 +10,8 @@ import { overlayWindow } from './overlay.js';
 import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest, type AppMode } from './services.js';
 
 const root = app.getAppPath();
+// Renamed from LOL_helper: keep its data folder so the downloaded game files and the settings stay.
+app.setPath('userData', join(app.getPath('appData'), 'LOL_helper'));
 const cacheDir = process.env.LOLH_CACHE_DIR ?? app.getPath('userData');
 const fetchImpl = net.fetch as typeof fetch; // Chromium network stack: follows Windows proxy settings
 const services = createServices({ cacheDir, fetchImpl });
@@ -82,7 +84,7 @@ ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
 ipcMain.handle('diagnostics:export', async () => {
   const { canceled, filePath } = await dialog.showSaveDialog({
     title: 'تصدير التشخيص',
-    defaultPath: join(app.getPath('desktop'), `lol-helper-diagnostics-${Date.now()}.json`),
+    defaultPath: join(app.getPath('desktop'), `uncle-gragas-diagnostics-${Date.now()}.json`),
     filters: [{ name: 'JSON', extensions: ['json'] }],
   });
   if (canceled || !filePath) return { saved: null };
@@ -94,7 +96,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1100,
     height: 860,
-    title: 'LOL_helper',
+    title: 'Uncle Gragas',
     icon: join(root, 'static/icon.png'),
     autoHideMenuBar: true,
     backgroundColor: '#070720',

@@ -13,7 +13,7 @@ export type CallTool = (name: string, args: Record<string, unknown>) => Promise<
 export function mcpCaller(fetchImpl?: typeof fetch): CallTool {
   let client: Promise<Client> | undefined;
   const connect = async () => {
-    const c = new Client({ name: 'lol-helper', version: '0.1.0' });
+    const c = new Client({ name: 'uncle-gragas', version: '0.1.0' });
     await c.connect(new StreamableHTTPClientTransport(new URL(OPGG_MCP_URL), fetchImpl ? { fetch: fetchImpl } : undefined));
     return c;
   };

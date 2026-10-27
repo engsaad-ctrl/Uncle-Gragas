@@ -1,11 +1,14 @@
 // Writes the page's build into the League client through its local API, like the stat-site apps do:
 // a rune page, an item set (shown in the in-game shop) and, during champ select, the summoner spells.
-// Only pages and sets this app created (named "LOL_helper …") are ever replaced; the player's own are left alone.
+// Only pages and sets this app created (named "Uncle Gragas …", formerly "LOL_helper …") are ever replaced; the player's own are left alone.
 
 import type { ChampionPage, PageMode, RuneRow } from '../app/championPage.js';
 import type { LcuCall } from './client.js';
 
-export const TAG = 'LOL_helper';
+export const TAG = 'Uncle Gragas';
+/** Names this app has used: pages and sets made before the rename are still its own to replace. */
+const OWN = [TAG, 'LOL_helper'];
+const ours = (name: string | undefined) => OWN.some((t) => name?.startsWith(t));
 
 export interface RunePagePayload {
   name: string;
@@ -68,7 +71,7 @@ interface ClientPage {
 /** Replaces this app's previous rune page (if any) with a new one and makes it the current page. */
 export async function applyRunePage(call: LcuCall, page: RunePagePayload): Promise<void> {
   const pages = ((await call('GET', '/lol-perks/v1/pages')) as ClientPage[] | null) ?? [];
-  for (const p of pages) if (p.name.startsWith(TAG) && p.isDeletable !== false) await call('DELETE', `/lol-perks/v1/pages/${p.id}`);
+  for (const p of pages) if (ours(p.name) && p.isDeletable !== false) await call('DELETE', `/lol-perks/v1/pages/${p.id}`);
   try {
     await call('POST', '/lol-perks/v1/pages', { ...page, current: true });
   } catch (err) {
@@ -89,7 +92,7 @@ export async function applyItemSet(call: LcuCall, set: ItemSetPayload, uid: stri
   const current = (await call('GET', path)) as ClientItemSets | null;
   // The PUT below replaces every set: without a real list to keep, writing would wipe the player's own sets.
   if (!current || !Array.isArray(current.itemSets)) throw new Error('تعذّر قراءة قوائم الأيتمات الحالية من العميل، فلم يُكتب شيء حتى لا تضيع قوائمك.');
-  const kept = current.itemSets.filter((s) => !(s.title?.startsWith(TAG) && s.associatedChampions?.includes(set.championId)));
+  const kept = current.itemSets.filter((s) => !(ours(s.title) && s.associatedChampions?.includes(set.championId)));
   const mine = {
     uid,
     title: set.title,

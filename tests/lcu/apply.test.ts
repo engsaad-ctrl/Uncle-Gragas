@@ -60,10 +60,11 @@ describe('writing into the client', () => {
   const runePage = { name: `${TAG} Ahri`, primaryStyleId: 8100, subStyleId: 8300, selectedPerkIds: [1, 2, 3, 4, 5, 6, 7, 8, 9] };
 
   it('replaces only its own rune page, then creates the new one as current', async () => {
-    const c = fakeClient({ 'GET /lol-perks/v1/pages': [{ id: 1, name: 'صفحتي', isDeletable: true }, { id: 2, name: `${TAG} Zed`, isDeletable: true }] });
+    const pages = [{ id: 1, name: 'صفحتي', isDeletable: true }, { id: 2, name: `${TAG} Zed`, isDeletable: true }, { id: 3, name: 'LOL_helper Ahri', isDeletable: true }];
+    const c = fakeClient({ 'GET /lol-perks/v1/pages': pages }); // id 3: made under the app's former name, still its own
     await applyRunePage(c.call, runePage);
-    expect(c.calls.map((x) => `${x.method} ${x.path}`)).toEqual(['GET /lol-perks/v1/pages', 'DELETE /lol-perks/v1/pages/2', 'POST /lol-perks/v1/pages']);
-    expect(c.calls[2].body).toEqual({ ...runePage, current: true });
+    expect(c.calls.map((x) => `${x.method} ${x.path}`)).toEqual(['GET /lol-perks/v1/pages', 'DELETE /lol-perks/v1/pages/2', 'DELETE /lol-perks/v1/pages/3', 'POST /lol-perks/v1/pages']);
+    expect(c.calls[3].body).toEqual({ ...runePage, current: true });
   });
 
   it('explains a refused page in Arabic', async () => {

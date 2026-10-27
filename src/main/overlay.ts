@@ -20,7 +20,7 @@ export function overlayWindow(root: string) {
       skipTaskbar: true,
       resizable: false,
       show: false,
-      title: 'LOL_helper',
+      title: 'Uncle Gragas',
       webPreferences: { preload: join(root, 'static/preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
     });
     w.setAlwaysOnTop(true, 'screen-saver'); // above a borderless game window

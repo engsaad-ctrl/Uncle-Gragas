@@ -119,7 +119,7 @@ settings.append(
         // not remembered this time; harmless
       }
     }),
-    el('p', 'hint', 'تُستبدل صفحات البرنامج فقط (اسمها يبدأ بـ LOL_helper)، ولا تُمس صفحاتك.'),
+    el('p', 'hint', 'تُستبدل صفحات البرنامج فقط (اسمها يبدأ بـ Uncle Gragas)، ولا تُمس صفحاتك.'),
   ),
   section(
     'نافذة التعزيزات فوق اللعبة (F7)',
