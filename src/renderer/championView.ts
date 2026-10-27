@@ -4,7 +4,8 @@ import type { Rarity } from '../texts/augments.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
-import { applyLines, champLink, detailPanel, el, icon, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import { applyLines, champLink, detailPanel, el, getFlashKey, icon, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import { placeFlash } from '../lcu/apply.js';
 
 const MODES: [PageMode, string][] = [
   ['ranked', 'Ranked'], ['flex', 'Flex'], ['aram', 'ARAM'], ['mayhem', 'ARAM Mayhem'],
@@ -49,7 +50,7 @@ function applyControl(p: ChampionPage): HTMLElement {
   btn.addEventListener('click', async () => {
     btn.disabled = true;
     note.textContent = 'جاري التطبيق…';
-    const r = await window.lolh.applyToClient(p.champion.id, p.mode, p.position ?? 'mid');
+    const r = await window.lolh.applyToClient(p.champion.id, p.mode, p.position ?? 'mid', getFlashKey());
     refresh(lcuNow());
     if (isError(r)) {
       note.textContent = `✗ ${r.error}`;
@@ -189,7 +190,9 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     if (p.spells.length) {
       left.append(el('h2', '', 'تعاويذ المستدعي'));
       const sp = el('div', 'icons');
-      sp.append(...p.spells.map((s) => iconButton(s)));
+      const key = getFlashKey();
+      const spells = key && p.spells.length === 2 ? placeFlash([p.spells[0], p.spells[1]], key) : p.spells;
+      sp.append(...spells.map((s) => iconButton(s)));
       left.append(sp);
     }
     row.append(left);

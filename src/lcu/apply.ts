@@ -110,22 +110,35 @@ export async function applyItemSet(call: LcuCall, set: ItemSetPayload, uid: stri
   await call('PUT', path, { ...current, itemSets: [...kept, mine] });
 }
 
+/** The key the player wants Flash on (Settings); D is the first spell slot, F the second. */
+export type FlashKey = 'D' | 'F';
+const FLASH = 4;
+
+/** The pair with Flash on the chosen key; a pair without Flash is returned as is. */
+export function placeFlash<T extends number | { id: number }>(pair: [T, T], key: FlashKey): [T, T] {
+  const id = (x: T) => (typeof x === 'number' ? x : x.id);
+  const i = pair.findIndex((x) => id(x) === FLASH);
+  return i === -1 || i === (key === 'D' ? 0 : 1) ? pair : [pair[1], pair[0]];
+}
+
 /**
  * Puts the build's two spells on the player's keys without moving the ones they already have:
  * Flash on F stays on F. Spells the player does not have yet fill the remaining slots in build order.
+ * A Flash key chosen in Settings wins over that.
  */
-export function arrangeSpells(build: [number, number], current: [number, number] | null): [number, number] {
+export function arrangeSpells(build: [number, number], current: [number, number] | null, flash: FlashKey | null = null): [number, number] {
+  if (flash && build.includes(FLASH)) return placeFlash(build, flash);
   if (!current) return build;
   const slots: (number | null)[] = current.map((id) => (build.includes(id) ? id : null));
   const rest = build.filter((id) => !slots.includes(id));
   return slots.map((id) => id ?? rest.shift()!) as [number, number];
 }
 
-export async function applySpells(call: LcuCall, build: [number, number]): Promise<void> {
+export async function applySpells(call: LcuCall, build: [number, number], flash: FlashKey | null = null): Promise<void> {
   const session = (await call('GET', '/lol-champ-select/v1/session')) as { localPlayerCellId?: number; myTeam?: { cellId?: number; spell1Id?: number; spell2Id?: number }[] } | null;
   const me = session?.myTeam?.find((p) => p.cellId === session.localPlayerCellId);
   const current = me?.spell1Id && me.spell2Id ? ([me.spell1Id, me.spell2Id] as [number, number]) : null;
-  const [spell1Id, spell2Id] = arrangeSpells(build, current);
+  const [spell1Id, spell2Id] = arrangeSpells(build, current, flash);
   await call('PATCH', '/lol-champ-select/v1/session/my-selection', { spell1Id, spell2Id });
 }
 
@@ -136,7 +149,7 @@ export interface ApplyResult {
   spells: string;
 }
 
-export async function applyAll(call: LcuCall, p: Payloads, opts: { inChampSelect: boolean; uid: string }): Promise<ApplyResult> {
+export async function applyAll(call: LcuCall, p: Payloads, opts: { inChampSelect: boolean; uid: string; flash?: FlashKey | null }): Promise<ApplyResult> {
   const run = async (has: unknown, f: () => Promise<void>) => {
     if (!has) return 'none';
     try {
@@ -149,6 +162,6 @@ export async function applyAll(call: LcuCall, p: Payloads, opts: { inChampSelect
   return {
     runes: await run(p.runePage, () => applyRunePage(call, p.runePage!)),
     items: await run(p.itemSet, () => applyItemSet(call, p.itemSet!, opts.uid)),
-    spells: await run(p.spells && opts.inChampSelect, () => applySpells(call, p.spells!)),
+    spells: await run(p.spells && opts.inChampSelect, () => applySpells(call, p.spells!, opts.flash)),
   };
 }

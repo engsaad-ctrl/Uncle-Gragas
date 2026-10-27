@@ -51,12 +51,12 @@ const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) 
 });
 ipcMain.handle('lcu:state', () => watcher.state);
 // The window only names the page (champion, mode, lane); the build sent to the client is composed here.
-ipcMain.handle('lcu:apply', (_e, id: unknown, mode: unknown, position: unknown) =>
+ipcMain.handle('lcu:apply', (_e, id: unknown, mode: unknown, position: unknown, flash: unknown) =>
   reply(async () => {
     const r = parsePageRequest(id, mode, position);
     if (!watcher.creds) throw new Error('عميل اللعبة غير مفتوح.');
     const page = await services.championPage(r.id, r.mode, r.position);
-    const result = await applyAll(lcuCaller(watcher.creds), toPayloads(page), { inChampSelect: watcher.state.phase === 'ChampSelect', uid: randomUUID() });
+    const result = await applyAll(lcuCaller(watcher.creds), toPayloads(page), { inChampSelect: watcher.state.phase === 'ChampSelect', uid: randomUUID(), flash: flash === 'D' || flash === 'F' ? flash : null });
     watcher.note(`apply ${r.id}/${r.mode}/${r.position}: ${JSON.stringify(result)}`);
     return result;
   }),

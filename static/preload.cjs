@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld('lolh', {
   listItems: (mode) => ipcRenderer.invoke('items:list', mode),
   tierList: (position, mode) => ipcRenderer.invoke('tierlist:get', position, mode),
   lcuState: () => ipcRenderer.invoke('lcu:state'),
-  applyToClient: (id, mode, position) => ipcRenderer.invoke('lcu:apply', id, mode, position),
+  applyToClient: (id, mode, position, flash) => ipcRenderer.invoke('lcu:apply', id, mode, position, flash ?? null),
   suggestions: (position, enemies, taken) => ipcRenderer.invoke('suggest:get', position, enemies, taken),
   profile: (puuid) => ipcRenderer.invoke('profile:get', puuid ?? null),
   onLcuState: (callback) => ipcRenderer.on('lcu:state', (_event, state) => callback(state)),

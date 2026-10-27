@@ -9,7 +9,7 @@ import spellsEn from '../fixtures/cdragon/summoner-spells.default.sample.json' w
 import stylesAr from '../fixtures/cdragon/perkstyles.ar_ae.json' with { type: 'json' };
 import stylesEn from '../fixtures/cdragon/perkstyles.default.json' with { type: 'json' };
 import { composeChampionPage } from '../../src/app/championPage.js';
-import { applyAll, applyItemSet, applyRunePage, arrangeSpells, TAG, toPayloads } from '../../src/lcu/apply.js';
+import { applyAll, applyItemSet, applyRunePage, arrangeSpells, placeFlash, TAG, toPayloads } from '../../src/lcu/apply.js';
 import type { LcuCall } from '../../src/lcu/client.js';
 import { parseOpgg } from '../../src/stats/opggFormat.js';
 import { toBuild } from '../../src/stats/opgg.js';
@@ -102,6 +102,14 @@ describe('writing into the client', () => {
     expect(arrangeSpells([4, 14], null)).toEqual([4, 14]);
   });
 
+  it('puts Flash on the key chosen in Settings, whatever the client has', () => {
+    expect(arrangeSpells([4, 14], [14, 4], 'D')).toEqual([4, 14]);
+    expect(arrangeSpells([4, 14], [4, 7], 'F')).toEqual([14, 4]);
+    expect(arrangeSpells([4, 14], null, 'F')).toEqual([14, 4]);
+    expect(arrangeSpells([6, 14], [14, 6], 'D')).toEqual([14, 6]); // no Flash in the build: the player's keys as before
+    expect(placeFlash([{ id: 4 }, { id: 7 }], 'F')).toEqual([{ id: 7 }, { id: 4 }]); // the build page's order
+  });
+
   it('sets summoner spells only during champ select, and reports each part', async () => {
     const c = fakeClient({
       'GET /lol-summoner/v1/current-summoner': { summonerId: 42 },
@@ -111,5 +119,7 @@ describe('writing into the client', () => {
     expect(await applyAll(c.call, p, { inChampSelect: false, uid: 'u' })).toEqual({ runes: 'ok', items: 'none', spells: 'none' });
     expect(await applyAll(c.call, p, { inChampSelect: true, uid: 'u' })).toEqual({ runes: 'ok', items: 'none', spells: 'ok' });
     expect(c.calls.at(-1)).toEqual({ method: 'PATCH', path: '/lol-champ-select/v1/session/my-selection', body: { spell1Id: 14, spell2Id: 4 } });
+    await applyAll(c.call, p, { inChampSelect: true, uid: 'u', flash: 'D' });
+    expect(c.calls.filter((x) => x.method === 'PATCH').map((x) => x.body)).toEqual([{ spell1Id: 14, spell2Id: 4 }, { spell1Id: 4, spell2Id: 14 }]);
   });
 });

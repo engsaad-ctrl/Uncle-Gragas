@@ -5,7 +5,7 @@ import type { ItemEntry } from '../app/itemList.js';
 import type { TierRow } from '../app/tierList.js';
 import type { ProfilePage } from '../app/profilePage.js';
 import type { Suggestion } from '../app/suggestions.js';
-import type { ApplyResult } from '../lcu/apply.js';
+import type { ApplyResult, FlashKey } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
 import type { AppMode, Listed, OverlayData } from '../main/services.js';
 import type { UpdateStatus } from '../main/updater.js';
@@ -24,7 +24,7 @@ declare global {
       listItems(mode: AppMode): Promise<Reply<Listed<ItemEntry>>>;
       tierList(position: LanePosition, mode: AppMode): Promise<Reply<Listed<TierRow>>>;
       lcuState(): Promise<LcuState>;
-      applyToClient(id: number, mode: PageMode, position: Position): Promise<Reply<ApplyResult>>;
+      applyToClient(id: number, mode: PageMode, position: Position, flash: FlashKey | null): Promise<Reply<ApplyResult>>;
       suggestions(position: LanePosition, enemies: number[], taken: number[]): Promise<Reply<Suggestion[]>>;
       profile(puuid?: string): Promise<Reply<ProfilePage>>;
       overlayData(): Promise<Reply<OverlayData>>;
@@ -68,6 +68,24 @@ try {
   // storage unavailable: keep the default
 }
 export const getNameLang = () => nameLang;
+
+/** Settings → "مكان الفلاش": null keeps Flash wherever the player has it in the client. */
+let flashKey: FlashKey | null = null;
+try {
+  const v = localStorage.getItem('flashKey');
+  if (v === 'D' || v === 'F') flashKey = v;
+} catch {
+  // storage unavailable: keep the client's keys
+}
+export const getFlashKey = () => flashKey;
+export function setFlashKey(v: FlashKey | null) {
+  flashKey = v;
+  try {
+    localStorage.setItem('flashKey', v ?? 'keep');
+  } catch {
+    // not remembered this time; harmless
+  }
+}
 export function setNameLang(v: 'en' | 'ar') {
   nameLang = v;
   try {

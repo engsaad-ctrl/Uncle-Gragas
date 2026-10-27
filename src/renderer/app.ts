@@ -6,7 +6,7 @@ import type { LanePosition, Position } from '../stats/opgg.js';
 import { augmentsView } from './augmentsView.js';
 import { championsView } from './championsView.js';
 import { championView } from './championView.js';
-import { applyLines, byId, el, getAppMode, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setLcu, setNameLang, toast } from './dom.js';
+import { applyLines, byId, el, getAppMode, getFlashKey, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setFlashKey, setLcu, setNameLang, toast } from './dom.js';
 import { itemsView } from './itemsView.js';
 import { profileView } from './profileView.js';
 import { tierListView } from './tierListView.js';
@@ -163,6 +163,14 @@ settings.append(
     el('p', 'hint', 'تُستبدل صفحات البرنامج فقط (اسمها يبدأ بـ Uncle Gragas)، ولا تُمس صفحاتك.'),
   ),
   section(
+    'مكان الفلاش',
+    pills('مكان الفلاش', [['keep', 'كما في عميلك'], ['D', 'D'], ['F', 'F']], getFlashKey() ?? 'keep', (v) => {
+      setFlashKey(v === 'D' || v === 'F' ? v : null);
+      route(); // the build page shows the spells in key order
+    }),
+    el('p', 'hint', 'يُطبَّق عند وضع التعاويذ في شاشة الاختيار، ويظهر بنفس الترتيب في صفحة البناء.'),
+  ),
+  section(
     'نافذة التعزيزات فوق اللعبة (F7)',
     pills('النافذة فوق اللعبة', [['on', 'مفعّلة'], ['off', 'معطّلة']], overlayOn ? 'on' : 'off', (v) => {
       overlayOn = v === 'on';
@@ -236,7 +244,7 @@ async function onLcu(state: LcuState) {
       lastApplyKey = key;
       // Not awaited: opening the page below should not wait for the client.
       void window.lolh
-        .applyToClient(state.championId, PAGE_MODE[state.mode], state.position ?? 'mid')
+        .applyToClient(state.championId, PAGE_MODE[state.mode], state.position ?? 'mid', getFlashKey())
         .then((r) => {
           const lines = isError(r) ? [] : applyLines(r);
           toast(isError(r) ? [`✗ ${r.error}`] : lines.length ? ['طُبّق في العميل:', ...lines.map((l) => l.text)] : ['لا يوجد بناء لتطبيقه في هذا الطور.']);
