@@ -53,7 +53,7 @@ const STAT_LABEL: Record<number, [total: string, bonus: string]> = {
   6: ['مقاومة السحر', 'مقاومة السحر الإضافية'],
   7: ['سرعة الحركة', 'سرعة الحركة الإضافية'],
   8: ['الضربة الحرجة', 'الضربة الحرجة'],
-  9: ['الضربة الحرجة', 'الضربة الحرجة'],
+  9: ['ضرر الضربة الحرجة', 'ضرر الضربة الحرجة'], // crit damage (175% = 1.75), not chance: Yone's CurrentCritDamage
   12: ['الصحة القصوى', 'الصحة الإضافية'],
   29: ['الفتك', 'الفتك'],
   31: ['المدى', 'المدى الإضافي'],
@@ -61,7 +61,7 @@ const STAT_LABEL: Record<number, [total: string, bonus: string]> = {
 const BASE_LABEL: Record<number, string> = { 2: 'ضرر الهجوم الأساسي', 12: 'الصحة الأساسية' };
 // Riot's own colour tags and text icons (%i:scaleAP% …), so a ratio looks like the game's: icon instead of the stat's name.
 const STAT_TAG: Record<number, string> = {
-  0: 'scaleAP', 1: 'scaleArmor', 2: 'scaleAD', 4: 'scaleAS', 6: 'scaleMR', 7: 'scaleMS', 8: 'scaleCrit', 9: 'scaleCrit', 12: 'scaleHealth', 29: 'scaleAPen', 31: 'scaleRange',
+  0: 'scaleAP', 1: 'scaleArmor', 2: 'scaleAD', 4: 'scaleAS', 6: 'scaleMR', 7: 'scaleMS', 8: 'scaleCrit', 9: 'scaleCritMult', 12: 'scaleHealth', 29: 'scaleAPen', 31: 'scaleRange',
 };
 /** What the icon alone cannot say: bonus or base stat (total needs no word). */
 const FORMULA_WORD: Record<number, string> = { 1: ' أساسي', 2: ' إضافي' };
@@ -166,8 +166,12 @@ const isType = (p: Part, name: string) => p.__type === name || p.__type === binH
 
 function evalPart(p: Part | undefined, c: Ctx): Value | null {
   if (!p) return null;
+  // A stat id with no name yet (lifesteal, haste, missing health…) would print a ratio nobody can read: shown as "(+إحصاءات)".
+  const known = num(p.mStatFormula) === 1 ? num(p.mStat) in BASE_LABEL : num(p.mStat) in STAT_LABEL;
   const stat = (coef: number[] | undefined): Value | null =>
-    coef
+    coef && !known
+      ? { ...plain(fill(c.ranks, 0)), other: true }
+      : coef
       ? {
           ...plain(fill(c.ranks, 0)),
           scalings: [{ label: statLabel(num(p.mStat), num(p.mStatFormula)), tag: STAT_TAG[num(p.mStat)], icon: STAT_TAG[num(p.mStat)], suffix: FORMULA_WORD[num(p.mStatFormula)], coef }],
@@ -306,13 +310,15 @@ interface Shown {
 }
 
 /** Stats the game keeps as fractions (100% crit = 1): a percent value grows "0.35% per 1%" of them. */
-const FRACTION_STATS = new Set(['scaleAS', 'scaleCrit']);
+const FRACTION_STATS = new Set(['scaleAS', 'scaleCrit', 'scaleCritMult']);
 
 function ratioText(s: Scaling, percent: boolean): string {
-  if (percent && !s.flat && s.tag && FRACTION_STATS.has(s.tag)) {
+  if (!s.flat && s.tag && FRACTION_STATS.has(s.tag)) {
+    // Percent value: "+0.35% per 1% crit", as the game words it. Plain value: "+4 per 100% crit" (coef × the fraction).
+    const unit = percent ? '%' : '';
     const max = s.coefMax;
-    const nums = max?.some((x, i) => x !== s.coef[i]) ? `${fmt(s.coef[0], 2)}%–${fmt(max[max.length - 1], 2)}%` : perRank(s.coef, 2, '%');
-    return `${nums} لكل 1% ${s.icon ? `%i:${s.icon}%${s.suffix ?? ''}` : s.label}`;
+    const nums = max?.some((x, i) => x !== s.coef[i]) ? `${fmt(s.coef[0], 2)}${unit}–${fmt(max[max.length - 1], 2)}${unit}` : perRank(s.coef, 2, unit);
+    return `${nums} لكل ${percent ? '1%' : '100%'} ${s.icon ? `%i:${s.icon}%${s.suffix ?? ''}` : s.label}`;
   }
   const k = s.flat ? (percent ? 100 : 1) : percent ? 10000 : 100;
   const unit = s.flat && !percent ? '' : '%';

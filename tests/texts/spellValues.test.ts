@@ -34,7 +34,7 @@ describe('resolveSpellValues (real augment spells)', () => {
     expect(r).toEqual({ text: 'يمنح 3ث.<br>', unresolved: 0 });
   });
 
-  it('names calibrated stat ratios, stacks, and a generic label for unknown stat ids', () => {
+  it('names calibrated stat ratios and stacks; an unknown stat id is a bare "(+إحصاءات)", never a made-up ratio', () => {
     const spell: SpellData = {
       DataValues: [{ name: 'Base', values: [0, 40, 40] }],
       mSpellCalculations: {
@@ -45,7 +45,7 @@ describe('resolveSpellValues (real augment spells)', () => {
       },
     };
     expect(resolveSpellValues('@Dmg@ و@OnlyStat@ و@Odd@ و@Stacks@', spell)).toEqual({
-      text: '40 <scaleAD><nowrap>(+50% %i:scaleAD% إضافي)</nowrap></scaleAD> و<scaleAP><nowrap>30% %i:scaleAP%</nowrap></scaleAP> و5 <nowrap>(+10% من إحصاءات)</nowrap> و5 <nowrap>(+2 لكل تكديسة)</nowrap>',
+      text: '40 <scaleAD><nowrap>(+50% %i:scaleAD% إضافي)</nowrap></scaleAD> و<scaleAP><nowrap>30% %i:scaleAP%</nowrap></scaleAP> و5 <nowrap>(+إحصاءات)</nowrap> و5 <nowrap>(+2 لكل تكديسة)</nowrap>',
       unresolved: 0,
     });
   });
