@@ -43,6 +43,16 @@ interface AugmentData {
   __spell?: SpellData;
 }
 
+/**
+ * String-table keys tried when the mode files carry no entry for an augment (about 1 in 14, e.g. Mayhem's
+ * "ReEnergize" → kiwi_reenergize_tooltip, "ARAM_TheBrutalizer" → cherry_thebrutalizer_summary).
+ */
+function fallbackKeys(nameId: string | undefined): string[] {
+  if (!nameId) return [];
+  const n = nameId.replace(/^ARAM_/i, '').replace(/_Active$/i, '').toLowerCase();
+  return ['kiwi_', 'kiwi_augment_', 'cherry_', 'augment_'].flatMap((p) => [`${p}${n}_tooltip`, `${p}${n}_summary`]);
+}
+
 const RARITY: Record<string, Rarity> = { kSilver: 'silver', kGold: 'gold', kPrismatic: 'prismatic', kEventChoice: 'event' };
 
 export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentText[]> {
@@ -73,9 +83,11 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
     // The tooltip has the numbers; the short description has fewer placeholders. Take the tooltip when every
     // value resolves, else whichever leaves fewer unknowns (ties go to the description).
     const candidates: { text: string; unresolved: number }[] = [];
-    for (const key of [d?.AugmentTooltipTra, d?.DescriptionTra]) {
+    for (const key of [d?.AugmentTooltipTra, d?.DescriptionTra, ...fallbackKeys(a.augmentNameId)]) {
       const raw = await lookup(key);
-      if (raw !== undefined && !isUntranslated(raw)) candidates.push(resolveSpellValues(await expand(raw), d?.__spell, { dropLiveLines: true }));
+      if (raw === undefined || isUntranslated(raw)) continue;
+      const c = resolveSpellValues(await expand(raw), d?.__spell, { dropLiveLines: true });
+      if (c.text.replace(/<[^>]+>/g, '').trim()) candidates.push(c); // every line was a live counter: nothing to show
     }
     const best =
       candidates.find((c) => c.unresolved === 0) ??

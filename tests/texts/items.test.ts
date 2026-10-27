@@ -73,3 +73,23 @@ describe('buildItemDetails (real game files, 2026-10)', () => {
     expect(html).not.toContain('قديم');
   });
 });
+
+describe('item cooldowns and omitted stats', () => {
+  const strings = (k: string) =>
+    ({
+      tip: '<section>الاسم</section><section>الإحصاءات</section><section>نشط (@ActiveCooldown@{{ Item_Cooldown }}). فرصة @FlatCritChanceMod*100@%</section>',
+      blade: '<section>الاسم</section><section>الإحصاءات</section><section>حد السيف {{ Item_Cooldown }}.</section>',
+      item_cooldown: '%i:cooldown% (@Cooldown@ث)',
+    })[k.toLowerCase()];
+  const items = {
+    1: { tooltipKey: 'tip', DataValues: [{ name: 'ActiveCooldown', values: [90] }] }, // Gargoyle Stoneplate's shape
+    2: { tooltipKey: 'blade', DataValues: [{ name: 'SpellbladeCooldown', values: [1.5] }] }, // Divine Sunderer's
+  };
+
+  it('prints a cooldown once after its value, reads a lone one from the item, and an omitted stat as 0', () => {
+    const d = buildItemDetails(items, strings);
+    expect(d.get(1)).toContain('(%i:cooldown% 90ث)'); // not "(90 (؟ث))"
+    expect(d.get(1)).toMatch(/فرصة 0\u2060?%/);
+    expect(d.get(2)).toContain('حد السيف %i:cooldown% (1.5ث)');
+  });
+});

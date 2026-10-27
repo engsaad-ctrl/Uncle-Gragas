@@ -437,7 +437,8 @@ function makeCtx(spell: SpellData | undefined, ranks: number, spellRef?: Resolve
 export function resolveSpellValues(text: string, spell: SpellData | undefined, opts: ResolveOptions = {}): { text: string; unresolved: number } {
   const ranks = Math.max(1, opts.ranks ?? 1);
   // Split keeps separators at odd indexes; a dropped line takes the break before it along.
-  const parts = text.split(/(<br\s*\/?>|<hr\s*\/?>)/i);
+  // "15% (@f1@) ضرر هجوم": a live counter in brackets is an aside; drop it alone so the line keeps its real value.
+  const parts = text.replace(/\s*\(\s*@f\d+(?:\.\d+)?@\s*\)/gi, '').split(/(<br\s*\/?>|<hr\s*\/?>)/i);
   const all = opts.dropLiveLines === true;
   let kept = parts[0] && isTracker(parts[0], all) ? '' : (parts[0] ?? '');
   for (let i = 1; i < parts.length; i += 2) if (!isTracker(parts[i + 1] ?? '', all)) kept += parts[i] + (parts[i + 1] ?? '');

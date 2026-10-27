@@ -80,6 +80,20 @@ describe('buildAugmentTexts', () => {
     expect(r.some((a) => a.name === '???')).toBe(false);
   });
 
+  it('finds text by name when the mode files have no entry, and skips a tooltip made only of live counters', async () => {
+    const entry = (id: number, augmentNameId: string): AugmentListEntry => ({ id, augmentNameId, nameTRA: `ت${id}`, augmentSmallIconPath: '', rarity: 'kSilver' });
+    const r = await buildAugmentTexts({
+      listAr: [entry(1330, 'ReEnergize'), entry(1082, 'ARAM_TheBrutalizer'), entry(1007, 'ARAM_BluntForce')],
+      listEn: [],
+      bins: [{ a: { __type: 'AugmentData', AugmentPlatformId: 1007, AugmentTooltipTra: 'tip', DescriptionTra: 'sum', __spell: { DataValues: [{ name: 'ADAmp', values: [0.2] }] } } }],
+      strings: { kiwi_reenergize_tooltip: 'هجوم منشّط.', cherry_thebrutalizer_summary: 'تكسب ضرر هجوم.', tip: '@f1@', sum: 'تكسب @ADAmp*100@% (@f1@) ضرر هجوم.' },
+    });
+    const html = (id: number) => r.find((a) => a.ids.includes(id))?.html;
+    expect(html(1330)).toBe('هجوم منشّط.');
+    expect(html(1082)).toBe('تكسب ضرر هجوم.');
+    expect(html(1007)).toBe('تكسب 20% ضرر هجوم.'); // the live "(@f1@)" aside dropped, not the whole line
+  });
+
   it('builds CommunityDragon icon URLs', () => {
     expect(byId.get(1397)!.iconUrl).toBe(
       'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/ux/cherry/augments/icons/cerberus_small.png',

@@ -1,4 +1,4 @@
-import { cleanText, isUntranslated, pickText } from './clean.js';
+import { cleanText, isUntranslated, pickText, REAL_ZERO } from './clean.js';
 import { expandRefs, type GameItem } from './gameData.js';
 import { mostlyResolved, resolveSpellValues } from './spellValues.js';
 
@@ -45,11 +45,34 @@ export function buildItemDetails(items: Record<number, GameItem>, strings: (key:
     const raw = item.tooltipKey ? strings(item.tooltipKey) : undefined;
     if (!raw) continue;
     // Sections: title, stats (CommunityDragon has those right; some stat fields are not in the bin), then passives, active, rules.
-    const body = meleeRanged(expandRefs(raw, strings)).split(/<\/?section>/).filter((x, i) => i % 2 === 1).slice(2).filter((x) => x.trim()).join('<br><br>');
-    const r = resolveSpellValues(body, item);
+    const body = meleeRanged(expandRefs(itemCooldowns(raw), strings)).split(/<\/?section>/).filter((x, i) => i % 2 === 1).slice(2).filter((x) => x.trim()).join('<br><br>');
+    const r = resolveSpellValues(body, withDefaults(item, body));
     if (r.text.trim() && mostlyResolved(body, r)) out.set(Number(id), r.text); // values that depend on other items stay "؟"; the ratios show
   }
   return out;
+}
+
+/**
+ * {{ Item_Cooldown }} is "⏱ (@Cooldown@ث)": the cooldown after ability haste, known only in a match. After a value
+ * ("(@ActiveCooldown@{{ Item_Cooldown }})") it would print "(90 (؟ث))": show that value once, with the clock icon.
+ */
+function itemCooldowns(text: string): string {
+  return text.replace(/(@[\w.*]+@)\s*\{\{\s*Item_Cooldown\s*\}\}/gi, '%i:cooldown% $1ث');
+}
+
+/**
+ * Values the text can read that the item leaves out: the bin omits zero stats (Yun Tal's 0% crit reads
+ * @FlatCritChanceMod@), and a lone {{ Item_Cooldown }} reads @Cooldown@, often stored as SpellbladeCooldown….
+ */
+function withDefaults(item: GameItem, text: string): GameItem {
+  const has = new Set((item.DataValues ?? []).map((d) => d.name.toLowerCase()));
+  const extra: { name: string; values: number[] }[] = [];
+  for (const [, name] of text.matchAll(/@((?:Flat|Percent)\w+Mod)[*@]/g)) {
+    if (!has.has(name.toLowerCase())) (has.add(name.toLowerCase()), extra.push({ name, values: [0] }));
+  }
+  const cd = !has.has('cooldown') && (item.DataValues ?? []).find((d) => /cooldown$/i.test(d.name));
+  if (cd && cd.values) extra.push({ name: 'Cooldown', values: cd.values });
+  return extra.length ? { ...item, DataValues: [...(item.DataValues ?? []), ...extra] } : item;
 }
 
 /**
@@ -78,6 +101,8 @@ export function statIcons(desc: string): string {
   return desc.replace(/<stats>([\s\S]*?)<\/stats>/, (_, block: string) =>
     `<stats>${block.replace(/<attention>([^<]*)<\/attention>([^<]*)/g, (whole, value: string, label: string) => {
       const icon = STAT_ICON.find(([re]) => re.test(label))?.[1];
+      // A shop stat of 0 is real (Yun Tal starts at 0% crit), not one of CommunityDragon's unknown zeros.
+      value = value.replace(/^(\s*)0(%?)\s*$/, `$10${REAL_ZERO}$2`); // " 0%" too
       return icon ? `<${icon}>%i:${icon}%${value}${label}</${icon}>` : whole; // number and name in the icon's colour
     })}</stats>`,
   );
