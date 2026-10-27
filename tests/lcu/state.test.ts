@@ -39,6 +39,7 @@ describe('toLcuState', () => {
     expect(toLcuState('ChampSelect', flow('CHERRY', 1700, 30), select({ championId: 1 })).mode).toBe('arena');
     expect(toLcuState('ChampSelect', flow('KIWI', 2400, 12), select({ championId: 1 })).mode).toBe('mayhem');
     expect(toLcuState('ChampSelect', flow('URF', 900), select({ championId: 1 })).mode).toBeNull();
+    expect(toLcuState('ChampSelect', flow('ARAM', 2400, 12), select({ championId: 1 })).mode).toBe('mayhem'); // Mayhem's queue, named ARAM
   });
 
   it('carries no champion outside champ select', () => {

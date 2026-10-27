@@ -217,8 +217,10 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const pageMode = ({ normal: 'ranked', aram: 'aram', mayhem: 'mayhem', arena: null } as const)[pick?.mode ?? 'arena'];
     // A failed build still leaves the augments to show.
     const build = pick && pageMode ? await championPage(pick.championId, pageMode, pick.position ?? 'auto').catch(() => null) : null;
-    if (pick?.mode === 'mayhem') {
-      const rated = build?.augments ?? [];
+    // ARAM too: plain ARAM has no augments, so an ARAM reading means Mayhem misnamed by the client; better the
+    // champion's own order than the generic list, which looks the same for every champion.
+    if (pick?.mode === 'mayhem' || pick?.mode === 'aram') {
+      const rated = (pick.mode === 'mayhem' ? build : await championPage(pick.championId, 'mayhem', 'auto').catch(() => null))?.augments ?? [];
       const ratedIds = new Set(rated.map((a) => a.id));
       return { champion, mode: 'mayhem', rated: rated.length > 0, build, augments: [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))] };
     }

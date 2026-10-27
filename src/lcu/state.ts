@@ -21,6 +21,9 @@ export const DISCONNECTED: LcuState = {
 
 // shortcut: KIWI (Mayhem) is inferred from the mode's internal code name; confirm with a real diagnostics export.
 const MODES: Record<string, AppMode> = { CLASSIC: 'normal', ARAM: 'aram', KIWI: 'mayhem', CHERRY: 'arena' };
+// Mayhem's queue, whatever game mode name the client gives it (it may report plain "ARAM"): read as ARAM, the
+// app would show the generic augment list, the same for every champion.
+const MAYHEM_QUEUES = new Set([2400]);
 const LANES: Record<string, Position> = { top: 'top', jungle: 'jungle', middle: 'mid', bottom: 'adc', utility: 'support' };
 
 type Json = Record<string, unknown> | null | undefined;
@@ -30,7 +33,9 @@ const num = (v: unknown) => (typeof v === 'number' ? v : null);
 export function toLcuState(phase: string, gameflow: unknown, champSelect: unknown): LcuState {
   const queue = obj(obj(obj(gameflow)?.gameData)?.queue);
   const gameMode = typeof queue?.gameMode === 'string' ? queue.gameMode : null;
-  const base: LcuState = { ...DISCONNECTED, phase, gameMode, queueId: num(queue?.id), mode: gameMode ? (MODES[gameMode] ?? null) : null };
+  const queueId = num(queue?.id);
+  const mode = queueId !== null && MAYHEM_QUEUES.has(queueId) ? 'mayhem' : gameMode ? (MODES[gameMode] ?? null) : null;
+  const base: LcuState = { ...DISCONNECTED, phase, gameMode, queueId, mode };
   if (phase !== 'ChampSelect') return base;
 
   const session = obj(champSelect);
