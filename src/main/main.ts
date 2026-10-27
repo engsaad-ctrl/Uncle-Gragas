@@ -6,6 +6,7 @@ import { applyAll, toPayloads } from '../lcu/apply.js';
 import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
 import { loadProfile, parsePuuid } from '../lcu/profile.js';
 import { LcuWatcher } from '../lcu/watcher.js';
+import type { Position } from '../stats/opgg.js';
 import { overlayWindow } from './overlay.js';
 import { appUpdater } from './updater.js';
 import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest, type AppMode } from './services.js';
@@ -44,9 +45,9 @@ ipcMain.handle('suggest:get', (_e, position: unknown, enemies: unknown, taken: u
 // League client: champ select → the window opens the right champion page.
 let mainWindow: BrowserWindow | undefined;
 // The client stops naming the champion once the game starts: remember the last champ-select pick for the overlay.
-let lastPick: { championId: number; mode: AppMode } | null = null;
+let lastPick: { championId: number; mode: AppMode; position: Position | null } | null = null;
 const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) }, (state) => {
-  if (state.championId && state.mode) lastPick = { championId: state.championId, mode: state.mode };
+  if (state.championId && state.mode) lastPick = { championId: state.championId, mode: state.mode, position: state.position };
   mainWindow?.webContents.send('lcu:state', state);
 });
 ipcMain.handle('lcu:state', () => watcher.state);

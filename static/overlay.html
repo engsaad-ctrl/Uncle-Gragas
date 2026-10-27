@@ -14,9 +14,16 @@
       <div><strong id="ov-title">التعزيزات</strong><div id="ov-sub" class="en"></div></div>
       <button type="button" id="ov-close" aria-label="إغلاق (F7)">✕</button>
     </header>
-    <label class="search"><input id="ov-search" type="search" placeholder="اكتب اسم التعزيز…" autocomplete="off"></label>
-    <div id="ov-list" class="ov-list"></div>
-    <p class="hint">F7 أو Esc للإخفاء · اضغط على تعزيز لوصفه</p>
+    <nav id="ov-tabs" class="tabs ov-tabs" hidden>
+      <button type="button" data-tab="build">البناء</button>
+      <button type="button" data-tab="augments">التعزيزات</button>
+    </nav>
+    <div id="ov-build" class="ov-build" hidden></div>
+    <div id="ov-aug" class="ov-aug">
+      <label class="search"><input id="ov-search" type="search" placeholder="اكتب اسم التعزيز…" autocomplete="off"></label>
+      <div id="ov-list" class="ov-list"></div>
+    </div>
+    <p class="hint">F7 أو Esc للإخفاء · مرّر على أيقونة أو اضغط على تعزيز لوصفه</p>
   </section>
   <script type="module" src="../dist/renderer/overlay.js"></script>
 </body>

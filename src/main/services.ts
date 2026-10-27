@@ -26,6 +26,8 @@ export interface OverlayData {
   mode: AppMode | null;
   /** True when the first augments carry a performance rating for this champion. */
   rated: boolean;
+  /** The picked champion's build page (runes, spells, skills, items) for the game's mode; null in Arena or with no pick. */
+  build: ChampionPage | null;
   augments: (AugmentText & { performance?: number })[];
 }
 
@@ -200,18 +202,21 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
 
   /**
    * The overlay's list: for Mayhem the champion's rated augments first (best first), then the rest of Mayhem's;
-   * for Arena (no per-champion data) every Arena augment; with no pick yet, every augment.
+   * for Arena (no per-champion data) every Arena augment; with no pick yet, every augment. Plus the champion's build.
    */
-  async function overlayData(pick: { championId: number; mode: AppMode } | null): Promise<OverlayData> {
+  async function overlayData(pick: { championId: number; mode: AppMode; position?: Position | null } | null): Promise<OverlayData> {
     const all = (await augments()).augments;
     const champion = pick ? ((await champions()).find((c) => c.id === pick.championId) ?? null) : null;
+    const pageMode = ({ normal: 'ranked', aram: 'aram', mayhem: 'mayhem', arena: null } as const)[pick?.mode ?? 'arena'];
+    // A failed build still leaves the augments to show.
+    const build = pick && pageMode ? await championPage(pick.championId, pageMode, pick.position ?? 'mid').catch(() => null) : null;
     if (pick?.mode === 'mayhem') {
-      const rated = (await championPage(pick.championId, 'mayhem', 'mid')).augments;
+      const rated = build?.augments ?? [];
       const ratedIds = new Set(rated.map((a) => a.id));
-      return { champion, mode: 'mayhem', rated: true, augments: [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))] };
+      return { champion, mode: 'mayhem', rated: rated.length > 0, build, augments: [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))] };
     }
-    if (pick?.mode === 'arena') return { champion, mode: 'arena', rated: false, augments: all.filter((a) => a.modes.includes('arena')) };
-    return { champion, mode: pick?.mode ?? null, rated: false, augments: all };
+    if (pick?.mode === 'arena') return { champion, mode: 'arena', rated: false, build: null, augments: all.filter((a) => a.modes.includes('arena')) };
+    return { champion, mode: pick?.mode ?? null, rated: false, build, augments: all };
   }
 
   return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData };
