@@ -200,6 +200,7 @@ body { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
 /* Tier list */
 .tier-table { display: grid; gap: 4px; }
 .tier-row { display: grid; grid-template-columns: 70px minmax(180px, 2fr) 70px repeat(3, 1fr) 1fr; align-items: center; gap: 8px; padding: 8px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; animation: fade-up .3s ease both; animation-delay: var(--delay, 0ms); }
+.tier-table.no-ban .tier-row { grid-template-columns: 70px minmax(180px, 2fr) 70px repeat(2, 1fr) 1fr; }
 a.tier-row:hover { background: var(--panel-2); border-color: var(--accent); transform: translateX(-3px); }
 a.tier-row { transition: transform .15s, background-color .15s, border-color .15s; }
 .tier-head { color: var(--muted); font-size: 12px; font-weight: 700; background: none; border: 0; animation: none; }

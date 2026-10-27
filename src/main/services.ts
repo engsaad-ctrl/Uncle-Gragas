@@ -163,9 +163,13 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { list: composeItemList(m.data, list), fetchedAt: m.fetchedAt, stale: m.stale };
   }
 
-  async function tierList(position: LanePosition): Promise<Listed<TierRow>> {
-    const [meta, list] = await Promise.all([stats.laneMeta(), champions()]);
-    return { list: composeTierList(meta.data[position], list), fetchedAt: meta.fetchedAt, stale: meta.stale };
+  /** Summoner's Rift: one lane's tiers. ARAM and Mayhem (same games, no lanes): one list for every champion. */
+  async function tierList(position: LanePosition, mode: AppMode = 'normal'): Promise<Listed<TierRow>> {
+    const list = await champions();
+    const meta = mode === 'aram' || mode === 'mayhem'
+      ? await stats.aramTiers(list)
+      : await stats.laneMeta().then((m) => ({ ...m, data: m.data[position] }));
+    return { list: composeTierList(meta.data, list), fetchedAt: meta.fetchedAt, stale: meta.stale };
   }
 
   /** Champ select: answers to the enemy picks shown so far in this lane, else the lane's best tiers. */

@@ -36,7 +36,7 @@ ipcMain.handle('champion:page', (_e, id: unknown, mode: unknown, position: unkno
 );
 
 ipcMain.handle('items:list', (_e, mode: unknown) => reply(() => services.items(parseAppMode(mode))));
-ipcMain.handle('tierlist:get', (_e, position: unknown) => reply(() => services.tierList(parseLane(position))));
+ipcMain.handle('tierlist:get', (_e, position: unknown, mode: unknown) => reply(() => services.tierList(parseLane(position), parseAppMode(mode))));
 ipcMain.handle('suggest:get', (_e, position: unknown, enemies: unknown, taken: unknown) =>
   reply(() => services.suggestions(parseLane(position), parseIds(enemies), parseIds(taken))),
 );

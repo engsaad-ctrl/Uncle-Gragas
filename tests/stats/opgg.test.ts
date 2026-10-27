@@ -116,3 +116,27 @@ describe('OpggStats.laneMeta / mapItems', () => {
     expect(calls).toHaveLength(1);
   });
 });
+
+describe('OpggStats.aramTiers', () => {
+  // The real answer shape for one champion's ARAM summary (2026-10): play, win_rate, pick_rate, ban_rate, kda, tier, rank
+  const summary = (s: string) => `class LolGetChampionAnalysis: data\nclass Data: summary\nclass Summary: average_stats\nclass AverageStats: play,win_rate,pick_rate,ban_rate,kda,tier,rank\n\nLolGetChampionAnalysis(Data(Summary(AverageStats(${s}))))`;
+  const byChampion: Record<string, string> = { AHRI: summary('53798,0.52,0.11,null,3.49,2,16'), ZED: summary('27599,0.46,0.06,null,2.76,4,164') };
+  const call: CallTool = async (name, args) => {
+    calls.push({ name, args });
+    if (!(String(args.champion) in byChampion)) throw new Error('no data');
+    return byChampion[String(args.champion)];
+  };
+  const champs = [{ alias: 'Zed', enName: 'Zed' }, { alias: 'Ahri', enName: 'Ahri' }, { alias: 'Nope', enName: 'Nope' }];
+
+  it('ranks every champion by its ARAM summary, skipping ones without data, and caches the list for a day', async () => {
+    const { data } = await new OpggStats(call, cacheDir).aramTiers(champs);
+    expect(data.map((r) => [r.champion, r.rank, r.tier, r.games])).toEqual([['Ahri', 16, 2, 53798], ['Zed', 164, 4, 27599]]);
+    expect(calls.every((c) => c.args.game_mode === 'aram')).toBe(true);
+    await new OpggStats(call, cacheDir).aramTiers(champs);
+    expect(calls).toHaveLength(3);
+  });
+
+  it('fails when no champion answers, so a saved list is used instead of an empty one', async () => {
+    await expect(new OpggStats(fake({}), cacheDir).aramTiers(champs)).rejects.toThrow(/ARAM/);
+  });
+});

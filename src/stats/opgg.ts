@@ -270,6 +270,27 @@ export class OpggStats {
     );
   }
 
+  /**
+   * ARAM has no tier list tool, but each champion's ARAM summary carries its tier and overall rank.
+   * About 170 small calls, 6 at a time, once a day; champions the server has no answer for are left out.
+   */
+  aramTiers(champions: { alias: string; enName: string }[]): Promise<Fetched<MetaRow[]>> {
+    return this.cached('aram-tiers', async () => {
+      const rows: MetaRow[] = [];
+      for (let i = 0; i < champions.length; i += 6)
+        await Promise.all(champions.slice(i, i + 6).map(async (c) => {
+          const answer = await this.call('lol_get_champion_analysis', {
+            champion: c.alias.toUpperCase(), game_mode: 'aram', position: 'mid', lang: 'en_US', desired_output_fields: [BUILD_FIELDS[0]],
+          }).catch(() => null);
+          const avg = answer === null ? undefined : obj(obj(obj(obj(parseOpgg(answer))?.data)?.summary)?.average_stats);
+          const rank = num(avg?.rank);
+          if (avg && rank) rows.push({ champion: c.enName, tier: num(avg.tier) ?? 0, rank, rankPrev: 0, winRate: num(avg.win_rate) ?? 0, pickRate: num(avg.pick_rate) ?? 0, banRate: 0, games: num(avg.play) ?? 0 });
+        }));
+      if (!rows.length) throw new Error('تعذّر تحميل ترتيب ARAM.');
+      return rows.sort((x, y) => x.rank - y.rank);
+    }, ONE_DAY);
+  }
+
   /** Which items exist on a map (names and Arabic text come from CommunityDragon). Changes only with patches. */
   mapItems(map: ItemMap): Promise<Fetched<MapItem[]>> {
     return this.cached(`items-${map}`, async () => toMapItems(parseOpgg(await this.call('lol_list_items', { lang: 'en_US', map }))), ONE_DAY);
