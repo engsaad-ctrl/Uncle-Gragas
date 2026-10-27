@@ -1,13 +1,16 @@
 # Builds build/icon.ico from build/icon.png: 32-bit BMP frames for 16–128 px (what Explorer and the taskbar
 # read reliably) and a PNG frame only for 256 px. An ICO of PNG-only frames shows Windows' generic program icon.
+# Art: Gragas, Esq. splash from CommunityDragon (skin04, 1280px), cropped; build/icon-small.png is a close-up of
+# the face for 16–48 px, where the whole scene turns to mush.
 import io, struct, sys
 from PIL import Image
 
 src = Image.open(sys.argv[1] if len(sys.argv) > 1 else 'build/icon.png').convert('RGBA')
+small = Image.open(sys.argv[3] if len(sys.argv) > 3 else 'build/icon-small.png').convert('RGBA')
 sizes = [16, 24, 32, 48, 64, 128, 256]
 frames = []
 for s in sizes:
-    im = src.resize((s, s), Image.LANCZOS)
+    im = (small if s <= 48 else src).resize((s, s), Image.LANCZOS)
     if s == 256:
         buf = io.BytesIO(); im.save(buf, 'PNG'); frames.append(buf.getvalue()); continue
     px = im.tobytes('raw', 'BGRA')
