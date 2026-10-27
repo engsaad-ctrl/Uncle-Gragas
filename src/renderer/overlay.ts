@@ -16,36 +16,37 @@ let open: number | undefined;
 
 function render() {
   if (!data) return;
-  // This champion's rated augments first, in the recommended order; the rest by rarity, then name.
-  const order = Object.keys(RARITY_LABEL);
+  // Grouped by type (prismatic, gold, silver, special) like the champion page; in each group this champion's rated
+  // augments first in the recommended order (#1 = best), then the rest by name.
   const rated = (a: OverlayData['augments'][number]) => (data!.rated && a.rank !== undefined ? 0 : 1);
   const all = filterAugments(data.augments, search.value, 'all', 'all');
-  const shown = [
-    ...all.filter((a) => rated(a) === 0),
-    ...all.filter((a) => rated(a) === 1).sort(
-      (x, y) => order.indexOf(x.rarity) - order.indexOf(y.rarity) || shownName(x).localeCompare(shownName(y), getNameLang()),
-    ),
-  ];
-  list.replaceChildren(
-    ...shown.slice(0, 60).map((a) => {
-      const row = el('button', `ov-row r-${a.rarity}${open === a.id ? ' open' : ''}`);
-      row.type = 'button';
-      const name = el('div', 'ov-name');
-      name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
-      row.append(icon(a.iconUrl), name);
-      if (rated(a) === 0) row.append(el('span', 'ov-score', `#${a.rank} · ${pct(a.popularity ?? 0)}`));
-      if (open === a.id) {
-        const desc = el('div', 'ov-desc');
-        if (a.html) desc.innerHTML = a.html; // safe: produced by cleanText (escaped text, whitelisted tags only)
-        else desc.textContent = 'لا يوجد وصف.';
-        row.append(desc);
-      }
-      row.addEventListener('click', () => ((open = open === a.id ? undefined : a.id), render()));
-      if (open !== a.id) withTooltip(row, a, { className: `r-${a.rarity}` }); // hover shows it too, like everywhere else
-      return row;
-    }),
-  );
-  if (!shown.length) list.replaceChildren(el('p', 'missing', 'لا يوجد تعزيز بهذا الاسم.'));
+  const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).flatMap((rarity) => {
+    const list = all
+      .filter((a) => a.rarity === rarity)
+      .sort((x, y) => rated(x) - rated(y) || (x.rank ?? 0) - (y.rank ?? 0) || shownName(x).localeCompare(shownName(y), getNameLang()));
+    if (!list.length) return [];
+    return [el('h3', `ov-group r-${rarity}`, RARITY_LABEL[rarity]), ...list.map(row)];
+  });
+  list.replaceChildren(...groups);
+  if (!groups.length) list.replaceChildren(el('p', 'missing', 'لا يوجد تعزيز بهذا الاسم.'));
+
+  function row(a: OverlayData['augments'][number]) {
+    const r = el('button', `ov-row r-${a.rarity}${open === a.id ? ' open' : ''}`);
+    r.type = 'button';
+    const name = el('div', 'ov-name');
+    name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
+    r.append(icon(a.iconUrl), name);
+    if (rated(a) === 0) r.append(el('span', 'ov-score', `#${a.rank} · ${pct(a.popularity ?? 0)}`));
+    if (open === a.id) {
+      const desc = el('div', 'ov-desc');
+      if (a.html) desc.innerHTML = a.html; // safe: produced by cleanText (escaped text, whitelisted tags only)
+      else desc.textContent = 'لا يوجد وصف.';
+      r.append(desc);
+    }
+    r.addEventListener('click', () => ((open = open === a.id ? undefined : a.id), render()));
+    if (open !== a.id) withTooltip(r, a, { className: `r-${a.rarity}` }); // hover shows it too, like everywhere else
+    return r;
+  }
 }
 
 const tabs = byId('ov-tabs');
