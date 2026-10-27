@@ -5,6 +5,7 @@ export function normalizeArabic(s: string): string {
     .replace(/[أإآٱ]/g, 'ا')
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')
+    .replace(/['’.&-]/g, '') // Kai'Sa, Dr. Mundo, Nunu & Willump: "kaisa", "drmundo", "nunu willump"
     .replace(/\s+/g, ' ')
     .trim();
 }

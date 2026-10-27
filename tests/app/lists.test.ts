@@ -4,7 +4,7 @@ import itemsAr from '../fixtures/cdragon/items.ar_ae.groups.json' with { type: '
 import summaryAr from '../fixtures/cdragon/champion-summary.ar_ae.sample.json' with { type: 'json' };
 import summaryEn from '../fixtures/cdragon/champion-summary.default.sample.json' with { type: 'json' };
 import { composeItemList } from '../../src/app/itemList.js';
-import { composeAllLanes, composeTierList } from '../../src/app/tierList.js';
+import { composeAllLanes, composeTierList, mainLane } from '../../src/app/tierList.js';
 import { parseOpgg } from '../../src/stats/opggFormat.js';
 import { toLaneMeta, toMapItems } from '../../src/stats/opgg.js';
 import { buildChampionList } from '../../src/texts/champions.js';
@@ -67,6 +67,15 @@ describe('composeTierList', () => {
     expect(all.every((r, i) => i === 0 || all[i - 1].tier < r.tier || (all[i - 1].tier === r.tier && all[i - 1].winRate >= r.winRate))).toBe(true);
     expect(new Set(all.map((r) => r.lane))).toEqual(new Set(['top', 'jungle', 'mid', 'adc', 'support']));
     expect(all.every((r) => r.change === 0)).toBe(true);
+  });
+
+  it("finds a champion's main lane by games played, Mid when unknown", () => {
+    const meta = toLaneMeta(opgg('meta-all.txt'));
+    const lane = (Object.keys(meta) as (keyof typeof meta)[]).find((l) => l !== 'mid' && meta[l].length)!;
+    const only = meta[lane][0].champion;
+    expect(mainLane({ ...meta, mid: meta.mid.filter((r) => r.champion !== only) }, only)).toBe(lane);
+    expect(mainLane(meta, 'Nobody')).toBe('mid');
+    expect(mainLane(undefined, 'Ahri')).toBe('mid');
   });
 
   it('shows champions missing from the champion data without a link', () => {

@@ -18,7 +18,7 @@ export function mcpCaller(fetchImpl?: typeof fetch): CallTool {
     return c;
   };
   return async (name, args) => {
-    client ??= connect();
+    const used = (client ??= connect());
     try {
       // Raw request: the SDK's strict schema rejects some of OP.GG's tool output schemas.
       const r = await (await client).request({ method: 'tools/call', params: { name, arguments: args } }, z.any());
@@ -28,7 +28,11 @@ export function mcpCaller(fetchImpl?: typeof fetch): CallTool {
       }
       return text;
     } catch (err) {
-      client = undefined; // reconnect next time
+      // Reconnect next time; close the old connection (parallel calls failing together close it once).
+      if (client === used) {
+        client = undefined;
+        void used.then((c) => c.close()).catch(() => undefined);
+      }
       throw err;
     }
   };
@@ -286,7 +290,8 @@ export class OpggStats {
           const rank = num(avg?.rank);
           if (avg && rank) rows.push({ champion: c.enName, tier: num(avg.tier) ?? 0, rank, rankPrev: 0, winRate: num(avg.win_rate) ?? 0, pickRate: num(avg.pick_rate) ?? 0, banRate: 0, games: num(avg.play) ?? 0 });
         }));
-      if (!rows.length) throw new Error('تعذّر تحميل ترتيب ARAM.');
+      // A run cut short (rate limit, network) would be cached as a day's list of a few champions: keep the old one.
+      if (rows.length < champions.length * 0.8) throw new Error('تعذّر تحميل ترتيب ARAM كاملاً.');
       return rows.sort((x, y) => x.rank - y.rank);
     }, ONE_DAY);
   }

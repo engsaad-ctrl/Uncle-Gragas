@@ -27,6 +27,13 @@ describe('toLcuState', () => {
     }
   });
 
+  it('counts a pick as locked only once its pick action completes (draft); ARAM has no pick actions', () => {
+    const turn = (completed: boolean) => ({ ...select({ championId: 64, assignedPosition: 'top' }), actions: [[{ actorCellId: 2, type: 'pick', championId: 64, completed }], [{ actorCellId: 1, type: 'pick', completed: true }]] });
+    expect(toLcuState('ChampSelect', flow('CLASSIC', 420), turn(false))).toMatchObject({ championId: 64, locked: false }); // clicking through champions
+    expect(toLcuState('ChampSelect', flow('CLASSIC', 420), turn(true))).toMatchObject({ championId: 64, locked: true });
+    expect(toLcuState('ChampSelect', flow('ARAM', 450, 12), select({ championId: 22 }))).toMatchObject({ championId: 22, locked: true });
+  });
+
   it('maps game modes to app modes', () => {
     expect(toLcuState('ChampSelect', flow('ARAM', 450, 12), select({ championId: 1 })).mode).toBe('aram');
     expect(toLcuState('ChampSelect', flow('CHERRY', 1700, 30), select({ championId: 1 })).mode).toBe('arena');

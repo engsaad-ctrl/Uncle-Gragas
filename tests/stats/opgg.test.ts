@@ -120,23 +120,28 @@ describe('OpggStats.laneMeta / mapItems', () => {
 describe('OpggStats.aramTiers', () => {
   // The real answer shape for one champion's ARAM summary (2026-10): play, win_rate, pick_rate, ban_rate, kda, tier, rank
   const summary = (s: string) => `class LolGetChampionAnalysis: data\nclass Data: summary\nclass Summary: average_stats\nclass AverageStats: play,win_rate,pick_rate,ban_rate,kda,tier,rank\n\nLolGetChampionAnalysis(Data(Summary(AverageStats(${s}))))`;
-  const byChampion: Record<string, string> = { AHRI: summary('53798,0.52,0.11,null,3.49,2,16'), ZED: summary('27599,0.46,0.06,null,2.76,4,164') };
+  const byChampion: Record<string, string> = {
+    AHRI: summary('53798,0.52,0.11,null,3.49,2,16'), ZED: summary('27599,0.46,0.06,null,2.76,4,164'),
+    LUX: summary('40000,0.5,0.1,null,3,3,80'), JINX: summary('30000,0.49,0.08,null,3,3,90'),
+  };
   const call: CallTool = async (name, args) => {
     calls.push({ name, args });
     if (!(String(args.champion) in byChampion)) throw new Error('no data');
     return byChampion[String(args.champion)];
   };
-  const champs = [{ alias: 'Zed', enName: 'Zed' }, { alias: 'Ahri', enName: 'Ahri' }, { alias: 'Nope', enName: 'Nope' }];
+  const champs = [{ alias: 'Zed', enName: 'Zed' }, { alias: 'Ahri', enName: 'Ahri' }, { alias: 'Lux', enName: 'Lux' }, { alias: 'Jinx', enName: 'Jinx' }, { alias: 'Nope', enName: 'Nope' }];
 
   it('ranks every champion by its ARAM summary, skipping ones without data, and caches the list for a day', async () => {
     const { data } = await new OpggStats(call, cacheDir).aramTiers(champs);
-    expect(data.map((r) => [r.champion, r.rank, r.tier, r.games])).toEqual([['Ahri', 16, 2, 53798], ['Zed', 164, 4, 27599]]);
+    expect(data.map((r) => [r.champion, r.rank, r.tier])).toEqual([['Ahri', 16, 2], ['Lux', 80, 3], ['Jinx', 90, 3], ['Zed', 164, 4]]);
     expect(calls.every((c) => c.args.game_mode === 'aram')).toBe(true);
     await new OpggStats(call, cacheDir).aramTiers(champs);
-    expect(calls).toHaveLength(3);
+    expect(calls).toHaveLength(5);
   });
 
-  it('fails when no champion answers, so a saved list is used instead of an empty one', async () => {
+  it('fails when most champions do not answer, so a saved list is used instead of a partial one', async () => {
     await expect(new OpggStats(fake({}), cacheDir).aramTiers(champs)).rejects.toThrow(/ARAM/);
+    const few = [...champs, ...['A', 'B', 'C'].map((n) => ({ alias: n, enName: n }))]; // 4 of 8 answer
+    await expect(new OpggStats(call, cacheDir).aramTiers(few)).rejects.toThrow(/ARAM/);
   });
 });

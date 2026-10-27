@@ -85,7 +85,7 @@ function tidy(html: string): string {
 
 export function cleanText(raw: string): string {
   const pre = raw
-    .replace(/@[\w.*]+@/g, VAR_SENTINEL)
+    .replace(/@[^@\s<>]+@/g, VAR_SENTINEL) // any leftover placeholder (@spell.X:Y@, @A~B@, @X*-100@) reads "؟"
     .replace(/\{\{[^}]*\}\}/g, VAR_SENTINEL)
     .replace(/%i:(\w+)%/g, (_, name: string) => ICON_OPEN + name + ICON_CLOSE)
     .replace(/\[([^[\]|]*?)\s*\|\|\s*([^[\]]*?)\]/g, '$1 / $2')

@@ -1,6 +1,6 @@
 import type { LcuState } from '../lcu/state.js';
 import type { ChampionListEntry } from '../texts/champions.js';
-import { champLink, el, getAppMode, icon, isError, lcuNow, MODE_TITLE, nameEl, PAGE_MODE, pct, searchBox, shownName, getNameLang, stagger } from './dom.js';
+import { champLink, el, getAppMode, icon, isError, lcuNow, MODE_TITLE, nameEl, PAGE_MODE, pageSignal, pct, searchBox, shownName, getNameLang, stagger } from './dom.js';
 import { normalizeArabic } from './search.js';
 
 let cached: ChampionListEntry[] | undefined;
@@ -21,6 +21,7 @@ export async function championsView(root: HTMLElement, alive: () => boolean) {
     const reply = await window.lolh.listChampions();
     if (!alive()) return;
     if (isError(reply)) {
+      status.classList.remove('loading');
       status.textContent = `تعذّر تحميل قائمة الأبطال: ${reply.error}`;
       return;
     }
@@ -98,6 +99,6 @@ function suggestionsPanel(alive: () => boolean): HTMLElement {
   };
   void update(lcuNow());
   const onLcu = (e: Event) => (panel.isConnected ? void update((e as CustomEvent<LcuState>).detail) : document.removeEventListener('lcu', onLcu));
-  document.addEventListener('lcu', onLcu);
+  document.addEventListener('lcu', onLcu, { signal: pageSignal() });
   return panel;
 }

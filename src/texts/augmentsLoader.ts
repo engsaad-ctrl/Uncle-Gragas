@@ -23,7 +23,7 @@ export interface AugmentsResult {
 }
 
 // Bump when AugmentText changes shape so old caches are rebuilt.
-const CACHE_SCHEMA = 9;
+const CACHE_SCHEMA = 10;
 
 /** Keeps only AugmentData entries, each with its root spell's values attached (the rest of the bin is dropped). */
 function augmentDataOnly(bin: Record<string, unknown>) {

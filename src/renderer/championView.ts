@@ -4,7 +4,7 @@ import type { Rarity } from '../texts/augments.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
-import { applyLines, champLink, detailPanel, el, getFlashKey, icon, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
 import { placeFlash } from '../lcu/apply.js';
 
 const MODES: [PageMode, string][] = [
@@ -18,9 +18,9 @@ const NO_BUILD: Partial<Record<PageMode, string>> = {
   nexus: 'لا يتوفر بناء Nexus Blitz حالياً.',
 };
 const POSITIONS: [Position, string][] = [['top', 'Top'], ['jungle', 'Jungle'], ['mid', 'Mid'], ['adc', 'ADC'], ['support', 'Support']];
-const AUGMENT_GROUPS: [Rarity, string][] = [['prismatic', 'أفضل التعزيزات الموشورية'], ['gold', 'أفضل التعزيزات الذهبية'], ['silver', 'أفضل التعزيزات الفضية']];
+const AUGMENT_GROUPS: [Rarity, string][] = [['prismatic', 'أفضل التعزيزات الموشورية'], ['gold', 'أفضل التعزيزات الذهبية'], ['silver', 'أفضل التعزيزات الفضية'], ['event', 'تعزيزات خاصة']];
 
-export async function championView(root: HTMLElement, alive: () => boolean, id: number, mode: PageMode, position: Position) {
+export async function championView(root: HTMLElement, alive: () => boolean, id: number, mode: PageMode, position: Position | 'auto') {
   const status = el('p', 'status loading', 'جاري التحميل…');
   root.replaceChildren(status);
   const reply = await window.lolh.championPage(id, mode, position);
@@ -46,7 +46,7 @@ function applyControl(p: ChampionPage): HTMLElement {
   };
   refresh(lcuNow());
   const onLcu = (e: Event) => (btn.isConnected ? refresh((e as CustomEvent<LcuState>).detail) : document.removeEventListener('lcu', onLcu));
-  document.addEventListener('lcu', onLcu);
+  document.addEventListener('lcu', onLcu, { signal: pageSignal() });
   btn.addEventListener('click', async () => {
     btn.disabled = true;
     note.textContent = 'جاري التطبيق…';
@@ -165,7 +165,8 @@ function renderPage(p: ChampionPage): HTMLElement[] {
       showAll.remove();
     });
     section.append(groups);
-    if (p.augments.length > 18) section.append(showAll);
+    // Each group shows 6 at first: offer the rest whenever any group has more.
+    if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
     section.append(el('p', 'hint', 'الرقم على كل تعزيز هو مؤشر الأداء (الأعلى أفضل). التعزيزات بلا عينة كافية مستبعدة.'));
     body.push(section);
   }

@@ -120,9 +120,19 @@ function renderBuild(p: ChampionPage) {
   buildBox.replaceChildren(...(out.length ? out : [el('p', 'missing', 'لا يوجد بناء لهذا البطل.')]));
 }
 
+let loadId = 0;
 async function load() {
+  const id = ++loadId;
   const reply = await window.lolh.overlayData();
+  if (id !== loadId) return; // F7 pressed again meanwhile: the newer answer wins
   if (isError(reply)) {
+    // Drop the last game's champion and build: they would stay on screen under the error.
+    data = undefined;
+    tabs.hidden = true;
+    byId('ov-champ').hidden = true;
+    byId('ov-title').textContent = 'التعزيزات';
+    byId('ov-sub').textContent = '';
+    showTab('augments');
     list.replaceChildren(el('p', 'missing', `تعذّر التحميل: ${reply.error}`));
     return;
   }

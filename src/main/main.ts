@@ -11,6 +11,14 @@ import { overlayWindow } from './overlay.js';
 import { appUpdater } from './updater.js';
 import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest, type AppMode } from './services.js';
 
+// One copy only: two would each poll the client and auto-apply, racing on the same rune page.
+if (!app.requestSingleInstanceLock()) app.quit();
+app.on('second-instance', () => {
+  if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.focus();
+});
+
 const root = app.getAppPath();
 // Renamed from LOL_helper: keep its data folder so the downloaded game files and the settings stay.
 app.setPath('userData', join(app.getPath('appData'), 'LOL_helper'));
@@ -52,15 +60,17 @@ const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) 
 });
 ipcMain.handle('lcu:state', () => watcher.state);
 // The window only names the page (champion, mode, lane); the build sent to the client is composed here.
+// One write at a time: two overlapping applies would both delete and re-create the rune page.
+let applying: Promise<unknown> = Promise.resolve();
 ipcMain.handle('lcu:apply', (_e, id: unknown, mode: unknown, position: unknown, flash: unknown) =>
-  reply(async () => {
+  (applying = applying.catch(() => undefined).then(() => reply(async () => {
     const r = parsePageRequest(id, mode, position);
     if (!watcher.creds) throw new Error('عميل اللعبة غير مفتوح.');
     const page = await services.championPage(r.id, r.mode, r.position);
     const result = await applyAll(lcuCaller(watcher.creds), toPayloads(page), { inChampSelect: watcher.state.phase === 'ChampSelect', uid: randomUUID(), flash: flash === 'D' || flash === 'F' ? flash : null });
     watcher.note(`apply ${r.id}/${r.mode}/${r.position}: ${JSON.stringify(result)}`);
     return result;
-  }),
+  }))),
 );
 // Profile and match history come from the client itself; without it there is nothing to show.
 ipcMain.handle('profile:get', (_e, puuid: unknown) =>
@@ -87,7 +97,7 @@ const updates = appUpdater(() => mainWindow);
 ipcMain.handle('update:status', () => ({ version: app.getVersion(), status: updates.status }));
 ipcMain.handle('update:check', () => updates.check());
 ipcMain.handle('update:install', () => updates.install());
-ipcMain.handle('diagnostics:export', async () => {
+ipcMain.handle('diagnostics:export', () => reply(async () => {
   const { canceled, filePath } = await dialog.showSaveDialog({
     title: 'تصدير التشخيص',
     defaultPath: join(app.getPath('desktop'), `uncle-gragas-diagnostics-${Date.now()}.json`),
@@ -96,7 +106,7 @@ ipcMain.handle('diagnostics:export', async () => {
   if (canceled || !filePath) return { saved: null };
   await writeFile(filePath, JSON.stringify(watcher.report(app.getVersion()), null, 2));
   return { saved: filePath };
-});
+}));
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -114,6 +124,11 @@ function createWindow() {
     },
   });
   mainWindow = win;
+  // The hidden F7 window still counts as open: without this, closing the app left it running unseen.
+  win.on('closed', () => {
+    mainWindow = undefined;
+    app.quit();
+  });
   void win.loadFile(join(root, 'static/index.html'));
 }
 

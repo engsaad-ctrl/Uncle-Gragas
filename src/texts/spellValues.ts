@@ -330,7 +330,7 @@ function ratioText(s: Scaling, percent: boolean): string {
   const stat = s.icon ? `%i:${s.icon}%${s.suffix ?? ''}` : s.label; // cleanText turns %i:…% into the game's icon
   return percent ? `${nums} لكل 100 ${stat}` : s.icon ? `${nums} ${stat}` : `${nums} من ${stat}`;
 }
-const liveRatios = (v: Value) => v.scalings.filter((s) => s.coef.some((x) => x !== 0));
+const liveRatios = (v: Value) => v.scalings.filter((s) => s.coef.some((x) => x !== 0) || s.coefMax?.some((x) => x !== 0)); // 0%→50% by level is live
 const hasBase = (v: Value) => v.min.some((x) => x !== 0) || v.max.some((x) => x !== 0);
 // <nowrap> keeps "(+50% من قوة القدرة)" on one line; cleanText turns it into a span.
 const paint = (text: string, tag?: string) => (tag ? `<${tag}><nowrap>${text}</nowrap></${tag}>` : `<nowrap>${text}</nowrap>`);
@@ -360,7 +360,9 @@ function formatSplit(melee: Shown, ranged: Shown): string | null {
   if (!m || !r || m === r) return m;
   const rs = liveRatios(ranged.v);
   const ms = liveRatios(melee.v);
-  const sameRatio = !ranged.v.other && !ranged.percent && rs.length === 1 && ms.length === 1 && ms[0].label === rs[0].label;
+  // The short "(25% للمدى البعيد)" form only reads right for a plain stat ratio; stacks and crit/AS ratios have other units.
+  const plainRatio = rs.length === 1 && !rs[0].flat && !FRACTION_STATS.has(rs[0].tag ?? '');
+  const sameRatio = !ranged.v.other && !ranged.percent && plainRatio && ms.length === 1 && ms[0].label === rs[0].label;
   const sameBase = ranged.v.min.every((x, i) => x === melee.v.min[i] && ranged.v.max[i] === melee.v.max[i]);
   const short =
     sameRatio && !hasBase(ranged.v)
@@ -460,7 +462,7 @@ export function resolveSpellValues(text: string, spell: SpellData | undefined, o
   let unresolved = 0;
   // @Name@, @Name*100@, @spell.Other:Name@; @Melee~Ranged@ (with an optional % flag) pairs two values for melee/ranged.
   const out = kept.replace(
-    /@(?:spell\.(\w+):)?([\w.]+?)(?:~([\w.]+?))?(?:\*(-?[\d.]+))?(%)?@/g,
+    /@(?:spell\.(\w+):)?([\w.]+?)(?:~([\w.]+?))?(?:\*(-?[\d.]+))?(%)?@/gi, // "@Spell.X:Y@" too: some texts capitalise it
     (whole, ref: string | undefined, name: string, rangedName: string | undefined, mult?: string, pct?: string) => {
       if (LIVE_COUNTER.test(whole)) return whole;
       if (!ref && !rangedName && WORD_TOKENS[name.toLowerCase()] && !own.dataValue(name)) return WORD_TOKENS[name.toLowerCase()];

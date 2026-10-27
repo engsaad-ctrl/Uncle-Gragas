@@ -4,6 +4,7 @@ import { parseAppMode, parseIds, parseLane, parsePageRequest } from '../../src/m
 describe('parsePageRequest', () => {
   it('accepts known values', () => {
     expect(parsePageRequest(103, 'ranked', 'mid')).toEqual({ id: 103, mode: 'ranked', position: 'mid' });
+    expect(parsePageRequest(103, 'ranked', 'auto').position).toBe('auto'); // the champion's main lane, resolved in main
     expect(parsePageRequest(103, 'flex', 'top').mode).toBe('flex');
     expect(parsePageRequest(103, 'arena', 'mid').mode).toBe('arena');
   });

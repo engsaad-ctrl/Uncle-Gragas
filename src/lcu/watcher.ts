@@ -48,10 +48,11 @@ export class LcuWatcher {
     }
   }
 
-  start(intervalMs = 2000) {
+  start(intervalMs = 2000, idleMs = 8000) {
     const loop = async () => {
-      await this.tick();
-      this.timer = setTimeout(loop, intervalMs);
+      await this.tick().catch(() => undefined); // a throwing listener must not end the polling for good
+      // Finding the client starts PowerShell: every 2s for as long as League is closed was a constant load.
+      this.timer = setTimeout(loop, this.get ? intervalMs : idleMs);
     };
     void loop();
   }

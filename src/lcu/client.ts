@@ -31,6 +31,10 @@ export function lcuCaller(creds: LcuCredentials, host = '127.0.0.1'): LcuCall {
           let text = '';
           res.setEncoding('utf8');
           res.on('data', (chunk: string) => (text += chunk));
+          // A socket dropped mid-answer ends the stream with no 'end': without this the request never settles
+          // and the watcher's polling stops for good. Rejecting after a resolve is a no-op.
+          res.on('error', reject);
+          res.on('close', () => reject(new Error(`LCU ${method} ${path}: closed`)));
           res.on('end', () => {
             if (res.statusCode === 404) return resolve(null);
             // The client explains refusals in the body ("max pages reached" …): keep it for the diagnostics log.

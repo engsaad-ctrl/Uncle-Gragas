@@ -3,7 +3,7 @@ import { composeItemList, type ItemEntry } from '../app/itemList.js';
 import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
 import type { RawProfile } from '../lcu/profile.js';
-import { composeAllLanes, composeTierList, type TierRow } from '../app/tierList.js';
+import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { mcpCaller, OpggStats, type CallTool, type Counter, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
 import type { AugmentText } from '../texts/augments.js';
@@ -59,11 +59,14 @@ export function parseIds(v: unknown): number[] {
 }
 
 /** IPC input is untrusted: accept only known values. */
-export function parsePageRequest(id: unknown, mode: unknown, position: unknown): { id: number; mode: PageMode; position: Position } {
+/** A lane, or 'auto': the champion's main lane (pages opened from the champion list, blind pick). */
+export type PageLane = Position | 'auto';
+
+export function parsePageRequest(id: unknown, mode: unknown, position: unknown): { id: number; mode: PageMode; position: PageLane } {
   if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) throw new Error('bad champion id');
   if (!MODES.includes(mode as PageMode)) throw new Error('bad mode');
-  if (!POSITIONS.includes(position as Position)) throw new Error('bad position');
-  return { id, mode: mode as PageMode, position: position as Position };
+  if (position !== 'auto' && !POSITIONS.includes(position as Position)) throw new Error('bad position');
+  return { id, mode: mode as PageMode, position: position as PageLane };
 }
 
 /** Cache a promise; forget it on failure so the next call retries. */
@@ -132,10 +135,11 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     }
   }
 
-  async function championPage(id: number, mode: PageMode, position: Position): Promise<ChampionPage> {
+  async function championPage(id: number, mode: PageMode, lane: PageLane): Promise<ChampionPage> {
     const entry = (await champions()).find((c) => c.id === id);
     if (!entry) throw new Error(`unknown champion ${id}`);
     const laned = mode === 'ranked' || mode === 'flex';
+    const position: Position = lane !== 'auto' ? lane : laned ? mainLane((await stats.laneMeta().catch(() => null))?.data, entry.enName) : 'mid';
     const loadBuild = () =>
       stats
         // OP.GG requires a position even for ARAM, where it is ignored
@@ -212,7 +216,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const champion = pick ? ((await champions()).find((c) => c.id === pick.championId) ?? null) : null;
     const pageMode = ({ normal: 'ranked', aram: 'aram', mayhem: 'mayhem', arena: null } as const)[pick?.mode ?? 'arena'];
     // A failed build still leaves the augments to show.
-    const build = pick && pageMode ? await championPage(pick.championId, pageMode, pick.position ?? 'mid').catch(() => null) : null;
+    const build = pick && pageMode ? await championPage(pick.championId, pageMode, pick.position ?? 'auto').catch(() => null) : null;
     if (pick?.mode === 'mayhem') {
       const rated = build?.augments ?? [];
       const ratedIds = new Set(rated.map((a) => a.id));

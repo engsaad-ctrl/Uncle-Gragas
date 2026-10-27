@@ -38,3 +38,14 @@ export function composeAllLanes(byLane: Record<LanePosition, MetaRow[]>, champio
     .sort((a, b) => a.tier - b.tier || b.winRate - a.winRate)
     .map((r, i) => ({ ...r, rank: i + 1 }));
 }
+
+/** The lane the champion has the most games in (pages opened without a lane, blind pick); Mid when unknown. */
+export function mainLane(byLane: Record<LanePosition, MetaRow[]> | undefined, enName: string): LanePosition {
+  let best: LanePosition = 'mid';
+  let most = 0;
+  for (const lane of Object.keys(byLane ?? {}) as LanePosition[]) {
+    const games = byLane![lane].find((r) => r.champion === enName)?.games ?? 0;
+    if (games > most) [best, most] = [lane, games];
+  }
+  return best;
+}

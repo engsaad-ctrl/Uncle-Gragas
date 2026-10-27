@@ -20,11 +20,11 @@ declare global {
     lolh: {
       getAugments(): Promise<Reply<AugmentsResult>>;
       listChampions(): Promise<Reply<ChampionListEntry[]>>;
-      championPage(id: number, mode: PageMode, position: Position): Promise<Reply<ChampionPage>>;
+      championPage(id: number, mode: PageMode, position: Position | 'auto'): Promise<Reply<ChampionPage>>;
       listItems(mode: AppMode): Promise<Reply<Listed<ItemEntry>>>;
       tierList(position: LanePosition | 'all', mode: AppMode): Promise<Reply<Listed<TierRow>>>;
       lcuState(): Promise<LcuState>;
-      applyToClient(id: number, mode: PageMode, position: Position, flash: FlashKey | null): Promise<Reply<ApplyResult>>;
+      applyToClient(id: number, mode: PageMode, position: Position | 'auto', flash: FlashKey | null): Promise<Reply<ApplyResult>>;
       suggestions(position: LanePosition, enemies: number[], taken: number[]): Promise<Reply<Suggestion[]>>;
       profile(puuid?: string): Promise<Reply<ProfilePage>>;
       overlayData(): Promise<Reply<OverlayData>>;
@@ -36,7 +36,7 @@ declare global {
       installUpdate(): Promise<void>;
       onUpdateStatus(callback: (status: UpdateStatus) => void): void;
       onLcuState(callback: (state: LcuState) => void): void;
-      exportDiagnostics(): Promise<{ saved: string | null }>;
+      exportDiagnostics(): Promise<Reply<{ saved: string | null }>>;
     };
   }
 }
@@ -232,6 +232,14 @@ export function champLink(c: ChampionListEntry, href: string, caption = '', clas
 // Latest League client state, kept here so any view can read it; app.ts feeds it.
 let lcu: LcuState | undefined;
 export const lcuNow = () => lcu;
+let page = new AbortController();
+/** For listeners that belong to the page on screen: route() drops them when it shows another page. */
+export const pageSignal = () => page.signal;
+export function nextPage() {
+  page.abort();
+  page = new AbortController();
+}
+
 export function setLcu(s: LcuState) {
   lcu = s;
   document.dispatchEvent(new CustomEvent<LcuState>('lcu', { detail: s }));
@@ -297,12 +305,13 @@ function placeTip(anchor: Element) {
   const gap = 10;
   let top = a.bottom + gap;
   if (top + t.height > vh - 8) top = Math.max(8, a.top - t.height - gap); // no room below: flip above
-  const left = Math.min(Math.max(8, a.left + a.width / 2 - t.width / 2), vw - t.width - 8);
+  const left = Math.max(8, Math.min(a.left + a.width / 2 - t.width / 2, vw - t.width - 8));
   tipEl.style.top = `${top}px`;
   tipEl.style.left = `${left}px`;
 }
 
 function showTip(anchor: Element, c: TipContent) {
+  if (!anchor.isConnected) return; // re-rendered during the hover delay: it would place the card at the corner
   tipEl ??= document.body.appendChild(el('div', 'tooltip'));
   tipEl.className = `tooltip ${c.className ?? ''}`;
   const head = el('div', 'tip-head');
@@ -332,7 +341,10 @@ export function hideTip() {
 
 document.addEventListener('pointerover', (e) => {
   const hit = findTip(e.target);
-  if (!hit) return;
+  if (!hit) {
+    if (tipFor && !tipFor.isConnected) hideTip(); // its anchor was re-rendered away
+    return;
+  }
   if (hit[0] === tipFor) return;
   clearTimeout(tipTimer);
   tipFor = hit[0];

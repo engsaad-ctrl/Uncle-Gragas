@@ -120,7 +120,8 @@ function matchRow(m: MatchView): HTMLElement {
   score.append(
     ltr(el('b', '', `${m.kills} / ${m.deaths} / ${m.assists}`)),
     el('div', 'en', `KDA ${kdaRatio(m.kills, m.deaths, m.assists)}`),
-    el('div', 'en', `${m.cs} CS${minutes ? ` (${(m.cs / minutes).toFixed(1)})` : ''}${m.level ? ` · مستوى ${m.level}` : ''}`),
+    ltr(el('div', 'en', `${m.cs} CS${minutes ? ` (${(m.cs / minutes).toFixed(1)})` : ''}`)),
+    ...(m.level ? [el('div', 'en', `مستوى ${m.level}`)] : []),
   );
   const gear = el('div', 'match-items');
   for (const x of [...m.spells, ...m.items]) gear.append(withTooltip(icon(x.iconUrl, 'ic'), x));

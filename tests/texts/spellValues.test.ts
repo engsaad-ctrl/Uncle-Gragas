@@ -162,6 +162,13 @@ describe('resolveSpellValues (real augment spells)', () => {
     expect(text).toContain('0.3% لكل 1% %i:scaleAS% إضافي');
   });
 
+  it('reads "@Spell.X:Y@" written with a capital S, and cleanText never shows a raw placeholder', () => {
+    const other: SpellData = { DataValues: [{ name: 'SlowAmount', values: [0.2, 0.3] }] };
+    const r = resolveSpellValues('@Spell.GlacialStorm:SlowAmount*100@%', { DataValues: [] }, { ranks: 1, spellRef: (n) => (n.toLowerCase() === 'glacialstorm' ? other : undefined) });
+    expect(r.text).not.toContain('@');
+    expect(cleanText('ضرر @A~B@ و @X*-100@ و @spell.Q:Y@')).not.toContain('@');
+  });
+
   it('leaves text without placeholders untouched', () => {
     expect(resolveSpellValues('نص عادي', undefined)).toEqual({ text: 'نص عادي', unresolved: 0 });
   });

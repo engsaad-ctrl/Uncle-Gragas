@@ -1,7 +1,7 @@
 import type { TierRow } from '../app/tierList.js';
 import type { AppMode } from '../main/services.js';
 import type { LanePosition } from '../stats/opgg.js';
-import { el, getAppMode, icon, isError, MODE_TITLE, TIER_LETTER, nameEl, PAGE_MODE, pct, pills, shownName, stagger } from './dom.js';
+import { el, getAppMode, getNameLang, icon, isError, MODE_TITLE, TIER_LETTER, nameEl, PAGE_MODE, pct, pills, shownName, stagger } from './dom.js';
 import { timeAgo } from './format.js';
 import { normalizeArabic } from './search.js';
 
@@ -20,7 +20,7 @@ export async function tierListView(root: HTMLElement, alive: () => boolean, lane
   const aram = mode === 'aram' || mode === 'mayhem'; // the same games: no lanes, one list
   const head = el('div', 'view-head');
   const title = el('div', 'title');
-  title.append(el('h1', '', aram ? `Tier List · ${MODE_TITLE[mode]}` : `Tier List · ${LANES.find(([v]) => v === lane)![1]}`));
+  title.append(el('h1', '', aram || mode === 'arena' ? `Tier List · ${MODE_TITLE[mode]}` : `Tier List · ${LANES.find(([v]) => v === lane)![1]}`));
   head.append(title);
   const info = el('div', 'tier-info');
   head.append(info);
@@ -101,7 +101,7 @@ export async function tierListView(root: HTMLElement, alive: () => boolean, lane
       if (r.lane) c.append(icon(laneIcon(r.lane)));
       return c;
     } }] : []),
-    { label: 'البطل', width: 'minmax(170px, 2fr)', value: (r) => r.enName, cell: (r) => {
+    { label: 'البطل', width: 'minmax(170px, 2fr)', value: (r) => shownName(r), cell: (r) => {
       const c = el('span', 'who');
       if (r.portraitUrl) c.append(icon(r.portraitUrl));
       c.append(nameEl('span', r));
@@ -147,7 +147,7 @@ export async function tierListView(root: HTMLElement, alive: () => boolean, lane
     const key = cols[sortBy].value;
     const rows = [...shown].sort((x, y) => {
       const [a, b] = [key(x), key(y)];
-      const d = typeof a === 'string' ? a.localeCompare(String(b)) : a - (b as number);
+      const d = typeof a === 'string' ? a.localeCompare(String(b), getNameLang()) : a - (b as number);
       return asc ? d : -d;
     });
     const header = el('div', 'tier-row tier-head');

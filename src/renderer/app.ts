@@ -6,7 +6,7 @@ import type { LanePosition, Position } from '../stats/opgg.js';
 import { augmentsView } from './augmentsView.js';
 import { championsView } from './championsView.js';
 import { championView } from './championView.js';
-import { applyLines, byId, el, icon, getAppMode, getFlashKey, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setFlashKey, setLcu, setNameLang, toast } from './dom.js';
+import { applyLines, byId, el, icon, lcuNow, nextPage, getAppMode, getFlashKey, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setFlashKey, setLcu, setNameLang, toast } from './dom.js';
 import { itemsView } from './itemsView.js';
 import { profileView } from './profileView.js';
 import { tierListView } from './tierListView.js';
@@ -24,6 +24,7 @@ let renderId = 0;
  * #/tierlist[/<lane>], #/profile[/<puuid>]. The side-menu mode (normal/aram/mayhem/arena) is app-wide state, not part of the route.
  */
 function route() {
+  nextPage();
   const token = ++renderId;
   const alive = () => token === renderId; // a newer route started: drop late results
   const [, view = 'champions', id, mode, position] = location.hash.split('/');
@@ -37,7 +38,7 @@ function route() {
   else if (view === 'tierlist') void tierListView(root, alive, (POSITIONS.includes(id) ? id : 'all') as LanePosition | 'all');
   else if (view === 'profile') void profileView(root, alive, id || undefined);
   else if (view === 'champion' && Number(id) > 0) {
-    void championView(root, alive, Number(id), (PAGE_MODES.includes(mode) ? mode : PAGE_MODE[app]) as PageMode, (POSITIONS.includes(position) ? position : 'mid') as Position);
+    void championView(root, alive, Number(id), (PAGE_MODES.includes(mode) ? mode : PAGE_MODE[app]) as PageMode, (POSITIONS.includes(position) ? position : 'auto') as Position | 'auto');
   } else void championsView(root, alive);
 }
 
@@ -48,7 +49,7 @@ byId('modes').addEventListener('click', (e) => {
   const [, view, id, , position] = location.hash.split('/');
   // On a champion page, switch its build to the new mode; on augments, drop any explicit filter.
   const next =
-    view === 'champion' && id ? `#/champion/${id}/${PAGE_MODE[getAppMode()]}/${position ?? 'mid'}` : view === 'augments' ? '#/augments' : location.hash;
+    view === 'champion' && id ? `#/champion/${id}/${PAGE_MODE[getAppMode()]}/${position ?? 'auto'}` : view === 'augments' ? '#/augments' : location.hash;
   if (next === location.hash) route(); // same address: hashchange will not fire
   else location.hash = next;
 });
@@ -85,10 +86,11 @@ try {
 } catch {
   // storage unavailable: keep the default
 }
-const overlayNote = el('p', 'hint', 'اضغط F7 أثناء المباراة لتظهر تعزيزات بطلك فوق اللعبة. يحتاج وضع العرض في اللعبة: Borderless (نافذة بلا حواف).');
+const OVERLAY_HINT = 'اضغط F7 أثناء المباراة لتظهر تعزيزات بطلك فوق اللعبة. يحتاج وضع العرض في اللعبة: Borderless (نافذة بلا حواف).';
+const overlayNote = el('p', 'hint', OVERLAY_HINT);
 const setOverlay = async (on: boolean) => {
   const ok = await window.lolh.setOverlayEnabled(on);
-  if (on && !ok) overlayNote.textContent = 'تعذّر حجز زر F7: برنامج آخر يستخدمه.';
+  overlayNote.textContent = on && !ok ? 'تعذّر حجز زر F7: برنامج آخر يستخدمه.' : OVERLAY_HINT;
 };
 void setOverlay(overlayOn);
 const exportButton = el('button', 'pill', 'تصدير التشخيص');
@@ -96,7 +98,8 @@ exportButton.type = 'button';
 const exportNote = el('p', 'hint', 'يحفظ ملفاً بردود عميل اللعبة بدون اسمك أو معرّفات حسابك، لترسله عند وجود مشكلة.');
 exportButton.addEventListener('click', async () => {
   const r = await window.lolh.exportDiagnostics();
-  if (r.saved) exportNote.textContent = `حُفظ في: ${r.saved}`;
+  if (isError(r)) exportNote.textContent = `تعذّر الحفظ: ${r.error}`;
+  else if (r.saved) exportNote.textContent = `حُفظ في: ${r.saved}`;
 });
 const updateButton = el('button', 'pill', 'تحقق من التحديثات');
 updateButton.type = 'button';
@@ -234,6 +237,7 @@ async function onLcu(state: LcuState) {
     if (!championNames) {
       const list = await window.lolh.listChampions();
       if (!isError(list)) championNames = new Map(list.map((c) => [c.id, c]));
+      if (state !== lcuNow()) return; // a newer state arrived while the list loaded (a dodge…): it handles itself
     }
     const c = championNames?.get(state.championId);
     if (c) text += ` · ${getNameLang() === 'ar' ? c.name : c.enName}`;
@@ -248,7 +252,7 @@ async function onLcu(state: LcuState) {
       lastApplyKey = key;
       // Not awaited: opening the page below should not wait for the client.
       void window.lolh
-        .applyToClient(state.championId, PAGE_MODE[state.mode], state.position ?? 'mid', getFlashKey())
+        .applyToClient(state.championId, PAGE_MODE[state.mode], state.position ?? 'auto', getFlashKey())
         .then((r) => {
           const lines = isError(r) ? [] : applyLines(r);
           toast(isError(r) ? [`✗ ${r.error}`] : lines.length ? ['طُبّق في العميل:', ...lines.map((l) => l.text)] : ['لا يوجد بناء لتطبيقه في هذا الطور.']);
@@ -262,7 +266,7 @@ async function onLcu(state: LcuState) {
   if (key === lastAutoKey) return;
   lastAutoKey = key;
   if (state.mode && state.mode !== getAppMode()) setAppMode(state.mode);
-  const target = `#/champion/${state.championId}/${PAGE_MODE[getAppMode()]}/${state.position ?? 'mid'}`;
+  const target = `#/champion/${state.championId}/${PAGE_MODE[getAppMode()]}/${state.position ?? 'auto'}`;
   if (location.hash === target) route();
   else location.hash = target;
 }

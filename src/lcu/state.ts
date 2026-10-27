@@ -38,12 +38,16 @@ export function toLcuState(phase: string, gameflow: unknown, champSelect: unknow
   const team = (v: unknown) => (Array.isArray(v) ? v : []).map(obj);
   const me = team(session?.myTeam).find((p) => num(p?.cellId) === cell);
   const picked = (list: Json[]) => list.map((p) => num(p?.championId) || 0).filter((id) => id > 0);
-  const locked = num(me?.championId) || 0;
+  const selected = num(me?.championId) || 0;
   const hover = num(me?.championPickIntent) || 0;
+  // championId fills in as soon as the player clicks a champion on their turn; the lock-in is the pick action
+  // completing. ARAM and Mayhem have no pick actions (the champion is given), so there a champion is final.
+  const picks = (Array.isArray(session?.actions) ? session.actions.flat() : []).map(obj).filter((a) => num(a?.actorCellId) === cell && a?.type === 'pick');
+  const locked = selected > 0 && (picks.length === 0 || picks.some((a) => a?.completed === true));
   return {
     ...base,
-    championId: locked || hover || null,
-    locked: locked > 0,
+    championId: selected || hover || null,
+    locked,
     position: LANES[String(me?.assignedPosition ?? '')] ?? null,
     enemies: picked(team(session?.theirTeam)),
     allies: picked(team(session?.myTeam).filter((p) => p !== me)),
