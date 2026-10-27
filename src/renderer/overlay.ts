@@ -2,7 +2,7 @@
 
 import type { OverlayData } from '../main/services.js';
 import { RARITY_LABEL } from './augmentsView.js';
-import { byId, el, icon, isError, shownName } from './dom.js';
+import { byId, el, getNameLang, icon, isError, shownName } from './dom.js';
 import { filterAugments } from './search.js';
 import { applyRandomTheme } from './theme.js';
 
@@ -14,15 +14,19 @@ let open: number | undefined;
 
 function render() {
   if (!data) return;
-  const shown = filterAugments(data.augments, search.value, 'all', 'all');
+  // Rarity first (prismatic, gold, silver, special), then name, like the augments page.
+  const order = Object.keys(RARITY_LABEL);
+  const shown = filterAugments(data.augments, search.value, 'all', 'all').sort(
+    (x, y) => order.indexOf(x.rarity) - order.indexOf(y.rarity) || shownName(x).localeCompare(shownName(y), getNameLang()),
+  );
   list.replaceChildren(
-    ...shown.slice(0, 60).map((a, i) => {
+    ...shown.slice(0, 60).map((a) => {
       const row = el('button', `ov-row r-${a.rarity}${open === a.id ? ' open' : ''}`);
       row.type = 'button';
       const name = el('div', 'ov-name');
       name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
       row.append(icon(a.iconUrl), name);
-      if (data!.rated && a.performance !== undefined) row.append(el('span', 'ov-score', `#${i + 1} · ${a.performance.toFixed(0)}`));
+      if (data!.rated && a.performance !== undefined) row.append(el('span', 'ov-score', `أداء ${a.performance.toFixed(0)}`));
       if (open === a.id) {
         const desc = el('div', 'ov-desc');
         if (a.html) desc.innerHTML = a.html; // safe: produced by cleanText (escaped text, whitelisted tags only)
@@ -48,7 +52,7 @@ async function load() {
   if (reply.champion) champ.src = reply.champion.portraitUrl;
   byId('ov-title').textContent = reply.champion ? `تعزيزات ${shownName(reply.champion)}` : 'كل التعزيزات';
   byId('ov-sub').textContent = reply.rated
-    ? 'Mayhem · مرتبة حسب الأداء لهذا البطل'
+    ? 'Mayhem · مع مؤشر أداء كل تعزيز لهذا البطل'
     : reply.mode === 'arena'
       ? 'Arena · ابحث عن التعزيزات التي ظهرت لك'
       : 'اختر بطلاً في شاشة الاختيار ليظهر ترتيبه';
