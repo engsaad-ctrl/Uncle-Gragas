@@ -265,26 +265,18 @@ h1, h2, .sub, .status, .menu a, .menu button, .menu-title, .brand { text-shadow:
 .settings-pop .hint { margin-top: 6px; font-size: 11px; }
 
 /* Collapsible rail: icons only, expands over the page on hover (or while settings are open) */
-:root { --rail: 68px; --rail-open: 236px; }
+:root { --rail: 220px; --rail-open: 220px; } /* always open: a rail that slid open on every mouse pass tired the eye */
 body { display: block; }
-.side { position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 30; width: var(--rail); overflow: hidden; padding: 16px 10px; transition: width .25s ease, box-shadow .25s ease, background-color .25s ease; }
-.side:hover, .side.pinned { width: var(--rail-open); box-shadow: -12px 0 32px #0009; background: color-mix(in srgb, var(--bg) 82%, transparent); }
+.side { position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 30; width: var(--rail); overflow: hidden; padding: 16px 10px; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: none; }
 #view { margin-inline-start: var(--rail); }
 .side .brand { padding: 0 4px 14px; }
 .side .brand img { flex: none; }
 .menu a, .menu button, .settings-btn { white-space: nowrap; padding-inline: 13px; }
 .menu svg, .settings-btn svg { flex: none; }
 .side .brand .name, .menu a span, .menu button span, .settings-btn span, .menu-title span {
-  opacity: 0; transform: translateX(8px); transition: opacity .18s ease, transform .18s ease;
+  opacity: 1;
 }
-.side:hover .brand .name, .side.pinned .brand .name,
-.side:hover .menu a span, .side.pinned .menu a span,
-.side:hover .menu button span, .side.pinned .menu button span,
-.side:hover .settings-btn span, .side.pinned .settings-btn span,
-.side:hover .menu-title span, .side.pinned .menu-title span { opacity: 1; transform: none; transition-delay: .06s; }
 .menu-title { position: relative; height: 18px; margin: 14px 8px 4px; white-space: nowrap; }
-.menu-title::before { content: ""; position: absolute; inset-inline: 6px; top: 50%; border-top: 1px solid var(--line); transition: opacity .18s; }
-.side:hover .menu-title::before, .side.pinned .menu-title::before { opacity: 0; }
 .modes .dot, .modes small { display: none; }
 .modes button.active svg { color: var(--accent); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 60%, transparent)); }
 .settings-pop { min-width: calc(var(--rail-open) - 20px); }
@@ -294,8 +286,7 @@ body { display: block; }
 .lcu-status .dot { flex: none; width: 10px; height: 10px; margin-inline: 5px; border-radius: 50%; background: #6b6b80; }
 .lcu-status.on .dot { background: var(--heal); }
 .lcu-status.live .dot { background: var(--accent); box-shadow: 0 0 0 0 var(--accent); animation: pulse 1.6s ease-out infinite; }
-.lcu-status span { min-width: 0; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity .18s ease; }
-.side:hover .lcu-status span, .side.pinned .lcu-status span { opacity: 1; }
+.lcu-status span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
 
 /* Cooldown/cost per ability level (level 1 is the right-most column in RTL) */
