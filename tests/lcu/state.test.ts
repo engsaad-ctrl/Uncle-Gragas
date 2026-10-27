@@ -40,6 +40,8 @@ describe('toLcuState', () => {
     expect(toLcuState('ChampSelect', flow('KIWI', 2400, 12), select({ championId: 1 })).mode).toBe('mayhem');
     expect(toLcuState('ChampSelect', flow('URF', 900), select({ championId: 1 })).mode).toBeNull();
     expect(toLcuState('ChampSelect', flow('ARAM', 2400, 12), select({ championId: 1 })).mode).toBe('mayhem'); // Mayhem's queue, named ARAM
+    expect(toLcuState('ChampSelect', flow('KIWI_V2', 2500, 12), select({ championId: 1 })).mode).toBe('mayhem'); // unknown name on Howling Abyss
+    expect(toLcuState('ChampSelect', flow('ARAM', 450, 12), select({ championId: 1 })).mode).toBe('aram');
   });
 
   it('carries no champion outside champ select', () => {

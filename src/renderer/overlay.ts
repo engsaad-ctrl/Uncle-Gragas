@@ -81,6 +81,8 @@ function icons(xs: Describable[]) {
 function renderBuild(p: ChampionPage) {
   if (p.buildError) return buildBox.replaceChildren(el('p', 'missing', p.buildError));
   const out: HTMLElement[] = [];
+  // No stats site has Mayhem builds: say so, or the ARAM build looks like a wrong mode.
+  if (p.mode === 'mayhem') out.push(el('p', 'hint', 'بناء ARAM: لا توجد إحصائيات بناء خاصة بـ Mayhem، فهذا أقرب بناء متاح. التعزيزات في تبويبها خاصة بـ Mayhem.'));
   if (p.stats) out.push(el('p', 'en', `نسبة الفوز ${pct(p.stats.winRate)} · ${p.stats.games.toLocaleString('en')} مباراة`));
   if (p.skillPriority.length || p.skillOrder.length) {
     const prio = el('div', 'ov-skills');

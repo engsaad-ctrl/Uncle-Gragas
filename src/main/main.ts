@@ -86,7 +86,8 @@ ipcMain.handle('profile:get', (_e, puuid: unknown) =>
 // Over-the-game window (F7): augments of the picked champion, ranked for Mayhem, all of them for Arena.
 const overlay = overlayWindow(root);
 const OVERLAY_KEY = 'F7';
-ipcMain.handle('overlay:data', () => reply(() => services.overlayData(lastPick)));
+// The game's mode as the client reports it now (it keeps it during the match) wins over the one remembered at the pick.
+ipcMain.handle('overlay:data', () => reply(() => services.overlayData(lastPick && { ...lastPick, mode: watcher.state.mode ?? lastPick.mode })));
 ipcMain.handle('overlay:hide', () => overlay.hide());
 ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
   globalShortcut.unregister(OVERLAY_KEY);

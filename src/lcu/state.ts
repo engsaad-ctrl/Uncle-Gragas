@@ -34,7 +34,9 @@ export function toLcuState(phase: string, gameflow: unknown, champSelect: unknow
   const queue = obj(obj(obj(gameflow)?.gameData)?.queue);
   const gameMode = typeof queue?.gameMode === 'string' ? queue.gameMode : null;
   const queueId = num(queue?.id);
-  const mode = queueId !== null && MAYHEM_QUEUES.has(queueId) ? 'mayhem' : gameMode ? (MODES[gameMode] ?? null) : null;
+  const known = gameMode ? MODES[gameMode] : undefined;
+  // A mode name we do not know on Howling Abyss (map 12) is Mayhem: plain ARAM always reports "ARAM".
+  const mode = (queueId !== null && MAYHEM_QUEUES.has(queueId)) || (!known && num(queue?.mapId) === 12) ? 'mayhem' : (known ?? null);
   const base: LcuState = { ...DISCONNECTED, phase, gameMode, queueId, mode };
   if (phase !== 'ChampSelect') return base;
 
