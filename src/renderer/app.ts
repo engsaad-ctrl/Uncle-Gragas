@@ -6,13 +6,13 @@ import type { LanePosition, Position } from '../stats/opgg.js';
 import { augmentsView } from './augmentsView.js';
 import { championsView } from './championsView.js';
 import { championView } from './championView.js';
-import { applyLines, byId, el, getAppMode, getFlashKey, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setFlashKey, setLcu, setNameLang, toast } from './dom.js';
+import { applyLines, byId, el, icon, getAppMode, getFlashKey, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setFlashKey, setLcu, setNameLang, toast } from './dom.js';
 import { itemsView } from './itemsView.js';
 import { profileView } from './profileView.js';
 import { tierListView } from './tierListView.js';
-import { applyLook, getLook, nextTheme } from './theme.js';
+import { applyRandomTheme, nextTheme } from './theme.js';
 
-applyLook();
+applyRandomTheme();
 
 const PAGE_MODES = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
 const POSITIONS = ['top', 'jungle', 'mid', 'adc', 'support'];
@@ -64,7 +64,6 @@ const section = (title: string, ...body: HTMLElement[]) => {
 const bgButton = el('button', 'pill', 'تغيير الخلفية');
 bgButton.type = 'button';
 bgButton.addEventListener('click', () => nextTheme());
-bgButton.hidden = getLook() !== 'art';
 // Auto-open the champion page during champ select (on by default).
 let autoOpen = true;
 try {
@@ -138,6 +137,13 @@ window.lolh.onUpdateStatus((s) => {
   showUpdate(s);
   if (s.state === 'ready') toast([`النسخة ${s.version} جاهزة: أعد التشغيل من الإعدادات للتحديث.`]);
 });
+// Flash's own icon on the D and F choices, so the setting reads at a glance.
+const FLASH_ICON = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/data/spells/icons2d/summoner_flash.png';
+const flashPills = pills('مكان الفلاش', [['keep', 'كما هو'], ['D', 'D'], ['F', 'F']], getFlashKey() ?? 'keep', (v) => {
+  setFlashKey(v === 'D' || v === 'F' ? v : null);
+  route(); // the build page shows the spells in key order
+});
+for (const b of [...flashPills.children].slice(1)) b.prepend(icon(FLASH_ICON, 'flash-ico'));
 settings.append(
   section('التحديثات', updateButton, updateNote, versionNote),
   section(
@@ -165,11 +171,8 @@ settings.append(
   ),
   section(
     'مكان الفلاش',
-    pills('مكان الفلاش', [['keep', 'كما في عميلك'], ['D', 'D'], ['F', 'F']], getFlashKey() ?? 'keep', (v) => {
-      setFlashKey(v === 'D' || v === 'F' ? v : null);
-      route(); // the build page shows the spells in key order
-    }),
-    el('p', 'hint', 'يُطبَّق عند وضع التعاويذ في شاشة الاختيار، ويظهر بنفس الترتيب في صفحة البناء.'),
+    flashPills,
+    el('p', 'hint', '«كما هو» يُبقي الفلاش حيث وضعته في عميل اللعبة. D أو F: يُطبَّق في شاشة الاختيار ويظهر بنفس الترتيب في صفحة البناء.'),
   ),
   section(
     'نافذة التعزيزات فوق اللعبة (F7)',
@@ -193,15 +196,7 @@ settings.append(
     }),
     el('p', 'hint', 'الأوصاف بالعربي دائماً.'),
   ),
-  section(
-    'الشكل',
-    pills('الشكل', [['art', 'خلفيات الأبطال'], ['navy', 'كحلي (مثل u.gg)']], getLook(), (v) => {
-      applyLook(v === 'art' ? 'art' : 'navy');
-      bgButton.hidden = v !== 'art';
-    }),
-    bgButton,
-    el('p', 'hint', 'خلفيات الأبطال تتغير تلقائياً مع كل تشغيل.'),
-  ),
+  section('الخلفية', bgButton, el('p', 'hint', 'تتغير الخلفية تلقائياً مع كل تشغيل.')),
 );
 const setSettingsOpen = (open: boolean) => {
   settings.hidden = !open;

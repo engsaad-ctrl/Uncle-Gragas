@@ -260,7 +260,7 @@ h1, h2, .sub, .status, .menu-title, .brand { text-shadow: 0 1px 2px #0009; }
 .settings-pop[hidden] { display: none; }
 .settings-pop h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
 .settings-pop .pills { flex-wrap: nowrap; }
-.settings-pop .pill { flex: 1; }
+.settings-pop .pill { flex: 1; display: inline-flex; align-items: center; justify-content: center; padding-inline: 8px; white-space: nowrap; }
 .settings-pop .hint { margin-top: 6px; font-size: 11px; }
 
 /* Collapsible rail: icons only, expands over the page on hover (or while settings are open) */
@@ -421,4 +421,4 @@ a.band-champ:hover { background: var(--panel-2); }
 .band-champ > img:first-child { width: 36px; height: 36px; border-radius: 6px; }
 .band-champ .band-lane { width: 16px; height: 16px; }
 .band-champ span { display: flex; flex-direction: column; } .band-champ small { font-size: 11px; }
-
+.flash-ico { width: 18px; height: 18px; margin-inline-end: 6px; vertical-align: -4px; border-radius: 4px; }
