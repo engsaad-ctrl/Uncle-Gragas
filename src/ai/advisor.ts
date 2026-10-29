@@ -18,12 +18,27 @@ export type BuildStyle = (typeof BUILD_STYLES)[number];
 
 export interface AdviceInput {
   champion: { name: string; enName: string; abilities: { key: string; enName: string; text: string }[] };
-  augments: { id: number; name: string; enName: string; text: string }[];
+  /** tier: how strong the augment is on this champion in real Mayhem games ("S+" to "C"), when known. */
+  augments: { id: number; name: string; enName: string; text: string; tier?: string }[];
   /** Every finished item and boots on the map. */
   pool: { id: number; enName: string; gold: number; boots: boolean; text: string }[];
   /** The champion's usual build from match data. It is ARAM's (no Mayhem build data exists), so augments are not in it. */
   usual: number[];
+  /**
+   * Mayhem games read from the players' own clients: this champion's, and those of them that took one of the chosen
+   * augments, with the items bought (most bought first). A small sample: a handful of players.
+   */
+  played?: { games: number; items: PickCount[]; withAugments: number; itemsWithAugments: PickCount[] };
 }
+
+export interface PickCount {
+  id: number;
+  games: number;
+  wins: number;
+}
+
+/** Below this many games, the real games are mentioned but not trusted. */
+export const FEW_GAMES = 5;
 
 export interface Advice {
   style: BuildStyle;
@@ -112,6 +127,7 @@ const RULES = `You recommend League of Legends ARAM: Mayhem item builds for one 
 A single augment can change the whole build: one that adds magic damage to attacks can turn an AD marksman into AP, an attack-speed or on-hit augment favours on-hit items, and an "Upgrade <item>" augment makes that item a priority.
 The usual build is from ordinary ARAM games and ignores augments: keep its items when they still fit, replace them when an augment points elsewhere.
 Only use item ids from the item list. A build is six different items with at most one pair of boots (boots first when the champion buys boots).
+Real Mayhem games, when listed, show what players actually bought and how often they won. With ${FEW_GAMES} or more games they outweigh your reading of the texts; with fewer, treat them as a hint only and say in the summary that there are too few real games to confirm the build.
 Write every reason and summary in Arabic, short and concrete (one sentence, numbers when you have them). Item and champion names stay in English. Never name any website or data provider.`;
 
 // The first real run read "Vulnerability" (damage over time and item effects can crit, +25% crit) as a plain crit
@@ -145,14 +161,25 @@ export function contextText(input: AdviceInput): string {
     `Champion: ${c.enName} (${c.name})`,
     ...c.abilities.map((a) => `${a.key} ${a.enName}: ${plain(a.text)}`),
     '',
-    'Chosen augments (id | name | effect):',
-    ...input.augments.map((a) => `${a.id} | ${a.enName} (${a.name}) | ${plain(a.text)}`),
+    'Chosen augments (id | name | tier on this champion | effect):',
+    ...input.augments.map((a) => `${a.id} | ${a.enName} (${a.name}) | ${a.tier ?? 'unknown'} | ${plain(a.text)}`),
     '',
     `Usual ARAM build: ${input.usual.length ? input.usual.map((id) => `${id} ${name(id)}`).join(', ') : 'none'}`,
     '',
+    ...playedText(input.played, name),
     'Item list (id | name | cost | boots | effect):',
     ...[...input.pool].sort((a, b) => a.id - b.id).map((i) => `${i.id} | ${i.enName} | ${i.gold}g | ${i.boots ? 'boots' : '-'} | ${plain(i.text).replace(/\n+/g, ' ')}`),
   ].join('\n');
+}
+
+function playedText(p: AdviceInput['played'], name: (id: number) => string): string[] {
+  if (!p?.games) return ['Real Mayhem games of this champion: none recorded yet.', ''];
+  const list = (items: PickCount[]) => items.map((i) => `${i.id} ${name(i.id)} (${i.games} games, ${i.wins} wins)`).join(', ') || 'none';
+  return [
+    `Real Mayhem games of this champion: ${p.games}${p.games < FEW_GAMES ? ' (too few)' : ''}. Items bought: ${list(p.items)}`,
+    `Of them with one of the chosen augments: ${p.withAugments}${p.withAugments < FEW_GAMES ? ' (too few)' : ''}. Items bought: ${list(p.itemsWithAugments)}`,
+    '',
+  ];
 }
 
 /** A passive as the model wrote it, held to the calculator's schema; anything that does not fit is dropped. */

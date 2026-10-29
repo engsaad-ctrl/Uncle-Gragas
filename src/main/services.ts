@@ -280,9 +280,16 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     if (!chosen.length) throw new Error('اختر تعزيزاً واحداً على الأقل.');
     const v = await gameVersion();
     const key = [...new Set(chosen.map((a) => a.id))].sort((a, b) => a - b).join('-');
+    // The stored games: a damaged file only means the advice goes without them.
+    const stored = await readMayhemGames(mayhemFile).catch(() => []);
+    const ids = new Set(chosen.flatMap((a) => a.ids));
+    const champ = mayhemStats(stored, championId);
+    const withThem = mayhemStats(stored.map((g) => ({ ...g, players: g.players.filter((p) => p.augments.some((id) => ids.has(id))) })), championId);
+    // Asked again only for a new patch or a new game of this champion with these augments.
+    const cacheKey = `${v}|${withThem.championGames}`;
     const r = await diskCache(
       join(cacheDir, 'ai', `${championId}-${key}.json`),
-      (e) => v === null || e.key === v,
+      (e) => v === null || e.key === cacheKey,
       async () => {
         const [page, pool, bin, gameItems] = await Promise.all([
           championPage(championId, 'mayhem', 'auto'),
@@ -291,20 +298,22 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
           loadGameItems(game, v),
         ]);
         const usual = [...new Set([page.boots, page.core, page.fourth[0], page.fifth[0], page.sixth[0]].flatMap((c) => c?.items.map((i) => i.id) ?? []))].slice(0, 6);
+        const shop = pool.list.filter((i) => (i.group === 'legendary' || i.group === 'boots') && gameItems[i.id]);
+        const shopIds = new Set(shop.map((i) => i.id));
+        const bought = (s: typeof champ) => s.items.filter((i) => shopIds.has(i.id)).slice(0, 10);
         return adviseBuild(
           post,
           {
             champion: { name: entry.name, enName: entry.enName, abilities: page.champion.abilities.map((a) => ({ key: a.key, enName: a.enName, text: a.html })) },
-            augments: chosen.map((a) => ({ id: a.id, name: a.name, enName: a.enName, text: a.html })),
-            pool: pool.list
-              .filter((i) => (i.group === 'legendary' || i.group === 'boots') && gameItems[i.id])
-              .map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: i.html })),
+            augments: chosen.map((a) => ({ id: a.id, name: a.name, enName: a.enName, text: a.html, tier: page.augments.find((r) => r.id === a.id)?.tierLabel })),
+            pool: shop.map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: i.html })),
             usual: usual.filter((id) => gameItems[id]),
+            played: { games: champ.championGames, items: bought(champ), withAugments: withThem.championGames, itemsWithAugments: bought(withThem) },
           },
           (builds, effects) => compareBuilds({ bin, items: gameItems, builds, effects }),
         );
       },
-      { key: v ?? undefined },
+      { key: cacheKey },
     );
     return r.data;
   }

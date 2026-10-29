@@ -38,6 +38,18 @@ describe('contextText', () => {
   it('lists the items in id order whatever order they come in', () => {
     expect(contextText({ ...input, pool: [...input.pool].reverse() })).toBe(contextText(input));
   });
+
+  it('gives the real games with their counts, and flags a small sample', () => {
+    const text = contextText({
+      ...input,
+      augments: [{ ...input.augments[0], tier: 'S+' }],
+      played: { games: 12, items: [{ id: 3031, games: 9, wins: 5 }], withAugments: 2, itemsWithAugments: [{ id: 3089, games: 2, wins: 2 }] },
+    });
+    expect(text).toContain('1205 | Vulnerability (الضعف) | S+ |');
+    expect(text).toContain("games of this champion: 12. Items bought: 3031 Infinity Edge (9 games, 5 wins)");
+    expect(text).toContain("chosen augments: 2 (too few). Items bought: 3089 Rabadon's Deathcap (2 games, 2 wins)");
+    expect(contextText(input)).toContain('none recorded yet');
+  });
 });
 
 describe('adviseBuild', () => {
