@@ -156,7 +156,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
 
   /** arammayhem.com's ranking matched to the game's augments; OP.GG's when the site fails or none of its names match. */
   async function mayhemRanking(id: number, alias: string): Promise<Fetched<MayhemAugmentStat[]> | null> {
-    const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    // The site writes "Quest: Steel Your Heart"; the game's Mayhem copy is just "Steel Your Heart".
+    const key = (s: string) => s.toLowerCase().replace(/^quest:/, '').replace(/[^a-z0-9]/g, '');
     const fromSite = await siteAugments(alias, { cacheDir, fetchImpl }).then(
       async (r) => {
         const byName = new Map((await augments()).augments.filter((a) => a.modes.includes('mayhem')).map((a) => [key(a.enName), a]));
