@@ -213,7 +213,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     if (p.stats.banRate !== null) notes.push(`نسبة الحظر ${pct(p.stats.banRate)}`);
     notes.push(`${p.stats.games.toLocaleString('en')} مباراة`);
   }
-  if (p.mode === 'mayhem') notes.push('البناء نفسه بناء ARAM');
+  if (p.mode === 'mayhem') notes.push(p.siteBuild ? 'الأيتمات والقدرات من مباريات Mayhem، والرونز والتعاويذ من ARAM' : 'البناء نفسه بناء ARAM');
   if (p.stale) notes.push('بيانات محفوظة (تعذّر التحديث)');
   if (p.fetchedAt) notes.push(`آخر تحديث ${new Date(p.fetchedAt).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'short', timeStyle: 'short' })}`);
   top.push(el('p', 'status', notes.join(' · ')));
@@ -344,11 +344,12 @@ function renderPage(p: ChampionPage): HTMLElement[] {
         if (i) wrap.append(el('span', 'arrow', '←'));
         wrap.append(iconButton(it));
       });
-      s.append(wrap, el('small', '', `${pct(p.core.winRate)} فوز · ${p.core.games.toLocaleString('en')} مباراة`));
+      // The site gives a pick rate, OP.GG a game count.
+      s.append(wrap, el('small', '', `${pct(p.core.winRate)} فوز · ${p.core.games ? `${p.core.games.toLocaleString('en')} مباراة` : `${pct(p.core.pickRate)} اختيار`}`));
       return s;
     })() : null,
     slot('الحذاء', p.boots ? [p.boots] : []),
-    slot('خيارات الأيتم الرابع', p.fourth),
+    slot(p.siteBuild ? 'أيتمات أخرى شائعة' : 'خيارات الأيتم الرابع', p.fourth),
     slot('خيارات الأيتم الخامس', p.fifth),
     slot('خيارات الأيتم السادس', p.sixth),
   ].filter((s): s is HTMLElement => s !== null);

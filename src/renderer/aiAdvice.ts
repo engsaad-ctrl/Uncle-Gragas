@@ -46,7 +46,7 @@ export function adviceNodes(a: Advice, find: (id: number) => Describable | undef
       const item = find(it.id);
       const r = el('div', 'ov-adapted-row');
       const txt = el('div', 'ov-name');
-      txt.append(el('b', '', item ? shownName(item) : `#${it.id}`), el('small', '', it.inUsual ? `${it.reason} · في بناء ARAM المعتاد` : it.reason));
+      txt.append(el('b', '', item ? shownName(item) : `#${it.id}`), el('small', '', it.inUsual ? `${it.reason} · في البناء المعتاد` : it.reason));
       r.append(item ? iconOf(item) : el('span'), txt);
       rows.append(r);
     }

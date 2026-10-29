@@ -9,8 +9,8 @@ import type { RawProfile } from '../lcu/profile.js';
 import { readMayhemGames } from '../lcu/mayhemGames.js';
 import { mayhemStats } from '../app/mayhemStats.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
-import { siteAugments } from '../stats/arammayhem.js';
-import { mcpCaller, OpggStats, type CallTool, type Counter, type Fetched, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
+import { sitePage, type SiteItems } from '../stats/arammayhem.js';
+import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
 import type { AugmentText } from '../texts/augments.js';
@@ -26,6 +26,13 @@ import { buildRuneTexts, type RawPerk } from '../texts/runes.js';
 
 const MODES: PageMode[] = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
 const NO_BUILD: PageMode[] = ['arena', 'urf', 'nexus']; // see BuildMode in stats/opgg.ts
+/** English names compared without case or punctuation. The site writes "Quest: Steel Your Heart"; the game's Mayhem copy is just "Steel Your Heart". */
+const nameKey = (s: string) => s.toLowerCase().replace(/^quest:/, '').replace(/[^a-z0-9]/g, '');
+/** The stats part of a build when OP.GG's could not be had. */
+const NO_ARAM_BUILD: ChampionBuild = {
+  games: 0, winRate: 0, pickRate: 0, banRate: null, runes: null, spells: null, starter: null, core: null, boots: null,
+  fourth: [], fifth: [], sixth: [], skillOrder: [], skillPriority: [], strongAgainst: [], weakAgainst: [],
+};
 const POSITIONS: Position[] = ['top', 'jungle', 'mid', 'adc', 'support'];
 
 export interface OverlayData {
@@ -156,13 +163,11 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
 
   /** arammayhem.com's ranking matched to the game's augments; OP.GG's when the site fails or none of its names match. */
   async function mayhemRanking(id: number, alias: string): Promise<Fetched<MayhemAugmentStat[]> | null> {
-    // The site writes "Quest: Steel Your Heart"; the game's Mayhem copy is just "Steel Your Heart".
-    const key = (s: string) => s.toLowerCase().replace(/^quest:/, '').replace(/[^a-z0-9]/g, '');
-    const fromSite = await siteAugments(alias, { cacheDir, fetchImpl }).then(
+    const fromSite = await sitePage(alias, { cacheDir, fetchImpl }).then(
       async (r) => {
-        const byName = new Map((await augments()).augments.filter((a) => a.modes.includes('mayhem')).map((a) => [key(a.enName), a]));
-        const data = r.data.flatMap((s) => {
-          const a = byName.get(key(s.name));
+        const byName = new Map((await augments()).augments.filter((a) => a.modes.includes('mayhem')).map((a) => [nameKey(a.enName), a]));
+        const data = r.data.augments.flatMap((s) => {
+          const a = byName.get(nameKey(s.name));
           return a ? [{ id: a.id, tier: 0, tierLabel: s.tier, performance: 0, popularity: s.appearance }] : [];
         });
         return data.length ? { ...r, data } : null;
@@ -170,6 +175,40 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       () => null,
     );
     return fromSite ?? stats.mayhemAugments(id).catch(() => null);
+  }
+
+  /**
+   * The site's Mayhem items and skills over OP.GG's ARAM build (runes and spells stay ARAM's: the site has none).
+   * null when the site has no build for the champion; OP.GG's build is then shown as it is.
+   */
+  async function mayhemBuild(alias: string, aram: Fetched<ChampionBuild> | Error | null): Promise<Fetched<ChampionBuild> | null> {
+    const site = await sitePage(alias, { cacheDir, fetchImpl }).catch(() => null);
+    const b = site?.data.build;
+    if (!site || !b) return null;
+    const byName = new Map((await items('mayhem')).list.map((i) => [nameKey(i.enName), i.id]));
+    const toPick = (x: SiteItems): Pick | null => {
+      const ids = x.names.map((n) => byName.get(nameKey(n)));
+      return ids.every((id) => id !== undefined) ? { ids: ids as number[], games: 0, winRate: x.winRate, pickRate: x.pickRate } : null;
+    };
+    const picks = (list: SiteItems[]) => list.map(toPick).filter((p): p is Pick => p !== null);
+    const base = aram && !(aram instanceof Error) ? aram.data : NO_ARAM_BUILD;
+    const core = picks(b.core)[0] ?? null;
+    return {
+      data: {
+        ...base,
+        starter: picks(b.starter)[0] ?? null,
+        boots: picks(b.boots)[0] ?? null,
+        core,
+        // The site lists other finished items one by one, not per slot.
+        fourth: picks(b.others).filter((p) => !core?.ids.includes(p.ids[0])).slice(0, 5),
+        fifth: [],
+        sixth: [],
+        skillOrder: b.skillOrder,
+        skillPriority: b.skillPriority,
+      },
+      fetchedAt: site.fetchedAt,
+      stale: site.stale,
+    };
   }
 
   async function championPage(id: number, mode: PageMode, lane: PageLane): Promise<ChampionPage> {
@@ -184,7 +223,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         .catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))));
     // Everything at once: the build, the champion's texts and its game file do not depend on each other.
     const champion = both<RawChampion>(`champions/${id}.json`);
-    const [[ar, en], details, t, build, mayhem, augs, championList] = await Promise.all([
+    const [[ar, en], details, t, aramBuild, mayhem, augs, championList] = await Promise.all([
       champion,
       champion.then(([ar]) => abilityDetails(entry.alias, ar.spells)),
       texts(),
@@ -193,10 +232,11 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       mode === 'mayhem' ? augments().then((r) => r.augments, () => []) : Promise.resolve([]),
       champions(),
     ]);
+    const site = mode === 'mayhem' ? await mayhemBuild(entry.alias, aramBuild) : null;
     return composeChampionPage({
       championList,
       champion: buildChampionDetail(ar, en, details), mode, position: laned ? position : null,
-      build, mayhem, augments: augs, ...t,
+      build: site ?? aramBuild, mayhem, augments: augs, siteBuild: site !== null, ...t,
     });
   }
 
@@ -297,7 +337,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
           loadChampionBin(game, v, entry.alias),
           loadGameItems(game, v),
         ]);
-        const usual = [...new Set([page.boots, page.core, page.fourth[0], page.fifth[0], page.sixth[0]].flatMap((c) => c?.items.map((i) => i.id) ?? []))].slice(0, 6);
+        // The site's other items are one list, not per slot: take them in order after the core.
+        const later = page.siteBuild ? page.fourth : [page.fourth[0], page.fifth[0], page.sixth[0]];
+        const usual = [...new Set([page.boots, page.core, ...later].flatMap((c) => c?.items.map((i) => i.id) ?? []))].slice(0, 6);
         const shop = pool.list.filter((i) => (i.group === 'legendary' || i.group === 'boots') && gameItems[i.id]);
         const shopIds = new Set(shop.map((i) => i.id));
         const bought = (s: typeof champ) => s.items.filter((i) => shopIds.has(i.id)).slice(0, 10);

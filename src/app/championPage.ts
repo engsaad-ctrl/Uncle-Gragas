@@ -11,6 +11,7 @@ export interface ItemChoice {
   items: NamedText[];
   games: number;
   winRate: number;
+  pickRate: number;
 }
 
 export interface RuneOption extends NamedText {
@@ -68,6 +69,8 @@ export interface ChampionPage {
   matchups: { strong: Matchup[]; weak: Matchup[] };
   fetchedAt: number | null;
   stale: boolean;
+  /** Mayhem: the items and skills are Mayhem's (from arammayhem.com), not ARAM's. */
+  siteBuild: boolean;
 }
 
 export interface PageSources {
@@ -83,6 +86,7 @@ export interface PageSources {
   styles: Map<number, StyleTree>;
   spells: Map<number, NamedText>;
   championList: ChampionListEntry[];
+  siteBuild?: boolean;
 }
 
 const fromItem = (t: ItemText): NamedText => ({ id: t.id, name: t.name, enName: t.enName, html: t.html, iconUrl: assetUrl(t.iconPath) });
@@ -141,7 +145,7 @@ const matchups = (list: Counter[] | undefined, champions: ChampionListEntry[]): 
 export function composeChampionPage(src: PageSources): ChampionPage {
   const build = src.build && !(src.build instanceof Error) ? src.build.data : null;
   const choice = (p: Pick | null): ItemChoice | null =>
-    p ? { items: resolve(p.ids, src.items, fromItem), games: p.games, winRate: p.winRate } : null;
+    p ? { items: resolve(p.ids, src.items, fromItem), games: p.games, winRate: p.winRate, pickRate: p.pickRate } : null;
   const choices = (ps: Pick[]) => ps.map(choice).filter((c): c is ItemChoice => c !== null && c.items.length > 0);
 
   // Popularity 0 means no real sample: OP.GG then reports placeholder performance (0 or 170), so leave those out.
@@ -178,5 +182,6 @@ export function composeChampionPage(src: PageSources): ChampionPage {
     matchups: { strong: matchups(build?.strongAgainst, src.championList), weak: matchups(build?.weakAgainst, src.championList) },
     fetchedAt: fetched.length ? Math.min(...fetched.map((f) => f.fetchedAt)) : null,
     stale: fetched.some((f) => f.stale),
+    siteBuild: src.siteBuild ?? false,
   };
 }

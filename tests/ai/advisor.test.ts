@@ -74,7 +74,7 @@ describe('adviseBuild', () => {
     expect(a.alternative).toMatchObject({ style: 'ad', when: 'إذا احتاج فريقك ضرراً مادياً', items: [{ id: 3006, reason: '', inUsual: true }, { id: 3031, reason: 'ضرر هجوم', inUsual: true }] });
     expect(a.calc.items).toEqual([3020, 3089]); // each build carries its own calculator numbers
     expect(a.alternative?.calc.items).toEqual([3006, 3031]);
-    expect(bodies[1].contents[0].parts[0].text).toContain('usual ARAM build');
+    expect(bodies[1].contents[0].parts[0].text).toContain('usual build');
   });
 
   it('reads a bad-key reply in the shape Google sends it', async () => {

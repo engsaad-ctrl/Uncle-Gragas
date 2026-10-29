@@ -153,9 +153,10 @@ function aiBox(chosen: { id: number }[]): HTMLElement {
 function renderBuild(p: ChampionPage) {
   if (p.buildError) return buildBox.replaceChildren(el('p', 'missing', p.buildError));
   const out: HTMLElement[] = [];
-  // No stats site has Mayhem builds: say so, or the ARAM build looks like a wrong mode.
   if (p.mode === 'mayhem') out.push(adaptedSection(p));
-  if (p.mode === 'mayhem') out.push(el('p', 'hint', 'بناء ARAM: لا توجد إحصائيات بناء خاصة بـ Mayhem، فهذا أقرب بناء متاح. التعزيزات في تبويبها خاصة بـ Mayhem.'));
+  // Without the site's Mayhem build the ARAM one is shown: say so, or it looks like a wrong mode.
+  if (p.mode === 'mayhem')
+    out.push(el('p', 'hint', p.siteBuild ? 'بناء Mayhem: ما يشتريه لاعبو هذا البطل بغض النظر عن التعزيزات. الرونز والتعاويذ من ARAM.' : 'بناء ARAM: لا يتوفر الآن بناء خاص بـ Mayhem لهذا البطل، فهذا أقرب بناء متاح.'));
   if (p.stats) out.push(el('p', 'en', `نسبة الفوز ${pct(p.stats.winRate)} · ${p.stats.games.toLocaleString('en')} مباراة`));
   if (p.skillPriority.length || p.skillOrder.length) {
     const prio = el('div', 'ov-skills');

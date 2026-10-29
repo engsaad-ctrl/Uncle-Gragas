@@ -22,7 +22,7 @@ export interface AdviceInput {
   augments: { id: number; name: string; enName: string; text: string; tier?: string }[];
   /** Every finished item and boots on the map. */
   pool: { id: number; enName: string; gold: number; boots: boolean; text: string }[];
-  /** The champion's usual build from match data. It is ARAM's (no Mayhem build data exists), so augments are not in it. */
+  /** The champion's usual build: what its Mayhem players buy whatever their augments (ARAM's when Mayhem's is unknown). */
   usual: number[];
   /**
    * Mayhem games read from the players' own clients: this champion's, and those of them that took one of the chosen
@@ -125,7 +125,7 @@ const Final = z.object({
 
 const RULES = `You recommend League of Legends ARAM: Mayhem item builds for one champion after the player chose some augments.
 A single augment can change the whole build: one that adds magic damage to attacks can turn an AD marksman into AP, an attack-speed or on-hit augment favours on-hit items, and an "Upgrade <item>" augment makes that item a priority.
-The usual build is from ordinary ARAM games and ignores augments: keep its items when they still fit, replace them when an augment points elsewhere.
+The usual build is what players of this champion buy in Mayhem whatever their augments: keep its items when they still fit, replace them when an augment points elsewhere.
 Only use item ids from the item list. A build is six different items with at most one pair of boots (boots first when the champion buys boots).
 Real Mayhem games, when listed, show what players actually bought and how often they won. With ${FEW_GAMES} or more games they outweigh your reading of the texts; with fewer, treat them as a hint only and say in the summary that there are too few real games to confirm the build.
 Write every reason and summary in Arabic, short and concrete (one sentence, numbers when you have them). Item and champion names stay in English. Never name any website or data provider.`;
@@ -164,7 +164,7 @@ export function contextText(input: AdviceInput): string {
     'Chosen augments (id | name | tier on this champion | effect):',
     ...input.augments.map((a) => `${a.id} | ${a.enName} (${a.name}) | ${a.tier ?? 'unknown'} | ${plain(a.text)}`),
     '',
-    `Usual ARAM build: ${input.usual.length ? input.usual.map((id) => `${id} ${name(id)}`).join(', ') : 'none'}`,
+    `Usual build: ${input.usual.length ? input.usual.map((id) => `${id} ${name(id)}`).join(', ') : 'none'}`,
     '',
     ...playedText(input.played, name),
     'Item list (id | name | cost | boots | effect):',
@@ -250,7 +250,7 @@ export async function adviseBuild(post: GeminiPost, input: AdviceInput, calculat
   const plan = Plan.parse(await ask(post, `${context}\n\n${PLAN_TASK}`, PLAN_SCHEMA));
   const effects = plan.effects.map(toEffect).filter((e): e is Effect => e !== null);
   // The usual build is always one of the candidates: the answer is then compared with what players do.
-  const candidates = legalBuilds([...plan.candidates, { label: 'usual ARAM build', items: input.usual.slice(0, 6) }], input.pool).slice(0, 5);
+  const candidates = legalBuilds([...plan.candidates, { label: 'usual build', items: input.usual.slice(0, 6) }], input.pool).slice(0, 5);
   if (!candidates.length) throw new Error('لم يقترح Gemini بناءً صالحاً من أيتمات هذه الخريطة.');
   const results = calculate(candidates.map((c) => c.items), effects);
   const table = candidates.map((c, i) => `${i}. ${c.label}: ${JSON.stringify({ ...results[i], stats: undefined, keyStats: pickStats(results[i]) })}`).join('\n');
