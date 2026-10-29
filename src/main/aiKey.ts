@@ -12,8 +12,9 @@ export function aiKeyStore(dir: string) {
       return data ? safeStorage.decryptString(data) : null;
     },
     async set(key: unknown): Promise<void> {
-      // Google API keys: letters, digits, "-" and "_".
-      if (typeof key !== 'string' || !/^[\w-]{20,200}$/.test(key.trim())) throw new Error('هذا لا يبدو مفتاح Gemini.');
+      // Any printable text without spaces: Google's key formats change (AIza…, and newer ones with dots); Gemini itself
+      // says whether the key works on the first request.
+      if (typeof key !== 'string' || !/^[\x21-\x7e]{20,300}$/.test(key.trim())) throw new Error('هذا لا يبدو مفتاح Gemini: الصقه كاملاً بلا مسافات.');
       if (!safeStorage.isEncryptionAvailable()) throw new Error('التشفير غير متاح على هذا الجهاز، فلن يُحفظ المفتاح.');
       await writeFile(path, safeStorage.encryptString(key.trim()));
     },
