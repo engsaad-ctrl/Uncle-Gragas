@@ -1,5 +1,6 @@
 // The over-the-game window: the picked champion's build (spells, runes, skills, items) and augments, with a quick search.
 
+import { adaptBuild, FOCUS_LABEL } from '../app/augmentBuild.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import { placeFlash } from '../lcu/apply.js';
 import type { OverlayData } from '../main/services.js';
@@ -13,6 +14,10 @@ const search = byId<HTMLInputElement>('ov-search');
 const list = byId('ov-list');
 let data: OverlayData | undefined;
 let open: number | undefined;
+/** The Mayhem augments the player marked this game (up to 4), for the adapted build; cleared for a new champion. */
+const picked = new Set<number>();
+let pickedFor: number | undefined;
+const MAX_PICKS = 4;
 
 function render() {
   if (!data) return;
@@ -37,6 +42,21 @@ function render() {
     name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
     r.append(icon(a.iconUrl), name);
     if (rated(a) === 0) r.append(el('span', 'ov-score', `#${a.rank} · ${pct(a.popularity ?? 0)}`));
+    if (data!.mode === 'mayhem') {
+      const on = picked.has(a.id);
+      const pick = el('span', `ov-pick${on ? ' on' : ''}`, on ? '✓ اخترته' : 'اخترته');
+      pick.setAttribute('role', 'button');
+      pick.title = 'علّم التعزيز الذي أخذته ليُعاد ترتيب الأيتمات في تبويب البناء';
+      pick.addEventListener('click', (e) => {
+        e.stopPropagation(); // not the row's "show description"
+        if (on) picked.delete(a.id);
+        else if (picked.size < MAX_PICKS) picked.add(a.id);
+        render();
+        if (data?.build) renderBuild(data.build);
+      });
+      r.classList.toggle('picked', on);
+      r.append(pick);
+    }
     if (open === a.id) {
       const desc = el('div', 'ov-desc');
       if (a.html) desc.innerHTML = a.html; // safe: produced by cleanText (escaped text, whitelisted tags only)
@@ -79,11 +99,29 @@ function icons(xs: Describable[]) {
   return row;
 }
 
+/** Mayhem: the items re-ranked for the augments the player marked, each with its reason. */
+function adaptedSection(p: ChampionPage): HTMLElement {
+  const chosen = (data?.augments ?? []).filter((a) => picked.has(a.id));
+  if (!chosen.length) return section('الأيتمات حسب تعزيزاتك', el('p', 'hint', 'من تبويب التعزيزات اضغط «اخترته» على كل تعزيز تأخذه، فيُعاد ترتيب الأيتمات هنا.'));
+  const adapted = adaptBuild(p, chosen.map((a) => ({ name: shownName(a), enName: a.enName, html: a.html })), data?.items ?? []);
+  const rows = el('div', 'ov-adapted');
+  for (const { item, reasons } of adapted.items) {
+    const r = el('div', 'ov-adapted-row');
+    const txt = el('div', 'ov-name');
+    txt.append(el('b', '', shownName(item)), el('small', '', reasons.join(' · ')));
+    r.append(ic(item), txt);
+    rows.append(r);
+  }
+  const why = adapted.focus.length ? `تعزيزاتك تميل إلى: ${adapted.focus.slice(0, 3).map((f) => FOCUS_LABEL[f]).join('، ')}.` : '';
+  return section('الأيتمات حسب تعزيزاتك', icons(chosen), el('p', 'hint', `${why} ترتيب تقديري من نصوص اللعبة وبناء البطل، لا إحصائية مباريات.`), rows);
+}
+
 /** Compact build: what to set and buy, in the order the player needs it during the game. */
 function renderBuild(p: ChampionPage) {
   if (p.buildError) return buildBox.replaceChildren(el('p', 'missing', p.buildError));
   const out: HTMLElement[] = [];
   // No stats site has Mayhem builds: say so, or the ARAM build looks like a wrong mode.
+  if (p.mode === 'mayhem') out.push(adaptedSection(p));
   if (p.mode === 'mayhem') out.push(el('p', 'hint', 'بناء ARAM: لا توجد إحصائيات بناء خاصة بـ Mayhem، فهذا أقرب بناء متاح. التعزيزات في تبويبها خاصة بـ Mayhem.'));
   if (p.stats) out.push(el('p', 'en', `نسبة الفوز ${pct(p.stats.winRate)} · ${p.stats.games.toLocaleString('en')} مباراة`));
   if (p.skillPriority.length || p.skillOrder.length) {
@@ -141,6 +179,7 @@ async function load() {
     return;
   }
   data = reply;
+  if (pickedFor !== reply.champion?.id) (picked.clear(), (pickedFor = reply.champion?.id)); // a new game's champion
   const champ = byId<HTMLImageElement>('ov-champ');
   champ.hidden = !reply.champion;
   if (reply.champion) champ.src = reply.champion.portraitUrl;

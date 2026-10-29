@@ -28,6 +28,8 @@ export interface OverlayData {
   rated: boolean;
   /** The picked champion's build page (runes, spells, skills, items) for the game's mode; null in Arena or with no pick. */
   build: ChampionPage | null;
+  /** Finished items on the map, for re-ranking the build after the player's chosen Mayhem augments. */
+  items: ItemEntry[];
   augments: (AugmentText & { rank?: number; popularity?: number })[];
 }
 
@@ -222,10 +224,11 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     if (pick?.mode === 'mayhem' || pick?.mode === 'aram') {
       const rated = (pick.mode === 'mayhem' ? build : await championPage(pick.championId, 'mayhem', 'auto').catch(() => null))?.augments ?? [];
       const ratedIds = new Set(rated.map((a) => a.id));
-      return { champion, mode: 'mayhem', rated: rated.length > 0, build, augments: [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))] };
+      const pool = (await items('mayhem').catch(() => null))?.list.filter((i) => i.group === 'legendary') ?? [];
+      return { champion, mode: 'mayhem', rated: rated.length > 0, build, items: pool, augments: [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))] };
     }
-    if (pick?.mode === 'arena') return { champion, mode: 'arena', rated: false, build: null, augments: all.filter((a) => a.modes.includes('arena')) };
-    return { champion, mode: pick?.mode ?? null, rated: false, build, augments: all };
+    if (pick?.mode === 'arena') return { champion, mode: 'arena', rated: false, build: null, items: [], augments: all.filter((a) => a.modes.includes('arena')) };
+    return { champion, mode: pick?.mode ?? null, rated: false, build, items: [], augments: all };
   }
 
   /**
