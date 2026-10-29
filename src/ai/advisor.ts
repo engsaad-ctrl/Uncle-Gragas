@@ -6,9 +6,10 @@
 import { z } from 'zod';
 import { Effect, type BuildResult } from './calculator.js';
 
-// Tried on the owner's free key (2026-10-29): 3.8 and 3.7 Flash hang, 3.6 and 3.5 Flash answer in about 5 s.
-// The second is the fallback when the first times out, is busy or is out of free quota.
-export const MODELS = ['gemini-3.6-flash', 'gemini-3.5-flash'];
+// Tried on the owner's free key (2026-10-29): 3.8 and 3.7 Flash hang, 3.6 and 3.5 Flash answer in about 5 s, 3.5
+// Flash-Lite in 4 s. The free tier also answers 503 (busy) at times: each model gets a second try, then the next one.
+export const MODELS = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+const BUSY_WAIT_MS = 4000;
 const ENDPOINT = (model: string) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 /** Build kinds as players name them; the model picks the one the augments point to. */
@@ -154,9 +155,13 @@ const errorMessage = (json: unknown) => ((Array.isArray(json) ? json[0] : json) 
 async function ask(post: GeminiPost, input: string, schema: object): Promise<unknown> {
   const body = { contents: [{ role: 'user', parts: [{ text: input }] }], generationConfig: { responseMimeType: 'application/json', responseJsonSchema: schema } };
   let r = { status: 0, json: null as unknown };
-  for (const model of MODELS) {
-    r = await post(model, body);
-    if (r.status !== 0 && r.status !== 429 && r.status < 500) break; // timeout, quota or busy: the next model may answer
+  models: for (const model of MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      r = await post(model, body);
+      if (r.status !== 0 && r.status !== 429 && r.status < 500) break models;
+      if (r.status < 500) break; // timeout or quota: the same model will not do better now
+      await new Promise((done) => setTimeout(done, BUSY_WAIT_MS)); // busy: often free again a few seconds later
+    }
   }
   if (r.status === 0) throw new Error('تأخر Gemini كثيراً. حاول مرة أخرى بعد قليل.');
   if (r.status === 429) throw new Error('انتهى الحد المجاني لـ Gemini الآن. حاول بعد قليل أو غداً.');

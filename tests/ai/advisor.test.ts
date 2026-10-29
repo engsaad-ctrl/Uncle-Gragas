@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { adviseBuild, contextText, legalBuilds, MODELS, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
 import type { BuildResult } from '../../src/ai/calculator.js';
 
@@ -71,10 +71,21 @@ describe('adviseBuild', () => {
     await expect(adviseBuild(post, input, () => [])).rejects.toThrow(/الحد المجاني/);
   });
 
+  it('tries a busy model once more, then the next one', async () => {
+    vi.useFakeTimers();
+    const tried: string[] = [];
+    const post: GeminiPost = async (model) => (tried.push(model), model === MODELS[2] ? reply({ style: 'ap', styleReason: 'س', candidates: [], effects: [] }) : { status: 503, json: null });
+    const run = expect(adviseBuild(post, { ...input, usual: [] }, () => [])).rejects.toThrow(/بناءً صالحاً/);
+    await vi.runAllTimersAsync();
+    await run;
+    expect(tried).toEqual([MODELS[0], MODELS[0], MODELS[1], MODELS[1], MODELS[2]]);
+    vi.useRealTimers();
+  });
+
   it('moves on to the next model when the first does not answer in time', async () => {
     const tried: string[] = [];
     const post: GeminiPost = async (model) => (tried.push(model), model === MODELS[0] ? { status: 0, json: null } : reply({ style: 'ap', styleReason: 'س', candidates: [], effects: [] }));
     await expect(adviseBuild(post, { ...input, usual: [] }, () => [])).rejects.toThrow(/بناءً صالحاً/); // got past Gemini
-    expect(tried).toEqual(MODELS);
+    expect(tried).toEqual(MODELS.slice(0, 2));
   });
 });
