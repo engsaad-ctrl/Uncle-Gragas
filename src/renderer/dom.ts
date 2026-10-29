@@ -34,7 +34,6 @@ declare global {
       hasAiKey(): Promise<boolean>;
       setAiKey(key: string): Promise<Reply<void>>;
       clearAiKey(): Promise<Reply<void>>;
-      openAugmentBuild(championId: number, augmentId?: number): Promise<Reply<void>>;
       setOverlayEnabled(on: boolean): Promise<boolean>;
       onOverlayShow(callback: () => void): void;
       updateStatus(): Promise<{ version: string; status: UpdateStatus }>;

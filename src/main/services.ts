@@ -280,16 +280,6 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return r.data;
   }
 
-  /** The page with real games for this champion and augment, opened in the player's own browser. */
-  async function augmentBuildUrl(championId: number, augmentId: number | null): Promise<string> {
-    const entry = (await champions()).find((c) => c.id === championId);
-    if (!entry) throw new Error(`unknown champion ${championId}`);
-    const nameId = augmentId === null ? undefined : (await augments()).augments.find((a) => a.ids.includes(augmentId))?.nameId;
-    // shortcut: the site's champion key is taken as the lowercased alias; a champion it names differently opens its 404.
-    const page = `https://www.metasrc.com/ar/lol/mayhem/champions/${encodeURIComponent(entry.alias.toLowerCase())}/build`;
-    return nameId ? `${page}?augment=${encodeURIComponent(nameId)}` : page;
-  }
-
   /**
    * At launch, in the background: the big game files (38MB string table, 16MB items bin) download once per patch and
    * otherwise make the first champion or items page wait for them. Same promises the pages use, so nothing loads twice.
@@ -298,5 +288,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     for (const load of [champions, augments, tooltipStrings, detailedItems]) void load().catch(() => undefined);
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, augmentBuildUrl, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, warm };
 }

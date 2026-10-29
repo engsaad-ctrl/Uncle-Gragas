@@ -114,7 +114,7 @@ function adaptedSection(p: ChampionPage): HTMLElement {
     rows.append(r);
   }
   const why = adapted.focus.length ? `تعزيزاتك تميل إلى: ${adapted.focus.slice(0, 3).map((f) => FOCUS_LABEL[f]).join('، ')}.` : '';
-  return section('الأيتمات حسب تعزيزاتك', icons(chosen), el('p', 'hint', `${why} ترتيب تقديري من نصوص اللعبة وبناء البطل، لا إحصائية مباريات.`), rows, aiBox(chosen), linkRow(chosen));
+  return section('الأيتمات حسب تعزيزاتك', icons(chosen), el('p', 'hint', `${why} ترتيب تقديري من نصوص اللعبة وبناء البطل، لا إحصائية مباريات.`), rows, aiBox(chosen));
 }
 
 const STYLE_LABEL: Record<BuildStyle, string> = {
@@ -163,19 +163,6 @@ function aiBox(chosen: { id: number }[]): HTMLElement {
   return box;
 }
 
-/** Real games per augment are on an outside page the app does not read: it opens in the player's browser. */
-function linkRow(chosen: (Describable & { id: number })[]): HTMLElement {
-  const row = el('div', 'ov-links');
-  const champion = data?.champion;
-  if (!champion) return row;
-  for (const a of chosen) {
-    const b = el('button', 'pill', `مباريات حقيقية مع ${shownName(a)} ↗`);
-    b.type = 'button';
-    b.addEventListener('click', () => void window.lolh.openAugmentBuild(champion.id, a.id));
-    row.append(b);
-  }
-  return row;
-}
 
 /** Compact build: what to set and buy, in the order the player needs it during the game. */
 function renderBuild(p: ChampionPage) {

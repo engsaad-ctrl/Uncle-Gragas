@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, net, shell } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, net } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -92,7 +92,7 @@ const OVERLAY_KEY = 'F7';
 // The game's mode as the client reports it now (it keeps it during the match) wins over the one remembered at the pick.
 ipcMain.handle('overlay:data', () => reply(() => services.overlayData(lastPick && { ...lastPick, mode: watcher.state.mode ?? lastPick.mode })));
 ipcMain.handle('overlay:hide', () => overlay.hide());
-// Mayhem build from Gemini, with the owner's key from settings; the link opens real games in the player's browser.
+// Mayhem build from Gemini, with the owner's key from settings.
 const aiKey = aiKeyStore(app.getPath('userData'));
 ipcMain.handle('ai:key:has', async () => (await aiKey.get().catch(() => null)) !== null);
 ipcMain.handle('ai:key:set', (_e, key: unknown) => reply(() => aiKey.set(key)));
@@ -105,14 +105,6 @@ ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
     return services.aiBuild(id, parseIds(augmentIds), geminiPost(key, fetchImpl));
   }),
 );
-ipcMain.handle('augment:open', (_e, championId: unknown, augmentId: unknown) =>
-  reply(async () => {
-    const [id] = parseIds([championId]);
-    const aug = augmentId === null ? null : parseIds([augmentId])[0];
-    await shell.openExternal(await services.augmentBuildUrl(id, aug));
-  }),
-);
-
 ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
   globalShortcut.unregister(OVERLAY_KEY);
   // register() returns false when another app already holds the key

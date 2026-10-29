@@ -435,6 +435,4 @@ a.band-champ:hover { background: var(--panel-2); }
 .ov-adapted-row .ic { width: 32px; height: 32px; border-radius: 5px; border: 1px solid var(--line); }
 .ov-ai { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
 .ov-ai h4 { margin: 0 0 4px; font-size: 13px; }
-.ov-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.ov-links .pill { padding: 4px 10px; font-size: 12px; }
 
