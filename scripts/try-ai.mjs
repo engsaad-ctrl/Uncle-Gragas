@@ -31,6 +31,10 @@ const items = (await services.items('mayhem')).list;
 const name = (id) => items.find((i) => i.id === id)?.enName ?? `#${id}`;
 console.log(`\nStyle: ${advice.style} — ${advice.styleReason}`);
 for (const i of advice.items) console.log(`  ${name(i.id)}: ${i.reason}${i.inUsual ? ' (in the usual ARAM build)' : ''}`);
+if (advice.alternative) {
+  console.log(`\nAlternative: ${advice.alternative.style} — ${advice.alternative.when}`);
+  for (const i of advice.alternative.items) console.log(`  ${name(i.id)}: ${i.reason}${i.inUsual ? ' (in the usual ARAM build)' : ''}`);
+}
 if (advice.avoid.length) console.log(`Avoid: ${advice.avoid.map((a) => `${name(a.id)} (${a.reason})`).join('; ')}`);
 console.log(`\n${advice.summary}`);
 console.log(`\nEffects read from the texts: ${advice.effects.length}`);

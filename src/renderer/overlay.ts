@@ -148,16 +148,20 @@ function aiBox(chosen: { id: number }[]): HTMLElement {
   if (ai.state === 'error') return box.appendChild(el('p', 'missing', ai.error ?? '')), box;
   const a = ai.advice!;
   const find = (id: number) => [...(data?.items ?? []), ...(data?.boots ?? [])].find((i) => i.id === id);
-  const rows = el('div', 'ov-adapted');
-  for (const it of a.items) {
-    const item = find(it.id);
-    const r = el('div', 'ov-adapted-row');
-    const txt = el('div', 'ov-name');
-    txt.append(el('b', '', item ? shownName(item) : `#${it.id}`), el('small', '', it.inUsual ? `${it.reason} · في بناء ARAM المعتاد` : it.reason));
-    r.append(item ? ic(item) : el('span'), txt);
-    rows.append(r);
-  }
-  box.append(el('h4', '', `بناء Gemini: ${STYLE_LABEL[a.style] ?? a.style}`), el('p', 'hint', a.styleReason), rows);
+  const rowsOf = (list: Advice['items']) => {
+    const rows = el('div', 'ov-adapted');
+    for (const it of list) {
+      const item = find(it.id);
+      const r = el('div', 'ov-adapted-row');
+      const txt = el('div', 'ov-name');
+      txt.append(el('b', '', item ? shownName(item) : `#${it.id}`), el('small', '', it.inUsual ? `${it.reason} · في بناء ARAM المعتاد` : it.reason));
+      r.append(item ? ic(item) : el('span'), txt);
+      rows.append(r);
+    }
+    return rows;
+  };
+  box.append(el('h4', '', `بناء Gemini: ${STYLE_LABEL[a.style] ?? a.style}`), el('p', 'hint', a.styleReason), rowsOf(a.items));
+  if (a.alternative) box.append(el('h4', '', `البديل: ${STYLE_LABEL[a.alternative.style] ?? a.alternative.style}`), el('p', 'hint', a.alternative.when), rowsOf(a.alternative.items));
   if (a.avoid.length) box.append(el('p', 'hint', `تجنّب: ${a.avoid.map((x) => `${find(x.id) ? shownName(find(x.id)!) : x.id} (${x.reason})`).join('، ')}`));
   box.append(el('p', '', a.summary), el('p', 'hint', `تقدير من النصوص وحاسبة اللعبة (${a.effects.length} تأثير من النصوص)، لا إحصائية مباريات Mayhem.`));
   return box;

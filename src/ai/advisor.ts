@@ -33,6 +33,8 @@ export interface Advice {
   summary: string;
   /** The passives read from the texts that went into the numbers, with the sentence each came from. */
   effects: Effect[];
+  /** A strong build of another style, when the augments open more than one path (Back To Basics: AP W or AD Q Kai'Sa). */
+  alternative?: { style: BuildStyle; when: string; items: { id: number; reason: string; inUsual: boolean }[] };
 }
 
 // Plain JSON schemas (no oneOf, no constraints beyond enums), sent as responseJsonSchema.
@@ -77,8 +79,12 @@ const FINAL_SCHEMA = {
     items: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' }, reason: { type: 'string' } }, required: ['id', 'reason'] } },
     avoid: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' }, reason: { type: 'string' } }, required: ['id', 'reason'] } },
     summary: { type: 'string' },
+    alternative: { type: 'integer' },
+    alternativeStyle: { type: 'string', enum: [...BUILD_STYLES] },
+    alternativeWhen: { type: 'string' },
+    alternativeItems: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' }, reason: { type: 'string' } }, required: ['id', 'reason'] } },
   },
-  required: ['chosen', 'style', 'styleReason', 'items', 'avoid', 'summary'],
+  required: ['chosen', 'style', 'styleReason', 'items', 'avoid', 'summary', 'alternative'],
 };
 
 const Plan = z.object({
@@ -94,6 +100,10 @@ const Final = z.object({
   items: z.array(z.object({ id: z.number().int(), reason: z.string() })),
   avoid: z.array(z.object({ id: z.number().int(), reason: z.string() })),
   summary: z.string(),
+  alternative: z.number().int(),
+  alternativeStyle: z.enum(BUILD_STYLES).optional(),
+  alternativeWhen: z.string().optional(),
+  alternativeItems: z.array(z.object({ id: z.number().int(), reason: z.string() })).optional(),
 });
 
 const RULES = `You recommend League of Legends ARAM: Mayhem item builds for one champion after the player chose some augments.
@@ -118,7 +128,8 @@ Rabadon's and Warmog's multipliers are read from the game files already; you nee
 source is the item id or augment id the passive comes from; evidence is the exact sentence from its text. List every burn and on-hit item in your candidates and every augment passive that fits these kinds; leave out only what you are not sure of.`;
 
 const FINAL_TASK = `Step 2. The calculator results for the candidates are below (level 18, target with 100 armor, 80 magic resist, 3000 health).
-Pick the best candidate for these augments (chosen: its index), name the style of that build (style, styleReason: may differ from step 1), give a reason for every one of its items, up to 3 items of the usual build the augments make worse (avoid), and a two-sentence summary.`;
+Pick the best candidate for these augments (chosen: its index), name the style of that build (style, styleReason: may differ from step 1), give a reason for every one of its items, up to 3 items of the usual build the augments make worse (avoid), and a two-sentence summary.
+Many augments open more than one strong path (an ability damage augment suits both AP and AD versions of a champion). If another candidate of a different style is also strong, give it as the alternative (its index), with its style, one sentence on when to pick it instead (alternativeWhen) and a reason for each of its items. If there is only one sensible path, set alternative to -1.`;
 
 const plain = (html: string) => html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/[ \t]+/g, ' ').trim();
 
@@ -220,14 +231,20 @@ export async function adviseBuild(post: GeminiPost, input: AdviceInput, calculat
   const chosen = candidates[final.chosen] ?? candidates[0];
   const usual = new Set(input.usual);
   const poolIds = new Set(input.pool.map((i) => i.id));
-  // The build is the calculated candidate as it is; the model only supplies the words.
+  const alt = candidates[final.alternative];
+  const reasons = (list: { id: number; reason: string }[] | undefined, ids: number[]) =>
+    ids.map((id) => ({ id, reason: list?.find((i) => i.id === id)?.reason ?? '', inUsual: usual.has(id) }));
+  // The builds are the calculated candidates as they are; the model only supplies the words.
   return {
     style: final.style, // the chosen build's, not step 1's guess: they differed on the first real run
     styleReason: final.styleReason,
-    items: chosen.items.map((id) => ({ id, reason: final.items.find((i) => i.id === id)?.reason ?? '', inUsual: usual.has(id) })),
+    items: reasons(final.items, chosen.items),
     avoid: final.avoid.filter((a) => poolIds.has(a.id) && !chosen.items.includes(a.id)).slice(0, 3),
     summary: final.summary,
     effects: effects.filter((e) => !poolIds.has(e.source) || chosen.items.includes(e.source)),
+    ...(alt && alt !== chosen && final.alternativeStyle && final.alternativeStyle !== final.style
+      ? { alternative: { style: final.alternativeStyle, when: final.alternativeWhen ?? '', items: reasons(final.alternativeItems, alt.items) } }
+      : {}),
   };
 }
 
