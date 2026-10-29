@@ -1,10 +1,13 @@
 import type { ChampionPage, ItemChoice, Matchup, PageMode, RatedAugment, RuneRow, RuneTree } from '../app/championPage.js';
 import type { Position } from '../stats/opgg.js';
-import type { Rarity } from '../texts/augments.js';
+import type { AugmentText, Rarity } from '../texts/augments.js';
+import type { ItemEntry } from '../app/itemList.js';
+import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
-import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
 
 const MODES: [PageMode, string][] = [
@@ -61,6 +64,63 @@ function applyControl(p: ChampionPage): HTMLElement {
   });
   box.append(btn, note);
   return box;
+}
+
+const MAX_PICKS = 6;
+
+/** Mayhem without a game: pick the augments, ask Gemini, and see both builds with the calculator's numbers. */
+function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement): HTMLElement {
+  const s = el('section', 'panel');
+  s.append(el('h2', '', 'جرّب بناء الذكاء الاصطناعي'), el('p', 'hint', `اختر حتى ${MAX_PICKS} تعزيزات كأنك أخذتها في المباراة، ثم اضغط الزر.`));
+  const search = searchBox('ابحث عن تعزيز');
+  const chosenEl = el('div', 'grid');
+  const listEl = el('div', 'grid');
+  const box = el('div', 'ov-ai');
+  const picked = new Map<number, AugmentText>();
+  // The rated ones first (best for this champion), then every other Mayhem augment once it loads.
+  let all: AugmentText[] = p.augments;
+  let items: ItemEntry[] = [];
+  let run = 0;
+
+  const toggle = (a: AugmentText) => {
+    if (picked.has(a.id)) picked.delete(a.id);
+    else if (picked.size < MAX_PICKS) picked.set(a.id, a);
+    run++; // an answer still on its way is for the old picks
+    draw();
+  };
+  const drawList = () => {
+    chosenEl.replaceChildren(...[...picked.values()].map((a) => augmentChip(a, true, () => toggle(a))));
+    const found = filterAugments(all, search.input.value, 'all').filter((a) => !picked.has(a.id)).slice(0, 12);
+    listEl.replaceChildren(...(found.length ? found.map((a) => augmentChip(a, false, () => toggle(a))) : [el('p', 'missing', 'لا يوجد تعزيز بهذا الاسم.')]));
+  };
+  const draw = () => {
+    drawList();
+    const go = el('button', 'pill', 'اقترح البناء بالذكاء الاصطناعي');
+    go.type = 'button';
+    go.disabled = !picked.size;
+    go.addEventListener('click', ask);
+    box.replaceChildren(go, el('p', 'hint', AI_HINT));
+  };
+  async function ask() {
+    const id = ++run;
+    box.replaceChildren(el('p', 'hint', AI_LOADING));
+    const [r, listed] = await Promise.all([window.lolh.aiBuild(p.champion.id, [...picked.keys()]), items.length ? null : window.lolh.listItems('mayhem')]);
+    if (listed && !isError(listed)) items = listed.list;
+    if (id !== run || !box.isConnected) return; // the picks changed or the page closed meanwhile
+    if (isError(r)) return void box.replaceChildren(el('p', 'missing', r.error));
+    box.replaceChildren(...adviceNodes(r, (i) => items.find((x) => x.id === i), iconOf));
+  }
+
+  search.input.addEventListener('input', drawList); // typing keeps the answer on screen
+  void window.lolh.getAugments().then((r) => {
+    if (isError(r)) return;
+    const rated = new Set(all.map((a) => a.id));
+    all = [...all, ...r.augments.filter((a) => a.modes.includes('mayhem') && !rated.has(a.id))];
+    drawList();
+  });
+  draw();
+  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, box);
+  return s;
 }
 
 function renderPage(p: ChampionPage): HTMLElement[] {
@@ -171,7 +231,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     // Each group shows 6 at first: offer the rest whenever any group has more.
     if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
     section.append(el('p', 'hint', '#1 هو الأفضل لهذا البطل حسب الإحصائيات، والنسبة هي كم من لاعبي البطل يختارونه. التعزيزات بلا عينة كافية مستبعدة.'));
-    body.push(section);
+    body.push(section, aiPanel(p, iconButton));
   }
 
   // Skills: priority, spells, path grid.

@@ -1,10 +1,11 @@
 // The over-the-game window: the picked champion's build (spells, runes, skills, items) and augments, with a quick search.
 
 import { adaptBuild, FOCUS_LABEL } from '../app/augmentBuild.js';
-import type { Advice, BuildStyle } from '../ai/advisor.js';
+import type { Advice } from '../ai/advisor.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import { placeFlash } from '../lcu/apply.js';
 import type { OverlayData } from '../main/services.js';
+import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
 import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, shownName, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
@@ -117,10 +118,6 @@ function adaptedSection(p: ChampionPage): HTMLElement {
   return section('الأيتمات حسب تعزيزاتك', icons(chosen), el('p', 'hint', `${why} ترتيب تقديري من نصوص اللعبة وبناء البطل، لا إحصائية مباريات.`), rows, aiBox(chosen));
 }
 
-const STYLE_LABEL: Record<BuildStyle, string> = {
-  ap: 'قوة القدرة (AP)', ad: 'ضرر الهجوم (AD)', onhit: 'On-Hit', crit: 'الضربة الحرجة', 'attack-speed': 'سرعة الهجوم', lethality: 'Lethality',
-  burn: 'الحرق والسم', tank: 'الصلابة', health: 'الصحة', omnivamp: 'Omnivamp', lifesteal: 'Lifesteal', haste: 'تسارع القدرة', mana: 'المانا', utility: 'الدعم',
-};
 /** The AI answer for the augments marked now, kept until they change. */
 let ai: { key: string; state: 'loading' | 'done' | 'error'; advice?: Advice; error?: string } | undefined;
 
@@ -141,29 +138,13 @@ function aiBox(chosen: { id: number }[]): HTMLElement {
       ai = isError(r) ? { key, state: 'error', error: r.error } : { key, state: 'done', advice: r };
       if (data?.build) renderBuild(data.build);
     });
-    box.append(go, el('p', 'hint', 'يقرأ Gemini نصوص البطل والتعزيزات والأيتمات، وتحسب حاسبة البرنامج الأرقام. يأخذ حتى نصف دقيقة، والنتيجة تُحفظ.'));
+    box.append(go, el('p', 'hint', AI_HINT));
     return box;
   }
-  if (ai.state === 'loading') return box.appendChild(el('p', 'hint', 'يفكّر Gemini… قد يأخذ حتى نصف دقيقة.')), box;
+  if (ai.state === 'loading') return box.appendChild(el('p', 'hint', AI_LOADING)), box;
   if (ai.state === 'error') return box.appendChild(el('p', 'missing', ai.error ?? '')), box;
-  const a = ai.advice!;
   const find = (id: number) => [...(data?.items ?? []), ...(data?.boots ?? [])].find((i) => i.id === id);
-  const rowsOf = (list: Advice['items']) => {
-    const rows = el('div', 'ov-adapted');
-    for (const it of list) {
-      const item = find(it.id);
-      const r = el('div', 'ov-adapted-row');
-      const txt = el('div', 'ov-name');
-      txt.append(el('b', '', item ? shownName(item) : `#${it.id}`), el('small', '', it.inUsual ? `${it.reason} · في بناء ARAM المعتاد` : it.reason));
-      r.append(item ? ic(item) : el('span'), txt);
-      rows.append(r);
-    }
-    return rows;
-  };
-  box.append(el('h4', '', `بناء Gemini: ${STYLE_LABEL[a.style] ?? a.style}`), el('p', 'hint', a.styleReason), rowsOf(a.items));
-  if (a.alternative) box.append(el('h4', '', `البديل: ${STYLE_LABEL[a.alternative.style] ?? a.alternative.style}`), el('p', 'hint', a.alternative.when), rowsOf(a.alternative.items));
-  if (a.avoid.length) box.append(el('p', 'hint', `تجنّب: ${a.avoid.map((x) => `${find(x.id) ? shownName(find(x.id)!) : x.id} (${x.reason})`).join('، ')}`));
-  box.append(el('p', '', a.summary), el('p', 'hint', `تقدير من النصوص وحاسبة اللعبة (${a.effects.length} تأثير من النصوص)، لا إحصائية مباريات Mayhem.`));
+  box.append(...adviceNodes(ai.advice!, find, ic));
   return box;
 }
 

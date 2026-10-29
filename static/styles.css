@@ -435,4 +435,7 @@ a.band-champ:hover { background: var(--panel-2); }
 .ov-adapted-row .ic { width: 32px; height: 32px; border-radius: 5px; border: 1px solid var(--line); }
 .ov-ai { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
 .ov-ai h4 { margin: 0 0 4px; font-size: 13px; }
+.ai-calc { margin: 6px 0 10px; padding: 6px 8px; font-size: 12px; text-align: left; background: var(--panel-2); border-radius: 4px; }
+.ai-calc p { margin: 2px 0; }
+.ai-calc b { color: var(--accent); }
 
