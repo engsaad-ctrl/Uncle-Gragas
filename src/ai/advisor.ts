@@ -232,6 +232,7 @@ export async function adviseBuild(post: GeminiPost, input: AdviceInput, calculat
   const usual = new Set(input.usual);
   const poolIds = new Set(input.pool.map((i) => i.id));
   const alt = candidates[final.alternative];
+  const shownAlt = alt && alt !== chosen && final.alternativeStyle && final.alternativeStyle !== final.style ? alt : undefined;
   const reasons = (list: { id: number; reason: string }[] | undefined, ids: number[]) =>
     ids.map((id) => ({ id, reason: list?.find((i) => i.id === id)?.reason ?? '', inUsual: usual.has(id) }));
   // The builds are the calculated candidates as they are; the model only supplies the words.
@@ -239,11 +240,12 @@ export async function adviseBuild(post: GeminiPost, input: AdviceInput, calculat
     style: final.style, // the chosen build's, not step 1's guess: they differed on the first real run
     styleReason: final.styleReason,
     items: reasons(final.items, chosen.items),
-    avoid: final.avoid.filter((a) => poolIds.has(a.id) && !chosen.items.includes(a.id)).slice(0, 3),
+    // Nothing shown as "avoid" may sit in either build: the first real alternative held two of the avoided items.
+    avoid: final.avoid.filter((a) => poolIds.has(a.id) && !chosen.items.includes(a.id) && !shownAlt?.items.includes(a.id)).slice(0, 3),
     summary: final.summary,
     effects: effects.filter((e) => !poolIds.has(e.source) || chosen.items.includes(e.source)),
-    ...(alt && alt !== chosen && final.alternativeStyle && final.alternativeStyle !== final.style
-      ? { alternative: { style: final.alternativeStyle, when: final.alternativeWhen ?? '', items: reasons(final.alternativeItems, alt.items) } }
+    ...(shownAlt && final.alternativeStyle
+      ? { alternative: { style: final.alternativeStyle, when: final.alternativeWhen ?? '', items: reasons(final.alternativeItems, shownAlt.items) } }
       : {}),
   };
 }

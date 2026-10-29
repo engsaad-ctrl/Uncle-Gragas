@@ -56,7 +56,7 @@ describe('adviseBuild', () => {
     const a = await adviseBuild(post, input, (builds) => (asked.push(builds), builds.map(fakeResult)));
     expect(asked).toEqual([[[3020, 3089], [3006, 3031]]]); // the bad candidate never reaches the calculator
     expect(a.items).toEqual([{ id: 3020, reason: '', inUsual: false }, { id: 3089, reason: 'أعلى قوة قدرة', inUsual: false }]);
-    expect(a.avoid).toEqual([{ id: 3031, reason: 'لا يناسب الضرر السحري' }]);
+    expect(a.avoid).toEqual([]); // 3031 was avoided but is in the alternative build
     expect(a.effects).toHaveLength(1);
     expect(a.style).toBe('burn'); // the final step's style, not step 1's 'ap'
     expect(a.alternative).toEqual({ style: 'ad', when: 'إذا احتاج فريقك ضرراً مادياً', items: [{ id: 3006, reason: '', inUsual: true }, { id: 3031, reason: 'ضرر هجوم', inUsual: true }] });
