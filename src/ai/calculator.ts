@@ -135,7 +135,14 @@ export const Effect = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('onHit'), ...base, damageType, flat: z.number().min(0).max(1000), apRatio: ratio, totalAdRatio: ratio, bonusAdRatio: ratio }),
   z.object({ kind: z.literal('burn'), ...base, damageType, fractionPerSecond: z.number().min(0).max(0.1), durationSeconds: z.number().min(0).max(10) }),
   z.object({ kind: z.literal('attackSpeedCap'), ...base, cap: z.number().min(1).max(10).nullable() }),
+  z.object({ kind: z.literal('abilityDamage'), ...base, factor: z.number().min(0.5).max(3) }),
 ]);
+
+// Multipliers the items file states and that always apply (Rabadon's APAmp 0.3, Warmog's HPAmp 0.12). The many
+// conditional ones (low-health targets, stacks, ranged) stay with the model, which reads them from the texts.
+const FILE_AMP: Record<string, 'ap' | 'hp'> = { APAmp: 'ap', HPAmp: 'hp' };
+const fileAmps = (item: GameItem) =>
+  (item.DataValues ?? []).flatMap((d) => (FILE_AMP[d.name] && d.values?.[0] ? [{ stat: FILE_AMP[d.name], amount: d.values[0] }] : []));
 export type Effect = z.infer<typeof Effect>;
 
 export interface Target {
@@ -160,7 +167,7 @@ export interface BuildResult {
   effectiveHp: { physical: number; magic: number };
   /** Cooldowns are multiplied by this (ability haste). */
   cooldownFactor: number;
-  /** Q, W, E, R at their top rank: each damage, heal or shield calculation as one raw number. */
+  /** Q, W, E, R at their top rank: each damage, heal or shield calculation as one raw number (damage after abilityDamage). */
   abilities: { key: 'Q' | 'W' | 'E' | 'R'; values: { name: string; value: number; partial: boolean }[] }[];
 }
 
@@ -193,19 +200,23 @@ export function compareBuilds(o: {
     const caps = effects.flatMap((e) => (e.kind === 'attackSpeedCap' ? [e.cap] : []));
     const cap = !caps.length ? 2.5 : caps.includes(null) ? null : Math.max(...caps.filter((c): c is number => c !== null));
     const s = buildStats(record, ids.map((id) => o.items[id]), level, cap);
-    for (const e of effects) {
+    const fromFile = ids.flatMap((id) => fileAmps(o.items[id]).map((a) => ({ kind: 'statMultiplier' as const, source: id, stat: a.stat, factor: 1 + a.amount })));
+    // The file's number wins over the model's reading of the same item and stat: counted once, and always counted.
+    const read = effects.filter((e) => e.kind !== 'statMultiplier' || !fromFile.some((f) => f.source === e.source && f.stat === e.stat));
+    for (const e of [...fromFile, ...read]) {
       if (e.kind !== 'statMultiplier') continue;
       if (e.stat === 'ap') s.ap *= e.factor;
       if (e.stat === 'ad') (s.bonusAd += s.ad * (e.factor - 1)), (s.ad *= e.factor);
       if (e.stat === 'hp') (s.bonusHp += s.hp * (e.factor - 1)), (s.hp *= e.factor);
     }
+    const abilityAmp = effects.reduce((m, e) => (e.kind === 'abilityDamage' ? m * e.factor : m), 1);
     const statOf = statReader(s);
     const abilities = (['Q', 'W', 'E', 'R'] as const).map((key, i) => {
       const spell = bin[record.spells?.[i] ?? '']?.mSpell;
       const ranks = spell?.mClientData?.mTooltipData?.mLists?.LevelUp?.levelCount ?? (key === 'R' ? 3 : 5);
       const values = calculationsAt(spell, { ranks, rank: ranks, level, statOf, spellRef })
         .filter((c) => DAMAGE.test(c.name))
-        .map((c) => ({ ...c, value: round(c.value) }));
+        .map((c) => ({ ...c, value: round(/damage|dmg/i.test(c.name) ? c.value * abilityAmp : c.value) })); // heals and shields are not damage
       return { key, values };
     });
     const armor = Math.max(0, target.armor * (1 - s.armorPenPercent) - s.lethality);

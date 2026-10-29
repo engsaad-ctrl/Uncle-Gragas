@@ -47,7 +47,7 @@ const PLAN_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          kind: { type: 'string', enum: ['statMultiplier', 'onHit', 'burn', 'attackSpeedCap'] },
+          kind: { type: 'string', enum: ['statMultiplier', 'onHit', 'burn', 'attackSpeedCap', 'abilityDamage'] },
           source: { type: 'integer' },
           evidence: { type: 'string' },
           stat: { type: 'string', enum: ['ap', 'ad', 'hp'] },
@@ -113,6 +113,8 @@ Also list the passives that matter for these candidates, read from the item and 
 - onHit: damage added to every attack (damageType, flat, apRatio, totalAdRatio, bonusAdRatio as fractions: 0.2 for 20%).
 - burn: damage over time as a share of the target's max health (damageType, fractionPerSecond: 0.01 for 1% per second, durationSeconds).
 - attackSpeedCap: an augment that changes the 2.5 attack speed cap (cap; 0 means no cap).
+- abilityDamage: an augment or item that multiplies the damage of abilities (factor: 1.35 for +35% ability damage).
+Rabadon's and Warmog's multipliers are read from the game files already; you need not list them.
 source is the item id or augment id the passive comes from; evidence is the exact sentence from its text. List every burn and on-hit item in your candidates and every augment passive that fits these kinds; leave out only what you are not sure of.`;
 
 const FINAL_TASK = `Step 2. The calculator results for the candidates are below (level 18, target with 100 armor, 80 magic resist, 3000 health).

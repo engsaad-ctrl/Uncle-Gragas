@@ -62,6 +62,25 @@ describe('compareBuilds', () => {
     expect(without.onHitDps).toBeCloseTo((20 + 11) * without.stats.attackSpeed * 0.625, 0);
   });
 
+  it("reads Rabadon's multiplier from the items file once, even when the model also listed it", () => {
+    const withAmp = { ...items, 3089: { DataValues: [{ name: 'FlatMagicDamageMod', values: [130] }, { name: 'APAmp', values: [0.3] }] } };
+    const listed = [{ kind: 'statMultiplier', source: 3089, evidence: '+30%', stat: 'ap', factor: 1.3 }] as const;
+    const [plain] = compareBuilds({ bin, items: withAmp, builds: [[3089]] });
+    const [both] = compareBuilds({ bin, items: withAmp, builds: [[3089]], effects: [...listed] });
+    expect(plain.stats.ap).toBe(169); // 130 × 1.3, no model needed
+    expect(both.stats.ap).toBe(169); // not 130 × 1.3 × 1.3
+  });
+
+  it('multiplies ability damage, not heals or shields, for an augment like Back To Basics', () => {
+    const healing = structuredClone(bin);
+    const calcs: Record<string, unknown> = healing['Characters/Ahri/Spells/AhriQAbility/AhriQ'].mSpell.mSpellCalculations;
+    calcs.HealAmount = calcs.TotalDamage;
+    const [r] = compareBuilds({ bin: healing, items, builds: [[3089]], effects: [{ kind: 'abilityDamage', source: 1999, evidence: '+35%', factor: 1.35 }] });
+    const v = Object.fromEntries(r.abilities[0].values.map((x) => [x.name, x.value]));
+    expect(v.TotalDamage).toBe(270); // 200 × 1.35
+    expect(v.HealAmount).toBe(200);
+  });
+
   it('lifts the attack speed cap when an augment says so', () => {
     const fast = { 1: { DataValues: [{ name: 'PercentAttackSpeedMod', values: [5] }] } };
     const [capped] = compareBuilds({ bin, items: fast, builds: [[1]] });
