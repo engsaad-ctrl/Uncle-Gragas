@@ -14,10 +14,10 @@ const search = byId<HTMLInputElement>('ov-search');
 const list = byId('ov-list');
 let data: OverlayData | undefined;
 let open: number | undefined;
-/** The Mayhem augments the player marked this game (up to 4), for the adapted build; cleared for a new champion. */
+/** The Mayhem augments the player marked this game (up to 6), for the adapted build; cleared for a new champion. */
 const picked = new Set<number>();
 let pickedFor: number | undefined;
-const MAX_PICKS = 4;
+const MAX_PICKS = 6;
 
 function render() {
   if (!data) return;
