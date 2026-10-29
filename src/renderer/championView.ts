@@ -246,7 +246,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
           if (!list.length) return [];
           const grid = el('div', 'grid');
           grid.append(...list.map((a: RatedAugment, i) => {
-            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `#${a.rank} · ${pct(a.popularity)}`), i);
+            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `${a.tierLabel ?? `#${a.rank}`} · ${pct(a.popularity)}`), i);
             return chip;
           }));
           const h = el('h3', 'sub-title', label);

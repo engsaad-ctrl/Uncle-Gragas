@@ -9,7 +9,8 @@ import type { RawProfile } from '../lcu/profile.js';
 import { readMayhemGames } from '../lcu/mayhemGames.js';
 import { mayhemStats } from '../app/mayhemStats.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
-import { mcpCaller, OpggStats, type CallTool, type Counter, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
+import { siteAugments } from '../stats/arammayhem.js';
+import { mcpCaller, OpggStats, type CallTool, type Counter, type Fetched, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
 import type { AugmentText } from '../texts/augments.js';
@@ -38,7 +39,7 @@ export interface OverlayData {
   items: ItemEntry[];
   /** Boots on the map: the AI build can pick other boots than the usual ones. */
   boots: ItemEntry[];
-  augments: (AugmentText & { rank?: number; popularity?: number })[];
+  augments: (AugmentText & { rank?: number; popularity?: number; tierLabel?: string })[];
 }
 
 /** The app-wide mode chosen in the side menu. */
@@ -153,6 +154,23 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     }
   }
 
+  /** arammayhem.com's ranking matched to the game's augments; OP.GG's when the site fails or none of its names match. */
+  async function mayhemRanking(id: number, alias: string): Promise<Fetched<MayhemAugmentStat[]> | null> {
+    const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const fromSite = await siteAugments(alias, { cacheDir, fetchImpl }).then(
+      async (r) => {
+        const byName = new Map((await augments()).augments.filter((a) => a.modes.includes('mayhem')).map((a) => [key(a.enName), a]));
+        const data = r.data.flatMap((s) => {
+          const a = byName.get(key(s.name));
+          return a ? [{ id: a.id, tier: 0, tierLabel: s.tier, performance: 0, popularity: s.appearance }] : [];
+        });
+        return data.length ? { ...r, data } : null;
+      },
+      () => null,
+    );
+    return fromSite ?? stats.mayhemAugments(id).catch(() => null);
+  }
+
   async function championPage(id: number, mode: PageMode, lane: PageLane): Promise<ChampionPage> {
     const entry = (await champions()).find((c) => c.id === id);
     if (!entry) throw new Error(`unknown champion ${id}`);
@@ -170,7 +188,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       champion.then(([ar]) => abilityDetails(entry.alias, ar.spells)),
       texts(),
       NO_BUILD.includes(mode) ? Promise.resolve(null) : loadBuild(),
-      mode === 'mayhem' ? stats.mayhemAugments(id).catch(() => null) : Promise.resolve(null),
+      mode === 'mayhem' ? mayhemRanking(id, entry.alias) : Promise.resolve(null),
       mode === 'mayhem' ? augments().then((r) => r.augments, () => []) : Promise.resolve([]),
       champions(),
     ]);

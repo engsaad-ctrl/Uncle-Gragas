@@ -79,6 +79,8 @@ export interface ChampionBuild {
 export interface MayhemAugmentStat {
   id: number;
   tier: number;
+  /** The tier as arammayhem.com names it ("S+"), when the ranking comes from there. */
+  tierLabel?: string;
   performance: number;
   popularity: number;
 }

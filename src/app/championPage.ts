@@ -43,6 +43,8 @@ export interface RatedAugment extends AugmentText {
   performance: number;
   /** Share of this champion's games that took it (0.18 = 18%). */
   popularity: number;
+  /** "S+" to "C" when the ranking comes from arammayhem.com. */
+  tierLabel?: string;
 }
 
 export interface ChampionPage {
@@ -148,7 +150,7 @@ export function composeChampionPage(src: PageSources): ChampionPage {
   const augments = src.augments
     .flatMap((a) => {
       const s = a.ids.map((id) => stats.get(id)).find((x) => x !== undefined);
-      return s ? [{ ...a, rank: s.rank, performance: s.performance, popularity: s.popularity }] : [];
+      return s ? [{ ...a, rank: s.rank, performance: s.performance, popularity: s.popularity, ...(s.tierLabel ? { tierLabel: s.tierLabel } : {}) }] : [];
     })
     .sort((x, y) => x.rank - y.rank)
     .map((a, i) => ({ ...a, rank: i + 1 }));

@@ -43,7 +43,7 @@ function render() {
     const name = el('div', 'ov-name');
     name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
     r.append(icon(a.iconUrl), name);
-    if (rated(a) === 0) r.append(el('span', 'ov-score', `#${a.rank} · ${pct(a.popularity ?? 0)}`));
+    if (rated(a) === 0) r.append(el('span', 'ov-score', `${a.tierLabel ?? `#${a.rank}`} · ${pct(a.popularity ?? 0)}`));
     if (data!.mode === 'mayhem') {
       const on = picked.has(a.id);
       const pick = el('span', `ov-pick${on ? ' on' : ''}`, on ? '✓ اخترته' : 'اخترته');
