@@ -52,18 +52,56 @@ export async function readMayhemGames(file: string): Promise<MayhemGame[]> {
   return games as MayhemGame[];
 }
 
-/** Adds the Mayhem games among the player's last 50 that are not stored yet; returns how many it added. */
-export async function collectMayhemGames(call: LcuCall, file: string): Promise<number> {
+// The other players of the player's own new games are looked up too, slowly and only one step out: never the players of
+// their games (Riot asks for wide use of the client's API to be registered).
+const OTHERS_MAX_GAMES = 40;
+const OTHERS_PAUSE_MS = 300;
+const history = (puuid: string, last: number) => `/lol-match-history/v1/products/lol/${puuid}/matches?begIndex=0&endIndex=${last - 1}`;
+const listed = (list: unknown) => arr(obj(obj(list)?.games)?.games).map(obj);
+const puuids = (detail: unknown) =>
+  arr(obj(detail)?.participantIdentities).map((i) => obj(obj(i)?.player)?.puuid).filter((p): p is string => typeof p === 'string' && p !== '');
+
+/**
+ * Adds the Mayhem games among the player's last 50 that are not stored yet, then those among the last 20 of each other
+ * player of those new games (at most 40 of them per run); returns how many it added.
+ */
+export async function collectMayhemGames(
+  call: LcuCall,
+  file: string,
+  pause: (ms: number) => Promise<unknown> = (ms) => new Promise((done) => setTimeout(done, ms)),
+): Promise<number> {
   const me = obj(await call('GET', '/lol-summoner/v1/current-summoner'));
   if (typeof me?.puuid !== 'string') return 0;
-  const list = await call('GET', `/lol-match-history/v1/products/lol/${me.puuid}/matches?begIndex=0&endIndex=49`);
+  const list = await call('GET', history(me.puuid, 50));
   const stored = await readMayhemGames(file);
   const have = new Set(stored.map((g) => g.id));
   const added: MayhemGame[] = [];
-  for (const g of arr(obj(obj(list)?.games)?.games).map(obj)) {
-    if (!g || !isMayhem(g) || have.has(Number(g.gameId))) continue;
-    const game = toMayhemGame(await call('GET', `/lol-match-history/v1/games/${g.gameId}`));
-    if (game) added.push(game);
+  const others = new Set<string>();
+  const take = async (g: Json | null) => {
+    if (!g || !isMayhem(g) || have.has(Number(g.gameId))) return null;
+    const detail = await call('GET', `/lol-match-history/v1/games/${g.gameId}`);
+    const game = toMayhemGame(detail);
+    if (!game) return null;
+    added.push(game);
+    have.add(game.id);
+    return detail;
+  };
+  for (const g of listed(list)) {
+    const detail = await take(g);
+    for (const p of detail ? puuids(detail) : []) if (p !== me.puuid) others.add(p);
+  }
+  const mine = added.length;
+  others: for (const p of others) {
+    try {
+      await pause(OTHERS_PAUSE_MS);
+      for (const g of listed(await call('GET', history(p, 20)))) {
+        if (added.length - mine >= OTHERS_MAX_GAMES) break others;
+        if (g && isMayhem(g) && !have.has(Number(g.gameId))) await pause(OTHERS_PAUSE_MS);
+        await take(g);
+      }
+    } catch {
+      // one player's history failing (hidden, or the client busy) leaves the rest
+    }
   }
   if (!added.length) return 0;
   await mkdir(dirname(file), { recursive: true });

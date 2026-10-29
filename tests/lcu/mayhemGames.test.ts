@@ -60,6 +60,25 @@ describe('collectMayhemGames', () => {
     expect(await readdir(join(file, '..'))).toEqual(['mayhem-games.json']); // no temp file left
   });
 
+  it("also reads the other players' own Mayhem games, but not the players of those", async () => {
+    const file = join(await mkdtemp(join(tmpdir(), 'lolh-mg-')), 'mayhem-games.json');
+    // My game 1 had p2 in it; p2 then played game 5 (Mayhem, with p3) and game 6 (not Mayhem).
+    const players: Record<number, string[]> = { 1: ['me', 'p2'], 5: ['p2', 'p3'] };
+    const histories: Record<string, number[]> = { me: [1], p2: [5, 6, 1], p3: [7] };
+    const asked: string[] = [];
+    const call: LcuCall = async (_m, path) => {
+      asked.push(path);
+      if (path === '/lol-summoner/v1/current-summoner') return { puuid: 'me' };
+      const who = /products\/lol\/([^/]+)\/matches/.exec(path)?.[1];
+      if (who) return { games: { games: histories[who].map((gameId) => ({ gameId, queueId: gameId === 6 ? 450 : 2400 })) } };
+      const id = Number(path.split('/').pop());
+      return { ...game(id), participantIdentities: players[id].map((puuid) => ({ player: { puuid } })) };
+    };
+    expect(await collectMayhemGames(call, file, async () => undefined)).toBe(2);
+    expect((await readMayhemGames(file)).map((g) => g.id)).toEqual([1, 5]);
+    expect(asked.some((p) => p.includes('/p3/'))).toBe(false);
+  });
+
   it('never overwrites a damaged file', async () => {
     const file = join(await mkdtemp(join(tmpdir(), 'lolh-mg-')), 'mayhem-games.json');
     await writeFile(file, '{ broken');
