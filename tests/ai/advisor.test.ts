@@ -49,7 +49,7 @@ describe('adviseBuild', () => {
         candidates: [{ label: 'ap', items: [3020, 3089] }, { label: 'bad', items: [3089, 9999] }],
         effects: [{ kind: 'onHit', source: 1205, evidence: 'Attacks deal magic damage', damageType: 'magic', flat: 10, apRatio: 0.1, totalAdRatio: 0, bonusAdRatio: 0 }],
       }),
-      reply({ chosen: 0, items: [{ id: 3089, reason: 'أعلى قوة قدرة' }, { id: 3031, reason: 'ليس في البناء' }], avoid: [{ id: 3031, reason: 'لا يناسب الضرر السحري' }], summary: 'ابنِ AP.' }),
+      reply({ chosen: 0, style: 'burn', styleReason: 'حرق', items: [{ id: 3089, reason: 'أعلى قوة قدرة' }, { id: 3031, reason: 'ليس في البناء' }], avoid: [{ id: 3031, reason: 'لا يناسب الضرر السحري' }], summary: 'ابنِ AP.' }),
     ];
     const post: GeminiPost = async (_model, b) => (bodies.push(b as never), replies.shift()!);
     const asked: number[][][] = [];
@@ -58,6 +58,7 @@ describe('adviseBuild', () => {
     expect(a.items).toEqual([{ id: 3020, reason: '', inUsual: false }, { id: 3089, reason: 'أعلى قوة قدرة', inUsual: false }]);
     expect(a.avoid).toEqual([{ id: 3031, reason: 'لا يناسب الضرر السحري' }]);
     expect(a.effects).toHaveLength(1);
+    expect(a.style).toBe('burn'); // the final step's style, not step 1's 'ap'
     expect(bodies[1].contents[0].parts[0].text).toContain('usual ARAM build');
   });
 

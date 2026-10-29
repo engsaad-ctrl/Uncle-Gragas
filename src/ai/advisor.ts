@@ -72,11 +72,13 @@ const FINAL_SCHEMA = {
   type: 'object',
   properties: {
     chosen: { type: 'integer' },
+    style: { type: 'string', enum: [...BUILD_STYLES] },
+    styleReason: { type: 'string' },
     items: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' }, reason: { type: 'string' } }, required: ['id', 'reason'] } },
     avoid: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' }, reason: { type: 'string' } }, required: ['id', 'reason'] } },
     summary: { type: 'string' },
   },
-  required: ['chosen', 'items', 'avoid', 'summary'],
+  required: ['chosen', 'style', 'styleReason', 'items', 'avoid', 'summary'],
 };
 
 const Plan = z.object({
@@ -87,6 +89,8 @@ const Plan = z.object({
 });
 const Final = z.object({
   chosen: z.number().int(),
+  style: z.enum(BUILD_STYLES),
+  styleReason: z.string(),
   items: z.array(z.object({ id: z.number().int(), reason: z.string() })),
   avoid: z.array(z.object({ id: z.number().int(), reason: z.string() })),
   summary: z.string(),
@@ -98,16 +102,21 @@ The usual build is from ordinary ARAM games and ignores augments: keep its items
 Only use item ids from the item list. A build is six different items with at most one pair of boots (boots first when the champion buys boots).
 Write every reason and summary in Arabic, short and concrete (one sentence, numbers when you have them). Item and champion names stay in English. Never name any website or data provider.`;
 
-const PLAN_TASK = `Step 1. Decide the build style the augments point to, then give 2 to 4 candidate builds worth comparing (different ideas, not small swaps).
+// The first real run read "Vulnerability" (damage over time and item effects can crit, +25% crit) as a plain crit
+// build: hence the explicit "which damage sources change" step and a candidate built on the augment's own mechanic.
+const PLAN_TASK = `Step 1.
+First, for each augment, say to yourself which of this champion's damage sources it changes: basic attacks, on-hit, abilities, damage over time, item effects, healing or shields. The headline stat of an augment (for example "+25% crit chance") is often not its point; the rule it adds (for example "damage over time can crit") is.
+Then match that against the champion's abilities: which ability deals damage over time, which applies on-hit, what scales with AP or AD.
+Decide the build style from that, then give 2 to 4 candidate builds worth comparing: different ideas, not small swaps. At least one candidate must be built around the augment's own rule (items whose effects that rule improves), and one may be the champion's usual style.
 Also list the passives that matter for these candidates, read from the item and augment texts, so a calculator can add them up:
 - statMultiplier: an item or augment that multiplies AP, AD or health (stat, factor: 1.3 for +30%).
 - onHit: damage added to every attack (damageType, flat, apRatio, totalAdRatio, bonusAdRatio as fractions: 0.2 for 20%).
 - burn: damage over time as a share of the target's max health (damageType, fractionPerSecond: 0.01 for 1% per second, durationSeconds).
 - attackSpeedCap: an augment that changes the 2.5 attack speed cap (cap; 0 means no cap).
-source is the item id or augment id the passive comes from; evidence is the exact sentence from its text. Leave out passives you are not sure of.`;
+source is the item id or augment id the passive comes from; evidence is the exact sentence from its text. List every burn and on-hit item in your candidates and every augment passive that fits these kinds; leave out only what you are not sure of.`;
 
 const FINAL_TASK = `Step 2. The calculator results for the candidates are below (level 18, target with 100 armor, 80 magic resist, 3000 health).
-Pick the best candidate for these augments (chosen: its index), give a reason for every one of its items, up to 3 items of the usual build the augments make worse (avoid), and a two-sentence summary.`;
+Pick the best candidate for these augments (chosen: its index), name the style of that build (style, styleReason: may differ from step 1), give a reason for every one of its items, up to 3 items of the usual build the augments make worse (avoid), and a two-sentence summary.`;
 
 const plain = (html: string) => html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/[ \t]+/g, ' ').trim();
 
@@ -211,8 +220,8 @@ export async function adviseBuild(post: GeminiPost, input: AdviceInput, calculat
   const poolIds = new Set(input.pool.map((i) => i.id));
   // The build is the calculated candidate as it is; the model only supplies the words.
   return {
-    style: plan.style,
-    styleReason: plan.styleReason,
+    style: final.style, // the chosen build's, not step 1's guess: they differed on the first real run
+    styleReason: final.styleReason,
     items: chosen.items.map((id) => ({ id, reason: final.items.find((i) => i.id === id)?.reason ?? '', inUsual: usual.has(id) })),
     avoid: final.avoid.filter((a) => poolIds.has(a.id) && !chosen.items.includes(a.id)).slice(0, 3),
     summary: final.summary,
