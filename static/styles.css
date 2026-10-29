@@ -262,6 +262,7 @@ h1, h2, .sub, .status, .menu-title, .brand { text-shadow: 0 1px 2px #0009; }
 .settings-pop .pills { flex-wrap: nowrap; }
 .settings-pop .pill { flex: 1; display: inline-flex; align-items: center; justify-content: center; padding-inline: 8px; white-space: nowrap; }
 .settings-pop .hint { margin-top: 6px; font-size: 11px; }
+.key-input { width: 100%; margin-bottom: 6px; padding: 7px 10px; color: var(--text); font: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; }
 
 /* Collapsible rail: icons only, expands over the page on hover (or while settings are open) */
 :root { --rail: 68px; --rail-open: 236px; }
@@ -432,4 +433,8 @@ a.band-champ:hover { background: var(--panel-2); }
 .ov-adapted-row { display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 8px; }
 .ov-adapted-row small { color: var(--muted); font-size: 11px; }
 .ov-adapted-row .ic { width: 32px; height: 32px; border-radius: 5px; border: 1px solid var(--line); }
+.ov-ai { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.ov-ai h4 { margin: 0 0 4px; font-size: 13px; }
+.ov-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ov-links .pill { padding: 4px 10px; font-size: 12px; }
 

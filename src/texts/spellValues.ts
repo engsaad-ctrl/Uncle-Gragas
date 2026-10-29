@@ -286,6 +286,36 @@ function evalCalc(calc: SpellCalculation, c: Ctx): Value | null {
   return m ? times(v, m) : null;
 }
 
+/** A stat ratio's value in a build, by the game's stat tag (scaleAP …) and " أساسي"/" إضافي"; NaN when not known. */
+export type StatOf = (tag: string | undefined, suffix: string | undefined) => number;
+
+/**
+ * Every calculation of a spell as one number: at ability `rank` (1-based) and champion `level`, with the ratios
+ * filled from `statOf`. `partial` marks values with a part only a match knows (stacks, an unnamed stat).
+ */
+export function calculationsAt(
+  spell: SpellData | undefined,
+  o: { ranks: number; rank: number; level: number; statOf: StatOf; spellRef?: ResolveOptions['spellRef'] },
+): { name: string; value: number; partial: boolean }[] {
+  const c = makeCtx(spell, o.ranks, o.spellRef);
+  const i = Math.min(Math.max(o.rank, 1), o.ranks) - 1;
+  // shortcut: straight line between level 1 and 18; breakpoint formulas step, so mid levels are approximate.
+  const t = (Math.min(Math.max(o.level, 1), 18) - 1) / 17;
+  const at = (min: number, max: number) => min + (max - min) * t;
+  return Object.entries(spell?.mSpellCalculations ?? {}).flatMap(([name, calc]) => {
+    const v = evalCalc(calc, c);
+    if (!v) return [];
+    let value = at(v.min[i], v.max[i]);
+    let partial = v.other;
+    for (const s of v.scalings) {
+      const stat = s.flat || !s.tag ? NaN : o.statOf(s.tag, s.suffix);
+      if (Number.isNaN(stat)) partial = true;
+      else value += at(s.coef[i], (s.coefMax ?? s.coef)[i]) * stat;
+    }
+    return [{ name, value, partial }];
+  });
+}
+
 // A computed 0 is a real value: mark it so cleanText does not take it for CommunityDragon's "unknown" 0.
 const fmt = (n: number, precision: number) => {
   const text = String(Number(n.toFixed(precision)));

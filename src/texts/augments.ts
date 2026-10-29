@@ -25,6 +25,8 @@ export interface AugmentText {
   rarity: Rarity;
   modes: Mode[];
   iconUrl: string;
+  /** The game's name id of the Mayhem copy (ARAM_BacktoBasics …): the key outside build pages use for an augment. */
+  nameId?: string;
 }
 
 export interface AugmentSources {
@@ -107,6 +109,7 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
       // The Arena map file (map30) holds only ids < 1000; the Mayhem files (kiwi*) only ids >= 1000.
       modes: [a.id < 1000 ? 'arena' : 'mayhem'],
       iconUrl: assetUrl(a.augmentSmallIconPath),
+      ...(a.id >= 1000 ? { nameId: a.augmentNameId } : {}),
     });
   }
 
@@ -118,6 +121,7 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
     else {
       twin.ids.push(t.id);
       if (!twin.modes.includes(t.modes[0])) twin.modes.push(t.modes[0]);
+      twin.nameId ??= t.nameId;
     }
   }
   return [...merged.values()].sort((x, y) => x.name.localeCompare(y.name, 'ar'));

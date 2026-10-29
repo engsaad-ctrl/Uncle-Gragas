@@ -101,6 +101,24 @@ exportButton.addEventListener('click', async () => {
   if (isError(r)) exportNote.textContent = `تعذّر الحفظ: ${r.error}`;
   else if (r.saved) exportNote.textContent = `حُفظ في: ${r.saved}`;
 });
+// Gemini key for the Mayhem AI build: saved encrypted on this machine only, never shown again.
+const aiKeyInput = el('input', 'key-input');
+aiKeyInput.type = 'password';
+aiKeyInput.placeholder = 'الصق مفتاح Gemini هنا';
+aiKeyInput.autocomplete = 'off';
+const aiKeySave = el('button', 'pill', 'حفظ');
+aiKeySave.type = 'button';
+const aiKeyNote = el('p', 'hint');
+const showAiKey = async () => {
+  aiKeyNote.textContent = (await window.lolh.hasAiKey()) ? 'المفتاح محفوظ ومشفّر على هذا الجهاز.' : 'لا يوجد مفتاح: زر الذكاء الاصطناعي في F7 لن يعمل.';
+};
+aiKeySave.addEventListener('click', async () => {
+  const r = await window.lolh.setAiKey(aiKeyInput.value);
+  aiKeyInput.value = '';
+  if (isError(r)) aiKeyNote.textContent = r.error;
+  else void showAiKey();
+});
+void showAiKey();
 const updateButton = el('button', 'pill', 'تحقق من التحديثات');
 updateButton.type = 'button';
 const updateNote = el('p', 'hint');
@@ -190,6 +208,7 @@ settings.append(
     }),
     overlayNote,
   ),
+  section('مفتاح Gemini (بناء Mayhem بالذكاء الاصطناعي)', aiKeyInput, aiKeySave, aiKeyNote),
   section('التشخيص', exportButton, exportNote),
   section(
     'لغة أسماء الأيتمات والرونز والتعزيزات',

@@ -1,6 +1,7 @@
 // The over-the-game window: the picked champion's build (spells, runes, skills, items) and augments, with a quick search.
 
 import { adaptBuild, FOCUS_LABEL } from '../app/augmentBuild.js';
+import type { Advice, BuildStyle } from '../ai/advisor.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import { placeFlash } from '../lcu/apply.js';
 import type { OverlayData } from '../main/services.js';
@@ -113,7 +114,67 @@ function adaptedSection(p: ChampionPage): HTMLElement {
     rows.append(r);
   }
   const why = adapted.focus.length ? `تعزيزاتك تميل إلى: ${adapted.focus.slice(0, 3).map((f) => FOCUS_LABEL[f]).join('، ')}.` : '';
-  return section('الأيتمات حسب تعزيزاتك', icons(chosen), el('p', 'hint', `${why} ترتيب تقديري من نصوص اللعبة وبناء البطل، لا إحصائية مباريات.`), rows);
+  return section('الأيتمات حسب تعزيزاتك', icons(chosen), el('p', 'hint', `${why} ترتيب تقديري من نصوص اللعبة وبناء البطل، لا إحصائية مباريات.`), rows, aiBox(chosen), linkRow(chosen));
+}
+
+const STYLE_LABEL: Record<BuildStyle, string> = {
+  ap: 'قوة القدرة (AP)', ad: 'ضرر الهجوم (AD)', onhit: 'On-Hit', crit: 'الضربة الحرجة', 'attack-speed': 'سرعة الهجوم', lethality: 'Lethality',
+  burn: 'الحرق والسم', tank: 'الصلابة', health: 'الصحة', omnivamp: 'Omnivamp', lifesteal: 'Lifesteal', haste: 'تسارع القدرة', mana: 'المانا', utility: 'الدعم',
+};
+/** The AI answer for the augments marked now, kept until they change. */
+let ai: { key: string; state: 'loading' | 'done' | 'error'; advice?: Advice; error?: string } | undefined;
+
+function aiBox(chosen: { id: number }[]): HTMLElement {
+  const key = chosen.map((a) => a.id).sort((a, b) => a - b).join('-');
+  const box = el('div', 'ov-ai');
+  const champion = data?.champion;
+  if (!champion) return box;
+  if (ai?.key !== key) ai = undefined;
+  if (!ai) {
+    const go = el('button', 'pill', 'اقترح البناء بالذكاء الاصطناعي');
+    go.type = 'button';
+    go.addEventListener('click', async () => {
+      ai = { key, state: 'loading' };
+      if (data?.build) renderBuild(data.build);
+      const r = await window.lolh.aiBuild(champion.id, chosen.map((a) => a.id));
+      if (ai?.key !== key) return; // the marks changed meanwhile
+      ai = isError(r) ? { key, state: 'error', error: r.error } : { key, state: 'done', advice: r };
+      if (data?.build) renderBuild(data.build);
+    });
+    box.append(go, el('p', 'hint', 'يقرأ Gemini نصوص البطل والتعزيزات والأيتمات، وتحسب حاسبة البرنامج الأرقام. يأخذ حتى نصف دقيقة، والنتيجة تُحفظ.'));
+    return box;
+  }
+  if (ai.state === 'loading') return box.appendChild(el('p', 'hint', 'يفكّر Gemini… قد يأخذ حتى نصف دقيقة.')), box;
+  if (ai.state === 'error') return box.appendChild(el('p', 'missing', ai.error ?? '')), box;
+  const a = ai.advice!;
+  const find = (id: number) => [...(data?.items ?? []), ...(data?.boots ?? [])].find((i) => i.id === id);
+  const rows = el('div', 'ov-adapted');
+  for (const it of a.items) {
+    const item = find(it.id);
+    const r = el('div', 'ov-adapted-row');
+    const txt = el('div', 'ov-name');
+    txt.append(el('b', '', item ? shownName(item) : `#${it.id}`), el('small', '', it.inUsual ? `${it.reason} · في بناء ARAM المعتاد` : it.reason));
+    r.append(item ? ic(item) : el('span'), txt);
+    rows.append(r);
+  }
+  box.append(el('h4', '', `بناء Gemini: ${STYLE_LABEL[a.style] ?? a.style}`), el('p', 'hint', a.styleReason), rows);
+  if (a.avoid.length) box.append(el('p', 'hint', `تجنّب: ${a.avoid.map((x) => `${find(x.id) ? shownName(find(x.id)!) : x.id} (${x.reason})`).join('، ')}`));
+  box.append(el('p', '', a.summary), el('p', 'hint', `تقدير من النصوص وحاسبة اللعبة (${a.effects.length} تأثير من النصوص)، لا إحصائية مباريات Mayhem.`));
+  return box;
+}
+
+/** Real games per augment are on an outside page the app does not read: it opens in the player's browser. */
+function linkRow(chosen: (Describable & { id: number })[]): HTMLElement {
+  const row = el('div', 'ov-links');
+  const champion = data?.champion;
+  if (!champion) return row;
+  for (const a of chosen) {
+    const b = el('button', 'pill', `مباريات حقيقية مع ${shownName(a)} ↗`);
+    b.type = 'button';
+    b.addEventListener('click', () => void window.lolh.openAugmentBuild(champion.id, a.id));
+    row.append(b);
+  }
+  return row;
 }
 
 /** Compact build: what to set and buy, in the order the player needs it during the game. */

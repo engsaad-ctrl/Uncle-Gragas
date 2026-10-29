@@ -97,8 +97,8 @@ type ItemSpell = { mSpell?: SpellData & { cooldownTime?: number[] } };
 
 /** The items bin (16MB), trimmed to each item's values (its active spell's included) and tooltip key. */
 export function loadGameItems(o: Opts, version: string | null): Promise<Record<number, GameItem>> {
-  // "-v2": copies saved before the shop classes were read lack them.
-  return perVersion(join(o.cacheDir, 'game', 'items-v2.json'), version, async () => {
+  // "-v3": copies saved before the shop classes (v2) and the calculator's stats (v3) were read lack them.
+  return perVersion(join(o.cacheDir, 'game', 'items-v3.json'), version, async () => {
     const bin = await getJson<Record<string, RawItemData & ItemSpell>>(o.fetchImpl, GAME_URLS.items);
     const out: Record<number, GameItem> = {};
     for (const v of Object.values(bin)) {
@@ -111,7 +111,8 @@ export function loadGameItems(o: Opts, version: string | null): Promise<Record<n
         DataValues: [
           ...(v.mDataValues ?? []).map((d) => ({ name: d.mName, values: [d.mValue ?? 0] })),
           // Item stats the text quotes directly, e.g. @FlatHPRegenMod*5@ reads mFlatHPRegenMod
-          ...Object.entries(v).flatMap(([k, x]) => (/^m(Flat|Percent)\w+Mod$/.test(k) && typeof x === 'number' ? [{ name: k.slice(1), values: [x] }] : [])),
+          // Plus the stats the damage calculator adds up: haste, lethality and omnivamp are named outside that pattern.
+          ...Object.entries(v).flatMap(([k, x]) => (/^m?(Flat|Percent)\w+Mod$|^mAbilityHasteMod$|^PhysicalLethality$/.test(k) && typeof x === 'number' ? [{ name: k.replace(/^m/, ''), values: [x] }] : [])),
           ...(spell?.DataValues ?? []),
           ...(spell?.cooldownTime ? [{ name: 'Cooldown', values: spell.cooldownTime }] : []),
         ],

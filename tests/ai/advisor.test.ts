@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest';
+import { adviseBuild, contextText, legalBuilds, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
+import type { BuildResult } from '../../src/ai/calculator.js';
+
+const input: AdviceInput = {
+  champion: { name: 'ميس فورتشن', enName: 'Miss Fortune', abilities: [{ key: 'Q', enName: 'Double Up', text: '<magicDamage>bounces</magicDamage>' }] },
+  augments: [{ id: 1205, name: 'الضعف', enName: 'Vulnerability', text: 'Attacks deal magic damage' }],
+  pool: [
+    { id: 3089, enName: "Rabadon's Deathcap", gold: 3500, boots: false, text: '+130 AP' },
+    { id: 3031, enName: 'Infinity Edge', gold: 3450, boots: false, text: '+65 AD' },
+    { id: 3020, enName: "Sorcerer's Shoes", gold: 1100, boots: true, text: '+18 magic pen' },
+    { id: 3006, enName: "Berserker's Greaves", gold: 1100, boots: true, text: '+25% AS' },
+  ],
+  usual: [3006, 3031],
+};
+
+/** Gemini's reply shape: one model_output step with the JSON text. */
+const reply = (o: object) => ({ status: 200, json: { status: 'completed', steps: [{ type: 'model_output', content: [{ type: 'text', text: JSON.stringify(o) }] }] } });
+const fakeResult = (items: number[]) => ({ items, stats: {}, abilities: [] }) as unknown as BuildResult;
+
+describe('legalBuilds', () => {
+  it('drops builds with unknown or repeated items, more than six, or two pairs of boots', () => {
+    const ok = { label: 'ap', items: [3020, 3089] };
+    const out = legalBuilds([ok, { label: 'x', items: [1] }, { label: 'y', items: [3089, 3089] }, { label: 'z', items: [3020, 3006] }], input.pool);
+    expect(out).toEqual([ok]);
+  });
+});
+
+describe('toEffect', () => {
+  it('keeps a passive that fits the calculator and drops one that does not', () => {
+    expect(toEffect({ kind: 'statMultiplier', source: 3089, evidence: '+30%', stat: 'ap', factor: 1.3 })).toMatchObject({ factor: 1.3 });
+    expect(toEffect({ kind: 'statMultiplier', source: 3089, evidence: '+3000%', stat: 'ap', factor: 30 })).toBeNull();
+    expect(toEffect({ kind: 'attackSpeedCap', source: 1205, evidence: 'no cap', cap: 0 })).toMatchObject({ cap: null });
+  });
+});
+
+describe('contextText', () => {
+  it('lists the items in id order whatever order they come in', () => {
+    expect(contextText({ ...input, pool: [...input.pool].reverse() })).toBe(contextText(input));
+  });
+});
+
+describe('adviseBuild', () => {
+  it('calculates the candidates plus the usual build, then keeps the chosen one exactly as calculated', async () => {
+    const bodies: { input: string }[] = [];
+    const replies = [
+      reply({
+        style: 'ap', styleReason: 'التعزيز يحول الهجمات لضرر سحري',
+        candidates: [{ label: 'ap', items: [3020, 3089] }, { label: 'bad', items: [3089, 9999] }],
+        effects: [{ kind: 'onHit', source: 1205, evidence: 'Attacks deal magic damage', damageType: 'magic', flat: 10, apRatio: 0.1, totalAdRatio: 0, bonusAdRatio: 0 }],
+      }),
+      reply({ chosen: 0, items: [{ id: 3089, reason: 'أعلى قوة قدرة' }, { id: 3031, reason: 'ليس في البناء' }], avoid: [{ id: 3031, reason: 'لا يناسب الضرر السحري' }], summary: 'ابنِ AP.' }),
+    ];
+    const post: GeminiPost = async (b) => (bodies.push(b as { input: string }), replies.shift()!);
+    const asked: number[][][] = [];
+    const a = await adviseBuild(post, input, (builds) => (asked.push(builds), builds.map(fakeResult)));
+    expect(asked).toEqual([[[3020, 3089], [3006, 3031]]]); // the bad candidate never reaches the calculator
+    expect(a.items).toEqual([{ id: 3020, reason: '', inUsual: false }, { id: 3089, reason: 'أعلى قوة قدرة', inUsual: false }]);
+    expect(a.avoid).toEqual([{ id: 3031, reason: 'لا يناسب الضرر السحري' }]);
+    expect(a.effects).toHaveLength(1);
+    expect(bodies[1].input).toContain('usual ARAM build');
+  });
+
+  it('says plainly when the free quota is used up', async () => {
+    const post: GeminiPost = async () => ({ status: 429, json: null });
+    await expect(adviseBuild(post, input, () => [])).rejects.toThrow(/الحد المجاني/);
+  });
+});

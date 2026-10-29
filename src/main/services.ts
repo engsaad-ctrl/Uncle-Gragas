@@ -1,10 +1,14 @@
+import { adviseBuild, type Advice, type GeminiPost } from '../ai/advisor.js';
+import { compareBuilds } from '../ai/calculator.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
+import { diskCache } from '../diskCache.js';
 import { composeItemList, type ItemEntry } from '../app/itemList.js';
 import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
 import type { RawProfile } from '../lcu/profile.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { mcpCaller, OpggStats, type CallTool, type Counter, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
+import { join } from 'node:path';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
 import type { AugmentText } from '../texts/augments.js';
 import { loadAugments, type AugmentsResult } from '../texts/augmentsLoader.js';
@@ -30,6 +34,8 @@ export interface OverlayData {
   build: ChampionPage | null;
   /** Finished items on the map, for re-ranking the build after the player's chosen Mayhem augments. */
   items: ItemEntry[];
+  /** Boots on the map: the AI build can pick other boots than the usual ones. */
+  boots: ItemEntry[];
   augments: (AugmentText & { rank?: number; popularity?: number })[];
 }
 
@@ -224,11 +230,64 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     if (pick?.mode === 'mayhem' || pick?.mode === 'aram') {
       const rated = (pick.mode === 'mayhem' ? build : await championPage(pick.championId, 'mayhem', 'auto').catch(() => null))?.augments ?? [];
       const ratedIds = new Set(rated.map((a) => a.id));
-      const pool = (await items('mayhem').catch(() => null))?.list.filter((i) => i.group === 'legendary') ?? [];
-      return { champion, mode: 'mayhem', rated: rated.length > 0, build, items: pool, augments: [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))] };
+      const list = (await items('mayhem').catch(() => null))?.list ?? [];
+      const pool = list.filter((i) => i.group === 'legendary');
+      const boots = list.filter((i) => i.group === 'boots');
+      return { champion, mode: 'mayhem', rated: rated.length > 0, build, items: pool, boots, augments: [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))] };
     }
-    if (pick?.mode === 'arena') return { champion, mode: 'arena', rated: false, build: null, items: [], augments: all.filter((a) => a.modes.includes('arena')) };
-    return { champion, mode: pick?.mode ?? null, rated: false, build, items: [], augments: all };
+    if (pick?.mode === 'arena') return { champion, mode: 'arena', rated: false, build: null, items: [], boots: [], augments: all.filter((a) => a.modes.includes('arena')) };
+    return { champion, mode: pick?.mode ?? null, rated: false, build, items: [], boots: [], augments: all };
+  }
+
+  /**
+   * Mayhem: Gemini's build for the champion and the augments the player marked. Kept per patch, so asking again for
+   * the same champion and augments costs no request.
+   */
+  async function aiBuild(championId: number, augmentIds: number[], post: GeminiPost): Promise<Advice> {
+    const entry = (await champions()).find((c) => c.id === championId);
+    if (!entry) throw new Error(`unknown champion ${championId}`);
+    const all = (await augments()).augments;
+    const chosen = augmentIds.map((id) => all.find((a) => a.ids.includes(id))).filter((a) => a !== undefined);
+    if (!chosen.length) throw new Error('اختر تعزيزاً واحداً على الأقل.');
+    const v = await gameVersion();
+    const key = [...new Set(chosen.map((a) => a.id))].sort((a, b) => a - b).join('-');
+    const r = await diskCache(
+      join(cacheDir, 'ai', `${championId}-${key}.json`),
+      (e) => v === null || e.key === v,
+      async () => {
+        const [page, pool, bin, gameItems] = await Promise.all([
+          championPage(championId, 'mayhem', 'auto'),
+          items('mayhem'),
+          loadChampionBin(game, v, entry.alias),
+          loadGameItems(game, v),
+        ]);
+        const usual = [...new Set([page.boots, page.core, page.fourth[0], page.fifth[0], page.sixth[0]].flatMap((c) => c?.items.map((i) => i.id) ?? []))].slice(0, 6);
+        return adviseBuild(
+          post,
+          {
+            champion: { name: entry.name, enName: entry.enName, abilities: page.champion.abilities.map((a) => ({ key: a.key, enName: a.enName, text: a.html })) },
+            augments: chosen.map((a) => ({ id: a.id, name: a.name, enName: a.enName, text: a.html })),
+            pool: pool.list
+              .filter((i) => (i.group === 'legendary' || i.group === 'boots') && gameItems[i.id])
+              .map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: i.html })),
+            usual: usual.filter((id) => gameItems[id]),
+          },
+          (builds, effects) => compareBuilds({ bin, items: gameItems, builds, effects }),
+        );
+      },
+      { key: v ?? undefined },
+    );
+    return r.data;
+  }
+
+  /** The page with real games for this champion and augment, opened in the player's own browser. */
+  async function augmentBuildUrl(championId: number, augmentId: number | null): Promise<string> {
+    const entry = (await champions()).find((c) => c.id === championId);
+    if (!entry) throw new Error(`unknown champion ${championId}`);
+    const nameId = augmentId === null ? undefined : (await augments()).augments.find((a) => a.ids.includes(augmentId))?.nameId;
+    // shortcut: the site's champion key is taken as the lowercased alias; a champion it names differently opens its 404.
+    const page = `https://www.metasrc.com/ar/lol/mayhem/champions/${encodeURIComponent(entry.alias.toLowerCase())}/build`;
+    return nameId ? `${page}?augment=${encodeURIComponent(nameId)}` : page;
   }
 
   /**
@@ -239,5 +298,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     for (const load of [champions, augments, tooltipStrings, detailedItems]) void load().catch(() => undefined);
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, augmentBuildUrl, warm };
 }

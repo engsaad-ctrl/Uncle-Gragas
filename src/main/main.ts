@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, net } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, net, shell } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -10,6 +10,8 @@ import { LcuWatcher } from '../lcu/watcher.js';
 import type { Position } from '../stats/opgg.js';
 import { overlayWindow } from './overlay.js';
 import { appUpdater } from './updater.js';
+import { aiKeyStore } from './aiKey.js';
+import { geminiPost } from '../ai/advisor.js';
 import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest, type AppMode } from './services.js';
 
 // One copy only: two would each poll the client and auto-apply, racing on the same rune page.
@@ -90,6 +92,27 @@ const OVERLAY_KEY = 'F7';
 // The game's mode as the client reports it now (it keeps it during the match) wins over the one remembered at the pick.
 ipcMain.handle('overlay:data', () => reply(() => services.overlayData(lastPick && { ...lastPick, mode: watcher.state.mode ?? lastPick.mode })));
 ipcMain.handle('overlay:hide', () => overlay.hide());
+// Mayhem build from Gemini, with the owner's key from settings; the link opens real games in the player's browser.
+const aiKey = aiKeyStore(app.getPath('userData'));
+ipcMain.handle('ai:key:has', async () => (await aiKey.get().catch(() => null)) !== null);
+ipcMain.handle('ai:key:set', (_e, key: unknown) => reply(() => aiKey.set(key)));
+ipcMain.handle('ai:key:clear', () => reply(() => aiKey.clear()));
+ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
+  reply(async () => {
+    const [id] = parseIds([championId]);
+    const key = await aiKey.get();
+    if (!key) throw new Error('أضف مفتاح Gemini من الإعدادات أولاً.');
+    return services.aiBuild(id, parseIds(augmentIds), geminiPost(key, fetchImpl));
+  }),
+);
+ipcMain.handle('augment:open', (_e, championId: unknown, augmentId: unknown) =>
+  reply(async () => {
+    const [id] = parseIds([championId]);
+    const aug = augmentId === null ? null : parseIds([augmentId])[0];
+    await shell.openExternal(await services.augmentBuildUrl(id, aug));
+  }),
+);
+
 ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
   globalShortcut.unregister(OVERLAY_KEY);
   // register() returns false when another app already holds the key
