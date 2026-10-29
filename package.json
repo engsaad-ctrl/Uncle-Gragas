@@ -12,7 +12,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "npm run build && electron .",
     "dist:win": "npm run build && electron-builder --win nsis --publish never",
-    "probe": "node scripts/probe.mjs"
+    "probe": "node scripts/probe.mjs",
+    "try-ai": "npm run build && node scripts/try-ai.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",

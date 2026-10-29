@@ -156,7 +156,9 @@ async function ask(post: GeminiPost, input: string, schema: object): Promise<unk
   });
   if (r.status === 429) throw new Error('انتهى الحد المجاني لـ Gemini الآن. حاول بعد قليل أو غداً.');
   if (r.status === 400 || r.status === 401 || r.status === 403) {
-    const msg = (r.json as { error?: { message?: string } } | null)?.error?.message ?? '';
+    // Google sends the error as [{ error }] or { error }.
+    const body = (Array.isArray(r.json) ? r.json[0] : r.json) as { error?: { message?: string } } | null;
+    const msg = body?.error?.message ?? '';
     throw new Error(/key/i.test(msg) ? 'مفتاح Gemini غير صالح. راجعه في الإعدادات.' : `رفض Gemini الطلب: ${msg.slice(0, 200)}`);
   }
   if (r.status >= 300) throw new Error(`تعذّر الاتصال بـ Gemini (HTTP ${r.status}).`);

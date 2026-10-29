@@ -61,6 +61,11 @@ describe('adviseBuild', () => {
     expect(bodies[1].input).toContain('usual ARAM build');
   });
 
+  it('reads a bad-key reply in the shape Google sends it', async () => {
+    const post: GeminiPost = async () => ({ status: 400, json: [{ error: { code: 400, message: 'API key not valid. Please pass a valid API key.' } }] });
+    await expect(adviseBuild(post, input, () => [])).rejects.toThrow(/مفتاح Gemini غير صالح/);
+  });
+
   it('says plainly when the free quota is used up', async () => {
     const post: GeminiPost = async () => ({ status: 429, json: null });
     await expect(adviseBuild(post, input, () => [])).rejects.toThrow(/الحد المجاني/);
