@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adviseBuild, contextText, legalBuilds, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
+import { adviseBuild, contextText, legalBuilds, MODELS, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
 import type { BuildResult } from '../../src/ai/calculator.js';
 
 const input: AdviceInput = {
@@ -14,8 +14,8 @@ const input: AdviceInput = {
   usual: [3006, 3031],
 };
 
-/** Gemini's reply shape: one model_output step with the JSON text. */
-const reply = (o: object) => ({ status: 200, json: { status: 'completed', steps: [{ type: 'model_output', content: [{ type: 'text', text: JSON.stringify(o) }] }] } });
+/** generateContent's reply shape: a thought part (skipped) and the JSON text. */
+const reply = (o: object) => ({ status: 200, json: { candidates: [{ finishReason: 'STOP', content: { parts: [{ thought: true, text: 'thinking' }, { text: JSON.stringify(o) }] } }] } });
 const fakeResult = (items: number[]) => ({ items, stats: {}, abilities: [] }) as unknown as BuildResult;
 
 describe('legalBuilds', () => {
@@ -42,7 +42,7 @@ describe('contextText', () => {
 
 describe('adviseBuild', () => {
   it('calculates the candidates plus the usual build, then keeps the chosen one exactly as calculated', async () => {
-    const bodies: { input: string }[] = [];
+    const bodies: { contents: { parts: { text: string }[] }[] }[] = [];
     const replies = [
       reply({
         style: 'ap', styleReason: 'التعزيز يحول الهجمات لضرر سحري',
@@ -51,14 +51,14 @@ describe('adviseBuild', () => {
       }),
       reply({ chosen: 0, items: [{ id: 3089, reason: 'أعلى قوة قدرة' }, { id: 3031, reason: 'ليس في البناء' }], avoid: [{ id: 3031, reason: 'لا يناسب الضرر السحري' }], summary: 'ابنِ AP.' }),
     ];
-    const post: GeminiPost = async (b) => (bodies.push(b as { input: string }), replies.shift()!);
+    const post: GeminiPost = async (_model, b) => (bodies.push(b as never), replies.shift()!);
     const asked: number[][][] = [];
     const a = await adviseBuild(post, input, (builds) => (asked.push(builds), builds.map(fakeResult)));
     expect(asked).toEqual([[[3020, 3089], [3006, 3031]]]); // the bad candidate never reaches the calculator
     expect(a.items).toEqual([{ id: 3020, reason: '', inUsual: false }, { id: 3089, reason: 'أعلى قوة قدرة', inUsual: false }]);
     expect(a.avoid).toEqual([{ id: 3031, reason: 'لا يناسب الضرر السحري' }]);
     expect(a.effects).toHaveLength(1);
-    expect(bodies[1].input).toContain('usual ARAM build');
+    expect(bodies[1].contents[0].parts[0].text).toContain('usual ARAM build');
   });
 
   it('reads a bad-key reply in the shape Google sends it', async () => {
@@ -66,8 +66,15 @@ describe('adviseBuild', () => {
     await expect(adviseBuild(post, input, () => [])).rejects.toThrow(/مفتاح Gemini غير صالح/);
   });
 
-  it('says plainly when the free quota is used up', async () => {
+  it('says plainly when the free quota is used up on every model', async () => {
     const post: GeminiPost = async () => ({ status: 429, json: null });
     await expect(adviseBuild(post, input, () => [])).rejects.toThrow(/الحد المجاني/);
+  });
+
+  it('moves on to the next model when the first does not answer in time', async () => {
+    const tried: string[] = [];
+    const post: GeminiPost = async (model) => (tried.push(model), model === MODELS[0] ? { status: 0, json: null } : reply({ style: 'ap', styleReason: 'س', candidates: [], effects: [] }));
+    await expect(adviseBuild(post, { ...input, usual: [] }, () => [])).rejects.toThrow(/بناءً صالحاً/); // got past Gemini
+    expect(tried).toEqual(MODELS);
   });
 });

@@ -6,8 +6,10 @@
 import { z } from 'zod';
 import { Effect, type BuildResult } from './calculator.js';
 
-export const MODEL = 'gemini-3.8-flash';
-const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+// Tried on the owner's free key (2026-10-29): 3.8 and 3.7 Flash hang, 3.6 and 3.5 Flash answer in about 5 s.
+// The second is the fallback when the first times out, is busy or is out of free quota.
+export const MODELS = ['gemini-3.6-flash', 'gemini-3.5-flash'];
+const ENDPOINT = (model: string) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 /** Build kinds as players name them; the model picks the one the augments point to. */
 export const BUILD_STYLES = ['ap', 'ad', 'onhit', 'crit', 'attack-speed', 'lethality', 'burn', 'tank', 'health', 'omnivamp', 'lifesteal', 'haste', 'mana', 'utility'] as const;
@@ -32,7 +34,7 @@ export interface Advice {
   effects: Effect[];
 }
 
-// Plain JSON schemas (no oneOf, no constraints beyond enums): the most widely accepted shape for structured output.
+// Plain JSON schemas (no oneOf, no constraints beyond enums), sent as responseJsonSchema.
 const PLAN_SCHEMA = {
   type: 'object',
   properties: {
@@ -143,44 +145,45 @@ export function legalBuilds(candidates: { label: string; items: number[] }[], po
   });
 }
 
-/** Sends one request; `post` is fetch in the app and a fake in tests. Returns the model's text. */
-export type GeminiPost = (body: object) => Promise<{ status: number; json: unknown }>;
+/** Sends one request to one model; `post` is fetch in the app and a fake in tests. status 0: no answer in time. */
+export type GeminiPost = (model: string, body: object) => Promise<{ status: number; json: unknown }>;
+
+/** Google sends an error as { error } or [{ error }]. */
+const errorMessage = (json: unknown) => ((Array.isArray(json) ? json[0] : json) as { error?: { message?: string } } | null)?.error?.message ?? '';
 
 async function ask(post: GeminiPost, input: string, schema: object): Promise<unknown> {
-  const r = await post({
-    model: MODEL,
-    input,
-    store: false,
-    response_format: { type: 'text', mime_type: 'application/json', schema },
-    generation_config: { thinking_level: 'medium' },
-  });
+  const body = { contents: [{ role: 'user', parts: [{ text: input }] }], generationConfig: { responseMimeType: 'application/json', responseJsonSchema: schema } };
+  let r = { status: 0, json: null as unknown };
+  for (const model of MODELS) {
+    r = await post(model, body);
+    if (r.status !== 0 && r.status !== 429 && r.status < 500) break; // timeout, quota or busy: the next model may answer
+  }
+  if (r.status === 0) throw new Error('تأخر Gemini كثيراً. حاول مرة أخرى بعد قليل.');
   if (r.status === 429) throw new Error('انتهى الحد المجاني لـ Gemini الآن. حاول بعد قليل أو غداً.');
   if (r.status === 400 || r.status === 401 || r.status === 403) {
-    // Google sends the error as [{ error }] or { error }.
-    const body = (Array.isArray(r.json) ? r.json[0] : r.json) as { error?: { message?: string } } | null;
-    const msg = body?.error?.message ?? '';
+    const msg = errorMessage(r.json);
     throw new Error(/key/i.test(msg) ? 'مفتاح Gemini غير صالح. راجعه في الإعدادات.' : `رفض Gemini الطلب: ${msg.slice(0, 200)}`);
   }
   if (r.status >= 300) throw new Error(`تعذّر الاتصال بـ Gemini (HTTP ${r.status}).`);
-  const body = r.json as { status?: string; steps?: { type?: string; content?: { type?: string; text?: string }[] }[] };
-  if (body.status !== 'completed') throw new Error('لم يكتمل رد Gemini.');
-  const text = (body.steps ?? []).filter((s) => s.type === 'model_output').flatMap((s) => s.content ?? []).flatMap((c) => (c.type === 'text' && c.text ? [c.text] : [])).join('');
-  return JSON.parse(text);
+  const reply = r.json as { candidates?: { finishReason?: string; content?: { parts?: { text?: string; thought?: boolean }[] } }[] };
+  const c = reply.candidates?.[0];
+  if (!c || c.finishReason !== 'STOP') throw new Error('لم يكتمل رد Gemini.');
+  return JSON.parse((c.content?.parts ?? []).filter((p) => !p.thought && p.text).map((p) => p.text).join(''));
 }
 
 export function geminiPost(apiKey: string, fetchImpl: typeof fetch): GeminiPost {
-  return async (body) => {
+  return async (model, body) => {
     try {
       // A stuck request must not leave the F7 button waiting for good.
-      const res = await fetchImpl(ENDPOINT, {
+      const res = await fetchImpl(ENDPOINT(model), {
         method: 'POST',
         headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(120_000),
+        signal: AbortSignal.timeout(90_000),
       });
       return { status: res.status, json: await res.json().catch(() => null) };
     } catch (err) {
-      if (err instanceof Error && err.name === 'TimeoutError') throw new Error('تأخر Gemini أكثر من دقيقتين. حاول مرة أخرى.');
+      if (err instanceof Error && err.name === 'TimeoutError') return { status: 0, json: null };
       throw err;
     }
   };
