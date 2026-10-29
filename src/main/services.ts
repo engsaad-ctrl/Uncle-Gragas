@@ -6,6 +6,8 @@ import { composeItemList, type ItemEntry } from '../app/itemList.js';
 import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
 import type { RawProfile } from '../lcu/profile.js';
+import { readMayhemGames } from '../lcu/mayhemGames.js';
+import { mayhemStats } from '../app/mayhemStats.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { mcpCaller, OpggStats, type CallTool, type Counter, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
@@ -43,6 +45,14 @@ export interface OverlayData {
 export type AppMode = 'normal' | 'aram' | 'mayhem' | 'arena';
 const APP_MODES: AppMode[] = ['normal', 'aram', 'mayhem', 'arena'];
 const ITEM_MAP: Record<AppMode, ItemMap> = { normal: 'SUMMONERS_RIFT', aram: 'HOWLING_ABYSS', mayhem: 'HOWLING_ABYSS', arena: 'ARENA_MAP_1' };
+
+/** One champion in the Mayhem games collected from the client (see lcu/mayhemGames.ts). */
+export interface MayhemPicks {
+  games: number;
+  championGames: number;
+  augments: { augment: AugmentText; games: number; wins: number }[];
+  items: { item: ItemEntry; games: number; wins: number }[];
+}
 
 export interface Listed<T> {
   list: T[];
@@ -288,5 +298,33 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     for (const load of [champions, augments, tooltipStrings, detailedItems]) void load().catch(() => undefined);
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, warm };
+  /** Where the Mayhem games read from the client are kept. */
+  const mayhemFile = join(cacheDir, 'mayhem-games.json');
+
+  async function mayhemPicks(championId: number): Promise<MayhemPicks> {
+    const s = mayhemStats(await readMayhemGames(mayhemFile), championId);
+    const all = (await augments()).augments;
+    const shop = (await items('mayhem')).list.filter((i) => i.group === 'legendary' || i.group === 'boots');
+    // An augment can have more than one id (see texts/augments.ts): count it once.
+    const byAugment = new Map<number, MayhemPicks['augments'][number]>();
+    for (const p of s.augments) {
+      const a = all.find((x) => x.ids.includes(p.id));
+      if (!a) continue;
+      const t = byAugment.get(a.id) ?? { augment: a, games: 0, wins: 0 };
+      t.games += p.games;
+      t.wins += p.wins;
+      byAugment.set(a.id, t);
+    }
+    return {
+      games: s.games,
+      championGames: s.championGames,
+      augments: [...byAugment.values()].sort((a, b) => b.games - a.games || b.wins - a.wins),
+      items: s.items.flatMap((p) => {
+        const item = shop.find((i) => i.id === p.id);
+        return item ? [{ item, games: p.games, wins: p.wins }] : [];
+      }),
+    };
+  }
+
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, mayhemPicks, warm };
 }

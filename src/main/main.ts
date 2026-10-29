@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { applyAll, toPayloads } from '../lcu/apply.js';
 import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
 import { mayhemAugmentCheck } from '../lcu/diagnostics.js';
+import { collectMayhemGames } from '../lcu/mayhemGames.js';
 import { loadProfile, parsePuuid } from '../lcu/profile.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import type { Position } from '../stats/opgg.js';
@@ -57,8 +58,22 @@ ipcMain.handle('suggest:get', (_e, position: unknown, enemies: unknown, taken: u
 let mainWindow: BrowserWindow | undefined;
 // The client stops naming the champion once the game starts: remember the last champ-select pick for the overlay.
 let lastPick: { championId: number; mode: AppMode; position: Position | null } | null = null;
+// Mayhem games from the match history, read when the client connects and after each game; one read at a time.
+const COLLECT_ON = new Set(['None', 'Lobby', 'EndOfGame']);
+let lastPhase = 'Disconnected';
+let collecting: Promise<unknown> = Promise.resolve();
 const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) }, (state) => {
   if (state.championId && state.mode) lastPick = { championId: state.championId, mode: state.mode, position: state.position };
+  const creds = watcher.creds;
+  if (creds && state.phase !== lastPhase && COLLECT_ON.has(state.phase)) {
+    collecting = collecting.then(() =>
+      collectMayhemGames(lcuCaller(creds), services.mayhemFile).then(
+        (n) => n && watcher.note(`mayhem games: ${n} added`),
+        (err) => watcher.note(`mayhem games: ${err instanceof Error ? err.message : String(err)}`),
+      ),
+    );
+  }
+  lastPhase = state.phase;
   mainWindow?.webContents.send('lcu:state', state);
 });
 ipcMain.handle('lcu:state', () => watcher.state);
@@ -105,6 +120,7 @@ ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
     return services.aiBuild(id, parseIds(augmentIds), geminiPost(key, fetchImpl));
   }),
 );
+ipcMain.handle('mayhem:picks', (_e, championId: unknown) => reply(() => services.mayhemPicks(parseIds([championId])[0])));
 ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
   globalShortcut.unregister(OVERLAY_KEY);
   // register() returns false when another app already holds the key

@@ -16,7 +16,7 @@ export function scrub(value: unknown): unknown {
 type Json = Record<string, unknown>;
 const obj = (v: unknown): Json | null => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Json) : null);
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
-const isMayhem = (g: Json) => g.queueId === 2400 || g.gameMode === 'KIWI' || (g.mapId === 12 && g.gameMode !== 'ARAM');
+export const isMayhem = (g: Json) => g.queueId === 2400 || g.gameMode === 'KIWI' || (g.mapId === 12 && g.gameMode !== 'ARAM');
 
 /**
  * Do the client's game details keep a Mayhem game's augments? (Riot's match-v5 does not list Mayhem games.)

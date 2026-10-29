@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('lolh', {
   overlayData: () => ipcRenderer.invoke('overlay:data'),
   hideOverlay: () => ipcRenderer.invoke('overlay:hide'),
   aiBuild: (championId, augmentIds) => ipcRenderer.invoke('ai:build', championId, augmentIds),
+  mayhemPicks: (championId) => ipcRenderer.invoke('mayhem:picks', championId),
   hasAiKey: () => ipcRenderer.invoke('ai:key:has'),
   setAiKey: (key) => ipcRenderer.invoke('ai:key:set', key),
   clearAiKey: () => ipcRenderer.invoke('ai:key:clear'),

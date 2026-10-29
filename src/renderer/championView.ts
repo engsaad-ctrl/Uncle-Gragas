@@ -67,6 +67,42 @@ function applyControl(p: ChampionPage): HTMLElement {
 }
 
 const MAX_PICKS = 6;
+/** Below this many games a win rate says little: shown, but marked. */
+const FEW_GAMES = 5;
+
+/** Mayhem from the games the client keeps: what players of this champion really took, and how often they won. */
+function realPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, show: ReturnType<typeof detailPanel>['show']): HTMLElement {
+  const s = el('section', 'panel');
+  const name = shownName(p.champion);
+  s.append(el('h2', '', `ماذا أخذ لاعبو ${name} في مبارياتكم`), el('p', 'status loading', 'جاري القراءة…'));
+  void window.lolh.mayhemPicks(p.champion.id).then((r) => {
+    s.lastElementChild!.remove();
+    if (isError(r)) return void s.append(el('p', 'missing', r.error));
+    const how = 'تُجمع تلقائياً من سجل مباريات العميل بعد كل مباراة Mayhem، ولكل مباراة عشرة لاعبين.';
+    if (!r.championGames) return void s.append(el('p', 'hint', `لا يوجد ${name} في ${r.games} مباراة محفوظة بعد. ${how}`));
+    const badge = (games: number, wins: number) => `${games} · ${Math.round((100 * wins) / games)}% فوز`;
+    const grid = el('div', 'grid');
+    grid.append(...r.augments.slice(0, 12).map((x, i) => {
+      const a = x.augment;
+      const chip = augmentChip(a, false, () => show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), badge(x.games, x.wins));
+      if (x.games < FEW_GAMES) chip.classList.add('few');
+      return stagger(chip, i);
+    }));
+    const items = el('div', 'icons');
+    for (const x of r.items.slice(0, 10)) {
+      const group = el('div', `choice${x.games < FEW_GAMES ? ' few' : ''}`);
+      group.append(iconOf(x.item), el('small', '', badge(x.games, x.wins)));
+      items.append(group);
+    }
+    s.append(
+      el('p', 'status', `${r.championGames} مرة من ${r.games} مباراة محفوظة. ${how}`),
+      el('h3', 'sub-title', 'التعزيزات الأكثر أخذاً'), grid,
+      el('h3', 'sub-title', 'الأيتمات الأكثر شراءً'), items,
+      el('p', 'hint', `الرقم الأول عدد المرات ثم نسبة الفوز. الباهت أقل من ${FEW_GAMES} مرات، فنسبته لا يُعتمد عليها بعد.`),
+    );
+  });
+  return s;
+}
 
 /** Mayhem without a game: pick the augments, ask Gemini, and see both builds with the calculator's numbers. */
 function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement): HTMLElement {
@@ -231,7 +267,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     // Each group shows 6 at first: offer the rest whenever any group has more.
     if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
     section.append(el('p', 'hint', '#1 هو الأفضل لهذا البطل حسب الإحصائيات، والنسبة هي كم من لاعبي البطل يختارونه. التعزيزات بلا عينة كافية مستبعدة.'));
-    body.push(section, aiPanel(p, iconButton));
+    body.push(section, realPanel(p, iconButton, detail.show), aiPanel(p, iconButton));
   }
 
   // Skills: priority, spells, path grid.

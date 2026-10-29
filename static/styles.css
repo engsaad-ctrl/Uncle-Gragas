@@ -439,3 +439,4 @@ a.band-champ:hover { background: var(--panel-2); }
 .ai-calc p { margin: 2px 0; }
 .ai-calc b { color: var(--accent); }
 
+.few { opacity: .55; }
