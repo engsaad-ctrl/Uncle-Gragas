@@ -170,8 +170,19 @@ async function ask(post: GeminiPost, input: string, schema: object): Promise<unk
 
 export function geminiPost(apiKey: string, fetchImpl: typeof fetch): GeminiPost {
   return async (body) => {
-    const res = await fetchImpl(ENDPOINT, { method: 'POST', headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    return { status: res.status, json: await res.json().catch(() => null) };
+    try {
+      // A stuck request must not leave the F7 button waiting for good.
+      const res = await fetchImpl(ENDPOINT, {
+        method: 'POST',
+        headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(120_000),
+      });
+      return { status: res.status, json: await res.json().catch(() => null) };
+    } catch (err) {
+      if (err instanceof Error && err.name === 'TimeoutError') throw new Error('تأخر Gemini أكثر من دقيقتين. حاول مرة أخرى.');
+      throw err;
+    }
   };
 }
 

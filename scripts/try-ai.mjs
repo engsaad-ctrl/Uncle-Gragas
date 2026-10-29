@@ -25,7 +25,7 @@ const augments = augmentNames.map((n) => {
   if (!a) throw new Error(`No Mayhem augment named ${n}`);
   return a;
 });
-console.log(`${champion.enName} + ${augments.map((a) => a.enName).join(', ')}: asking Gemini…`);
+console.log(`${champion.enName} + ${augments.map((a) => a.enName).join(', ')}: loading the game files (minutes on the first run), then two Gemini requests…`);
 const advice = await services.aiBuild(champion.id, augments.map((a) => a.id), geminiPost(key.trim(), fetch));
 const items = (await services.items('mayhem')).list;
 const name = (id) => items.find((i) => i.id === id)?.enName ?? `#${id}`;
