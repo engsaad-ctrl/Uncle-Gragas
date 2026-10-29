@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { applyAll, toPayloads } from '../lcu/apply.js';
 import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
+import { mayhemAugmentCheck } from '../lcu/diagnostics.js';
 import { loadProfile, parsePuuid } from '../lcu/profile.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import type { Position } from '../stats/opgg.js';
@@ -105,7 +106,16 @@ ipcMain.handle('diagnostics:export', () => reply(async () => {
     filters: [{ name: 'JSON', extensions: ['json'] }],
   });
   if (canceled || !filePath) return { saved: null };
-  await writeFile(filePath, JSON.stringify(watcher.report(app.getVersion()), null, 2));
+  const creds = watcher.creds;
+  const mayhemAugments = creds
+    ? await (async () => {
+        const call = lcuCaller(creds);
+        const me = (await call('GET', '/lol-summoner/v1/current-summoner')) as { puuid?: string } | null;
+        const list = await call('GET', `/lol-match-history/v1/products/lol/${me?.puuid}/matches?begIndex=0&endIndex=49`);
+        return mayhemAugmentCheck(list, (id) => call('GET', `/lol-match-history/v1/games/${id}`));
+      })().catch((err) => ({ error: err instanceof Error ? err.message : String(err) }))
+    : 'عميل اللعبة غير مفتوح';
+  await writeFile(filePath, JSON.stringify({ ...(watcher.report(app.getVersion()) as object), mayhemAugments }, null, 2));
   return { saved: filePath };
 }));
 
