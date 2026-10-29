@@ -7,7 +7,8 @@ import { join } from 'node:path';
 import { geminiPost } from '../dist/ai/advisor.js';
 import { createServices } from '../dist/main/services.js';
 
-const [championName, ...augmentNames] = process.argv.slice(2);
+// npm on Windows hands names with spaces over as ^Miss^ Fortune^: the carets are cmd's escapes, not part of the name.
+const [championName, ...augmentNames] = process.argv.slice(2).map((a) => a.replace(/\^/g, ''));
 if (!championName || !augmentNames.length) {
   console.error('Usage: node scripts/try-ai.mjs "<champion>" "<augment>" ["<augment>" ...]');
   process.exit(1);
