@@ -59,7 +59,9 @@ describe('adviseBuild', () => {
     expect(a.avoid).toEqual([]); // 3031 was avoided but is in the alternative build
     expect(a.effects).toHaveLength(1);
     expect(a.style).toBe('burn'); // the final step's style, not step 1's 'ap'
-    expect(a.alternative).toEqual({ style: 'ad', when: 'إذا احتاج فريقك ضرراً مادياً', items: [{ id: 3006, reason: '', inUsual: true }, { id: 3031, reason: 'ضرر هجوم', inUsual: true }] });
+    expect(a.alternative).toMatchObject({ style: 'ad', when: 'إذا احتاج فريقك ضرراً مادياً', items: [{ id: 3006, reason: '', inUsual: true }, { id: 3031, reason: 'ضرر هجوم', inUsual: true }] });
+    expect(a.calc.items).toEqual([3020, 3089]); // each build carries its own calculator numbers
+    expect(a.alternative?.calc.items).toEqual([3006, 3031]);
     expect(bodies[1].contents[0].parts[0].text).toContain('usual ARAM build');
   });
 

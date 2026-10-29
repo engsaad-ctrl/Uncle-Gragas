@@ -33,8 +33,10 @@ export interface Advice {
   summary: string;
   /** The passives read from the texts that went into the numbers, with the sentence each came from. */
   effects: Effect[];
+  /** The calculator's numbers for this build, shown so the player can check them. */
+  calc: BuildResult;
   /** A strong build of another style, when the augments open more than one path (Back To Basics: AP W or AD Q Kai'Sa). */
-  alternative?: { style: BuildStyle; when: string; items: { id: number; reason: string; inUsual: boolean }[] };
+  alternative?: { style: BuildStyle; when: string; items: { id: number; reason: string; inUsual: boolean }[]; calc: BuildResult };
 }
 
 // Plain JSON schemas (no oneOf, no constraints beyond enums), sent as responseJsonSchema.
@@ -228,7 +230,8 @@ export async function adviseBuild(post: GeminiPost, input: AdviceInput, calculat
   const final = Final.parse(
     await ask(post, `${context}\n\nYour step 1: style ${plan.style} (${plan.styleReason}); passives: ${JSON.stringify(effects)}\n\n${FINAL_TASK}\n${table}`, FINAL_SCHEMA),
   );
-  const chosen = candidates[final.chosen] ?? candidates[0];
+  const chosenAt = candidates[final.chosen] ? final.chosen : 0;
+  const chosen = candidates[chosenAt];
   const usual = new Set(input.usual);
   const poolIds = new Set(input.pool.map((i) => i.id));
   const alt = candidates[final.alternative];
@@ -244,8 +247,9 @@ export async function adviseBuild(post: GeminiPost, input: AdviceInput, calculat
     avoid: final.avoid.filter((a) => poolIds.has(a.id) && !chosen.items.includes(a.id) && !shownAlt?.items.includes(a.id)).slice(0, 3),
     summary: final.summary,
     effects: effects.filter((e) => !poolIds.has(e.source) || chosen.items.includes(e.source)),
+    calc: results[chosenAt],
     ...(shownAlt && final.alternativeStyle
-      ? { alternative: { style: final.alternativeStyle, when: final.alternativeWhen ?? '', items: reasons(final.alternativeItems, shownAlt.items) } }
+      ? { alternative: { style: final.alternativeStyle, when: final.alternativeWhen ?? '', items: reasons(final.alternativeItems, shownAlt.items), calc: results[final.alternative] } }
       : {}),
   };
 }
