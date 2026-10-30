@@ -12,8 +12,9 @@ export function overlayWindow(root: string) {
   // On the screen the mouse is on: with two monitors the game is where the player presses F7, not always the main one.
   const place = (w: BrowserWindow) => {
     const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-    const width = large ? 520 : 400;
-    const height = large ? Math.min(900, workArea.height - 100) : 620;
+    // Large is a wide panel like other overlays (nearly half the screen, nearly its full height); normal is the old box.
+    const width = large ? Math.round(Math.min(900, workArea.width * 0.45)) : 400;
+    const height = large ? workArea.height - 100 : 620;
     w.setBounds({ x: workArea.x + workArea.width - width - 20, y: workArea.y + 70, width, height });
   };
   const create = () => {
