@@ -10,12 +10,23 @@ const select = (me: Record<string, unknown>) => ({
   theirTeam: [{ cellId: 5, championId: 238 }],
 });
 
+describe('champions on offer', () => {
+  it('reads the offered list and the bench in both shapes, and copes with neither', () => {
+    const f = { gameData: { queue: { gameMode: 'ARAM', id: 2400, mapId: 12 } } };
+    const base = { localPlayerCellId: 1, myTeam: [{ cellId: 1, championId: 0 }], theirTeam: [] };
+    expect(toLcuState('ChampSelect', f, { ...base, benchChampions: [{ championId: 7 }, { championId: 9 }] }, [55, 157])).toMatchObject({ mode: 'mayhem', offered: [55, 157], bench: [7, 9] });
+    expect(toLcuState('ChampSelect', f, { ...base, benchChampionIds: [3] }, null)).toMatchObject({ offered: [], bench: [3] });
+    expect(toLcuState('ChampSelect', f, base, { errorCode: 'x' })).toMatchObject({ offered: [], bench: [] });
+  });
+});
+
 describe('toLcuState', () => {
   it('reads my hovered champion, lane and mode in ranked', () => {
     const s = toLcuState('ChampSelect', flow('CLASSIC', 420), select({ championId: 0, championPickIntent: 103, assignedPosition: 'middle' }));
     expect(s).toEqual({
       phase: 'ChampSelect', mode: 'normal', queueId: 420, gameMode: 'CLASSIC', championId: 103, locked: false, position: 'mid',
       enemies: [238], allies: [99], // the teammate's pick, not mine; the enemy's shown pick
+      offered: [], bench: [],
     });
   });
 

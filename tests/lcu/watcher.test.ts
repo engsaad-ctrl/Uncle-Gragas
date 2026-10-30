@@ -39,7 +39,7 @@ describe('LcuWatcher', () => {
     answers['/lol-gameflow/v1/gameflow-phase'] = 'InProgress';
     await w.tick();
     expect(seen.at(-1)).toMatchObject({ phase: 'InProgress', championId: null });
-    expect(client.calls.filter((p) => p.includes('champ-select'))).toHaveLength(2); // not asked outside champ select
+    expect(client.calls.filter((p) => p.includes('champ-select'))).toHaveLength(4); // the session and the offered list, twice; not asked outside champ select
   });
 
   it('drops the connection on errors and reconnects later', async () => {

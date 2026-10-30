@@ -9,7 +9,7 @@ import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
 import type { AugmentEffect, GameTeams, OverlayData } from '../main/services.js';
-import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
+import { adviceNodes, AI_HINT, AI_LOADING, WHY_AR } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
 import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
@@ -57,7 +57,6 @@ let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
 let engine: { key: string; items: { item: ItemEntry; why: string[] }[] } | undefined;
-const WHY_AR: Record<string, string> = { base: 'شائع لهذا البطل', mayhem: 'يشتريه لاعبو البطل في Mayhem', link: 'يتكامل مع تعزيزاتك', synergy: 'فاز أكثر مع تعزيزاتك', required: 'يطلبه تعزيزك', enemy: 'ضد ضرر الخصم السحري' };
 let engineAsked = '';
 async function refreshEngine() {
   const key = pickedKey();

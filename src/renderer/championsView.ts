@@ -1,6 +1,7 @@
 import type { LcuState } from '../lcu/state.js';
 import type { ChampionListEntry } from '../texts/champions.js';
 import { champLink, el, getAppMode, icon, isError, lcuNow, MODE_TITLE, nameEl, PAGE_MODE, pageSignal, pct, searchBox, shownName, getNameLang, stagger } from './dom.js';
+import { pickPanel } from './pickPanel.js';
 import { normalizeArabic } from './search.js';
 
 let cached: ChampionListEntry[] | undefined;
@@ -15,7 +16,7 @@ export async function championsView(root: HTMLElement, alive: () => boolean) {
   head.append(title, el('p', 'sub', 'اختر بطلاً لترى بناءه وقدراته وأفضل تعزيزاته.'), filters);
   const status = el('p', 'status loading', 'جاري تحميل قائمة الأبطال…');
   const grid = el('div', 'champ-grid');
-  root.replaceChildren(head, suggestionsPanel(alive), status, grid);
+  root.replaceChildren(head, pickPanel(), suggestionsPanel(alive), status, grid);
 
   if (!cached) {
     const reply = await window.lolh.listChampions();

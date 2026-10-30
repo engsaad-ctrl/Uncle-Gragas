@@ -2,7 +2,8 @@ import type { ChampionPage, ItemChoice, Matchup, PageMode, RatedAugment, RuneRow
 import type { Position } from '../stats/opgg.js';
 import type { AugmentText, Rarity } from '../texts/augments.js';
 import type { ItemEntry } from '../app/itemList.js';
-import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
+import { adviceNodes, AI_HINT, AI_LOADING, WHY_AR } from './aiAdvice.js';
+import { pickPanel } from './pickPanel.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
@@ -33,7 +34,7 @@ export async function championView(root: HTMLElement, alive: () => boolean, id: 
     status.textContent = `تعذّر فتح صفحة البطل: ${reply.error}`;
     return;
   }
-  root.replaceChildren(...renderPage(reply));
+  root.replaceChildren(pickPanel(), ...renderPage(reply));
 }
 
 /** "تطبيق في العميل": writes this page's runes, item set and (in champ select) summoner spells into the client. */
@@ -68,14 +69,18 @@ function applyControl(p: ChampionPage): HTMLElement {
 
 const MAX_PICKS = 6;
 
-/** Mayhem without a game: pick the augments, ask Gemini, and see both builds with the calculator's numbers. */
+/** Mayhem without a game: pick any augments and see the engine's build at once; Gemini's opinion on demand. */
 function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement): HTMLElement {
   const s = el('section', 'panel');
-  s.append(el('h2', '', 'جرّب بناء الذكاء الاصطناعي'), el('p', 'hint', `اختر حتى ${MAX_PICKS} تعزيزات كأنك أخذتها في المباراة، ثم اضغط الزر.`));
+  s.append(el('h2', '', 'ابنِ بناءك حسب تعزيزاتك'), el('p', 'hint', `اختر حتى ${MAX_PICKS} تعزيزات كأنك أخذتها في المباراة، فيظهر البناء المحسوب لها فوراً.`));
   const search = searchBox('ابحث عن تعزيز');
   const chosenEl = el('div', 'grid');
   const listEl = el('div', 'grid');
   const box = el('div', 'ov-ai');
+  const engineEl = el('div', 'ov-adapted');
+  const engineTitle = el('h3', 'sub-title', 'البناء المحسوب لتعزيزاتك');
+  engineTitle.hidden = true;
+  let engineRun = 0;
   const picked = new Map<number, AugmentText>();
   // The rated ones first (best for this champion), then every other Mayhem augment once it loads.
   let all: AugmentText[] = p.augments;
@@ -87,7 +92,24 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement): HTML
     else if (picked.size < MAX_PICKS) picked.set(a.id, a);
     run++; // an answer still on its way is for the old picks
     draw();
+    void refreshEngine();
   };
+  async function refreshEngine() {
+    const id = ++engineRun;
+    engineTitle.hidden = !picked.size;
+    if (!picked.size) return void engineEl.replaceChildren();
+    const r = await window.lolh.engineBuild(p.champion.id, [...picked.keys()]);
+    if (id !== engineRun || isError(r)) return;
+    engineEl.replaceChildren(
+      ...r.map(({ item, why }) => {
+        const row = el('div', 'ov-adapted-row');
+        const txt = el('div', 'ov-name');
+        txt.append(el('b', '', shownName(item)), el('small', '', why.map((w) => WHY_AR[w] ?? w).join(' · ')));
+        row.append(iconOf(item), txt);
+        return row;
+      }),
+    );
+  }
   const drawList = () => {
     chosenEl.replaceChildren(...[...picked.values()].map((a) => augmentChip(a, true, () => toggle(a))));
     const found = filterAugments(all, search.input.value, 'all').filter((a) => !picked.has(a.id)).slice(0, 12);
@@ -119,7 +141,7 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement): HTML
     drawList();
   });
   draw();
-  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, box);
+  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, engineTitle, engineEl, box);
   return s;
 }
 

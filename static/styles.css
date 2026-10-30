@@ -331,6 +331,10 @@ body { display: block; }
 .champ.mini small { color: var(--muted); font-weight: 500; font-size: 11px; }
 .suggest { margin-bottom: 14px; border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
 .suggest .champ.mini { width: 120px; }
+.pick-panel .champ.mini { width: 132px; padding: 10px 6px; } .pick-panel .champ.mini img { width: 84px; height: 84px; border-radius: 8px; }
+.pick-panel .champ.mini small { font-size: 13px; font-weight: 700; color: var(--goldtxt); unicode-bidi: plaintext; }
+.ov-fit { unicode-bidi: plaintext; } /* +3.4, not 3.4+ */
+.pick-panel .champ.mini.me { border-color: var(--accent); } .pick-panel .champ.mini.best small { color: var(--heal); }
 
 /* Profile and match history */
 .profile-head { display: flex; align-items: center; gap: 16px; padding: 18px 0 10px; }

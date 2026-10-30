@@ -37,9 +37,11 @@ export class LcuWatcher {
       const phase = await this.get('/lol-gameflow/v1/gameflow-phase');
       const flow = await this.get('/lol-gameflow/v1/session');
       const champSelect = phase === 'ChampSelect' ? await this.get('/lol-champ-select/v1/session') : null;
-      this.lastRaw = { at: new Date().toISOString(), phase, gameflowSession: flow, champSelectSession: champSelect };
+      // Modes without this list answer with an error: it just stays empty.
+      const offered = phase === 'ChampSelect' ? await this.get('/lol-lobby-team-builder/champ-select/v1/subset-champion-list').catch(() => null) : null;
+      this.lastRaw = { at: new Date().toISOString(), phase, gameflowSession: flow, champSelectSession: champSelect, offered };
       if (champSelect) this.lastChampSelect = champSelect;
-      this.set(toLcuState(typeof phase === 'string' ? phase : 'None', flow, champSelect));
+      this.set(toLcuState(typeof phase === 'string' ? phase : 'None', flow, champSelect, offered));
     } catch (err) {
       this.note(`error: ${err instanceof Error ? err.message : String(err)}`);
       this.get = undefined; // client closed or restarted: find it again next tick

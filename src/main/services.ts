@@ -532,6 +532,12 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
   }
 
+  /** Each champion's effect on its team's win chance in our games, in points (see augmentEffects for the scale). */
+  async function championStrengths(ids: number[]): Promise<{ id: number; points: number }[]> {
+    const m = await teamModel();
+    return ids.map((id) => ({ id, points: 25 * strength(m.fit, id, []) }));
+  }
+
   async function teamSummary(mine: number[], enemy: number[]): Promise<TeamSummary> {
     const m = await teamModel();
     const sum = (ids: number[]) => ids.reduce((t, id) => t + strength(m.fit, id, []), 0);
@@ -541,5 +547,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { side: diff > 0.15 ? 'stronger' : diff < -0.15 ? 'weaker' : 'even', magic: { mine: magic(mine), enemy: magic(enemy) } };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, teamSummary, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, championStrengths, teamSummary, warm };
 }

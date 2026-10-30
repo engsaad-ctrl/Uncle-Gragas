@@ -14,10 +14,13 @@ export interface LcuState {
   /** Champions the enemy team has shown (locked), and those taken by teammates: for pick suggestions. */
   enemies: number[];
   allies: number[];
+  /** ARAM and Mayhem: the champions offered to the player, and the ones on the bench to swap with. */
+  offered: number[];
+  bench: number[];
 }
 
 export const DISCONNECTED: LcuState = {
-  phase: 'Disconnected', mode: null, queueId: null, gameMode: null, championId: null, locked: false, position: null, enemies: [], allies: [],
+  phase: 'Disconnected', mode: null, queueId: null, gameMode: null, championId: null, locked: false, position: null, enemies: [], allies: [], offered: [], bench: [],
 };
 
 // shortcut: KIWI (Mayhem) is inferred from the mode's internal code name; confirm with a real diagnostics export.
@@ -30,8 +33,9 @@ const LANES: Record<string, Position> = { top: 'top', jungle: 'jungle', middle: 
 type Json = Record<string, unknown> | null | undefined;
 const obj = (v: unknown): Json => (v && typeof v === 'object' ? (v as Record<string, unknown>) : null);
 const num = (v: unknown) => (typeof v === 'number' ? v : null);
+const ids = (v: unknown) => (Array.isArray(v) ? v : []).filter((x): x is number => typeof x === 'number' && x > 0);
 
-export function toLcuState(phase: string, gameflow: unknown, champSelect: unknown): LcuState {
+export function toLcuState(phase: string, gameflow: unknown, champSelect: unknown, offered?: unknown): LcuState {
   const queue = obj(obj(obj(gameflow)?.gameData)?.queue);
   const gameMode = typeof queue?.gameMode === 'string' ? queue.gameMode : null;
   const queueId = num(queue?.id);
@@ -59,6 +63,9 @@ export function toLcuState(phase: string, gameflow: unknown, champSelect: unknow
     position: LANES[String(me?.assignedPosition ?? '')] ?? null,
     enemies: picked(team(session?.theirTeam)),
     allies: picked(team(session?.myTeam).filter((p) => p !== me)),
+    offered: ids(offered),
+    // Newer clients list objects with championId, older ones plain ids.
+    bench: [...picked(team(session?.benchChampions)), ...ids(session?.benchChampionIds)],
   };
 }
 

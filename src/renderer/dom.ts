@@ -27,6 +27,7 @@ declare global {
       lcuState(): Promise<LcuState>;
       applyToClient(id: number, mode: PageMode, position: Position | 'auto', flash: FlashKey | null): Promise<Reply<ApplyResult>>;
       suggestions(position: LanePosition, enemies: number[], taken: number[]): Promise<Reply<Suggestion[]>>;
+      championStrengths(ids: number[]): Promise<Reply<{ id: number; points: number }[]>>;
       profile(puuid?: string): Promise<Reply<ProfilePage>>;
       overlayData(): Promise<Reply<OverlayData>>;
       hideOverlay(): Promise<void>;
