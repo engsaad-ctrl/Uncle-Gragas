@@ -100,6 +100,9 @@ function resolve<T>(ids: number[], map: Map<number, T>, to: (t: T) => NamedText)
   });
 }
 
+/** Summoner spell id of Exhaust, which Mayhem disables. */
+const EXHAUST = 3;
+
 function runeRow(slot: StyleSlot, runes: Map<number, RuneText>, isSelected: (id: number) => boolean): RuneRow {
   return {
     label: slot.label,
@@ -170,14 +173,15 @@ export function composeChampionPage(src: PageSources): ChampionPage {
     stats: build ? { games: build.games, winRate: build.winRate, pickRate: build.pickRate, banRate: build.banRate } : null,
     skillOrder: build?.skillOrder ?? [],
     skillPriority: build?.skillPriority ?? [],
-    spells: build?.spells ? resolve(build.spells.ids, src.spells, (s) => s) : [],
+    // Mayhem has no runes at all, keeps Flash in one slot and disables Exhaust (the build underneath is ARAM's).
+    spells: build?.spells ? resolve(src.mode === 'mayhem' ? build.spells.ids.filter((id) => id !== EXHAUST) : build.spells.ids, src.spells, (s) => s) : [],
     starter: choice(build?.starter ?? null),
     core: choice(build?.core ?? null),
     boots: choice(build?.boots ?? null),
     fourth: choices(build?.fourth ?? []),
     fifth: choices(build?.fifth ?? []),
     sixth: choices(build?.sixth ?? []),
-    runes: build?.runes ? composeRunes(build.runes, src.styles, src.runes) : null,
+    runes: build?.runes && src.mode !== 'mayhem' ? composeRunes(build.runes, src.styles, src.runes) : null,
     augments,
     matchups: { strong: matchups(build?.strongAgainst, src.championList), weak: matchups(build?.weakAgainst, src.championList) },
     fetchedAt: fetched.length ? Math.min(...fetched.map((f) => f.fetchedAt)) : null,

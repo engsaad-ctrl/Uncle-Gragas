@@ -90,6 +90,8 @@ describe('composeChampionPage', () => {
     expect(p.augments.map((a) => a.id)).toEqual([2127, 1323]);
     expect(p.augments[0]).toMatchObject({ performance: 88.9, popularity: 0.2 });
     expect(p.stale).toBe(true);
+    expect(p.runes).toBeNull(); // Mayhem has no runes, whatever the ARAM build underneath has
+    expect(p.spells.map((s) => s.id)).not.toContain(3); // nor Exhaust
   });
 
   it("keeps the stats site's own order for the champion (its recommendation), not the score", () => {
