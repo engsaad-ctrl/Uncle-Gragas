@@ -23,9 +23,17 @@ describe('build engine', () => {
     expect(b).toHaveLength(6);
   });
   it('puts an augment-required item in, and lets links and synergy move items up', () => {
-    const b = buildFor({ ...input, required: [30], links: new Map([[16, 3]]) }).items;
+    const b = buildFor({ ...input, mayhem: [...input.mayhem, { id: 16, games: 5, wins: 3 }], required: [30], links: new Map([[16, 3]]) }).items;
     expect(b).toContain(30);
     expect(b).toContain(16);
+  });
+  it("lets links and synergy move only items the champion's players buy", () => {
+    const rare = { ...input, mayhem: [...input.mayhem, { id: 16, games: 2, wins: 2 }] }; // 2% of the players: below the gate
+    expect(buildFor({ ...rare, links: new Map([[16, 9]]), synergy: new Map([[15, 9]]) }).items).not.toEqual(expect.arrayContaining([16]));
+    expect(buildFor({ ...rare, synergy: new Map([[15, 9]]) }).items).not.toContain(15);
+  });
+  it('still follows the links for a champion with no data', () => {
+    expect(buildFor({ ...input, base: [], mayhem: [], mayhemGames: 0, links: new Map([[16, 3]]) }).items).toEqual([16]);
   });
   it('allows the other damage kind when an augment switches it, and never two boots', () => {
     const b = buildFor({ ...input, switchesDamage: true, base: [...input.base, { ids: [2], pickRate: 0.8, winRate: 0.6 }] }).items;
