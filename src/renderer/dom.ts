@@ -36,6 +36,9 @@ declare global {
       setAiKey(key: string): Promise<Reply<void>>;
       clearAiKey(): Promise<Reply<void>>;
       setOverlayEnabled(on: boolean): Promise<boolean>;
+      /** The game's display mode from the client (0 fullscreen, 1 windowed, 2 borderless); null without the client. */
+      gameWindowMode(): Promise<Reply<number | null>>;
+      setBorderless(): Promise<Reply<number | null>>;
       onOverlayShow(callback: () => void): void;
       updateStatus(): Promise<{ version: string; status: UpdateStatus }>;
       checkUpdate(): Promise<UpdateStatus>;

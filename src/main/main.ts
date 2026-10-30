@@ -121,6 +121,24 @@ ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
   }),
 );
 ipcMain.handle('mayhem:picks', (_e, championId: unknown) => reply(() => services.mayhemPicks(parseIds([championId])[0])));
+// In exclusive fullscreen (WindowMode 0) the game draws over every window, F7's included; Borderless is 2. The setting
+// is the player's own, changed only from the button in settings, through the client so it is kept with the account.
+const GAME_SETTINGS = '/lol-game-settings/v1/game-settings';
+const windowMode = async () => {
+  if (!watcher.creds) return null;
+  const s = (await lcuCaller(watcher.creds)('GET', GAME_SETTINGS)) as { General?: { WindowMode?: unknown } } | null;
+  return typeof s?.General?.WindowMode === 'number' ? s.General.WindowMode : null;
+};
+ipcMain.handle('game:windowMode', () => reply(windowMode));
+ipcMain.handle('game:borderless', () =>
+  reply(async () => {
+    if (!watcher.creds) throw new Error('افتح عميل اللعبة أولاً.');
+    const call = lcuCaller(watcher.creds);
+    await call('PATCH', GAME_SETTINGS, { General: { WindowMode: 2 } });
+    await call('POST', '/lol-game-settings/v1/save').catch(() => undefined); // writes game.cfg; a client without it keeps the PATCH
+    return windowMode();
+  }),
+);
 ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
   globalShortcut.unregister(OVERLAY_KEY);
   // register() returns false when another app already holds the key

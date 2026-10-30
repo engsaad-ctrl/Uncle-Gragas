@@ -20,6 +20,8 @@ contextBridge.exposeInMainWorld('lolh', {
   setAiKey: (key) => ipcRenderer.invoke('ai:key:set', key),
   clearAiKey: () => ipcRenderer.invoke('ai:key:clear'),
   setOverlayEnabled: (on) => ipcRenderer.invoke('overlay:enabled', on === true),
+  gameWindowMode: () => ipcRenderer.invoke('game:windowMode'),
+  setBorderless: () => ipcRenderer.invoke('game:borderless'),
   updateStatus: () => ipcRenderer.invoke('update:status'),
   checkUpdate: () => ipcRenderer.invoke('update:check'),
   installUpdate: () => ipcRenderer.invoke('update:install'),

@@ -313,6 +313,7 @@ body { display: block; }
 .apply-btn:disabled { opacity: .45; cursor: not-allowed; }
 .apply-note { font-size: 12px; max-width: 280px; text-align: end; }
 .apply-note .ok { color: var(--heal); } .apply-note .bad { color: var(--status); }
+.hint.bad { color: var(--status); }
 .toast { position: fixed; z-index: 60; bottom: 16px; left: 50%; translate: -50% 12px; padding: 10px 16px; font-size: 13px; background: color-mix(in srgb, var(--panel-2) 94%, transparent); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 32px #000a; opacity: 0; pointer-events: none; transition: opacity .2s ease, translate .2s ease; }
 .toast.show { opacity: 1; translate: -50% 0; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }

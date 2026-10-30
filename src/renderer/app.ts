@@ -6,7 +6,7 @@ import type { LanePosition, Position } from '../stats/opgg.js';
 import { augmentsView } from './augmentsView.js';
 import { championsView } from './championsView.js';
 import { championView } from './championView.js';
-import { applyLines, byId, el, icon, lcuNow, nextPage, getAppMode, getFlashKey, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setFlashKey, setLcu, setNameLang, toast } from './dom.js';
+import { applyLines, byId, el, icon, lcuNow, nextPage, getAppMode, getFlashKey, getNameLang, isError, MODE_TITLE, PAGE_MODE, pills, setAppMode, setFlashKey, setLcu, setNameLang, toast, type Reply } from './dom.js';
 import { itemsView } from './itemsView.js';
 import { profileView } from './profileView.js';
 import { tierListView } from './tierListView.js';
@@ -93,6 +93,28 @@ const setOverlay = async (on: boolean) => {
   overlayNote.textContent = on && !ok ? 'تعذّر حجز زر F7: برنامج آخر يستخدمه.' : OVERLAY_HINT;
 };
 void setOverlay(overlayOn);
+// Exclusive fullscreen hides every window behind the game, F7's too: say so, and offer to switch the game to Borderless.
+const modeNote = el('p', 'hint');
+const borderlessButton = el('button', 'pill', 'حوّل اللعبة إلى Borderless');
+borderlessButton.type = 'button';
+borderlessButton.hidden = true;
+const showMode = (r: Reply<number | null>) => {
+  const fullscreen = !isError(r) && r === 0;
+  borderlessButton.hidden = !fullscreen;
+  modeNote.className = fullscreen ? 'hint bad' : 'hint';
+  modeNote.textContent = isError(r)
+    ? `تعذّر قراءة وضع العرض: ${r.error}`
+    : r === null
+      ? 'افتح عميل اللعبة ليتحقق البرنامج من وضع العرض.'
+      : fullscreen
+        ? 'اللعبة الآن في وضع ملء الشاشة الحصري، فلن تظهر نافذة F7 فوقها. اضغط الزر لتحويلها إلى Borderless، ويسري التغيير من المباراة القادمة.'
+        : 'وضع العرض في اللعبة مناسب لنافذة F7.';
+};
+borderlessButton.addEventListener('click', async () => {
+  borderlessButton.disabled = true;
+  showMode(await window.lolh.setBorderless());
+  borderlessButton.disabled = false;
+});
 const exportButton = el('button', 'pill', 'تصدير التشخيص');
 exportButton.type = 'button';
 const exportNote = el('p', 'hint', 'يحفظ ملفاً بردود عميل اللعبة بدون اسمك أو معرّفات حسابك، لترسله عند وجود مشكلة.');
@@ -207,6 +229,8 @@ settings.append(
       }
     }),
     overlayNote,
+    modeNote,
+    borderlessButton,
   ),
   section('مفتاح Gemini (بناء Mayhem بالذكاء الاصطناعي)', aiKeyInput, aiKeySave, aiKeyNote),
   section('التشخيص', exportButton, exportNote),
@@ -222,6 +246,7 @@ settings.append(
 );
 const setSettingsOpen = (open: boolean) => {
   settings.hidden = !open;
+  if (open) void window.lolh.gameWindowMode().then(showMode);
   settingsBtn.setAttribute('aria-expanded', String(open));
   settingsBtn.classList.toggle('active', open);
   byId('side').classList.toggle('pinned', open); // keep the rail expanded while settings are open

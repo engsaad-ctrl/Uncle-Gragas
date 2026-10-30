@@ -7,13 +7,15 @@ import { join } from 'node:path';
 
 export function overlayWindow(root: string) {
   let win: BrowserWindow | undefined;
+  // On the screen the mouse is on: with two monitors the game is where the player presses F7, not always the main one.
+  const place = (w: BrowserWindow) => {
+    const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    w.setBounds({ x: workArea.x + workArea.width - 420, y: workArea.y + 70, width: 400, height: 620 });
+  };
   const create = () => {
-    const { workArea } = screen.getPrimaryDisplay();
     const w = new BrowserWindow({
       width: 400,
       height: 620,
-      x: workArea.x + workArea.width - 420,
-      y: workArea.y + 70,
       frame: false,
       transparent: true,
       alwaysOnTop: true,
@@ -46,6 +48,7 @@ export function overlayWindow(root: string) {
       if (win.isVisible()) return win.hide();
       win.webContents.send('overlay:show'); // refresh for the current champion
       win.setAlwaysOnTop(true, 'screen-saver'); // Windows can drop the level across hide/show
+      place(win);
       win.show();
       win.moveTop();
       win.focus();
