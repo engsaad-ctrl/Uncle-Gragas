@@ -9,11 +9,12 @@ import type { MayhemGame } from '../lcu/mayhemGames.js';
 
 /**
  * Prior standard deviations on the team log-odds scale: how far a champion or an augment may move with few games.
- * Chosen by 4-fold blocked cross-validation on the first 80% of 5,411 games (0.35 x the plan's 0.3 / 0.2), then tested
- * once on the last 1,083: log-loss 0.660, accuracy 60.8% (the per-player model: 53%). Class x augment terms did not
- * improve cross-validated log-loss by 0.002 and stay out (classes unset).
+ * Chosen by 4-fold blocked cross-validation (champion and augment separately) on the first 80% of the current patch's
+ * games, then tested once on the last 1,000: log-loss 0.659, accuracy 61.1% (the per-player model: 53%). Strict test on
+ * the same games: augment ranking AUC 0.64 against the site's tiers 0.61, and level with each augment's plain win rate.
+ * Class x augment terms did not improve cross-validated log-loss by 0.002 and stay out (classes unset).
  */
-export const PRIORS = { champion: 0.105, augment: 0.07, classAugment: 0.05, bias: 0.1 };
+export const PRIORS = { champion: 0.105, augment: 0.1, classAugment: 0.05, bias: 0.1 };
 /** A class x augment feature enters only with this many player appearances in the training games. */
 export const CLASS_SUPPORT = 200;
 
