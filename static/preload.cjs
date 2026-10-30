@@ -17,7 +17,6 @@ contextBridge.exposeInMainWorld('lolh', {
   setOverlayLarge: (on) => ipcRenderer.invoke('overlay:large', on === true),
   aiBuild: (championId, augmentIds) => ipcRenderer.invoke('ai:build', championId, augmentIds),
   lastAiPicks: () => ipcRenderer.invoke('ai:last'),
-  mayhemPicks: (championId) => ipcRenderer.invoke('mayhem:picks', championId),
   augmentFit: (augmentIds) => ipcRenderer.invoke('mayhem:fit', augmentIds),
   augmentEffects: () => ipcRenderer.invoke('mayhem:effects'),
   engineBuild: (championId, augmentIds) => ipcRenderer.invoke('build:engine', championId, augmentIds),

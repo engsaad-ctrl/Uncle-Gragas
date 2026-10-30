@@ -10,7 +10,7 @@ import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
 import type { RawProfile } from '../lcu/profile.js';
 import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
-import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats, patchOf, rankByWins } from '../app/mayhemStats.js';
+import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats } from '../app/mayhemStats.js';
 import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, type TeamModel } from '../app/teamModel.js';
 import { buildFor } from '../app/buildEngine.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
@@ -70,18 +70,6 @@ export interface AugmentEffect {
   high?: number;
   /** Player appearances with it in the current patch's games. */
   games: number;
-}
-
-/** One champion in the Mayhem games collected from the client (see lcu/mayhemGames.ts). */
-export interface MayhemPicks {
-  /** The newest patch in the stored games ("16.21"); only its games are counted. */
-  patch: string;
-  games: number;
-  championGames: number;
-  championWins: number;
-  /** Best first by the team model's effect (src/app/teamModel.ts); games and wins are this champion's own. */
-  augments: { augment: AugmentText; games: number; wins: number; effect?: AugmentEffect }[];
-  items: { item: ItemEntry; games: number; wins: number }[];
 }
 
 export interface Listed<T> {
@@ -409,40 +397,6 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   /** Where the Mayhem games read from the client are kept. */
   const mayhemFile = join(cacheDir, 'mayhem-games.json');
 
-  async function mayhemPicks(championId: number): Promise<MayhemPicks> {
-    const games = await storedGames();
-    const s = mayhemStats(games, championId);
-    const all = (await augments()).augments;
-    const shop = (await items('mayhem')).list.filter((i) => i.group === 'legendary' || i.group === 'boots');
-    // An augment can have more than one id (see texts/augments.ts): count it once.
-    const byAugment = new Map<number, MayhemPicks['augments'][number]>();
-    for (const p of s.augments) {
-      const a = all.find((x) => x.ids.includes(p.id));
-      if (!a) continue;
-      const t = byAugment.get(a.id) ?? { augment: a, games: 0, wins: 0 };
-      t.games += p.games;
-      t.wins += p.wins;
-      byAugment.set(a.id, t);
-    }
-    // Ordered by the team model (every champion's games, teammates and opponents accounted for); this champion's own
-    // win rate with an augment is too few games to order by (it predicted worse than the champion alone).
-    const effect = new Map((await augmentEffect()).map((e) => [e.id, e]));
-    const own = rankByWins([...byAugment.values()], { games: s.championGames, wins: s.championWins });
-    return {
-      patch: games.length ? patchOf(games[0]) : '',
-      games: s.games,
-      championGames: s.championGames,
-      championWins: s.championWins,
-      augments: own
-        .map((x) => ({ ...x, effect: effect.get(x.augment.id) }))
-        .sort((x, y) => (y.effect?.points ?? -Infinity) - (x.effect?.points ?? -Infinity)),
-      items: s.items.flatMap((p) => {
-        const item = shop.find((i) => i.id === p.id);
-        return item ? [{ item, games: p.games, wins: p.wins }] : [];
-      }),
-    };
-  }
-
   /** How the champion fights, for the model: its kit note and what it relies on and scales with. */
   const kitLine = (id: number) => {
     const k = CHAMPION_KITS.find((x) => x.id === id);
@@ -563,5 +517,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, mayhemPicks, augmentFit, augmentEffect, engineBuild, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, warm };
 }

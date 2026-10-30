@@ -126,7 +126,6 @@ ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
   }),
 );
 ipcMain.handle('ai:last', () => lastAi);
-ipcMain.handle('mayhem:picks', (_e, championId: unknown) => reply(() => services.mayhemPicks(parseIds([championId])[0])));
 ipcMain.handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.augmentFit(parseIds(augmentIds))));
 ipcMain.handle('mayhem:effects', () => reply(() => services.augmentEffect()));
 // In a loaded game the enemy team is known (enemiesInGame): the build answers its magic damage.

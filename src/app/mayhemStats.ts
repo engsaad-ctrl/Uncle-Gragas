@@ -54,13 +54,6 @@ export function latestPatch(games: MayhemGame[]): MayhemGame[] {
 // Games an augment needs before its own win rate weighs as much as the champion's.
 const PRIOR_GAMES = 20;
 
-/** Best first by win rate, each pulled toward the champion's own until it has enough games to stand on. */
-export function rankByWins<T extends { games: number; wins: number }>(list: T[], champion: { games: number; wins: number }): T[] {
-  const base = champion.games ? champion.wins / champion.games : 0.5;
-  const score = (x: T) => (x.wins + PRIOR_GAMES * base) / (x.games + PRIOR_GAMES);
-  return [...list].sort((a, b) => score(b) - score(a));
-}
-
 /** An item that wins more often with an augment than without it, over every champion's games. */
 export interface Synergy {
   augment: number;

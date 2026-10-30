@@ -6,7 +6,6 @@ import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
-import { FIT_POINTS, fitOf } from './fit.js';
 import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stagger, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
@@ -68,56 +67,6 @@ function applyControl(p: ChampionPage): HTMLElement {
 }
 
 const MAX_PICKS = 6;
-/** Below this many games a win rate says little: shown, but marked. */
-const FEW_GAMES = 30;
-
-/** Mayhem from the games the client keeps: what players of this champion really took, and how often they won. */
-function realPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, show: ReturnType<typeof detailPanel>['show']): HTMLElement {
-  const s = el('section', 'panel');
-  const name = shownName(p.champion);
-  s.append(el('h2', '', `ماذا أخذ لاعبو ${name} في مبارياتكم`), el('p', 'status loading', 'جاري القراءة…'));
-  void window.lolh.mayhemPicks(p.champion.id).then((r) => {
-    s.lastElementChild!.remove();
-    if (isError(r)) return void s.append(el('p', 'missing', r.error));
-    const how = 'تُجمع تلقائياً من سجل مباريات العميل بعد كل مباراة Mayhem، ولكل مباراة عشرة لاعبين.';
-    if (!r.championGames) return void s.append(el('p', 'hint', `لا يوجد ${name} في ${r.games} مباراة من باتش ${r.patch} بعد. ${how}`));
-    const pct = (games: number, wins: number) => Math.round((100 * wins) / games);
-    const badge = (games: number, wins: number) => `${games} · ${pct(games, wins)}% فوز`;
-    const base = pct(r.championGames, r.championWins);
-    // The team model's effect on the team's win chance; unsure when its bootstrap range crosses zero (or is not ready).
-    const sure = (e: NonNullable<(typeof r.augments)[number]['effect']>) => e.low !== undefined && e.high !== undefined && (e.low > 0 || e.high < 0);
-    const effectBadge = (e: (typeof r.augments)[number]['effect']) => (e ? `${e.points > 0 ? '+' : ''}${e.points.toFixed(1)}${sure(e) ? '' : '؟'}` : 'بلا بيانات');
-    const grid = el('div', 'grid');
-    // The kit fit only settles near ties (src/renderer/fit.ts).
-    const kitFit = (x: (typeof r.augments)[number]) => fitOf(p.champion.id, x.augment.ids);
-    const ordered = [...r.augments].sort((x, y) => (y.effect?.points ?? -9) + FIT_POINTS * (kitFit(y)?.score ?? 0) - ((x.effect?.points ?? -9) + FIT_POINTS * (kitFit(x)?.score ?? 0)));
-    grid.append(...ordered.slice(0, 12).map((x, i) => {
-      const a = x.augment;
-      const chip = augmentChip(a, false, () => show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), effectBadge(x.effect));
-      const kit = kitFit(x);
-      chip.title = `${shownName(a)}: مع ${name} ${badge(x.games, x.wins)}. أثره على فوز الفريق: ${effectBadge(x.effect)} نقطة${x.effect?.low !== undefined ? ` (بين ${x.effect.low.toFixed(1)} و${x.effect.high!.toFixed(1)})` : ''}.${kit?.reasons.length ? `\n${kit.reasons.join('\n')}` : ''}`;
-      if (!x.effect || !sure(x.effect)) chip.classList.add('few');
-      return stagger(chip, i);
-    }));
-    const items = el('div', 'icons');
-    for (const x of r.items.slice(0, 10)) {
-      const group = el('div', `choice${x.games < FEW_GAMES ? ' few' : ''}`);
-      group.append(iconOf(x.item), el('small', '', badge(x.games, x.wins)));
-      items.append(group);
-    }
-    s.append(
-      el('p', 'status', `${r.championGames} مرة في ${r.games} مباراة من باتش ${r.patch}، وفاز ${base}% منها. ${how}`),
-      el('h3', 'sub-title', 'أقوى التعزيزات في مبارياتنا'), grid,
-      el('h3', 'sub-title', 'الأيتمات الأكثر شراءً'), items,
-      el(
-        'p',
-        'hint',
-        `رقم التعزيز: كم يرفع فوز الفريق بالنقاط، محسوباً من مباريات كل الأبطال مع احتساب الزملاء والخصوم. «؟» والباهت: غير مؤكد بعد. مرّر الماوس لترى أرقام ${name} نفسه. رقم الأيتم: عدد المرات ثم نسبة الفوز، والباهت أقل من ${FEW_GAMES} مرة.`,
-      ),
-    );
-  });
-  return s;
-}
 
 /** Mayhem without a game: pick the augments, ask Gemini, and see both builds with the calculator's numbers. */
 function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement): HTMLElement {
@@ -282,7 +231,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     // Each group shows 6 at first: offer the rest whenever any group has more.
     if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
     section.append(el('p', 'hint', '#1 هو الأفضل لهذا البطل حسب الإحصائيات، والنسبة هي كم من لاعبي البطل يختارونه. التعزيزات بلا عينة كافية مستبعدة.'));
-    body.push(section, realPanel(p, iconButton, detail.show), aiPanel(p, iconButton));
+    body.push(section, aiPanel(p, iconButton)); // our games feed the calculator; they are not shown as a list
   }
 
   // Skills: priority, spells, path grid.
