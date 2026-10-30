@@ -373,7 +373,10 @@ body.overlay::before, body.overlay::after { display: none; }
 .ov-panel { height: 100vh; display: flex; flex-direction: column; gap: 8px; padding: 12px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--panel-2) 92%, transparent); }
 .ov-head { display: flex; align-items: center; gap: 10px; -webkit-app-region: drag; }
 .ov-head img { width: 40px; height: 40px; border-radius: 6px; }
-.ov-head button { margin-inline-start: auto; -webkit-app-region: no-drag; background: none; border: 0; color: var(--muted); font-size: 16px; cursor: pointer; }
+.ov-head button { flex: none; -webkit-app-region: no-drag; font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: border-color .15s ease; }
+.ov-head button:hover { border-color: var(--accent); }
+#ov-size { margin-inline-start: auto; }
+#ov-close { width: 34px; padding: 6px 0; font-size: 15px; }
 .ov-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
 .ov-row { display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 8px; padding: 6px 8px; text-align: start; color: inherit; font: inherit; background: var(--panel); border: 1px solid var(--line); border-inline-start: 3px solid var(--silver); border-radius: 6px; cursor: pointer; }
 .ov-row.r-gold { border-inline-start-color: var(--gold); } .ov-row.r-prismatic { border-inline-start-color: var(--prism); }
@@ -439,6 +442,18 @@ a.band-champ:hover { background: var(--panel-2); }
 .ov-pick:hover { color: var(--text); border-color: var(--accent); }
 .ov-pick.on { color: var(--bg); background: var(--accent); border-color: var(--accent); }
 .ov-row { grid-template-columns: 36px 1fr auto auto; } .ov-row.picked { border-color: var(--accent); }
+/* Large: everything scales up with the window; the zoom counts toward vh, hence the height. */
+body.overlay.large .ov-panel { zoom: 1.2; height: calc(100vh / 1.2); }
+/* Large: the whole build at a glance, the items three to a row and the rest side by side, no scrolling. */
+body.overlay.large .ov-build:not([hidden]) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 10px; }
+body.overlay.large .ov-build > .ov-tabs, body.overlay.large .ov-build > .hint, body.overlay.large .ov-build > .en, body.overlay.large .ov-build > .ov-sec.wide { grid-column: 1 / -1; }
+body.overlay.large .ov-adapted { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body.overlay.large .ov-items { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+body.overlay.large .ov-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; }
+body.overlay.large .ov-group { grid-column: 1 / -1; }
+body.overlay.large .ov-row { grid-template-columns: 36px minmax(0, 1fr) auto; }
+body.overlay.large .ov-row .ov-tags { grid-column: 1 / -1; justify-content: flex-start; max-width: none; }
+body.overlay.large .ov-row .ov-pick { grid-row: 1; grid-column: 3; }
 .ov-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; max-width: 220px; }
 .ov-adapted { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .ov-adapted-row { display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 8px; }

@@ -9,13 +9,20 @@ export function overlayWindow(root: string) {
   let win: BrowserWindow | undefined;
   // Large by default; the window's own button switches to the normal size, and the window remembers the choice.
   let large = true;
+  // Windows can drop the level across hide/show while still reporting it, and then the game stays in front:
+  // turning it off first makes the call really happen.
+  const onTop = (w: BrowserWindow) => {
+    w.setAlwaysOnTop(false);
+    w.setAlwaysOnTop(true, 'screen-saver');
+  };
   // On the screen the mouse is on: with two monitors the game is where the player presses F7, not always the main one.
   const place = (w: BrowserWindow) => {
     const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-    // Large is a wide panel like other overlays (nearly half the screen, nearly its full height); normal is the old box.
-    const width = large ? Math.round(Math.min(900, workArea.width * 0.45)) : 400;
-    const height = large ? workArea.height - 100 : 620;
-    w.setBounds({ x: workArea.x + workArea.width - width - 20, y: workArea.y + 70, width, height });
+    // Large fills most of the screen, centred; normal is a panel at the side, in proportion to the screen.
+    const width = large ? Math.round(Math.min(1500, workArea.width * 0.75)) : Math.round(Math.max(520, Math.min(800, workArea.width * 0.32)));
+    const height = large ? workArea.height - 60 : Math.round(workArea.height * 0.8);
+    const x = large ? workArea.x + Math.round((workArea.width - width) / 2) : workArea.x + workArea.width - width - 20;
+    w.setBounds({ x, y: workArea.y + (large ? 30 : 70), width, height });
   };
   const create = () => {
     const w = new BrowserWindow({
@@ -28,14 +35,14 @@ export function overlayWindow(root: string) {
       resizable: false,
       show: false,
       title: 'Uncle Gragas',
-      webPreferences: { preload: join(root, 'static/preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+      webPreferences: { preload: join(root, 'static/preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false },
     });
     w.setAlwaysOnTop(true, 'screen-saver'); // above a borderless game window
     // Clicking back into the game can push the window behind it while it still counts as visible; F7 would
     // then "hide" an already hidden window and need a second press. Keep it on top whenever it loses focus.
     w.on('blur', () => {
       if (!w.isVisible()) return;
-      w.setAlwaysOnTop(true, 'screen-saver');
+      onTop(w);
       w.moveTop();
     });
     void w.loadFile(join(root, 'static/overlay.html'));
@@ -52,9 +59,9 @@ export function overlayWindow(root: string) {
       win ??= create();
       if (win.isVisible()) return win.hide();
       win.webContents.send('overlay:show', tab); // refresh for the current champion
-      win.setAlwaysOnTop(true, 'screen-saver'); // Windows can drop the level across hide/show
       place(win);
       win.show();
+      onTop(win);
       win.moveTop();
       win.focus();
     },
@@ -66,9 +73,9 @@ export function overlayWindow(root: string) {
       win ??= create();
       win.webContents.send('overlay:show', tab);
       if (win.isVisible()) return;
-      win.setAlwaysOnTop(true, 'screen-saver');
       place(win);
       win.showInactive(); // the game keeps the focus: F7 or Esc hides it
+      onTop(win);
     },
     setLarge(on: boolean) {
       large = on;

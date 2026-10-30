@@ -95,7 +95,8 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
     const html = best ? cleanText(best.text) : '';
     const enName = enNames.get(a.id) ?? '';
     const name = isUntranslated(a.nameTRA) ? enName : a.nameTRA;
-    if (!name || /^[?؟\s]+$/.test(name)) continue; // "???" = unreleased test augment
+    // "???" = unreleased test augment; a blank English name = the game's internal placeholder (GoH_PentakillAug_Generic_BlankName).
+    if (!name || /^[?؟\s]+$/.test(name) || (enNames.has(a.id) && !enName.trim())) continue;
     out.push({
       id: a.id,
       ids: [a.id],

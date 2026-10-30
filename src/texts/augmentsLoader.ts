@@ -22,8 +22,8 @@ export interface AugmentsResult {
   stale: boolean;
 }
 
-// Bump when AugmentText changes shape so old caches are rebuilt.
-const CACHE_SCHEMA = 12;
+// Bump when AugmentText changes shape or what it keeps, so old caches are rebuilt.
+const CACHE_SCHEMA = 13;
 
 /** Keeps only AugmentData entries, each with its root spell's values attached (the rest of the bin is dropped). */
 function augmentDataOnly(bin: Record<string, unknown>) {

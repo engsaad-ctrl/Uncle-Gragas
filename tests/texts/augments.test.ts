@@ -70,14 +70,16 @@ describe('buildAugmentTexts', () => {
         entry(54, 'MasterofDuality', 'أستاذ'), entry(1054, 'ARAM_MasterofDuality', 'أستاذ'),
         entry(87, 'Typhoon', 'إعصار'), entry(1087, 'ARAM_Typhoon', 'إعصار'),
         entry(1424, 'ARAM_MissingPingAugment', '???'),
+        entry(3176, 'GoH_PentakillAug', 'GoH_PentakillAug_Generic_BlankName'),
       ],
-      listEn: [],
+      listEn: [entry(3176, 'GoH_PentakillAug', '   ')],
       bins: [{ a: data(54, 'same'), b: data(1054, 'same'), c: data(87, 'arena'), d: data(1087, 'mayhem') }],
       strings: { same: 'نص واحد', arena: 'نص الأرينا', mayhem: 'نص مايهم' },
     });
     expect(r.filter((a) => a.name === 'أستاذ').map((a) => [a.modes, a.ids])).toEqual([[['arena', 'mayhem'], [54, 1054]]]);
     expect(r.filter((a) => a.name === 'إعصار').map((a) => a.modes).sort()).toEqual([['arena'], ['mayhem']]);
     expect(r.some((a) => a.name === '???')).toBe(false);
+    expect(r.some((a) => a.id === 3176)).toBe(false); // the game's blank-named placeholder
   });
 
   it('finds text by name when the mode files have no entry, and skips a tooltip made only of live counters', async () => {

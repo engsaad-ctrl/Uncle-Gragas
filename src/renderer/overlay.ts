@@ -208,7 +208,7 @@ tabs.addEventListener('click', (e) => {
 const ic = (x: Describable) => withTooltip(icon(x.iconUrl, 'ic'), x);
 
 function section(title: string, ...body: (HTMLElement | string)[]) {
-  const s = el('section', 'ov-sec');
+  const s = el('section', title === 'ترتيب المهارات' || title === 'الرونز' || title === 'التعاويذ' ? 'ov-sec' : 'ov-sec wide');
   s.append(el('h3', '', title), ...body);
   return s;
 }
@@ -438,20 +438,20 @@ byId('ov-close').addEventListener('click', () => void window.lolh.hideOverlay())
 // Large by default; the choice is remembered on this machine.
 let large = true;
 try {
-  large = localStorage.getItem('overlaySize') !== 'normal';
+  large = localStorage.getItem('overlayLarge') !== 'normal';
 } catch {
   // storage unavailable: keep the default
 }
 const sizeButton = byId<HTMLButtonElement>('ov-size');
 const applySize = () => {
-  sizeButton.textContent = large ? '⤡' : '⤢';
-  sizeButton.title = large ? 'تصغير للحجم العادي' : 'تكبير';
+  sizeButton.textContent = large ? 'تصغير النافذة' : 'تكبير النافذة';
+  document.body.classList.toggle('large', large);
   void window.lolh.setOverlayLarge(large);
 };
 sizeButton.addEventListener('click', () => {
   large = !large;
   try {
-    localStorage.setItem('overlaySize', large ? 'large' : 'normal');
+    localStorage.setItem('overlayLarge', large ? 'large' : 'normal');
   } catch {
     // not remembered this time; harmless
   }
