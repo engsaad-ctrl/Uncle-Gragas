@@ -85,7 +85,7 @@ function realPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, sho
     const base = pct(r.championGames, r.championWins);
     const vsBase = (games: number, wins: number) => {
       const d = pct(games, wins) - base;
-      return `${badge(games, wins)} (${d > 0 ? '+' : ''}${d})`;
+      return `${games} · ${pct(games, wins)}% (${d > 0 ? '+' : ''}${d})`; // short: the chip's name needs the room
     };
     const grid = el('div', 'grid');
     grid.append(...r.augments.slice(0, 12).map((x, i) => {
