@@ -335,12 +335,16 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       join(cacheDir, 'ai', `${championId}-${key}.json`),
       (e) => v === null || e.key === cacheKey,
       async () => {
-        const [page, pool, bin, gameItems] = await Promise.all([
+        const [page, pool, bin, gameItems, base] = await Promise.all([
           championPage(championId, 'mayhem', 'auto'),
           items('mayhem'),
           loadChampionBin(game, v, entry.alias),
           loadGameItems(game, v),
+          baseTexts(),
         ]);
+        // The model gets CommunityDragon's English item texts: about half the tokens of the Arabic game tooltips (no
+        // lore lines), which matters for speed and the free quota, and English reads better to it.
+        const english = new Map(base.rawItems[1].map((i) => [i.id, i.description]));
         // The site's other items are one list, not per slot: take them in order after the core.
         const later = page.siteBuild ? page.fourth : [page.fourth[0], page.fifth[0], page.sixth[0]];
         const usual = [...new Set([page.boots, page.core, ...later].flatMap((c) => c?.items.map((i) => i.id) ?? []))].slice(0, 6);
@@ -352,7 +356,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
           {
             champion: { name: entry.name, enName: entry.enName, abilities: page.champion.abilities.map((a) => ({ key: a.key, enName: a.enName, text: a.html })) },
             augments: chosen.map((a) => ({ id: a.id, name: a.name, enName: a.enName, text: a.html, tier: page.augments.find((r) => r.id === a.id)?.tierLabel })),
-            pool: shop.map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: i.html })),
+            pool: shop.map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: english.get(i.id) || i.html })),
             usual: usual.filter((id) => gameItems[id]),
             played: { games: champ.championGames, items: bought(champ), withAugments: withThem.championGames, itemsWithAugments: bought(withThem) },
           },
