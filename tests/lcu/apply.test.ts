@@ -89,6 +89,18 @@ describe('writing into the client', () => {
     expect(body.itemSets[2].blocks).toEqual([{ type: 'الحذاء', items: [{ id: '3020', count: 1 }] }]);
   });
 
+  it('explains a full item set list in Arabic', async () => {
+    const c = fakeClient({
+      'GET /lol-summoner/v1/current-summoner': { summonerId: 42 },
+      'GET /lol-item-sets/v1/item-sets/42/sets': { itemSets: [{ title: 'U.GG - Ahri', associatedChampions: [103] }] },
+    });
+    const full: LcuCall = async (method, path, body) => {
+      if (method === 'PUT') throw new Error(`LCU PUT ${path}: HTTP 413 {"message":"Content length is too large"}`);
+      return c.call(method, path, body);
+    };
+    await expect(applyItemSet(full, { title: `${TAG} Ahri mid`, championId: 103, mapId: 11, blocks: [] }, 'u')).rejects.toThrow(/ممتلئة: فيه 1 قائمة/);
+  });
+
   it('never writes item sets when the current list cannot be read (the PUT would wipe them)', async () => {
     const c = fakeClient({ 'GET /lol-summoner/v1/current-summoner': { summonerId: 42 } }); // sets answer: 404 → null
     await expect(applyItemSet(c.call, { title: `${TAG} Ahri mid`, championId: 103, mapId: 11, blocks: [] }, 'u')).rejects.toThrow(/لم يُكتب شيء/);

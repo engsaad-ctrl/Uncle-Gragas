@@ -107,7 +107,14 @@ export async function applyItemSet(call: LcuCall, set: ItemSetPayload, uid: stri
     blocks: set.blocks.map((b) => ({ type: b.type, items: b.items.map((id) => ({ id: String(id), count: 1 })) })),
   };
   // The endpoint replaces the whole list, so send the player's sets back untouched with ours added.
-  await call('PUT', path, { ...current, itemSets: [...kept, mine] });
+  try {
+    await call('PUT', path, { ...current, itemSets: [...kept, mine] });
+  } catch (err) {
+    // The client takes about 64KB of sets at most; other apps' sets (61 from U.GG on one machine) can fill it.
+    if (!/HTTP 413/.test(String(err))) throw err;
+    const others = kept.filter((s) => !ours(s.title)).length;
+    throw new Error(`قوائم الأيتمات في العميل ممتلئة: فيه ${others} قائمة من برامج أخرى أو منك. احذف بعضها من العميل (المجموعات ← قوائم الأيتمات) ثم أعد المحاولة.`);
+  }
 }
 
 /** The key the player wants Flash on (Settings); D is the first spell slot, F the second. */
