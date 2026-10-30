@@ -1,4 +1,6 @@
 import { adviseBuild, namedItems, type Advice, type GeminiPost } from '../ai/advisor.js';
+import { explainLink, linksWith } from '../ai/mechanics.js';
+import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { compareBuilds } from '../ai/calculator.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
@@ -324,8 +326,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     if (!chosen.length) throw new Error('اختر تعزيزاً واحداً على الأقل.');
     const v = await gameVersion();
     const key = [...new Set(chosen.map((a) => a.id))].sort((a, b) => a - b).join('-');
-    // The stored games: a damaged file only means the advice goes without them.
-    const stored = await readMayhemGames(mayhemFile).catch(() => []);
+    // The current patch's stored games (a damaged file only means the advice goes without them).
+    const stored = await storedGames();
     const ids = new Set(chosen.flatMap((a) => a.ids));
     const champ = mayhemStats(stored, championId);
     const withThem = mayhemStats(stored.map((g) => ({ ...g, players: g.players.filter((p) => p.augments.some((id) => ids.has(id))) })), championId);
@@ -367,6 +369,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
             pool: shop.map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: english.get(i.id) || i.html })),
             usual: usual.filter((id) => gameItems[id]),
             played: { games: champ.championGames, items: bought(champ), withAugments: withThem.championGames, itemsWithAugments: bought(withThem) },
+            links: mechanicLinks(chosen.map((a) => a.ids), shopIds),
             // Under each chosen augment's own id: an augment's other ids (Arena's copy) count toward it.
             synergy: chosen.flatMap((a) => augmentItemSynergy(stored, a.ids, (id) => shopIds.has(id)).map((s) => ({ ...s, augment: a.id }))),
           },
@@ -390,7 +393,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   const mayhemFile = join(cacheDir, 'mayhem-games.json');
 
   async function mayhemPicks(championId: number): Promise<MayhemPicks> {
-    const games = latestPatch(await readMayhemGames(mayhemFile));
+    const games = await storedGames();
     const s = mayhemStats(games, championId);
     const all = (await augments()).augments;
     const shop = (await items('mayhem')).list.filter((i) => i.group === 'legendary' || i.group === 'boots');
@@ -417,10 +420,21 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     };
   }
 
-  // F7 asks on every mark: read the stored games at most once a minute.
+  /** The chosen augments' links to shop items and to each other, read from the texts (src/ai/mechanics.ts). */
+  function mechanicLinks(chosenIds: number[][], shopIds: Set<number>, max = 12): string[] {
+    const chosen = chosenIds.flatMap((ids) => AUGMENT_MECHANICS.filter((m) => ids.includes(m.id)).slice(0, 1));
+    const names = new Map([...AUGMENT_MECHANICS, ...ITEM_MECHANICS].map((m) => [m.id, m.name]));
+    const name = (id: number) => names.get(id) ?? String(id);
+    const toItems = ITEM_MECHANICS.filter((i) => shopIds.has(i.id)).flatMap((i) => linksWith(chosen, i));
+    const among = chosen.flatMap((a, i) => chosen.slice(i + 1).flatMap((b) => linksWith([a], b)));
+    return [...among, ...toItems].sort((x, y) => y.strength - x.strength).slice(0, max).map((l) => explainLink(l, name));
+  }
+
+  // The current patch's stored games, for every statistic: an older patch's numbers say little about this one.
+  // Read at most once a minute: F7 asks on every mark.
   let gamesRead: { at: number; games: Promise<MayhemGame[]> } | undefined;
   const storedGames = () => {
-    if (!gamesRead || Date.now() - gamesRead.at > 60_000) gamesRead = { at: Date.now(), games: readMayhemGames(mayhemFile).catch(() => []) };
+    if (!gamesRead || Date.now() - gamesRead.at > 60_000) gamesRead = { at: Date.now(), games: readMayhemGames(mayhemFile).then(latestPatch, () => []) };
     return gamesRead.games;
   };
 

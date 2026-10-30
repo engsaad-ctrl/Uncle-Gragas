@@ -2,6 +2,8 @@
 
 import { adaptBuild, FOCUS_LABEL } from '../app/augmentBuild.js';
 import type { Advice } from '../ai/advisor.js';
+import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
+import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import { placeFlash } from '../lcu/apply.js';
 import type { OverlayData } from '../main/services.js';
@@ -30,6 +32,21 @@ let open: number | undefined;
 const picked = new Set<number>();
 let pickedFor: number | undefined;
 const MAX_PICKS = 6;
+const FIT_GAMES = 150;
+const mechOf = (a: { id: number; ids?: number[] }) => AUGMENT_MECHANICS.find((m) => (a.ids ?? [a.id]).includes(m.id));
+const NO_MECH: Mechanic = { id: -1, name: '', gives: [], scales: [], converts: [], relies: [], needs: [], note: '' };
+const STAT_AR: Record<string, string> = {
+  health: 'الصحة', bonus_health: 'الصحة الإضافية', ap: 'قوة القدرة', ad: 'ضرر الهجوم', bonus_ad: 'ضرر الهجوم الإضافي', attack_speed: 'سرعة الهجوم',
+  crit: 'الضربة الحرجة', armor: 'الدرع', mr: 'مقاومة السحر', resists: 'المقاومات', mana: 'المانا', ability_haste: 'تسارع القدرات',
+  move_speed: 'سرعة الحركة', gold: 'الذهب', omnivamp: 'الامتصاص', heal_shield_power: 'قوة العلاج والدروع',
+};
+const mechName = (id: number) => AUGMENT_MECHANICS.find((m) => m.id === id)?.name ?? String(id);
+/** Why two augments work together, in one Arabic line. */
+const linkInArabic = (l: Link) => {
+  const stat = STAT_AR[l.stat] ?? l.stat;
+  if (l.kind === 'needs') return `${mechName(l.from)} مبني على ${mechName(l.to)}`;
+  return l.kind === 'feeds' ? `${mechName(l.from)} يزيد ${stat} بلا حد، و${mechName(l.to)} يستفيد منها` : `${mechName(l.from)} يتحوّل إلى ${stat}، و${mechName(l.to)} يستفيد منها`;
+};
 /** With augments marked: how much more each other one won alongside them in real games (see augmentPairs). */
 let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
@@ -51,12 +68,19 @@ function render() {
   // augments first in the recommended order (#1 = best), then the rest by name. With augments marked, the ones that
   // went best with them in real games come first.
   const rated = (a: OverlayData['augments'][number]) => (data!.rated && a.rank !== undefined ? 0 : 1);
-  const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : (fit.get(a.id)?.lift ?? -Infinity));
+  // How each augment works with the marked ones: by the texts (mechanics) and, with enough games, by real results.
+  const pickedMechs = data.augments.filter((a) => picked.has(a.id)).flatMap((a) => mechOf(a) ?? []);
+  const linksOf = (a: OverlayData['augments'][number]) => (picked.has(a.id) || !pickedMechs.length ? [] : linksWith(pickedMechs, mechOf(a) ?? NO_MECH));
+  const fits = (a: OverlayData['augments'][number]) => {
+    if (picked.has(a.id)) return Infinity;
+    const f = fit.get(a.id);
+    return linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 20 * f.lift : 0);
+  };
   const all = filterAugments(data.augments, search.value, 'all', 'all');
   const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).filter((r) => shownRarity === 'all' || r === shownRarity).flatMap((rarity) => {
     const list = all
       .filter((a) => a.rarity === rarity)
-      .sort((x, y) => (fit.size ? fits(y) - fits(x) || 0 : 0) || rated(x) - rated(y) || (x.rank ?? 0) - (y.rank ?? 0) || shownName(x).localeCompare(shownName(y), getNameLang()));
+      .sort((x, y) => (picked.size ? fits(y) - fits(x) || 0 : 0) || rated(x) - rated(y) || (x.rank ?? 0) - (y.rank ?? 0) || shownName(x).localeCompare(shownName(y), getNameLang()));
     if (!list.length) return [];
     return [el('h3', `ov-group r-${rarity}`, RARITY_LABEL[rarity]), ...list.map(row)];
   });
@@ -81,8 +105,16 @@ function render() {
     const f = picked.has(a.id) ? undefined : fit.get(a.id);
     if (f) {
       const d = Math.round(100 * f.lift);
-      const tag = el('span', `ov-fit ${d > 0 ? 'good' : 'bad'}`, `${d > 0 ? '+' : ''}${d}% مع اختياراتك`);
-      tag.title = `في ${f.games} مباراة حقيقية مع ما اخترته: الفرق في نسبة الفوز`;
+      // Below FIT_GAMES a pair's number is mostly noise: say so instead of showing it.
+      const few = f.games < FIT_GAMES;
+      const tag = el('span', `ov-fit ${few || !d ? 'few' : d > 0 ? 'good' : 'bad'}`, few ? 'أدلة قليلة' : `${d > 0 ? '+' : ''}${d}% مع اختياراتك`);
+      tag.title = `${f.games} لاعباً أخذوه مع ما اخترته. الرقم: كم زاد فوزه معه فوق ما يفوز به عادةً (${d > 0 ? '+' : ''}${d}%).`;
+      r.append(tag);
+    }
+    const links = linksOf(a);
+    if (links.length) {
+      const tag = el('span', 'ov-mech', '⚙ يتكامل مع اختيارك');
+      tag.title = links.map(linkInArabic).join('\n');
       r.append(tag);
     }
     if (data!.mode === 'mayhem') {

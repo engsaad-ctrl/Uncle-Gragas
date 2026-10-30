@@ -68,7 +68,7 @@ function applyControl(p: ChampionPage): HTMLElement {
 
 const MAX_PICKS = 6;
 /** Below this many games a win rate says little: shown, but marked. */
-const FEW_GAMES = 5;
+const FEW_GAMES = 30;
 
 /** Mayhem from the games the client keeps: what players of this champion really took, and how often they won. */
 function realPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, show: ReturnType<typeof detailPanel>['show']): HTMLElement {

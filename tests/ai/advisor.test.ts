@@ -32,7 +32,7 @@ describe('realBuild', () => {
     itemsWithAugments: [3089, 3020, 3031, 3006, 9999].map((id, i) => ({ id, games: 9 - i, wins: 4 })),
   });
   it('takes what players with the augments bought, boots first and one pair only, items off the map left out', () => {
-    expect(realBuild({ ...input, played: played(9) })).toEqual([3020, 3089, 3031]);
+    expect(realBuild({ ...input, played: played(40) })).toEqual([3020, 3089, 3031]);
   });
   it('gives nothing with too few games', () => {
     expect(realBuild({ ...input, played: played(2) })).toBeNull();
@@ -57,10 +57,10 @@ describe('contextText', () => {
     const text = contextText({
       ...input,
       augments: [{ ...input.augments[0], tier: 'S+' }],
-      played: { games: 12, items: [{ id: 3031, games: 9, wins: 5 }], withAugments: 2, itemsWithAugments: [{ id: 3089, games: 2, wins: 2 }] },
+      played: { games: 120, items: [{ id: 3031, games: 9, wins: 5 }], withAugments: 2, itemsWithAugments: [{ id: 3089, games: 2, wins: 2 }] },
     });
     expect(text).toContain('1205 | Vulnerability (الضعف) | S+ |');
-    expect(text).toContain("games of this champion: 12. Items bought: 3031 Infinity Edge (9 games, 5 wins)");
+    expect(text).toContain("games of this champion: 120. Items bought: 3031 Infinity Edge (9 games, 5 wins)");
     expect(text).toContain("chosen augments: 2 (too few). Items bought: 3089 Rabadon's Deathcap (2 games, 2 wins)");
     expect(contextText(input)).toContain('none recorded yet');
   });
@@ -142,5 +142,13 @@ describe('synergy in the context', () => {
     const text = contextText({ ...input, synergy: [{ augment: 1205, item: 3089, games: 40, wins: 26, lift: 0.12 }] });
     expect(text).toContain("Vulnerability: 3089 Rabadon's Deathcap (40 games, 65% wins, +12)");
     expect(contextText(input)).not.toContain('won more with these augments');
+  });
+});
+
+describe('augment texts for the model', () => {
+  it('keeps what a number scales with, which the game writes as an icon', () => {
+    const html = 'تكسب <span class="s-scaleap">300% <img class="t-ico" src="https://x/statsicon/scaleap.png" alt="قوة القدرة"></span> درع.';
+    const text = contextText({ ...input, augments: [{ id: 1180, name: 'دماغ كبير', enName: 'Big Brain', text: html }] });
+    expect(text).toContain('تكسب 300% AP درع.');
   });
 });

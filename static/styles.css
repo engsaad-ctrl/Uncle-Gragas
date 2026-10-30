@@ -427,7 +427,7 @@ a.band-champ:hover { background: var(--panel-2); }
 .flash-ico { width: 18px; height: 18px; margin-inline-end: 6px; vertical-align: -4px; border-radius: 4px; }
 .ov-group { margin: 8px 2px 2px; font-size: 12px; color: var(--muted); } .ov-group:first-child { margin-top: 0; }
 .ov-group.r-prismatic { color: var(--prism); } .ov-group.r-gold { color: var(--goldtxt); }
-.ov-fit { flex: none; padding: 1px 6px; font-size: 11px; font-weight: 700; border-radius: 3px; } .ov-fit.good { color: var(--heal); } .ov-fit.bad { color: var(--status); }
+.ov-fit { flex: none; padding: 1px 6px; font-size: 11px; font-weight: 700; border-radius: 3px; } .ov-fit.good { color: var(--heal); } .ov-fit.bad { color: var(--status); } .ov-fit.few { color: var(--muted); font-weight: 600; } .ov-mech { flex: none; padding: 1px 6px; font-size: 11px; font-weight: 700; color: var(--accent); }
 .ov-pick { flex: none; padding: 2px 8px; font-size: 11px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
 .ov-pick:hover { color: var(--text); border-color: var(--accent); }
 .ov-pick.on { color: var(--bg); background: var(--accent); border-color: var(--accent); }

@@ -21,6 +21,8 @@ export interface AdviceInput {
   /** tier: how strong the augment is on this champion in real Mayhem games ("S+" to "C"), when known. */
   /** items: the ids of items the augment's text names (a quest that asks for Heartsteel, "Upgrade Collector"). */
   augments: { id: number; name: string; enName: string; text: string; tier?: string; items?: number[] }[];
+  /** How the chosen augments and the items work together, read from their texts (src/ai/mechanics.ts), strongest first. */
+  links?: string[];
   /** Items that won more with a chosen augment than without it, in real games of every champion (best first). */
   synergy?: { augment: number; item: number; games: number; wins: number; lift: number }[];
   /** Every finished item and boots on the map. */
@@ -40,8 +42,9 @@ export interface PickCount {
   wins: number;
 }
 
-/** Below this many games, the real games are mentioned but not trusted. */
-export const FEW_GAMES = 5;
+/** Below this many games, the real games are mentioned but marked too few. 30 games still leave about ±18 points on a
+ * win rate: enough to notice a big difference, not to settle a small one. */
+export const FEW_GAMES = 30;
 
 export interface Advice {
   style: BuildStyle;
@@ -130,9 +133,10 @@ const RULES = `You recommend League of Legends ARAM: Mayhem item builds for one 
 A single augment can change the whole build: one that adds magic damage to attacks can turn an AD marksman into AP, an attack-speed or on-hit augment favours on-hit items, and an "Upgrade <item>" augment makes that item a priority.
 The usual build is what players of this champion buy in Mayhem whatever their augments: keep its items when they still fit, replace them when an augment points elsewhere.
 An augment that names items (listed after "names items") is built around them: a quest that asks you to own an item, or an upgrade of an item. Every candidate includes that item (when several are named, at least one of them), unless the champion truly cannot use it.
+The links listed from the game texts are how the pieces feed each other (one grows a stat without limit, another turns that stat into damage, a shield or another stat): they hold whatever the number of games, so build at least one candidate that uses the strongest of them when it suits the champion.
 Items listed as winning more with an augment are pairings players found in real games, often through a link the texts hide (Riftmaker turns the health a Heartsteel quest stacks into ability power). Weigh them for every candidate that suits the champion, and build one candidate around the strongest of them.
 Only use item ids from the item list. A build is six different items with at most one pair of boots (boots first when the champion buys boots).
-Real Mayhem games, when listed, show what players actually bought and how often they won. With ${FEW_GAMES} or more games they outweigh your reading of the texts; with fewer, treat them as a hint only and say in the summary that there are too few real games to confirm the build.
+Real Mayhem games, when listed, show what players bought and how often they won. They are associations, not proof: items bought because the game was already going badly (anti-heal, Zhonya's Hourglass, Quicksilver Sash) look worse than they are, and a few dozen games cannot settle a small difference. Weigh them together with the texts and the calculator, never instead of them; under ${FEW_GAMES} games say in the summary that the real games are too few to confirm the build.
 Write every reason and summary in Arabic, short and concrete (one sentence, numbers when you have them). Item and champion names stay in English. Never name any website or data provider.`;
 
 // The first real run read "Vulnerability" (damage over time and item effects can crit, +25% crit) as a plain crit
@@ -154,7 +158,22 @@ const FINAL_TASK = `Step 2. The calculator results for the candidates are below 
 Pick the best candidate for these augments (chosen: its index), name the style of that build (style, styleReason: may differ from step 1), give a reason for every one of its items, up to 3 items of the usual build the augments make worse (avoid), and a two-sentence summary.
 Many augments open more than one strong path (an ability damage augment suits both AP and AD versions of a champion). If another candidate of a different style is also strong, give it as the alternative (its index), with its style, one sentence on when to pick it instead (alternativeWhen) and a reason for each of its items. If there is only one sensible path, set alternative to -1.`;
 
-const plain = (html: string) => html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/[ \t]+/g, ' ').trim();
+// The game writes what a number scales with as an icon ("300% [AP icon] shield"): keep it as a word, or the model reads a
+// flat 300% shield (Big Brain).
+const ICON_WORD: Record<string, string> = {
+  scaleap: 'AP', scalead: 'AD', scalehealth: 'health', onhit: 'on-hit', scalecrit: 'crit chance', scaleapen: 'armor penetration',
+  scalemana: 'mana', scaleas: 'attack speed', scalearmor: 'armor', miniadaptiveforce: 'adaptive force', scalempen: 'magic penetration',
+  scalems: 'move speed', scalecritmult: 'crit damage', scalemr: 'magic resist', scalecooldown: 'cooldown', scalehealshield: 'heal and shield power',
+  scaleah: 'ability haste', scalesize: 'size', scaletenacity: 'tenacity', scalesv: 'omnivamp', scalels: 'life steal', goldcoins: 'gold', cooldown: 'cooldown',
+};
+const plain = (html: string) =>
+  html
+    .replace(/<img[^>]*\/(\w+)\.png"[^>]*>/gi, (_, icon: string) => ` ${ICON_WORD[icon.toLowerCase()] ?? icon} `)
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
 const nameKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /**
@@ -189,6 +208,7 @@ export function contextText(input: AdviceInput): string {
     `Usual build: ${input.usual.length ? input.usual.map((id) => `${id} ${name(id)}`).join(', ') : 'none'}`,
     '',
     ...playedText(input.played, name),
+    ...(input.links?.length ? ['How these augments work with items and each other (from the game texts):', ...input.links, ''] : []),
     ...synergyText(input, name),
     'Item list (id | name | cost | boots | effect):',
     ...[...input.pool].sort((a, b) => a.id - b.id).map((i) => `${i.id} | ${i.enName} | ${i.gold}g | ${i.boots ? 'boots' : '-'} | ${plain(i.text).replace(/\n+/g, ' ')}`),
