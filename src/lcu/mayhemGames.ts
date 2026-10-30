@@ -11,12 +11,16 @@ export interface MayhemPlayer {
   win: boolean;
   augments: number[];
   items: number[];
+  /** What the player did, by the client's names (see STAT_KEYS); games stored before these were kept have none. */
+  stats?: Partial<Record<StatKey, number>>;
 }
 
 export interface MayhemGame {
   id: number;
   /** When the game started (ms). */
   at: number;
+  /** Length in seconds, to compare players per minute; missing on games stored before it was kept. */
+  duration?: number;
   /** The game's patch as the client reports it, e.g. "16.21.712.4567". */
   version: string;
   players: MayhemPlayer[];
@@ -27,6 +31,16 @@ const obj = (v: unknown): Json | null => (v && typeof v === 'object' && !Array.i
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const AUGMENT_KEYS = [1, 2, 3, 4, 5, 6].map((i) => `playerAugment${i}`);
 const ITEM_KEYS = [0, 1, 2, 3, 4, 5, 6].map((i) => `item${i}`);
+// A player's impact beyond the win: damage, healing, what they took and soaked, crowd control. The client's game
+// details have no shielding or healing-on-allies figures (totalUnitsHealed counts who was healed); a missing key is
+// left out.
+export const STAT_KEYS = [
+  'kills', 'deaths', 'assists', 'champLevel', 'goldEarned',
+  'totalDamageDealtToChampions', 'physicalDamageDealtToChampions', 'magicDamageDealtToChampions', 'trueDamageDealtToChampions',
+  'totalDamageTaken', 'damageSelfMitigated', 'totalHeal', 'totalUnitsHealed',
+  'timeCCingOthers', 'totalTimeCrowdControlDealt', 'damageDealtToTurrets',
+] as const;
+export type StatKey = (typeof STAT_KEYS)[number];
 
 /** /lol-match-history/v1/games/{id}, reduced to what a build needs; null for anything but a Mayhem game with augments. */
 export function toMayhemGame(answer: unknown): MayhemGame | null {
@@ -35,10 +49,12 @@ export function toMayhemGame(answer: unknown): MayhemGame | null {
   const players = arr(g.participants).map(obj).filter((p): p is Json => p !== null).map((p) => {
     const s = obj(p.stats) ?? {};
     const ids = (keys: string[]) => keys.map((k) => s[k]).filter((v): v is number => typeof v === 'number' && v > 0);
-    return { champion: Number(p.championId), win: s.win === true, augments: ids(AUGMENT_KEYS), items: ids(ITEM_KEYS) };
+    const stats = Object.fromEntries(STAT_KEYS.filter((k) => typeof s[k] === 'number').map((k) => [k, s[k] as number]));
+    return { champion: Number(p.championId), win: s.win === true, augments: ids(AUGMENT_KEYS), items: ids(ITEM_KEYS), stats };
   });
   if (!players.some((p) => p.augments.length)) return null;
-  return { id: Number(g.gameId), at: Number(g.gameCreation) || 0, version: String(g.gameVersion ?? ''), players };
+  const duration = Number(g.gameDuration) || undefined;
+  return { id: Number(g.gameId), at: Number(g.gameCreation) || 0, ...(duration ? { duration } : {}), version: String(g.gameVersion ?? ''), players };
 }
 
 /** The stored games; none when the file does not exist yet. A damaged file throws, so it is never overwritten. */

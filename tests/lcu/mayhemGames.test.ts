@@ -10,10 +10,14 @@ const game = (gameId: number, queueId = 2400) => ({
   queueId,
   gameMode: queueId === 2400 ? 'KIWI' : 'ARAM',
   gameCreation: 1000,
+  gameDuration: 900,
   gameVersion: '16.21.1',
   participantIdentities: [{ player: { gameName: 'someone', puuid: 'p1' } }],
   participants: [
-    { championId: 110, stats: { win: true, playerAugment1: 1038, playerAugment2: 0, item0: 3153, item1: 0, item6: 2052 } },
+    {
+      championId: 110,
+      stats: { win: true, playerAugment1: 1038, playerAugment2: 0, item0: 3153, item1: 0, item6: 2052, kills: 3, totalHeal: 1200, timeCCingOthers: 12, perk0: 8005 },
+    },
     { championId: 21, stats: { win: false, playerAugment1: 1084 } },
   ],
 });
@@ -32,11 +36,14 @@ function client(history: unknown[]) {
 }
 
 describe('toMayhemGame', () => {
-  it('keeps champion, win, augments and items, and drops names and empty slots', () => {
+  it('keeps champion, win, augments, items and what each player did, and drops names and empty slots', () => {
     const g = toMayhemGame(game(7))!;
     expect(g).toEqual({
-      id: 7, at: 1000, version: '16.21.1',
-      players: [{ champion: 110, win: true, augments: [1038], items: [3153, 2052] }, { champion: 21, win: false, augments: [1084], items: [] }],
+      id: 7, at: 1000, duration: 900, version: '16.21.1',
+      players: [
+        { champion: 110, win: true, augments: [1038], items: [3153, 2052], stats: { kills: 3, totalHeal: 1200, timeCCingOthers: 12 } },
+        { champion: 21, win: false, augments: [1084], items: [], stats: {} },
+      ],
     });
     expect(JSON.stringify(g)).not.toContain('someone');
   });
