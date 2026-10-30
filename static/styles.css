@@ -182,7 +182,9 @@ body { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
 .menu a, .menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; color: var(--muted); font: inherit; font-weight: 600; text-align: start; background: none; border: 0; border-radius: 6px; cursor: pointer; transition: background-color .15s, color .15s, transform .15s; }
 .menu a:hover, .menu button:hover { color: var(--text); background: var(--panel-2); }
 .menu a.active, .menu button.active { color: #fff; background: var(--accent); box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 40%, transparent); } /* solid, like u.gg's side menu */
-.menu svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.menu svg { width: 21px; height: 21px; flex: none; fill: currentColor; }
+.menu img { width: 24px; height: 24px; margin: -1.5px; flex: none; border-radius: 50%; border: 1.5px solid var(--accent); }
+.menu img[hidden], .menu img:not([hidden]) + svg { display: none; }
 .menu-title { margin: 16px 12px 4px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .modes small { margin-inline-start: auto; font-size: 10px; font-weight: 400; }
 .modes .dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--line); }
@@ -254,15 +256,15 @@ h1, h2, .sub, .status, .menu-title, .brand { text-shadow: 0 1px 2px #0009; }
 .side-foot { position: relative; }
 .settings-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; color: var(--muted); font: inherit; font-weight: 600; background: none; border: 0; border-radius: 6px; cursor: pointer; transition: background-color .15s, color .15s; text-shadow: 0 1px 2px #0009; }
 .settings-btn:hover, .settings-btn.active { color: var(--text); background: color-mix(in srgb, var(--accent) 16%, var(--panel)); }
-.settings-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .4s ease; }
+.settings-btn svg { width: 21px; height: 21px; fill: currentColor; transition: transform .4s ease; }
 .settings-btn.active svg { transform: rotate(60deg); }
 .update-btn { color: var(--accent); } .update-btn[hidden] { display: none; }
-.settings-pop { position: absolute; bottom: calc(100% + 8px); inset-inline: 0; z-index: 10; display: grid; gap: 14px; padding: 14px; background: color-mix(in srgb, var(--panel-2) 94%, transparent); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 30px #000a; animation: slide-down .2s ease both; max-height: calc(100vh - 120px); overflow-y: auto; }
+.settings-pop { position: fixed; inset: 0; z-index: 50; width: min(820px, calc(100vw - 48px)); height: fit-content; max-height: calc(100vh - 64px); margin: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; gap: 20px 28px; padding: 24px; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 0 0 100vmax #0009, 0 20px 50px #000a; animation: pop-in .18s ease both; }
 .settings-pop[hidden] { display: none; }
-.settings-pop h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+.settings-pop h4 { margin: 0 0 10px; font-size: 14px; color: var(--text); }
 .settings-pop .pills { flex-wrap: nowrap; }
 .settings-pop .pill { flex: 1; display: inline-flex; align-items: center; justify-content: center; padding-inline: 8px; white-space: nowrap; }
-.settings-pop .hint { margin-top: 6px; font-size: 11px; }
+.settings-pop .hint { margin-top: 8px; font-size: 12.5px; line-height: 1.6; }
 .key-input { width: 100%; margin-bottom: 6px; padding: 7px 10px; color: var(--text); font: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; }
 
 /* Collapsible rail: icons only, expands over the page on hover (or while settings are open) */
@@ -288,7 +290,6 @@ body { display: block; }
 .side:hover .menu-title::before, .side.pinned .menu-title::before { opacity: 0; }
 .modes .dot, .modes small { display: none; }
 .modes button.active svg { color: #fff; }
-.settings-pop { min-width: calc(var(--rail-open) - 20px); }
 
 /* League client connection status (in the rail) */
 .lcu-status { display: flex; align-items: center; gap: 10px; padding: 8px 13px 6px; color: var(--muted); font-size: 12px; white-space: nowrap; text-shadow: 0 1px 2px #0009; }

@@ -251,6 +251,7 @@ const setSettingsOpen = (open: boolean) => {
   settingsBtn.classList.toggle('active', open);
   byId('side').classList.toggle('pinned', open); // keep the rail expanded while settings are open
 };
+addEventListener('keydown', (e) => e.key === 'Escape' && !settings.hidden && setSettingsOpen(false));
 settingsBtn.addEventListener('click', () => setSettingsOpen(settings.hidden !== false)); // hidden may also be 'until-found'
 document.addEventListener('click', (e) => {
   if (!settings.hidden && !settings.contains(e.target as Node) && !settingsBtn.contains(e.target as Node)) setSettingsOpen(false);
@@ -265,8 +266,27 @@ let championNames: Map<number, { name: string; enName: string }> | undefined;
 let lastAutoKey = '';
 let lastApplyKey = '';
 let lastPhase = '';
+// The account's own picture on the profile link while the client is connected; asked once per connection.
+const accountIcon = byId<HTMLImageElement>('account-icon');
+accountIcon.addEventListener('error', () => (accountIcon.hidden = true));
+let accountAsked = false;
+function showAccount(connected: boolean) {
+  if (!connected) {
+    accountAsked = false;
+    accountIcon.hidden = true;
+    return;
+  }
+  if (accountAsked) return;
+  accountAsked = true;
+  void window.lolh.profile().then((p) => {
+    if (isError(p)) accountAsked = false; // not logged in yet: the next state asks again
+    else (accountIcon.src = p.iconUrl), (accountIcon.hidden = false);
+  });
+}
+
 async function onLcu(state: LcuState) {
   setLcu(state);
+  showAccount(state.phase !== 'Disconnected');
   // A new champ select starts fresh: the same champion next game must open and apply again.
   if (state.phase !== 'ChampSelect') lastAutoKey = lastApplyKey = '';
   // Entering champ select with nothing hovered yet: show the champions page, where the pick suggestions are.
