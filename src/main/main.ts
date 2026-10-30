@@ -127,6 +127,7 @@ ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
 ipcMain.handle('ai:last', () => lastAi);
 ipcMain.handle('mayhem:picks', (_e, championId: unknown) => reply(() => services.mayhemPicks(parseIds([championId])[0])));
 ipcMain.handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.augmentFit(parseIds(augmentIds))));
+ipcMain.handle('mayhem:effects', () => reply(() => services.augmentEffect()));
 // In exclusive fullscreen (WindowMode 0) the game draws over every window, F7's included; Borderless is 2. The setting
 // is the player's own, changed only from the button in settings, through the client so it is kept with the account.
 const GAME_SETTINGS = '/lol-game-settings/v1/game-settings';

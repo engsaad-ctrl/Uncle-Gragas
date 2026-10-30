@@ -10,6 +10,7 @@ import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js'
 import type { RawProfile } from '../lcu/profile.js';
 import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
 import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats, patchOf, rankByWins } from '../app/mayhemStats.js';
+import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, type TeamModel } from '../app/teamModel.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
@@ -56,6 +57,19 @@ export type AppMode = 'normal' | 'aram' | 'mayhem' | 'arena';
 const APP_MODES: AppMode[] = ['normal', 'aram', 'mayhem', 'arena'];
 const ITEM_MAP: Record<AppMode, ItemMap> = { normal: 'SUMMONERS_RIFT', aram: 'HOWLING_ABYSS', mayhem: 'HOWLING_ABYSS', arena: 'ARENA_MAP_1' };
 
+/**
+ * An augment's effect on its team's win chance in percentage points, from the team model over every champion's games;
+ * low/high: the 5th-95th percentile over bootstrap refits, once they are done (a range across 0 means not sure).
+ */
+export interface AugmentEffect {
+  id: number;
+  points: number;
+  low?: number;
+  high?: number;
+  /** Player appearances with it in the current patch's games. */
+  games: number;
+}
+
 /** One champion in the Mayhem games collected from the client (see lcu/mayhemGames.ts). */
 export interface MayhemPicks {
   /** The newest patch in the stored games ("16.21"); only its games are counted. */
@@ -63,8 +77,8 @@ export interface MayhemPicks {
   games: number;
   championGames: number;
   championWins: number;
-  /** Best first: win rate against the champion's own, see rankByWins. */
-  augments: { augment: AugmentText; games: number; wins: number }[];
+  /** Best first by the team model's effect (src/app/teamModel.ts); games and wins are this champion's own. */
+  augments: { augment: AugmentText; games: number; wins: number; effect?: AugmentEffect }[];
   items: { item: ItemEntry; games: number; wins: number }[];
 }
 
@@ -408,12 +422,18 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       t.wins += p.wins;
       byAugment.set(a.id, t);
     }
+    // Ordered by the team model (every champion's games, teammates and opponents accounted for); this champion's own
+    // win rate with an augment is too few games to order by (it predicted worse than the champion alone).
+    const effect = new Map((await augmentEffect()).map((e) => [e.id, e]));
+    const own = rankByWins([...byAugment.values()], { games: s.championGames, wins: s.championWins });
     return {
       patch: games.length ? patchOf(games[0]) : '',
       games: s.games,
       championGames: s.championGames,
       championWins: s.championWins,
-      augments: rankByWins([...byAugment.values()], { games: s.championGames, wins: s.championWins }),
+      augments: own
+        .map((x) => ({ ...x, effect: effect.get(x.augment.id) }))
+        .sort((x, y) => (y.effect?.points ?? -Infinity) - (x.effect?.points ?? -Infinity)),
       items: s.items.flatMap((p) => {
         const item = shop.find((i) => i.id === p.id);
         return item ? [{ item, games: p.games, wins: p.wins }] : [];
@@ -462,5 +482,39 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, mayhemPicks, augmentFit, warm };
+  // The team model on the current patch's games (src/app/teamModel.ts), refitted when they change (about 0.1 s); then 50
+  // bootstrap refits in the background, one per tick, say how sure each augment's effect is.
+  let model: { count: number; fit: TeamModel; boot: TeamModel[] } | undefined;
+  async function teamModel() {
+    const games = fullGames(await storedGames());
+    if (model?.count !== games.length) {
+      const m = { count: games.length, fit: fitTeamModel(games), boot: [] as TeamModel[] };
+      model = m;
+      void (async () => {
+        let seed = 7;
+        const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+        for (let i = 0; i < 50 && model === m; i++) {
+          await new Promise((done) => setTimeout(done, 0));
+          m.boot.push(fitTeamModel(games, bootstrapWeights(games.length, rand)));
+        }
+      })();
+    }
+    return model;
+  }
+
+  /** Every augment's effect on its team's win chance in points, from the team model, by the app's augment id. */
+  async function augmentEffect(): Promise<AugmentEffect[]> {
+    const [m, all, games] = await Promise.all([teamModel(), augments(), storedGames()]);
+    const effects = augmentEffects(m.fit, m.boot);
+    const taken = new Map<number, number>();
+    for (const g of games) for (const p of g.players) for (const a of new Set(p.augments)) taken.set(a, (taken.get(a) ?? 0) + 1);
+    return all.augments.flatMap((a) => {
+      // An augment's copies (Arena's id) are separate features: take the one with the most games.
+      const id = [...a.ids].sort((x, y) => (taken.get(y) ?? 0) - (taken.get(x) ?? 0))[0];
+      const e = effects.get(id);
+      return e ? [{ id: a.id, ...e, games: taken.get(id) ?? 0 }] : [];
+    });
+  }
+
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, mayhemPicks, augmentFit, augmentEffect, warm };
 }

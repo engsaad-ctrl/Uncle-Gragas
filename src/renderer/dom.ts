@@ -8,7 +8,7 @@ import type { Suggestion } from '../app/suggestions.js';
 import type { ApplyResult, FlashKey } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
 import type { Advice } from '../ai/advisor.js';
-import type { AppMode, Listed, MayhemPicks, OverlayData } from '../main/services.js';
+import type { AppMode, AugmentEffect, Listed, MayhemPicks, OverlayData } from '../main/services.js';
 import type { UpdateStatus } from '../main/updater.js';
 import type { LanePosition } from '../stats/opgg.js';
 import type { RankRow } from '../texts/abilityDetails.js';
@@ -37,6 +37,8 @@ declare global {
       mayhemPicks(championId: number): Promise<Reply<MayhemPicks>>;
       /** How much more each other augment won alongside the marked ones, in real games. */
       augmentFit(augmentIds: number[]): Promise<Reply<{ id: number; games: number; lift: number }[]>>;
+      /** Every augment's effect on its team's win chance, from the team model. */
+      augmentEffects(): Promise<Reply<AugmentEffect[]>>;
       hasAiKey(): Promise<boolean>;
       setAiKey(key: string): Promise<Reply<void>>;
       clearAiKey(): Promise<Reply<void>>;

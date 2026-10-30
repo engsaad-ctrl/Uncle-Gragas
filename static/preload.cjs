@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('lolh', {
   lastAiPicks: () => ipcRenderer.invoke('ai:last'),
   mayhemPicks: (championId) => ipcRenderer.invoke('mayhem:picks', championId),
   augmentFit: (augmentIds) => ipcRenderer.invoke('mayhem:fit', augmentIds),
+  augmentEffects: () => ipcRenderer.invoke('mayhem:effects'),
   hasAiKey: () => ipcRenderer.invoke('ai:key:has'),
   setAiKey: (key) => ipcRenderer.invoke('ai:key:set', key),
   clearAiKey: () => ipcRenderer.invoke('ai:key:clear'),

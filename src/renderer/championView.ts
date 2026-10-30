@@ -83,15 +83,15 @@ function realPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, sho
     const pct = (games: number, wins: number) => Math.round((100 * wins) / games);
     const badge = (games: number, wins: number) => `${games} · ${pct(games, wins)}% فوز`;
     const base = pct(r.championGames, r.championWins);
-    const vsBase = (games: number, wins: number) => {
-      const d = pct(games, wins) - base;
-      return `${games} · ${pct(games, wins)}% (${d > 0 ? '+' : ''}${d})`; // short: the chip's name needs the room
-    };
+    // The team model's effect on the team's win chance; unsure when its bootstrap range crosses zero (or is not ready).
+    const sure = (e: NonNullable<(typeof r.augments)[number]['effect']>) => e.low !== undefined && e.high !== undefined && (e.low > 0 || e.high < 0);
+    const effectBadge = (e: (typeof r.augments)[number]['effect']) => (e ? `${e.points > 0 ? '+' : ''}${e.points.toFixed(1)}${sure(e) ? '' : '؟'}` : 'بلا بيانات');
     const grid = el('div', 'grid');
     grid.append(...r.augments.slice(0, 12).map((x, i) => {
       const a = x.augment;
-      const chip = augmentChip(a, false, () => show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), vsBase(x.games, x.wins));
-      if (x.games < FEW_GAMES) chip.classList.add('few');
+      const chip = augmentChip(a, false, () => show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), effectBadge(x.effect));
+      chip.title = `${shownName(a)}: مع ${name} ${badge(x.games, x.wins)}. أثره على فوز الفريق: ${effectBadge(x.effect)} نقطة${x.effect?.low !== undefined ? ` (بين ${x.effect.low.toFixed(1)} و${x.effect.high!.toFixed(1)})` : ''}.`;
+      if (!x.effect || !sure(x.effect)) chip.classList.add('few');
       return stagger(chip, i);
     }));
     const items = el('div', 'icons');
@@ -102,12 +102,12 @@ function realPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, sho
     }
     s.append(
       el('p', 'status', `${r.championGames} مرة في ${r.games} مباراة من باتش ${r.patch}، وفاز ${base}% منها. ${how}`),
-      el('h3', 'sub-title', 'أفضل التعزيزات في مبارياتنا'), grid,
+      el('h3', 'sub-title', 'أقوى التعزيزات في مبارياتنا'), grid,
       el('h3', 'sub-title', 'الأيتمات الأكثر شراءً'), items,
       el(
         'p',
         'hint',
-        `الرقم الأول عدد المرات ثم نسبة الفوز، وبين القوسين الفرق عن فوز ${name} عموماً. التعزيزات مرتبة بالفوز، والقليل المرات يُحسب قريباً من متوسط البطل حتى تكثر مبارياته. الباهت أقل من ${FEW_GAMES} مرات.`,
+        `رقم التعزيز: كم يرفع فوز الفريق بالنقاط، محسوباً من مباريات كل الأبطال مع احتساب الزملاء والخصوم. «؟» والباهت: غير مؤكد بعد. مرّر الماوس لترى أرقام ${name} نفسه. رقم الأيتم: عدد المرات ثم نسبة الفوز، والباهت أقل من ${FEW_GAMES} مرة.`,
       ),
     );
   });

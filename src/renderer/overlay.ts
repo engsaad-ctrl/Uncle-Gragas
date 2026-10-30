@@ -6,7 +6,7 @@ import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import { placeFlash } from '../lcu/apply.js';
-import type { OverlayData } from '../main/services.js';
+import type { AugmentEffect, OverlayData } from '../main/services.js';
 import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
 import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, withTooltip, type Describable } from './dom.js';
@@ -33,6 +33,8 @@ const picked = new Set<number>();
 let pickedFor: number | undefined;
 const MAX_PICKS = 6;
 const FIT_GAMES = 150;
+/** Each augment's effect on its team's win chance (team model), loaded with the window's data. */
+let effects = new Map<number, AugmentEffect>();
 const mechOf = (a: { id: number; ids?: number[] }) => AUGMENT_MECHANICS.find((m) => (a.ids ?? [a.id]).includes(m.id));
 const NO_MECH: Mechanic = { id: -1, name: '', gives: [], scales: [], converts: [], relies: [], needs: [], note: '' };
 const STAT_AR: Record<string, string> = {
@@ -71,16 +73,18 @@ function render() {
   // How each augment works with the marked ones: by the texts (mechanics) and, with enough games, by real results.
   const pickedMechs = data.augments.filter((a) => picked.has(a.id)).flatMap((a) => mechOf(a) ?? []);
   const linksOf = (a: OverlayData['augments'][number]) => (picked.has(a.id) || !pickedMechs.length ? [] : linksWith(pickedMechs, mechOf(a) ?? NO_MECH));
+  // One score in win-chance points: the augment's own effect (team model), plus, next to the marked augments, a point per
+  // unit of text-link strength and a pair's measured lift when it has enough games.
   const fits = (a: OverlayData['augments'][number]) => {
     if (picked.has(a.id)) return Infinity;
     const f = fit.get(a.id);
-    return linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 20 * f.lift : 0);
+    return (effects.get(a.id)?.points ?? 0) + linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 100 * f.lift : 0);
   };
   const all = filterAugments(data.augments, search.value, 'all', 'all');
   const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).filter((r) => shownRarity === 'all' || r === shownRarity).flatMap((rarity) => {
     const list = all
       .filter((a) => a.rarity === rarity)
-      .sort((x, y) => (picked.size ? fits(y) - fits(x) || 0 : 0) || rated(x) - rated(y) || (x.rank ?? 0) - (y.rank ?? 0) || shownName(x).localeCompare(shownName(y), getNameLang()));
+      .sort((x, y) => (effects.size || picked.size ? fits(y) - fits(x) || 0 : 0) || rated(x) - rated(y) || (x.rank ?? 0) - (y.rank ?? 0) || shownName(x).localeCompare(shownName(y), getNameLang()));
     if (!list.length) return [];
     return [el('h3', `ov-group r-${rarity}`, RARITY_LABEL[rarity]), ...list.map(row)];
   });
@@ -102,6 +106,13 @@ function render() {
     name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
     r.append(icon(a.iconUrl), name);
     if (rated(a) === 0) r.append(el('span', 'ov-score', `${a.tierLabel ?? `#${a.rank}`} · ${pct(a.popularity ?? 0)}`));
+    const e = effects.get(a.id);
+    if (e) {
+      const sure = e.low !== undefined && e.high !== undefined && (e.low > 0 || e.high < 0);
+      const tag = el('span', `ov-fit ${!sure ? 'few' : e.points > 0 ? 'good' : 'bad'}`, `${e.points > 0 ? '+' : ''}${e.points.toFixed(1)}${sure ? '' : '؟'}`);
+      tag.title = `أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا${e.low !== undefined ? ` (بين ${e.low.toFixed(1)} و${e.high!.toFixed(1)})` : ''}. «؟»: غير مؤكد بعد.`;
+      r.append(tag);
+    }
     const f = picked.has(a.id) ? undefined : fit.get(a.id);
     if (f) {
       const d = Math.round(100 * f.lift);
@@ -326,6 +337,12 @@ async function load() {
   showTab(reply.build ? 'build' : 'augments');
   if (restored) void startAi(); // the app's answer is cached: shown without asking Gemini again
   void refreshFit();
+  if (reply.mode === 'mayhem') {
+    const r = await window.lolh.augmentEffects();
+    if (id !== loadId || isError(r)) return;
+    effects = new Map(r.map((x) => [x.id, x]));
+    render();
+  }
 }
 
 search.addEventListener('input', () => ((open = undefined), render()));
