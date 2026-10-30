@@ -7,10 +7,14 @@ import { join } from 'node:path';
 
 export function overlayWindow(root: string) {
   let win: BrowserWindow | undefined;
+  // Large by default; the window's own button switches to the normal size, and the window remembers the choice.
+  let large = true;
   // On the screen the mouse is on: with two monitors the game is where the player presses F7, not always the main one.
   const place = (w: BrowserWindow) => {
     const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-    w.setBounds({ x: workArea.x + workArea.width - 420, y: workArea.y + 70, width: 400, height: 620 });
+    const width = large ? 520 : 400;
+    const height = large ? Math.min(900, workArea.height - 100) : 620;
+    w.setBounds({ x: workArea.x + workArea.width - width - 20, y: workArea.y + 70, width, height });
   };
   const create = () => {
     const w = new BrowserWindow({
@@ -55,6 +59,10 @@ export function overlayWindow(root: string) {
     },
     hide() {
       win?.hide();
+    },
+    setLarge(on: boolean) {
+      large = on;
+      if (win?.isVisible()) place(win);
     },
   };
 }

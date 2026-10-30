@@ -107,20 +107,26 @@ const OVERLAY_KEY = 'F7';
 // The game's mode as the client reports it now (it keeps it during the match) wins over the one remembered at the pick.
 ipcMain.handle('overlay:data', () => reply(() => services.overlayData(lastPick && { ...lastPick, mode: watcher.state.mode ?? lastPick.mode })));
 ipcMain.handle('overlay:hide', () => overlay.hide());
+ipcMain.handle('overlay:large', (_e, on: unknown) => overlay.setLarge(on === true));
 // Mayhem build from Gemini, with the owner's key from settings.
 const aiKey = aiKeyStore(app.getPath('userData'));
 ipcMain.handle('ai:key:has', async () => (await aiKey.get().catch(() => null)) !== null);
 ipcMain.handle('ai:key:set', (_e, key: unknown) => reply(() => aiKey.set(key)));
 ipcMain.handle('ai:key:clear', () => reply(() => aiKey.clear()));
+// The last augments asked about, from the app or F7: F7 opens on them, and the cached answer shows at once.
+let lastAi: { championId: number; augmentIds: number[] } | null = null;
 ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
   reply(async () => {
     const [id] = parseIds([championId]);
     const key = await aiKey.get();
     if (!key) throw new Error('أضف مفتاح Gemini من الإعدادات أولاً.');
-    return services.aiBuild(id, parseIds(augmentIds), geminiPost(key, fetchImpl));
+    lastAi = { championId: id, augmentIds: parseIds(augmentIds) };
+    return services.aiBuild(id, lastAi.augmentIds, geminiPost(key, fetchImpl));
   }),
 );
+ipcMain.handle('ai:last', () => lastAi);
 ipcMain.handle('mayhem:picks', (_e, championId: unknown) => reply(() => services.mayhemPicks(parseIds([championId])[0])));
+ipcMain.handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.augmentFit(parseIds(augmentIds))));
 // In exclusive fullscreen (WindowMode 0) the game draws over every window, F7's included; Borderless is 2. The setting
 // is the player's own, changed only from the button in settings, through the client so it is kept with the account.
 const GAME_SETTINGS = '/lol-game-settings/v1/game-settings';

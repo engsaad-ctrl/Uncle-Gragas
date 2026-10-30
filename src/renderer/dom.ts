@@ -30,8 +30,13 @@ declare global {
       profile(puuid?: string): Promise<Reply<ProfilePage>>;
       overlayData(): Promise<Reply<OverlayData>>;
       hideOverlay(): Promise<void>;
+      setOverlayLarge(on: boolean): Promise<void>;
       aiBuild(championId: number, augmentIds: number[]): Promise<Reply<Advice>>;
+      /** The last augments asked about (app or F7), so F7 can open on them. */
+      lastAiPicks(): Promise<{ championId: number; augmentIds: number[] } | null>;
       mayhemPicks(championId: number): Promise<Reply<MayhemPicks>>;
+      /** How much more each other augment won alongside the marked ones, in real games. */
+      augmentFit(augmentIds: number[]): Promise<Reply<{ id: number; games: number; lift: number }[]>>;
       hasAiKey(): Promise<boolean>;
       setAiKey(key: string): Promise<Reply<void>>;
       clearAiKey(): Promise<Reply<void>>;

@@ -7,35 +7,69 @@ import { placeFlash } from '../lcu/apply.js';
 import type { OverlayData } from '../main/services.js';
 import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
-import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, shownName, withTooltip, type Describable } from './dom.js';
+import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
 import { applyRandomTheme } from './theme.js';
 
 applyRandomTheme(); // colours only: the overlay hides the background art
 const search = byId<HTMLInputElement>('ov-search');
 const list = byId('ov-list');
+const aiBar = byId('ov-ai-bar');
+// One rarity at a time, picked from the row above the list (all of them at first).
+let shownRarity = 'all';
+byId('ov-rarity').append(
+  pills('نوع التعزيز', [['all', 'الكل'], ...(Object.entries(RARITY_LABEL) as [string, string][])], 'all', (v) => {
+    shownRarity = v;
+    open = undefined;
+    render();
+  }),
+);
 let data: OverlayData | undefined;
 let open: number | undefined;
 /** The Mayhem augments the player marked this game (up to 6), for the adapted build; cleared for a new champion. */
 const picked = new Set<number>();
 let pickedFor: number | undefined;
 const MAX_PICKS = 6;
+/** With augments marked: how much more each other one won alongside them in real games (see augmentPairs). */
+let fit = new Map<number, { games: number; lift: number }>();
+let fitFor = '';
+async function refreshFit() {
+  const key = [...picked].sort((a, b) => a - b).join('-');
+  if (key === fitFor) return;
+  fitFor = key;
+  fit = new Map();
+  if (!picked.size || data?.mode !== 'mayhem') return render();
+  const r = await window.lolh.augmentFit([...picked]);
+  if (fitFor !== key || isError(r)) return; // marks changed meanwhile, or no games to judge by
+  fit = new Map(r.map((x) => [x.id, x]));
+  render();
+}
 
 function render() {
   if (!data) return;
   // Grouped by type (prismatic, gold, silver, special) like the champion page; in each group this champion's rated
-  // augments first in the recommended order (#1 = best), then the rest by name.
+  // augments first in the recommended order (#1 = best), then the rest by name. With augments marked, the ones that
+  // went best with them in real games come first.
   const rated = (a: OverlayData['augments'][number]) => (data!.rated && a.rank !== undefined ? 0 : 1);
+  const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : (fit.get(a.id)?.lift ?? -Infinity));
   const all = filterAugments(data.augments, search.value, 'all', 'all');
-  const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).flatMap((rarity) => {
+  const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).filter((r) => shownRarity === 'all' || r === shownRarity).flatMap((rarity) => {
     const list = all
       .filter((a) => a.rarity === rarity)
-      .sort((x, y) => rated(x) - rated(y) || (x.rank ?? 0) - (y.rank ?? 0) || shownName(x).localeCompare(shownName(y), getNameLang()));
+      .sort((x, y) => (fit.size ? fits(y) - fits(x) || 0 : 0) || rated(x) - rated(y) || (x.rank ?? 0) - (y.rank ?? 0) || shownName(x).localeCompare(shownName(y), getNameLang()));
     if (!list.length) return [];
     return [el('h3', `ov-group r-${rarity}`, RARITY_LABEL[rarity]), ...list.map(row)];
   });
   list.replaceChildren(...groups);
   if (!groups.length) list.replaceChildren(el('p', 'missing', 'لا يوجد تعزيز بهذا الاسم.'));
+  // The AI button sits in the build tab; with augments marked, reach it from here too.
+  aiBar.hidden = !(data.mode === 'mayhem' && data.champion && picked.size);
+  if (!aiBar.hidden) {
+    const go = el('button', 'pill', ai?.key === pickedKey() ? 'اعرض بناء الذكاء الاصطناعي' : 'اقترح البناء بالذكاء الاصطناعي');
+    go.type = 'button';
+    go.addEventListener('click', () => void startAi());
+    aiBar.replaceChildren(el('span', '', `اخترت ${picked.size} من ${MAX_PICKS}`), go);
+  }
 
   function row(a: OverlayData['augments'][number]) {
     const r = el('button', `ov-row r-${a.rarity}${open === a.id ? ' open' : ''}`);
@@ -44,6 +78,13 @@ function render() {
     name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
     r.append(icon(a.iconUrl), name);
     if (rated(a) === 0) r.append(el('span', 'ov-score', `${a.tierLabel ?? `#${a.rank}`} · ${pct(a.popularity ?? 0)}`));
+    const f = picked.has(a.id) ? undefined : fit.get(a.id);
+    if (f) {
+      const d = Math.round(100 * f.lift);
+      const tag = el('span', `ov-fit ${d > 0 ? 'good' : 'bad'}`, `${d > 0 ? '+' : ''}${d}% مع اختياراتك`);
+      tag.title = `في ${f.games} مباراة حقيقية مع ما اخترته: الفرق في نسبة الفوز`;
+      r.append(tag);
+    }
     if (data!.mode === 'mayhem') {
       const on = picked.has(a.id);
       const pick = el('span', `ov-pick${on ? ' on' : ''}`, on ? '✓ اخترته' : 'اخترته');
@@ -55,6 +96,7 @@ function render() {
         else if (picked.size < MAX_PICKS) picked.add(a.id);
         render();
         if (data?.build) renderBuild(data.build);
+        void refreshFit();
       });
       r.classList.toggle('picked', on);
       r.append(pick);
@@ -120,6 +162,25 @@ function adaptedSection(p: ChampionPage): HTMLElement {
 
 /** The AI answer for the augments marked now, kept until they change. */
 let ai: { key: string; state: 'loading' | 'done' | 'error'; advice?: Advice; error?: string } | undefined;
+const pickedKey = () => [...picked].sort((a, b) => a - b).join('-');
+
+/** Asks for the marked augments' build (once per set of marks) and shows it in the build tab. */
+async function startAi() {
+  const champion = data?.champion;
+  if (!champion || !picked.size) return;
+  const key = pickedKey();
+  showTab('build');
+  if (ai?.key !== key) {
+    ai = { key, state: 'loading' };
+    if (data?.build) renderBuild(data.build);
+    buildBox.querySelector('.ov-ai')?.scrollIntoView({ block: 'nearest' });
+    const r = await window.lolh.aiBuild(champion.id, [...picked]);
+    if (ai?.key !== key) return; // the marks changed meanwhile
+    ai = isError(r) ? { key, state: 'error', error: r.error } : { key, state: 'done', advice: r };
+  }
+  if (data?.build) renderBuild(data.build);
+  buildBox.querySelector('.ov-ai')?.scrollIntoView({ block: 'nearest' });
+}
 
 function aiBox(chosen: { id: number }[]): HTMLElement {
   const key = chosen.map((a) => a.id).sort((a, b) => a - b).join('-');
@@ -130,14 +191,7 @@ function aiBox(chosen: { id: number }[]): HTMLElement {
   if (!ai) {
     const go = el('button', 'pill', 'اقترح البناء بالذكاء الاصطناعي');
     go.type = 'button';
-    go.addEventListener('click', async () => {
-      ai = { key, state: 'loading' };
-      if (data?.build) renderBuild(data.build);
-      const r = await window.lolh.aiBuild(champion.id, chosen.map((a) => a.id));
-      if (ai?.key !== key) return; // the marks changed meanwhile
-      ai = isError(r) ? { key, state: 'error', error: r.error } : { key, state: 'done', advice: r };
-      if (data?.build) renderBuild(data.build);
-    });
+    go.addEventListener('click', () => void startAi());
     box.append(go, el('p', 'hint', AI_HINT));
     return box;
   }
@@ -214,6 +268,15 @@ async function load() {
   }
   data = reply;
   if (pickedFor !== reply.champion?.id) (picked.clear(), (pickedFor = reply.champion?.id)); // a new game's champion
+  // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.
+  let restored = false;
+  if (!picked.size && reply.champion && reply.mode === 'mayhem') {
+    const last = await window.lolh.lastAiPicks();
+    if (id !== loadId) return;
+    for (const a of last?.championId === reply.champion.id ? last.augmentIds : []) {
+      if (reply.augments.some((x) => x.id === a)) (picked.add(a), (restored = true));
+    }
+  }
   const champ = byId<HTMLImageElement>('ov-champ');
   champ.hidden = !reply.champion;
   if (reply.champion) champ.src = reply.champion.portraitUrl;
@@ -229,11 +292,36 @@ async function load() {
   tabs.hidden = !reply.build;
   if (reply.build) renderBuild(reply.build);
   showTab(reply.build ? 'build' : 'augments');
+  if (restored) void startAi(); // the app's answer is cached: shown without asking Gemini again
+  void refreshFit();
 }
 
 search.addEventListener('input', () => ((open = undefined), render()));
 addEventListener('keydown', (e) => e.key === 'Escape' && void window.lolh.hideOverlay());
 byId('ov-close').addEventListener('click', () => void window.lolh.hideOverlay());
+// Large by default; the choice is remembered on this machine.
+let large = true;
+try {
+  large = localStorage.getItem('overlaySize') !== 'normal';
+} catch {
+  // storage unavailable: keep the default
+}
+const sizeButton = byId<HTMLButtonElement>('ov-size');
+const applySize = () => {
+  sizeButton.textContent = large ? '⤡' : '⤢';
+  sizeButton.title = large ? 'تصغير للحجم العادي' : 'تكبير';
+  void window.lolh.setOverlayLarge(large);
+};
+sizeButton.addEventListener('click', () => {
+  large = !large;
+  try {
+    localStorage.setItem('overlaySize', large ? 'large' : 'normal');
+  } catch {
+    // not remembered this time; harmless
+  }
+  applySize();
+});
+applySize();
 window.lolh.onOverlayShow(() => {
   search.value = '';
   open = undefined;

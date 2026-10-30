@@ -6,8 +6,8 @@ import { composeItemList, type ItemEntry } from '../app/itemList.js';
 import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
 import type { RawProfile } from '../lcu/profile.js';
-import { readMayhemGames } from '../lcu/mayhemGames.js';
-import { latestPatch, mayhemStats, patchOf, rankByWins } from '../app/mayhemStats.js';
+import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
+import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats, patchOf, rankByWins } from '../app/mayhemStats.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
@@ -367,6 +367,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
             pool: shop.map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: english.get(i.id) || i.html })),
             usual: usual.filter((id) => gameItems[id]),
             played: { games: champ.championGames, items: bought(champ), withAugments: withThem.championGames, itemsWithAugments: bought(withThem) },
+            // Under each chosen augment's own id: an augment's other ids (Arena's copy) count toward it.
+            synergy: chosen.flatMap((a) => augmentItemSynergy(stored, a.ids, (id) => shopIds.has(id)).map((s) => ({ ...s, augment: a.id }))),
           },
           (builds, effects) => compareBuilds({ bin, items: gameItems, builds, effects }),
         );
@@ -415,5 +417,24 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, mayhemPicks, warm };
+  // F7 asks on every mark: read the stored games at most once a minute.
+  let gamesRead: { at: number; games: Promise<MayhemGame[]> } | undefined;
+  const storedGames = () => {
+    if (!gamesRead || Date.now() - gamesRead.at > 60_000) gamesRead = { at: Date.now(), games: readMayhemGames(mayhemFile).catch(() => []) };
+    return gamesRead.games;
+  };
+
+  /** How well every other augment went with the ones marked, in real games of every champion (see augmentPairs). */
+  async function augmentFit(augmentIds: number[]): Promise<{ id: number; games: number; lift: number }[]> {
+    const all = (await augments()).augments;
+    const chosen = augmentIds.flatMap((id) => all.find((a) => a.id === id)?.ids ?? [id]);
+    const pairs = augmentPairs(await storedGames(), chosen);
+    return all.flatMap((a) => {
+      // An augment's copies (Arena's id) are separate in the games: keep the one with the most games.
+      const best = a.ids.map((id) => pairs.get(id)).filter((p) => p !== undefined).sort((x, y) => y.games - x.games)[0];
+      return best ? [{ id: a.id, ...best }] : [];
+    });
+  }
+
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, mayhemPicks, augmentFit, warm };
 }
