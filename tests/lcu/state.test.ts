@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { scrub } from '../../src/lcu/diagnostics.js';
-import { toLcuState } from '../../src/lcu/state.js';
+import { enemiesInGame, toLcuState } from '../../src/lcu/state.js';
 
 // Synthetic answers in the shape the LCU documents (/lol-gameflow/v1/session, /lol-champ-select/v1/session).
 const flow = (gameMode: string, queueId: number, mapId = 11) => ({ phase: 'ChampSelect', gameData: { queue: { id: queueId, gameMode, mapId } } });
@@ -67,5 +67,15 @@ describe('scrub', () => {
   it('keeps what diagnostics need: queue ids, game mode, champion ids, positions', () => {
     const flowAnswer = { gameData: { queue: { id: 2400, gameMode: 'KIWI', mapId: 12 } } };
     expect(scrub(flowAnswer)).toEqual(flowAnswer);
+  });
+});
+
+describe('enemiesInGame', () => {
+  it("returns the other team's champions once a game is loaded", () => {
+    const flow = { gameData: { teamOne: [{ championId: 1 }, { championId: 2 }], teamTwo: [{ championId: 3 }, { championId: 4 }] } };
+    expect(enemiesInGame(flow, 2)).toEqual([3, 4]);
+    expect(enemiesInGame(flow, 4)).toEqual([1, 2]);
+    expect(enemiesInGame(flow, 9)).toEqual([]);
+    expect(enemiesInGame(null, 2)).toEqual([]);
   });
 });

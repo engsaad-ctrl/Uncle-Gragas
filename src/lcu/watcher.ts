@@ -61,6 +61,11 @@ export class LcuWatcher {
     clearTimeout(this.timer);
   }
 
+  /** The last gameflow session the client sent (both teams' champions once a game is loaded). */
+  get session(): unknown {
+    return this.lastRaw.gameflowSession;
+  }
+
   /** What "تصدير التشخيص" saves: state, recent log and the last raw answers, with identities removed. */
   report(appVersion: string): unknown {
     return {

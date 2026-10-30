@@ -8,6 +8,7 @@ import { mayhemAugmentCheck } from '../lcu/diagnostics.js';
 import { collectMayhemGames } from '../lcu/mayhemGames.js';
 import { loadProfile, parsePuuid } from '../lcu/profile.js';
 import { LcuWatcher } from '../lcu/watcher.js';
+import { enemiesInGame } from '../lcu/state.js';
 import type { Position } from '../stats/opgg.js';
 import { overlayWindow } from './overlay.js';
 import { appUpdater } from './updater.js';
@@ -128,7 +129,13 @@ ipcMain.handle('ai:last', () => lastAi);
 ipcMain.handle('mayhem:picks', (_e, championId: unknown) => reply(() => services.mayhemPicks(parseIds([championId])[0])));
 ipcMain.handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.augmentFit(parseIds(augmentIds))));
 ipcMain.handle('mayhem:effects', () => reply(() => services.augmentEffect()));
-ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown) => reply(() => services.engineBuild(parseIds([championId])[0], parseIds(augmentIds))));
+// In a loaded game the enemy team is known (enemiesInGame): the build answers its magic damage.
+ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown) =>
+  reply(() => {
+    const [id] = parseIds([championId]);
+    return services.engineBuild(id, parseIds(augmentIds), enemiesInGame(watcher.session, id));
+  }),
+);
 // In exclusive fullscreen (WindowMode 0) the game draws over every window, F7's included; Borderless is 2. The setting
 // is the player's own, changed only from the button in settings, through the client so it is kept with the account.
 const GAME_SETTINGS = '/lol-game-settings/v1/game-settings';

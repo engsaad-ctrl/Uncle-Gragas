@@ -33,3 +33,11 @@ describe('build engine', () => {
     expect(b.filter((id) => id === 1 || id === 2)).toHaveLength(1);
   });
 });
+
+describe('enemy team', () => {
+  it('moves magic resist up against a magic-heavy team and down against a physical one', () => {
+    const withMr = { ...input, pool: [...pool, { id: 40, boots: false, damage: 'none' as const, mr: true }], base: [...input.base, { ids: [40], pickRate: 0.35, winRate: 0.5 }] };
+    expect(buildFor({ ...withMr, enemyMagic: 4 }).items).toContain(40);
+    expect(buildFor({ ...withMr, enemyMagic: 1 }).items).not.toContain(40);
+  });
+});

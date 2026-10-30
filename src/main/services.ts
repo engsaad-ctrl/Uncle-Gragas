@@ -529,7 +529,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
    * our Mayhem games as the base, the augments' required items, text links and measured pairings on top. Held-out
    * test: as close to winning builds as the sites' (docs/calculator-plan.md).
    */
-  async function engineBuild(championId: number, augmentIds: number[]): Promise<{ item: ItemEntry; why: string[] }[]> {
+  async function engineBuild(championId: number, augmentIds: number[], enemies: number[] = []): Promise<{ item: ItemEntry; why: string[] }[]> {
     const entry = (await champions()).find((c) => c.id === championId);
     if (!entry) throw new Error(`unknown champion ${championId}`);
     const [all, list, games] = await Promise.all([augments(), items('mayhem'), storedGames()]);
@@ -547,8 +547,10 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const r = buildFor({
       championDamage: kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed',
       switchesDamage: ids.some((x) => switchesDamage(x)),
-      pool: shop.map((i) => ({ id: i.id, boots: i.group === 'boots', damage: itemDamage(i.id) })),
+      pool: shop.map((i) => ({ id: i.id, boots: i.group === 'boots', damage: itemDamage(i.id), mr: ITEM_MECHANICS.some((m) => m.id === i.id && m.gives.some((g) => g.stat === 'mr' || g.stat === 'resists')) })),
       base,
+      // Only with the whole enemy team known (the game loaded): magic 1, mixed 0.5.
+      enemyMagic: enemies.length === 5 ? enemies.reduce((s, id) => { const d = CHAMPION_KITS.find((k) => k.id === id)?.damage; return s + (d === 'magic' ? 1 : d === 'mixed' ? 0.5 : 0); }, 0) : undefined,
       mayhem: ms.items,
       mayhemGames: ms.championGames,
       required: [...new Set(am.flatMap((m) => m.needs.filter((n): n is number => typeof n === 'number')))],

@@ -5,12 +5,16 @@
 
 /** What one unit of text-link strength is worth next to the base scores (a core item is about 1). */
 export const LINK_WEIGHT = 0.6;
+/** How far magic resist moves for the enemy team's damage (see scoreItems). */
+export const ENEMY_WEIGHT = 0.5;
 
 export interface EngineItem {
   id: number;
   boots: boolean;
   /** What the item gives: AP only, AD only, or neither/both (see itemDamage in services). */
   damage: 'ap' | 'ad' | 'none';
+  /** It gives magic resist. */
+  mr?: boolean;
 }
 
 export interface EngineInput {
@@ -31,6 +35,8 @@ export interface EngineInput {
   links: Map<number, number>;
   /** Measured win lift of each item with the chosen augments, beyond its usual strength (augmentItemSynergy). */
   synergy: Map<number, number>;
+  /** Magic damage among the five enemies (magic 1, mixed 0.5), once the game is loaded; unknown before. */
+  enemyMagic?: number;
 }
 
 export interface EngineResult {
@@ -70,6 +76,13 @@ export function scoreItems(input: EngineInput): Map<number, { score: number; why
   }
   for (const [id, s] of input.links) add(id, LINK_WEIGHT * s, 'link');
   for (const [id, lift] of input.synergy) add(id, 3 * lift, 'synergy');
+  // The one enemy answer our games bear out: magic resist bought against 3+ magic-damage enemies led by 6.6 points more
+  // than against 1.5 or fewer (difference in differences, 95% range 2.8 to 9.9). Armor against physical teams, anti-heal
+  // against healers and penetration against tanks did not show it, so they are left to the base.
+  if (input.enemyMagic !== undefined) {
+    const tilt = input.enemyMagic >= 3 ? ENEMY_WEIGHT : input.enemyMagic <= 1.5 ? -ENEMY_WEIGHT : 0;
+    if (tilt) for (const i of input.pool) if (i.mr) add(i.id, tilt, 'enemy');
+  }
   return out;
 }
 

@@ -57,7 +57,7 @@ let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
 let engine: { key: string; items: { item: ItemEntry; why: string[] }[] } | undefined;
-const WHY_AR: Record<string, string> = { base: 'شائع في ARAM', mayhem: 'يشتريه لاعبو البطل في Mayhem', link: 'يتكامل مع تعزيزاتك', synergy: 'فاز أكثر مع تعزيزاتك', required: 'يطلبه تعزيزك' };
+const WHY_AR: Record<string, string> = { base: 'شائع في ARAM', mayhem: 'يشتريه لاعبو البطل في Mayhem', link: 'يتكامل مع تعزيزاتك', synergy: 'فاز أكثر مع تعزيزاتك', required: 'يطلبه تعزيزك', enemy: 'ضد ضرر الخصم السحري' };
 let engineAsked = '';
 async function refreshEngine() {
   const key = pickedKey();
@@ -346,6 +346,9 @@ async function load() {
     return;
   }
   data = reply;
+  // The build is asked again each time F7 opens: the enemy team appears once the game is loaded.
+  engine = undefined;
+  engineAsked = '';
   if (pickedFor !== reply.champion?.id) (picked.clear(), (pickedFor = reply.champion?.id)); // a new game's champion
   // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.
   let restored = false;
