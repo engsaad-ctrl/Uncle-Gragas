@@ -7,7 +7,7 @@ import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
 import type { RawProfile } from '../lcu/profile.js';
 import { readMayhemGames } from '../lcu/mayhemGames.js';
-import { mayhemStats } from '../app/mayhemStats.js';
+import { latestPatch, mayhemStats, patchOf, rankByWins } from '../app/mayhemStats.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
@@ -56,8 +56,12 @@ const ITEM_MAP: Record<AppMode, ItemMap> = { normal: 'SUMMONERS_RIFT', aram: 'HO
 
 /** One champion in the Mayhem games collected from the client (see lcu/mayhemGames.ts). */
 export interface MayhemPicks {
+  /** The newest patch in the stored games ("16.21"); only its games are counted. */
+  patch: string;
   games: number;
   championGames: number;
+  championWins: number;
+  /** Best first: win rate against the champion's own, see rankByWins. */
   augments: { augment: AugmentText; games: number; wins: number }[];
   items: { item: ItemEntry; games: number; wins: number }[];
 }
@@ -372,7 +376,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   const mayhemFile = join(cacheDir, 'mayhem-games.json');
 
   async function mayhemPicks(championId: number): Promise<MayhemPicks> {
-    const s = mayhemStats(await readMayhemGames(mayhemFile), championId);
+    const games = latestPatch(await readMayhemGames(mayhemFile));
+    const s = mayhemStats(games, championId);
     const all = (await augments()).augments;
     const shop = (await items('mayhem')).list.filter((i) => i.group === 'legendary' || i.group === 'boots');
     // An augment can have more than one id (see texts/augments.ts): count it once.
@@ -386,9 +391,11 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       byAugment.set(a.id, t);
     }
     return {
+      patch: games.length ? patchOf(games[0]) : '',
       games: s.games,
       championGames: s.championGames,
-      augments: [...byAugment.values()].sort((a, b) => b.games - a.games || b.wins - a.wins),
+      championWins: s.championWins,
+      augments: rankByWins([...byAugment.values()], { games: s.championGames, wins: s.championWins }),
       items: s.items.flatMap((p) => {
         const item = shop.find((i) => i.id === p.id);
         return item ? [{ item, games: p.games, wins: p.wins }] : [];

@@ -79,12 +79,18 @@ function realPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, sho
     s.lastElementChild!.remove();
     if (isError(r)) return void s.append(el('p', 'missing', r.error));
     const how = 'تُجمع تلقائياً من سجل مباريات العميل بعد كل مباراة Mayhem، ولكل مباراة عشرة لاعبين.';
-    if (!r.championGames) return void s.append(el('p', 'hint', `لا يوجد ${name} في ${r.games} مباراة محفوظة بعد. ${how}`));
-    const badge = (games: number, wins: number) => `${games} · ${Math.round((100 * wins) / games)}% فوز`;
+    if (!r.championGames) return void s.append(el('p', 'hint', `لا يوجد ${name} في ${r.games} مباراة من باتش ${r.patch} بعد. ${how}`));
+    const pct = (games: number, wins: number) => Math.round((100 * wins) / games);
+    const badge = (games: number, wins: number) => `${games} · ${pct(games, wins)}% فوز`;
+    const base = pct(r.championGames, r.championWins);
+    const vsBase = (games: number, wins: number) => {
+      const d = pct(games, wins) - base;
+      return `${badge(games, wins)} (${d > 0 ? '+' : ''}${d})`;
+    };
     const grid = el('div', 'grid');
     grid.append(...r.augments.slice(0, 12).map((x, i) => {
       const a = x.augment;
-      const chip = augmentChip(a, false, () => show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), badge(x.games, x.wins));
+      const chip = augmentChip(a, false, () => show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), vsBase(x.games, x.wins));
       if (x.games < FEW_GAMES) chip.classList.add('few');
       return stagger(chip, i);
     }));
@@ -95,10 +101,14 @@ function realPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, sho
       items.append(group);
     }
     s.append(
-      el('p', 'status', `${r.championGames} مرة من ${r.games} مباراة محفوظة. ${how}`),
-      el('h3', 'sub-title', 'التعزيزات الأكثر أخذاً'), grid,
+      el('p', 'status', `${r.championGames} مرة في ${r.games} مباراة من باتش ${r.patch}، وفاز ${base}% منها. ${how}`),
+      el('h3', 'sub-title', 'أفضل التعزيزات في مبارياتنا'), grid,
       el('h3', 'sub-title', 'الأيتمات الأكثر شراءً'), items,
-      el('p', 'hint', `الرقم الأول عدد المرات ثم نسبة الفوز. الباهت أقل من ${FEW_GAMES} مرات، فنسبته لا يُعتمد عليها بعد.`),
+      el(
+        'p',
+        'hint',
+        `الرقم الأول عدد المرات ثم نسبة الفوز، وبين القوسين الفرق عن فوز ${name} عموماً. التعزيزات مرتبة بالفوز، والقليل المرات يُحسب قريباً من متوسط البطل حتى تكثر مبارياته. الباهت أقل من ${FEW_GAMES} مرات.`,
+      ),
     );
   });
   return s;

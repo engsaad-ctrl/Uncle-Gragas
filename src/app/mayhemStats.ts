@@ -12,6 +12,7 @@ export interface MayhemStats {
   /** Every stored game, and this champion's appearances in them. */
   games: number;
   championGames: number;
+  championWins: number;
   augments: PickStat[];
   items: PickStat[];
 }
@@ -35,7 +36,27 @@ export function mayhemStats(games: MayhemGame[], champion: number): MayhemStats 
   return {
     games: games.length,
     championGames: rows.length,
+    championWins: rows.filter((p) => p.win).length,
     augments: tally(rows.map((p) => ({ win: p.win, ids: p.augments }))),
     items: tally(rows.map((p) => ({ win: p.win, ids: p.items }))),
   };
+}
+
+/** A game's patch: "16.21.712.4567" is "16.21". */
+export const patchOf = (g: MayhemGame) => g.version.split('.').slice(0, 2).join('.');
+
+/** The games of the newest patch among them: an older patch's numbers say little about this one. */
+export function latestPatch(games: MayhemGame[]): MayhemGame[] {
+  const newest = games.reduce<MayhemGame | null>((a, g) => (!a || g.at > a.at ? g : a), null);
+  return newest ? games.filter((g) => patchOf(g) === patchOf(newest)) : [];
+}
+
+// Games an augment needs before its own win rate weighs as much as the champion's.
+const PRIOR_GAMES = 20;
+
+/** Best first by win rate, each pulled toward the champion's own until it has enough games to stand on. */
+export function rankByWins<T extends { games: number; wins: number }>(list: T[], champion: { games: number; wins: number }): T[] {
+  const base = champion.games ? champion.wins / champion.games : 0.5;
+  const score = (x: T) => (x.wins + PRIOR_GAMES * base) / (x.games + PRIOR_GAMES);
+  return [...list].sort((a, b) => score(b) - score(a));
 }
