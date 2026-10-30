@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { latestPatch, mayhemStats, rankByWins } from '../../src/app/mayhemStats.js';
+import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats, rankByWins } from '../../src/app/mayhemStats.js';
 
 const player = (champion: number, win: boolean, augments: number[], items: number[] = []) => ({ champion, win, augments, items });
 
@@ -41,5 +41,32 @@ describe('rankByWins', () => {
       champion,
     ).map((x) => x.name);
     expect(order).toEqual(['strong', 'lucky', 'common', 'weak']);
+  });
+});
+
+describe('augmentItemSynergy', () => {
+  it('finds the items an augment wins more with, over every champion, and only with enough games each way', () => {
+    // Augment 7: with item 50 its players win 15 of 20; without it, 5 of 20. Item 60: too few games to judge.
+    const p = (champion: number, win: boolean, items: number[]) => ({ champion, win, augments: [7], items });
+    const players = [
+      ...Array.from({ length: 20 }, (_, i) => p(i % 3, i < 15, [50])),
+      ...Array.from({ length: 20 }, (_, i) => p(i % 3, i < 5, i < 3 ? [60] : [])),
+    ];
+    const s = augmentItemSynergy([{ id: 1, at: 0, version: '', players }], [7], () => true);
+    expect(s.map((x) => x.item)).toEqual([50]);
+    expect(s[0]).toMatchObject({ augment: 7, games: 20, wins: 15 });
+    expect(s[0].lift).toBeGreaterThan(0.2);
+  });
+});
+
+describe('augmentPairs', () => {
+  it('scores the other augments by how much more they won next to the chosen one', () => {
+    // With augment 7: alongside 8 its players win 16 of 20, alongside 9 only 4 of 20.
+    const p = (win: boolean, other: number) => ({ champion: 1, win, augments: [7, other], items: [] });
+    const players = [...Array.from({ length: 20 }, (_, i) => p(i < 16, 8)), ...Array.from({ length: 20 }, (_, i) => p(i < 4, 9))];
+    const fit = augmentPairs([{ id: 1, at: 0, version: '', players }], [7]);
+    expect(fit.get(8)!.lift).toBeGreaterThan(0.3);
+    expect(fit.get(9)!.lift).toBeLessThan(-0.3);
+    expect(fit.has(7)).toBe(false);
   });
 });

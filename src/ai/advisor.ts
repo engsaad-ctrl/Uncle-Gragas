@@ -21,6 +21,8 @@ export interface AdviceInput {
   /** tier: how strong the augment is on this champion in real Mayhem games ("S+" to "C"), when known. */
   /** items: the ids of items the augment's text names (a quest that asks for Heartsteel, "Upgrade Collector"). */
   augments: { id: number; name: string; enName: string; text: string; tier?: string; items?: number[] }[];
+  /** Items that won more with a chosen augment than without it, in real games of every champion (best first). */
+  synergy?: { augment: number; item: number; games: number; wins: number; lift: number }[];
   /** Every finished item and boots on the map. */
   pool: { id: number; enName: string; gold: number; boots: boolean; text: string }[];
   /** The champion's usual build: what its Mayhem players buy whatever their augments (ARAM's when Mayhem's is unknown). */
@@ -128,6 +130,7 @@ const RULES = `You recommend League of Legends ARAM: Mayhem item builds for one 
 A single augment can change the whole build: one that adds magic damage to attacks can turn an AD marksman into AP, an attack-speed or on-hit augment favours on-hit items, and an "Upgrade <item>" augment makes that item a priority.
 The usual build is what players of this champion buy in Mayhem whatever their augments: keep its items when they still fit, replace them when an augment points elsewhere.
 An augment that names items (listed after "names items") is built around them: a quest that asks you to own an item, or an upgrade of an item. Every candidate includes that item (when several are named, at least one of them), unless the champion truly cannot use it.
+Items listed as winning more with an augment are pairings players found in real games, often through a link the texts hide (Riftmaker turns the health a Heartsteel quest stacks into ability power). Weigh them for every candidate that suits the champion, and build one candidate around the strongest of them.
 Only use item ids from the item list. A build is six different items with at most one pair of boots (boots first when the champion buys boots).
 Real Mayhem games, when listed, show what players actually bought and how often they won. With ${FEW_GAMES} or more games they outweigh your reading of the texts; with fewer, treat them as a hint only and say in the summary that there are too few real games to confirm the build.
 Write every reason and summary in Arabic, short and concrete (one sentence, numbers when you have them). Item and champion names stay in English. Never name any website or data provider.`;
@@ -186,9 +189,21 @@ export function contextText(input: AdviceInput): string {
     `Usual build: ${input.usual.length ? input.usual.map((id) => `${id} ${name(id)}`).join(', ') : 'none'}`,
     '',
     ...playedText(input.played, name),
+    ...synergyText(input, name),
     'Item list (id | name | cost | boots | effect):',
     ...[...input.pool].sort((a, b) => a.id - b.id).map((i) => `${i.id} | ${i.enName} | ${i.gold}g | ${i.boots ? 'boots' : '-'} | ${plain(i.text).replace(/\n+/g, ' ')}`),
   ].join('\n');
+}
+
+const SYNERGY_PER_AUGMENT = 6;
+
+function synergyText(input: AdviceInput, name: (id: number) => string): string[] {
+  const lines = input.augments.flatMap((a) => {
+    const list = (input.synergy ?? []).filter((s) => s.augment === a.id).slice(0, SYNERGY_PER_AUGMENT);
+    const pct = (x: number) => Math.round(100 * x);
+    return list.length ? [`${a.enName}: ${list.map((s) => `${s.item} ${name(s.item)} (${s.games} games, ${pct(s.wins / s.games)}% wins, +${pct(s.lift)})`).join(', ')}`] : [];
+  });
+  return lines.length ? ['Items that won more with these augments than without them, in real Mayhem games of every champion:', ...lines, ''] : [];
 }
 
 function playedText(p: AdviceInput['played'], name: (id: number) => string): string[] {
@@ -205,6 +220,21 @@ function playedText(p: AdviceInput['played'], name: (id: number) => string): str
 export function toEffect(raw: Record<string, unknown>): Effect | null {
   const r = Effect.safeParse(raw.kind === 'attackSpeedCap' ? { ...raw, cap: raw.cap === 0 ? null : raw.cap } : raw);
   return r.success ? r.data : null;
+}
+
+/** The items most bought by players who took one of the chosen augments, boots first; null with too few games. */
+export function realBuild(input: AdviceInput): number[] | null {
+  const p = input.played;
+  if (!p || p.withAugments < FEW_GAMES) return null;
+  const byId = new Map(input.pool.map((i) => [i.id, i]));
+  const out: number[] = [];
+  for (const { id } of p.itemsWithAugments) {
+    const item = byId.get(id);
+    if (!item || out.length === 6) continue;
+    if (!item.boots) out.push(id);
+    else if (!out.some((x) => byId.get(x)!.boots)) out.unshift(id);
+  }
+  return out.length >= 3 ? out : null;
 }
 
 /** Candidates that are real builds on this map: known items, no repeats, at most six, at most one pair of boots. */
@@ -268,8 +298,14 @@ export async function adviseBuild(post: GeminiPost, input: AdviceInput, calculat
   const context = contextText(input);
   const plan = Plan.parse(await ask(post, `${context}\n\n${PLAN_TASK}`, PLAN_SCHEMA));
   const effects = plan.effects.map(toEffect).filter((e): e is Effect => e !== null);
-  // The usual build is always one of the candidates: the answer is then compared with what players do.
-  const candidates = legalBuilds([...plan.candidates, { label: 'usual build', items: input.usual.slice(0, 6) }], input.pool).slice(0, 5);
+  // The usual build and, with enough games, what players with these augments bought are always among the candidates:
+  // the model's own ideas are then weighed against what players do (a Diana with Steel Your Heart got no Riftmaker,
+  // which 4 of the 10 such players bought).
+  const real = realBuild(input);
+  const candidates = legalBuilds(
+    [...plan.candidates, ...(real ? [{ label: 'what players with these augments bought', items: real }] : []), { label: 'usual build', items: input.usual.slice(0, 6) }],
+    input.pool,
+  ).slice(0, 6);
   if (!candidates.length) throw new Error('لم يقترح Gemini بناءً صالحاً من أيتمات هذه الخريطة.');
   const results = calculate(candidates.map((c) => c.items), effects);
   const table = candidates.map((c, i) => `${i}. ${c.label}: ${JSON.stringify({ ...results[i], stats: undefined, keyStats: pickStats(results[i]) })}`).join('\n');

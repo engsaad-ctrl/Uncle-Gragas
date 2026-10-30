@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { adviseBuild, contextText, legalBuilds, MODELS, namedItems, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
+import { adviseBuild, contextText, legalBuilds, MODELS, namedItems, realBuild, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
 import type { BuildResult } from '../../src/ai/calculator.js';
 
 const input: AdviceInput = {
@@ -23,6 +23,20 @@ describe('legalBuilds', () => {
     const ok = { label: 'ap', items: [3020, 3089] };
     const out = legalBuilds([ok, { label: 'x', items: [1] }, { label: 'y', items: [3089, 3089] }, { label: 'z', items: [3020, 3006] }], input.pool);
     expect(out).toEqual([ok]);
+  });
+});
+
+describe('realBuild', () => {
+  const played = (withAugments: number) => ({
+    games: 20, items: [], withAugments,
+    itemsWithAugments: [3089, 3020, 3031, 3006, 9999].map((id, i) => ({ id, games: 9 - i, wins: 4 })),
+  });
+  it('takes what players with the augments bought, boots first and one pair only, items off the map left out', () => {
+    expect(realBuild({ ...input, played: played(9) })).toEqual([3020, 3089, 3031]);
+  });
+  it('gives nothing with too few games', () => {
+    expect(realBuild({ ...input, played: played(2) })).toBeNull();
+    expect(realBuild(input)).toBeNull();
   });
 });
 
@@ -120,5 +134,13 @@ describe('adviseBuild', () => {
     const post: GeminiPost = async (model) => (tried.push(model), model === MODELS[0] ? { status: 0, json: null } : reply({ style: 'ap', styleReason: 'س', candidates: [], effects: [] }));
     await expect(adviseBuild(post, { ...input, usual: [] }, () => [])).rejects.toThrow(/بناءً صالحاً/); // got past Gemini
     expect(tried).toEqual(MODELS.slice(0, 2));
+  });
+});
+
+describe('synergy in the context', () => {
+  it('lists the items that won more with each chosen augment', () => {
+    const text = contextText({ ...input, synergy: [{ augment: 1205, item: 3089, games: 40, wins: 26, lift: 0.12 }] });
+    expect(text).toContain("Vulnerability: 3089 Rabadon's Deathcap (40 games, 65% wins, +12)");
+    expect(contextText(input)).not.toContain('won more with these augments');
   });
 });
