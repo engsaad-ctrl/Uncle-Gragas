@@ -253,6 +253,11 @@ app.whenReady().then(() => {
   watcher.start();
   overlay.prepare();
   void updates.check();
+  // The app stays open for days: look again every half hour, but never start a download during a game.
+  setInterval(() => {
+    const { state } = updates.status;
+    if (lastPhase !== 'InProgress' && state !== 'downloading' && state !== 'ready') void updates.check();
+  }, 30 * 60_000);
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => app.quit());
