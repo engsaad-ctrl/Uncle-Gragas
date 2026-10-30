@@ -57,7 +57,7 @@ let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
 let engine: { key: string; items: { item: ItemEntry; why: string[] }[] } | undefined;
-const WHY_AR: Record<string, string> = { base: 'شائع في ARAM', mayhem: 'يشتريه لاعبو البطل في Mayhem', link: 'يتكامل مع تعزيزاتك', synergy: 'فاز أكثر مع تعزيزاتك', required: 'يطلبه تعزيزك', enemy: 'ضد ضرر الخصم السحري' };
+const WHY_AR: Record<string, string> = { base: 'شائع لهذا البطل', mayhem: 'يشتريه لاعبو البطل في Mayhem', link: 'يتكامل مع تعزيزاتك', synergy: 'فاز أكثر مع تعزيزاتك', required: 'يطلبه تعزيزك', enemy: 'ضد ضرر الخصم السحري' };
 let engineAsked = '';
 async function refreshEngine() {
   const key = pickedKey();
@@ -124,13 +124,15 @@ function render() {
     const name = el('div', 'ov-name');
     name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
     r.append(icon(a.iconUrl), name);
-    if (rated(a) === 0) r.append(el('span', 'ov-score', `${a.tierLabel ?? `#${a.rank}`} · ${pct(a.popularity ?? 0)}`));
+    // The labels share one column that wraps, so the pick button keeps its own place at the row's end.
+    const tags = el('div', 'ov-tags');
+    if (rated(a) === 0) tags.append(el('span', 'ov-score', `${a.tierLabel ?? `#${a.rank}`} · ${pct(a.popularity ?? 0)}`));
     const e = effects.get(a.id);
     if (e) {
       const sure = e.low !== undefined && e.high !== undefined && (e.low > 0 || e.high < 0);
       const tag = el('span', `ov-fit ${!sure ? 'few' : e.points > 0 ? 'good' : 'bad'}`, `${e.points > 0 ? '+' : ''}${e.points.toFixed(1)}${sure ? '' : '؟'}`);
       tag.title = `أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا${e.low !== undefined ? ` (بين ${e.low.toFixed(1)} و${e.high!.toFixed(1)})` : ''}. «؟»: غير مؤكد بعد.`;
-      r.append(tag);
+      tags.append(tag);
     }
     const f = picked.has(a.id) ? undefined : fit.get(a.id);
     if (f) {
@@ -139,20 +141,21 @@ function render() {
       const few = f.games < FIT_GAMES;
       const tag = el('span', `ov-fit ${few || !d ? 'few' : d > 0 ? 'good' : 'bad'}`, few ? 'أدلة قليلة' : `${d > 0 ? '+' : ''}${d}% مع اختياراتك`);
       tag.title = `${f.games} لاعباً أخذوه مع ما اخترته. الرقم: كم زاد فوزه معه فوق ما يفوز به عادةً (${d > 0 ? '+' : ''}${d}%).`;
-      r.append(tag);
+      tags.append(tag);
     }
     const kit = picked.has(a.id) ? null : fitOf(data!.champion?.id, a.ids ?? [a.id]);
     if (kit && (kit.score >= 2 || kit.score <= -1)) {
       const tag = el('span', `ov-fit ${kit.score > 0 ? 'good' : 'bad'}`, kit.score > 0 ? '✓ يناسب البطل' : '✗ لا يناسب البطل');
       tag.title = kit.reasons.join('\n');
-      r.append(tag);
+      tags.append(tag);
     }
     const links = linksOf(a);
     if (links.length) {
       const tag = el('span', 'ov-mech', '⚙ يتكامل مع اختيارك');
       tag.title = links.map(linkInArabic).join('\n');
-      r.append(tag);
+      tags.append(tag);
     }
+    r.append(tags);
     if (data!.mode === 'mayhem') {
       const on = picked.has(a.id);
       const pick = el('span', `ov-pick${on ? ' on' : ''}`, on ? '✓ اخترته' : 'اخترته');
@@ -162,6 +165,7 @@ function render() {
         e.stopPropagation(); // not the row's "show description"
         if (on) picked.delete(a.id);
         else if (picked.size < MAX_PICKS) picked.add(a.id);
+        buildView = undefined; // the marks changed: back to the build that follows them
         render();
         if (data?.build) renderBuild(data.build);
         void refreshFit();
@@ -217,7 +221,7 @@ function icons(xs: Describable[]) {
 /** Mayhem: the items re-ranked for the augments the player marked, each with its reason. */
 function adaptedSection(p: ChampionPage): HTMLElement {
   const chosen = (data?.augments ?? []).filter((a) => picked.has(a.id));
-  if (!chosen.length) return section('الأيتمات حسب تعزيزاتك', el('p', 'hint', 'من تبويب التعزيزات اضغط «اخترته» على كل تعزيز تأخذه، فيُعاد ترتيب الأيتمات هنا.'));
+  if (!chosen.length) return section('البناء حسب تعزيزاتك', el('p', 'hint', NO_PICKS));
   // The build without AI (services.engineBuild), fetched when the marks change; the old text-only guess until it comes.
   const rows = el('div', 'ov-adapted');
   if (engine?.key === pickedKey()) {
@@ -239,8 +243,48 @@ function adaptedSection(p: ChampionPage): HTMLElement {
       rows.append(r);
     }
   }
-  return section('البناء حسب تعزيزاتك', icons(chosen), el('p', 'hint', 'من بناء البطل في ARAM على OP.GG ومبارياتنا، معدّلاً بتعزيزاتك. دون ذكاء اصطناعي.'), rows, aiBox(chosen));
+  return section('البناء حسب تعزيزاتك', icons(chosen), el('p', 'hint', 'ننصحك به: محسوب ليناسب بطلك وتعزيزاتك.'), rows);
 }
+
+function aiSection(): HTMLElement {
+  const chosen = (data?.augments ?? []).filter((a) => picked.has(a.id));
+  if (!chosen.length) return section('بناء الذكاء الاصطناعي', el('p', 'hint', NO_PICKS));
+  return section('بناء الذكاء الاصطناعي', icons(chosen), el('p', 'hint', 'رأي إضافي، وقد يختلف عن بناء «حسب تعزيزاتك».'), aiBox(chosen));
+}
+
+/** The finished items of the champion's usual build, by slot. */
+function baseItems(p: ChampionPage): HTMLElement | null {
+  const items: [string, ItemChoice | null][] = [
+    ['البداية', p.starter], ['الأساسية', p.core], ['الحذاء', p.boots],
+    ['الرابع', p.fourth[0] ?? null], ['الخامس', p.fifth[0] ?? null], ['السادس', p.sixth[0] ?? null],
+  ];
+  const grid = el('div', 'ov-items');
+  for (const [label, c] of items) {
+    if (!c?.items.length) continue;
+    const row = el('div', 'ov-item-row');
+    row.append(el('small', '', label), icons(c.items));
+    grid.append(row);
+  }
+  return grid.childElementCount ? section('الأيتمات', grid) : null;
+}
+
+/** Mayhem has three builds: one shows at a time, so they don't read as a single confusing list. */
+function viewSwitch(current: BuildView, p: ChampionPage): HTMLElement {
+  const s = el('div', 'ov-tabs');
+  for (const [v, label] of BUILD_VIEWS) {
+    const b = el('button', v === current ? 'active' : '', label);
+    b.type = 'button';
+    b.addEventListener('click', () => ((buildView = v), renderBuild(p)));
+    s.append(b);
+  }
+  return s;
+}
+
+type BuildView = 'base' | 'engine' | 'ai';
+const BUILD_VIEWS: [BuildView, string][] = [['base', 'الأساسي'], ['engine', 'حسب تعزيزاتك'], ['ai', 'الذكاء الاصطناعي']];
+/** The player's choice; until then the build that follows the marks, or the usual one with none. */
+let buildView: BuildView | undefined;
+const NO_PICKS = 'من تبويب التعزيزات اضغط «اخترته» على كل تعزيز تأخذه، فيظهر البناء هنا.';
 
 /** The AI answer for the augments marked now, kept until they change. */
 let ai: { key: string; state: 'loading' | 'done' | 'error'; advice?: Advice; error?: string } | undefined;
@@ -251,6 +295,7 @@ async function startAi() {
   const champion = data?.champion;
   if (!champion || !picked.size) return;
   const key = pickedKey();
+  buildView = 'ai';
   showTab('build');
   if (ai?.key !== key) {
     ai = { key, state: 'loading' };
@@ -289,11 +334,21 @@ function aiBox(chosen: { id: number }[]): HTMLElement {
 function renderBuild(p: ChampionPage) {
   if (p.buildError) return buildBox.replaceChildren(el('p', 'missing', p.buildError));
   const out: HTMLElement[] = [];
-  if (p.mode === 'mayhem') out.push(adaptedSection(p));
-  // Without the site's Mayhem build the ARAM one is shown: say so, or it looks like a wrong mode.
-  if (p.mode === 'mayhem')
-    out.push(el('p', 'hint', p.siteBuild ? 'بناء Mayhem: ما يشتريه لاعبو هذا البطل بغض النظر عن التعزيزات. الرونز والتعاويذ من ARAM.' : 'بناء ARAM: لا يتوفر الآن بناء خاص بـ Mayhem لهذا البطل، فهذا أقرب بناء متاح.'));
-  if (p.stats) out.push(el('p', 'en', `نسبة الفوز ${pct(p.stats.winRate)} · ${p.stats.games.toLocaleString('en')} مباراة`));
+  const mayhem = p.mode === 'mayhem';
+  const view = buildView ?? (picked.size ? 'engine' : 'base');
+  const stats = p.stats && el('p', 'en', `نسبة الفوز ${pct(p.stats.winRate)} · ${p.stats.games.toLocaleString('en')} مباراة`);
+  const items = baseItems(p);
+  if (mayhem) {
+    out.push(viewSwitch(view, p));
+    if (view === 'engine') out.push(adaptedSection(p));
+    else if (view === 'ai') out.push(aiSection());
+    else {
+      // Without the site's Mayhem build the ARAM one is shown: say so, or it looks like a wrong mode.
+      out.push(el('p', 'hint', p.siteBuild ? 'ما يشتريه لاعبو البطل عادةً، ولا يتغير بتعزيزاتك.' : 'لا يتوفر بناء خاص بهذا الطور الآن، فهذا أقرب بناء متاح.'));
+      if (stats) out.push(stats);
+      if (items) out.push(items);
+    }
+  } else if (stats) out.push(stats);
   if (p.skillPriority.length || p.skillOrder.length) {
     const prio = el('div', 'ov-skills');
     prio.dir = 'ltr';
@@ -317,18 +372,7 @@ function renderBuild(p: ChampionPage) {
     const key = getFlashKey();
     out.push(section('التعاويذ', icons(key && p.spells.length === 2 ? placeFlash([p.spells[0], p.spells[1]], key) : p.spells)));
   }
-  const items: [string, ItemChoice | null][] = [
-    ['البداية', p.starter], ['الأساسية', p.core], ['الحذاء', p.boots],
-    ['الرابع', p.fourth[0] ?? null], ['الخامس', p.fifth[0] ?? null], ['السادس', p.sixth[0] ?? null],
-  ];
-  const grid = el('div', 'ov-items');
-  for (const [label, c] of items) {
-    if (!c?.items.length) continue;
-    const row = el('div', 'ov-item-row');
-    row.append(el('small', '', label), icons(c.items));
-    grid.append(row);
-  }
-  if (grid.childElementCount) out.push(section('الأيتمات', grid));
+  if (!mayhem && items) out.push(items);
   buildBox.replaceChildren(...(out.length ? out : [el('p', 'missing', 'لا يوجد بناء لهذا البطل.')]));
 }
 
@@ -352,6 +396,7 @@ async function load() {
   // The build is asked again each time F7 opens: the enemy team appears once the game is loaded.
   engine = undefined;
   engineAsked = '';
+  buildView = undefined;
   if (pickedFor !== reply.champion?.id) (picked.clear(), (pickedFor = reply.champion?.id)); // a new game's champion
   // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.
   let restored = false;

@@ -526,7 +526,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
     return r.items.flatMap((id) => {
       const item = shop.find((i) => i.id === id);
-      return item ? [{ item, why: r.why.get(id) ?? [] }] : [];
+      return item ? [{ item, why: [...new Set(r.why.get(id) ?? [])] }] : []; // an item in several base options says "base" once
     });
   }
 

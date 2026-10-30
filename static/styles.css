@@ -432,6 +432,7 @@ a.band-champ:hover { background: var(--panel-2); }
 .ov-pick:hover { color: var(--text); border-color: var(--accent); }
 .ov-pick.on { color: var(--bg); background: var(--accent); border-color: var(--accent); }
 .ov-row { grid-template-columns: 36px 1fr auto auto; } .ov-row.picked { border-color: var(--accent); }
+.ov-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; max-width: 220px; }
 .ov-adapted { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .ov-adapted-row { display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 8px; }
 .ov-adapted-row small { color: var(--muted); font-size: 11px; }
@@ -445,3 +446,13 @@ a.band-champ:hover { background: var(--panel-2); }
 .ai-calc b { color: var(--accent); }
 
 .few { opacity: .55; }
+/* F7 sections as cards; in the wide panel item lists become grids of cards with bigger icons. */
+.ov-sec { padding: 10px 12px; background: color-mix(in srgb, var(--panel) 85%, transparent); border: 1px solid var(--line); border-radius: 8px; }
+.ov-sec h3 { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--text); }
+.ov-icons { gap: 6px; }
+.ov-icons .ic { width: 40px; height: 40px; }
+.ov-adapted { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin-top: 8px; }
+.ov-adapted-row { grid-template-columns: 44px 1fr; padding: 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; }
+.ov-adapted-row .ic { width: 44px; height: 44px; }
+.ov-adapted-row b { font-size: 14px; }
+.ov-adapted-row small { font-size: 11.5px; line-height: 1.5; }
