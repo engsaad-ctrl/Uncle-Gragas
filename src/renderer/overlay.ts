@@ -3,7 +3,7 @@
 import type { Advice } from '../ai/advisor.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
-import { FIT_POINTS, fitOf, gradeOf } from './fit.js';
+import { FIT_POINTS, fitOf, gradesFor, playedOnly, siteBonus } from './fit.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
@@ -104,16 +104,12 @@ function render() {
   const score = (a: OverlayData['augments'][number]) => {
     const f = fit.get(a.id);
     const kit = fitOf(data!.champion?.id, a.ids ?? [a.id])?.score ?? 0; // a near-tie breaker only (src/renderer/fit.ts)
-    return (effects.get(a.id)?.points ?? 0) + FIT_POINTS * kit + linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 100 * f.lift : 0);
+    return (effects.get(a.id)?.points ?? 0) + siteBonus(a.tierLabel) + FIT_POINTS * kit + linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 100 * f.lift : 0);
   };
   const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : score(a));
-  // Letters compare an augment with the others of its rarity for this champion, the choice the game actually offers.
-  const grades = new Map<number, string>();
-  for (const rarity of Object.keys(RARITY_LABEL)) {
-    const ranked = data.augments.filter((a) => a.rarity === rarity).sort((x, y) => score(y) - score(x));
-    ranked.forEach((a, i) => grades.set(a.id, gradeOf(i, ranked.length)));
-  }
-  const all = filterAugments(data.augments, search.value, 'all', 'all');
+  const pool = data.mode === 'mayhem' ? playedOnly(data.augments, effects, picked) : data.augments;
+  const grades = gradesFor(pool, score);
+  const all = filterAugments(pool, search.value, 'all', 'all');
   const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).filter((r) => shownRarity === 'all' || r === shownRarity).flatMap((rarity) => {
     const list = all
       .filter((a) => a.rarity === rarity)
@@ -149,7 +145,7 @@ function render() {
       const links = linksOf(a);
       const why = [
         ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
-        ...(a.tierLabel ? [`تقييم المواقع: ${a.tierLabel}.`] : []),
+        ...(a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
         ...(f && f.games >= FIT_GAMES ? [`مع اختياراتك: ${Math.round(100 * f.lift)}% من ${f.games} لاعباً.`] : []),
         ...(kit?.reasons ?? []),
         ...links.map(linkInArabic),
@@ -511,7 +507,7 @@ async function renderTeams() {
   const champion = data?.champion;
   if (champion && data?.mode === 'mayhem') {
     const best = [...data.augments]
-      .map((a) => ({ a, score: (effects.get(a.id)?.points ?? -9) + FIT_POINTS * (fitOf(champion.id, a.ids ?? [a.id])?.score ?? 0) }))
+      .map((a) => ({ a, score: (effects.get(a.id)?.points ?? -9) + siteBonus(a.tierLabel) + FIT_POINTS * (fitOf(champion.id, a.ids ?? [a.id])?.score ?? 0) }))
       .sort((x, y) => y.score - x.score)
       .slice(0, 8)
       .map(({ a }) => a);

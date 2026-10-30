@@ -8,6 +8,7 @@ import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
 import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import { FIT_POINTS, fitOf, gradesFor, playedOnly, siteBonus } from './fit.js';
 import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
 
@@ -69,8 +70,19 @@ function applyControl(p: ChampionPage): HTMLElement {
 
 const MAX_PICKS = 6;
 
+/** Mayhem's played augments for this champion, best first with their letters, as F7 scores them before anything is marked. */
+async function rankAugments(championId: number, site: RatedAugment[]): Promise<{ list: AugmentText[]; grades: Map<number, string> } | null> {
+  const [r, e] = await Promise.all([window.lolh.getAugments(), window.lolh.augmentEffects()]);
+  if (isError(r) || isError(e)) return null;
+  const effects = new Map(e.map((x) => [x.id, x.points]));
+  const tiers = new Map(site.map((a) => [a.id, a.tierLabel]));
+  const score = (a: AugmentText) => (effects.get(a.id) ?? 0) + siteBonus(tiers.get(a.id)) + FIT_POINTS * (fitOf(championId, a.ids)?.score ?? 0);
+  const list = playedOnly(r.augments.filter((a) => a.modes.includes('mayhem')), effects).sort((x, y) => score(y) - score(x));
+  return { list, grades: gradesFor(list, score) };
+}
+
 /** Mayhem without a game: pick any augments and see the engine's build at once; Gemini's opinion on demand. */
-function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement): HTMLElement {
+function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranking: ReturnType<typeof rankAugments>): HTMLElement {
   const s = el('section', 'panel');
   s.append(el('h2', '', 'ابنِ بناءك حسب تعزيزاتك'), el('p', 'hint', `اختر حتى ${MAX_PICKS} تعزيزات كأنك أخذتها في المباراة، فيظهر البناء المحسوب لها فوراً.`));
   const search = searchBox('ابحث عن تعزيز');
@@ -82,7 +94,7 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement): HTML
   engineTitle.hidden = true;
   let engineRun = 0;
   const picked = new Map<number, AugmentText>();
-  // The rated ones first (best for this champion), then every other Mayhem augment once it loads.
+  // The site's list until our own ranking loads.
   let all: AugmentText[] = p.augments;
   let items: ItemEntry[] = [];
   let run = 0;
@@ -134,10 +146,9 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement): HTML
   }
 
   search.input.addEventListener('input', drawList); // typing keeps the answer on screen
-  void window.lolh.getAugments().then((r) => {
-    if (isError(r)) return;
-    const rated = new Set(all.map((a) => a.id));
-    all = [...all, ...r.augments.filter((a) => a.modes.includes('mayhem') && !rated.has(a.id))];
+  void ranking.then((r) => {
+    if (!r) return;
+    all = r.list;
     drawList();
   });
   draw();
@@ -225,14 +236,19 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     const showAll = el('button', 'more', 'عرض كل التعزيزات');
     showAll.type = 'button';
     const groups = el('div');
+    // The site's ranking until ours loads, or if it can't: then the label says whose it is.
+    let ours: Awaited<ReturnType<typeof rankAugments>> = null;
     const renderGroups = (limit: number) =>
       groups.replaceChildren(
         ...AUGMENT_GROUPS.flatMap(([rarity, label]) => {
-          const list = p.augments.filter((a) => a.rarity === rarity).slice(0, limit);
+          const list: AugmentText[] = (ours?.list ?? p.augments).filter((a) => a.rarity === rarity).slice(0, limit);
           if (!list.length) return [];
           const grid = el('div', 'grid');
-          grid.append(...list.map((a: RatedAugment, i) => {
-            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), `${a.tierLabel ?? `#${a.rank}`} · ${pct(a.popularity)}`), i);
+          grid.append(...list.map((a, i) => {
+            const site = a as RatedAugment;
+            const letter = ours?.grades.get(a.id);
+            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), letter ?? `${site.tierLabel ?? `#${site.rank}`} · ${pct(site.popularity)}`), i);
+            if (letter) chip.querySelector('small')!.className = `ov-grade g-${letter}`;
             return chip;
           }));
           const h = el('h3', 'sub-title', label);
@@ -243,6 +259,12 @@ function renderPage(p: ChampionPage): HTMLElement[] {
       );
     renderGroups(6);
     let all = false;
+    const ranking = rankAugments(c.id, p.augments).catch(() => null);
+    void ranking.then((r) => {
+      if (!r || !groups.isConnected) return;
+      ours = r;
+      renderGroups(all ? Infinity : 6);
+    });
     showAll.addEventListener('click', () => {
       all = !all;
       renderGroups(all ? Infinity : 6);
@@ -252,8 +274,8 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     section.append(groups);
     // Each group shows 6 at first: offer the rest whenever any group has more.
     if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
-    section.append(el('p', 'hint', '#1 هو الأفضل لهذا البطل حسب الإحصائيات، والنسبة هي كم من لاعبي البطل يختارونه. التعزيزات بلا عينة كافية مستبعدة.'));
-    body.push(section, aiPanel(p, iconButton)); // our games feed the calculator; they are not shown as a list
+    section.append(el('p', 'hint', 'الحرف كما في F7، من مبارياتنا (70%) وتقييم الموقع لهذا البطل (30%): S الأفضل و C الأضعف بين تعزيزات الندرة نفسها.'));
+    body.push(section, aiPanel(p, iconButton, ranking)); // our games feed the calculator; they are not shown as a list
   }
 
   // Skills: priority, spells, path grid.

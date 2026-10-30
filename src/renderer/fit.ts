@@ -39,8 +39,36 @@ export function fitOf(championId: number | undefined, augmentIds: number[]): { s
   };
 }
 
+// The site's tier joins our effect at 70/30 on one scale: each divided by its spread over the training players (0.068
+// log-odds, 0.93 tier steps), which comes to this many win-chance points per step. Tested on 1,057 held-out games: ranking
+// AUC 0.647, against 0.633 for our model alone and 0.610 for the site's tiers alone. The gain over the site is proven
+// (95% range 0.016 to 0.056 for the same blend at 50/50); the gain over our model alone is within the noise.
+const SITE_POINTS = 0.78;
+const SITE_TIER: Record<string, number> = { 'S+': 3, S: 2.5, 'S-': 2, 'A+': 1.5, A: 1, 'A-': 0.5, 'B+': 0, B: -0.5, 'B-': -1, C: -1.5, D: -2 };
+/** What the site's tier for this champion adds to an augment's score; nothing for an augment the site doesn't list. */
+export const siteBonus = (tier: string | undefined) => SITE_POINTS * (SITE_TIER[tier ?? ''] ?? 0);
+
 /** A letter from a place in the ranking (0 = best): the top tenth S, the next quarter A, the next 40% B, the rest C. */
 export function gradeOf(place: number, count: number): 'S' | 'A' | 'B' | 'C' {
   const at = (place + 0.5) / count;
   return at <= 0.1 ? 'S' : at <= 0.35 ? 'A' : at <= 0.75 ? 'B' : 'C';
+}
+
+/** Letters for a list, each augment against the others of its rarity: the choice the game offers. Same in F7 and on the champion page. */
+export function gradesFor<T extends { id: number; rarity: string }>(augments: T[], score: (a: T) => number): Map<number, string> {
+  const out = new Map<number, string>();
+  for (const rarity of new Set(augments.map((a) => a.rarity))) {
+    const ranked = augments.filter((a) => a.rarity === rarity).sort((x, y) => score(y) - score(x));
+    ranked.forEach((a, i) => out.set(a.id, gradeOf(i, ranked.length)));
+  }
+  return out;
+}
+
+// shortcut: right after a new patch few games are stored and most augments have no effect yet, so nothing is hidden
+// below this many; a better rule needs the number of games on the patch.
+const ENOUGH_EFFECTS = 150;
+
+/** Without the augments no stored game of this patch took: the game's files still list many that aren't in the mode. */
+export function playedOnly<T extends { id: number }>(augments: T[], effects: Map<number, unknown>, keep: Set<number> = new Set()): T[] {
+  return effects.size < ENOUGH_EFFECTS ? augments : augments.filter((a) => effects.has(a.id) || keep.has(a.id));
 }
