@@ -77,8 +77,9 @@ const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) 
       ),
     );
   }
-  // The loading screen of a Mayhem game: open F7 on both teams, as other overlays do (only with F7 turned on).
-  if (state.phase === 'InProgress' && lastPhase !== 'InProgress' && lastPick?.mode === 'mayhem' && overlayOn) overlay.show('teams');
+  // The loading screen of every game (not Arena, whose teams of two the session lists differently): open F7 on both
+  // teams, as other overlays do (only with F7 turned on).
+  if (state.phase === 'InProgress' && lastPhase !== 'InProgress' && lastPick && lastPick.mode !== 'arena' && overlayOn) overlay.show('teams');
   lastPhase = state.phase;
   mainWindow?.webContents.send('lcu:state', state);
 });
