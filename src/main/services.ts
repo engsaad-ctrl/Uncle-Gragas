@@ -1,6 +1,7 @@
 import { adviseBuild, namedItems, type Advice, type GeminiPost } from '../ai/advisor.js';
 import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
+import { CHAMPION_KITS } from '../ai/championKits.js';
 import { compareBuilds } from '../ai/calculator.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
@@ -370,7 +371,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         return adviseBuild(
           post,
           {
-            champion: { name: entry.name, enName: entry.enName, abilities: page.champion.abilities.map((a) => ({ key: a.key, enName: a.enName, text: a.html })) },
+            champion: { name: entry.name, enName: entry.enName, abilities: page.champion.abilities.map((a) => ({ key: a.key, enName: a.enName, text: a.html })), kit: kitLine(championId) },
             augments: chosen.map((a) => ({
               id: a.id,
               name: a.name,
@@ -440,6 +441,12 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       }),
     };
   }
+
+  /** How the champion fights, for the model: its kit note and what it relies on and scales with. */
+  const kitLine = (id: number) => {
+    const k = CHAMPION_KITS.find((x) => x.id === id);
+    return k && `${k.note}. Relies on ${k.relies.join(', ')}; scales with ${k.scales.join(', ')}.`;
+  };
 
   const AD_STATS = new Set(['ad', 'bonus_ad', 'lethality']);
   /** An item's damage kind from what it gives: AP only, AD only (lethality counts), or neither / both. */

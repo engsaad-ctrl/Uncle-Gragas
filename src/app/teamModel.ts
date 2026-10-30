@@ -14,7 +14,7 @@ import type { MayhemGame } from '../lcu/mayhemGames.js';
  * the same games: augment ranking AUC 0.64 against the site's tiers 0.61, and level with each augment's plain win rate.
  * Class x augment terms did not improve cross-validated log-loss by 0.002 and stay out (classes unset).
  */
-export const PRIORS = { champion: 0.105, augment: 0.1, classAugment: 0.05, bias: 0.1 };
+export const PRIORS = { champion: 0.105, augment: 0.1, classAugment: 0.05, extra: 0.1, bias: 0.1 };
 /** A class x augment feature enters only with this many player appearances in the training games. */
 export const CLASS_SUPPORT = 200;
 
@@ -28,6 +28,7 @@ export interface TeamModel {
   bias: number;
   /** The classes it was fitted with, if any: needed to read class x augment weights. */
   classes?: Classes;
+  extra?: Extra;
 }
 
 interface Design {
@@ -39,16 +40,20 @@ interface Design {
 }
 
 /** A player's features with their weights: champion, augments, and (with classes) class x augment at 1/classes each. */
-function featuresOf(p: MayhemGame['players'][number], classes?: Classes): [string, number][] {
+/** A per-player number added as one more feature ("x"), e.g. how well the augments suit the champion's kit. */
+export type Extra = (p: MayhemGame['players'][number]) => number;
+
+function featuresOf(p: MayhemGame['players'][number], classes?: Classes, extra?: Extra): [string, number][] {
   const augs = [...new Set(p.augments)];
   const roles = classes?.get(p.champion) ?? [];
-  return [[`c:${p.champion}`, 1], ...augs.map((a): [string, number] => [`a:${a}`, 1]), ...roles.flatMap((r) => augs.map((a): [string, number] => [`k:${r}|a:${a}`, 1 / roles.length]))];
+  const base: [string, number][] = [[`c:${p.champion}`, 1], ...augs.map((a): [string, number] => [`a:${a}`, 1]), ...roles.flatMap((r) => augs.map((a): [string, number] => [`k:${r}|a:${a}`, 1 / roles.length]))];
+  return extra ? [...base, ['x', extra(p)]] : base;
 }
 
-function design(games: MayhemGame[], keys?: string[], classes?: Classes): Design {
+function design(games: MayhemGame[], keys?: string[], classes?: Classes, extra?: Extra): Design {
   // Class x augment features need support in these games (see CLASS_SUPPORT); the others always enter.
   const support = new Map<string, number>();
-  if (!keys && classes) for (const g of games) for (const p of g.players) for (const [f] of featuresOf(p, classes)) if (f.startsWith('k:')) support.set(f, (support.get(f) ?? 0) + 1);
+  if (!keys && classes) for (const g of games) for (const p of g.players) for (const [f] of featuresOf(p, classes, extra)) if (f.startsWith('k:')) support.set(f, (support.get(f) ?? 0) + 1);
   const index = new Map<string, number>((keys ?? []).map((k, i) => [k, i]));
   const all = keys ? [...keys] : [];
   const rows = games
@@ -56,7 +61,7 @@ function design(games: MayhemGame[], keys?: string[], classes?: Classes): Design
     .map((g) => {
       const sum = new Map<number, number>();
       g.players.forEach((p, i) => {
-        for (const [f, v] of featuresOf(p, classes)) {
+        for (const [f, v] of featuresOf(p, classes, extra)) {
           let j = index.get(f);
           if (j === undefined) {
             if (keys || (f.startsWith('k:') && (support.get(f) ?? 0) < CLASS_SUPPORT)) continue; // unseen, or too rare
@@ -70,7 +75,7 @@ function design(games: MayhemGame[], keys?: string[], classes?: Classes): Design
       const used = [...sum].filter(([, v]) => v !== 0);
       return { idx: Int32Array.from(used.map(([j]) => j)), val: Float64Array.from(used.map(([, v]) => v)), y: g.players[0].win ? 1 : 0 };
     });
-  const prior = Float64Array.from(all, (k) => (k.startsWith('c:') ? PRIORS.champion : k.startsWith('k:') ? PRIORS.classAugment : PRIORS.augment));
+  const prior = Float64Array.from(all, (k) => (k === 'x' ? PRIORS.extra : k.startsWith('c:') ? PRIORS.champion : k.startsWith('k:') ? PRIORS.classAugment : PRIORS.augment));
   return { keys: all, index, rows, prior };
 }
 
@@ -174,22 +179,22 @@ function minimise(f: (x: Float64Array, g: Float64Array) => number, x0: Float64Ar
 }
 
 /** Fits the team model; weights per game (a bootstrap draws games with repeats) default to one each. */
-export function fitTeamModel(games: MayhemGame[], weights?: Float64Array, classes?: Classes): TeamModel {
-  const d = design(games, undefined, classes);
+export function fitTeamModel(games: MayhemGame[], weights?: Float64Array, classes?: Classes, extra?: Extra): TeamModel {
+  const d = design(games, undefined, classes, extra);
   const w = weights ?? new Float64Array(d.rows.length).fill(1);
   const x = minimise((xx, g) => objective(d, xx, g, w), new Float64Array(d.keys.length + 1));
-  return { keys: d.keys, weights: x.slice(0, d.keys.length), bias: x[d.keys.length], classes };
+  return { keys: d.keys, weights: x.slice(0, d.keys.length), bias: x[d.keys.length], classes, extra };
 }
 
 /** A player's strength under the model (champion + augments); features it never saw count zero. */
 export function strength(m: TeamModel, champion: number, augments: number[]): number {
   const at = new Map(m.keys.map((k, i) => [k, i]));
-  return featuresOf({ champion, augments, win: false, items: [] }, m.classes).reduce((s, [f, v]) => s + v * (m.weights[at.get(f) ?? -1] ?? 0), 0);
+  return featuresOf({ champion, augments, win: false, items: [] }, m.classes, m.extra).reduce((s, [f, v]) => s + v * (m.weights[at.get(f) ?? -1] ?? 0), 0);
 }
 
 /** P(first team wins) for each game with ten players. */
 export function predictGames(m: TeamModel, games: MayhemGame[]): { p: number; y: number }[] {
-  const d = design(games, m.keys, m.classes);
+  const d = design(games, m.keys, m.classes, m.extra);
   return d.rows.map((r) => {
     let eta = m.bias;
     for (let k = 0; k < r.idx.length; k++) eta += m.weights[r.idx[k]] * r.val[k];

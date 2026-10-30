@@ -6,6 +6,7 @@ import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
+import { FIT_POINTS, fitOf } from './fit.js';
 import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stagger, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
@@ -87,10 +88,14 @@ function realPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, sho
     const sure = (e: NonNullable<(typeof r.augments)[number]['effect']>) => e.low !== undefined && e.high !== undefined && (e.low > 0 || e.high < 0);
     const effectBadge = (e: (typeof r.augments)[number]['effect']) => (e ? `${e.points > 0 ? '+' : ''}${e.points.toFixed(1)}${sure(e) ? '' : '؟'}` : 'بلا بيانات');
     const grid = el('div', 'grid');
-    grid.append(...r.augments.slice(0, 12).map((x, i) => {
+    // The kit fit only settles near ties (src/renderer/fit.ts).
+    const kitFit = (x: (typeof r.augments)[number]) => fitOf(p.champion.id, x.augment.ids);
+    const ordered = [...r.augments].sort((x, y) => (y.effect?.points ?? -9) + FIT_POINTS * (kitFit(y)?.score ?? 0) - ((x.effect?.points ?? -9) + FIT_POINTS * (kitFit(x)?.score ?? 0)));
+    grid.append(...ordered.slice(0, 12).map((x, i) => {
       const a = x.augment;
       const chip = augmentChip(a, false, () => show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), effectBadge(x.effect));
-      chip.title = `${shownName(a)}: مع ${name} ${badge(x.games, x.wins)}. أثره على فوز الفريق: ${effectBadge(x.effect)} نقطة${x.effect?.low !== undefined ? ` (بين ${x.effect.low.toFixed(1)} و${x.effect.high!.toFixed(1)})` : ''}.`;
+      const kit = kitFit(x);
+      chip.title = `${shownName(a)}: مع ${name} ${badge(x.games, x.wins)}. أثره على فوز الفريق: ${effectBadge(x.effect)} نقطة${x.effect?.low !== undefined ? ` (بين ${x.effect.low.toFixed(1)} و${x.effect.high!.toFixed(1)})` : ''}.${kit?.reasons.length ? `\n${kit.reasons.join('\n')}` : ''}`;
       if (!x.effect || !sure(x.effect)) chip.classList.add('few');
       return stagger(chip, i);
     }));

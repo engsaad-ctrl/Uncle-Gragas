@@ -4,6 +4,7 @@ import { adaptBuild, FOCUS_LABEL } from '../app/augmentBuild.js';
 import type { Advice } from '../ai/advisor.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
+import { FIT_POINTS, fitOf } from './fit.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import { placeFlash } from '../lcu/apply.js';
 import type { AugmentEffect, OverlayData } from '../main/services.js';
@@ -78,7 +79,8 @@ function render() {
   const fits = (a: OverlayData['augments'][number]) => {
     if (picked.has(a.id)) return Infinity;
     const f = fit.get(a.id);
-    return (effects.get(a.id)?.points ?? 0) + linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 100 * f.lift : 0);
+    const kit = fitOf(data!.champion?.id, a.ids ?? [a.id])?.score ?? 0; // a near-tie breaker only (src/renderer/fit.ts)
+    return (effects.get(a.id)?.points ?? 0) + FIT_POINTS * kit + linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 100 * f.lift : 0);
   };
   const all = filterAugments(data.augments, search.value, 'all', 'all');
   const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).filter((r) => shownRarity === 'all' || r === shownRarity).flatMap((rarity) => {
@@ -120,6 +122,12 @@ function render() {
       const few = f.games < FIT_GAMES;
       const tag = el('span', `ov-fit ${few || !d ? 'few' : d > 0 ? 'good' : 'bad'}`, few ? 'أدلة قليلة' : `${d > 0 ? '+' : ''}${d}% مع اختياراتك`);
       tag.title = `${f.games} لاعباً أخذوه مع ما اخترته. الرقم: كم زاد فوزه معه فوق ما يفوز به عادةً (${d > 0 ? '+' : ''}${d}%).`;
+      r.append(tag);
+    }
+    const kit = picked.has(a.id) ? null : fitOf(data!.champion?.id, a.ids ?? [a.id]);
+    if (kit && (kit.score >= 2 || kit.score <= -1)) {
+      const tag = el('span', `ov-fit ${kit.score > 0 ? 'good' : 'bad'}`, kit.score > 0 ? '✓ يناسب البطل' : '✗ لا يناسب البطل');
+      tag.title = kit.reasons.join('\n');
       r.append(tag);
     }
     const links = linksOf(a);

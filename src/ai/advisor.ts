@@ -17,7 +17,8 @@ export const BUILD_STYLES = ['ap', 'ad', 'onhit', 'crit', 'attack-speed', 'letha
 export type BuildStyle = (typeof BUILD_STYLES)[number];
 
 export interface AdviceInput {
-  champion: { name: string; enName: string; abilities: { key: string; enName: string; text: string }[] };
+  /** kit: one line on how the champion fights and what it relies on (src/ai/championKits.ts). */
+  champion: { name: string; enName: string; abilities: { key: string; enName: string; text: string }[]; kit?: string };
   /** tier: how strong the augment is on this champion in real Mayhem games ("S+" to "C"), when known. */
   /** items: the ids of items the augment's text names (a quest that asks for Heartsteel, "Upgrade Collector"). */
   augments: { id: number; name: string; enName: string; text: string; tier?: string; items?: number[] }[];
@@ -200,6 +201,7 @@ export function contextText(input: AdviceInput): string {
     '',
     `Champion: ${c.enName} (${c.name})`,
     damageLine(input),
+    ...(c.kit ? [`Kit: ${c.kit}`] : []),
     ...c.abilities.map((a) => `${a.key} ${a.enName}: ${plain(a.text)}`),
     '',
     'Chosen augments (id | name | tier on this champion | effect):',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { linksBetween, linksWith, type Mechanic } from '../../src/ai/mechanics.js';
+import { championFit, linksBetween, linksWith, type ChampionKit, type Mechanic } from '../../src/ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../../src/ai/mechanicsData.js';
+import { CHAMPION_KITS } from '../../src/ai/championKits.js';
 
 const m = (id: number, over: Partial<Mechanic>): Mechanic => ({ id, name: String(id), gives: [], scales: [], converts: [], relies: [], needs: [], note: '', ...over });
 const steelYourHeart = m(1152, { gives: [{ stat: 'health', unbounded: true }], needs: [3084] });
@@ -45,5 +46,26 @@ describe('mechanics data read from the texts', () => {
     expect(byName(ITEM_MECHANICS, 'Riftmaker').converts).toContainEqual({ from: 'bonus_health', to: 'ap' });
     expect(linksBetween(byName(AUGMENT_MECHANICS, 'Phenomenal Evil'), byName(AUGMENT_MECHANICS, 'Big Brain')).length).toBeGreaterThan(0);
     expect(linksBetween(byName(AUGMENT_MECHANICS, 'Steel Your Heart'), byName(ITEM_MECHANICS, 'Riftmaker')).length).toBeGreaterThan(0);
+  });
+});
+
+describe('championFit', () => {
+  const diana: ChampionKit = { id: 131, name: 'Diana', damage: 'magic', scales: ['ap'], relies: ['abilities', 'dashes', 'shielding'], traits: ['burst'], note: '' };
+  it('rewards an augment built on what the kit uses, and penalises attack-based or off-side ones', () => {
+    expect(championFit(diana, m(1, { relies: ['abilities'], scales: [{ stat: 'ap', effect: 'damage' }] })).score).toBe(2);
+    expect(championFit(diana, m(2, { relies: ['attacks'], gives: [{ stat: 'attack_speed', unbounded: false }] })).score).toBe(-2);
+    expect(championFit(diana, m(3, {})).score).toBe(0);
+  });
+});
+
+describe('champion kits read from the texts', () => {
+  const RELIES = new Set('attacks abilities ult crit on_hit healing shielding damage_over_time crowd_control takedowns low_health movement dashes allies summoner_spells gold level'.split(' '));
+  it('covers the champions with the agreed words, marksmen relying on attacks and mages on abilities', () => {
+    expect(CHAMPION_KITS.length).toBeGreaterThan(160);
+    expect(CHAMPION_KITS.flatMap((k) => k.relies).filter((r) => !RELIES.has(r))).toEqual([]);
+    const kit = (n: string) => CHAMPION_KITS.find((k) => k.name === n)!;
+    expect(kit('Jinx').relies).toContain('attacks');
+    expect(kit('Ahri').relies).not.toContain('attacks');
+    expect(kit('Jayce').relies).toEqual(expect.arrayContaining(['attacks', 'abilities']));
   });
 });
