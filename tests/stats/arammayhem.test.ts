@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseBestAugments, parseBuild, siteSlug } from '../../src/stats/arammayhem.js';
+import { byWinRate, parseBestAugments, parseBuild, siteSlug } from '../../src/stats/arammayhem.js';
 
 describe('arammayhem.com', () => {
   it("reads a champion's best augments, best first, with tier and appearance rate", () => {
@@ -29,6 +29,12 @@ describe('arammayhem.com', () => {
     expect(b.core[0].winRate).toBeCloseTo(0.448);
     expect(b.others[0]).toMatchObject({ names: ['The Collector'] });
     expect(b.others).toHaveLength(5);
+  });
+
+  it('puts the most winning choice first, but not one picked too rarely to trust', () => {
+    const x = (name: string, pickRate: number, winRate: number) => ({ names: [name], pickRate, winRate });
+    const order = byWinRate([x('popular', 0.3, 0.48), x('rare', 0.01, 0.7), x('winning', 0.05, 0.55)]).map((i) => i.names[0]);
+    expect(order).toEqual(['winning', 'popular', 'rare']);
   });
 
   it('has no build on a page without one', () => {

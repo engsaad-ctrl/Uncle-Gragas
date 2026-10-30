@@ -96,6 +96,15 @@ export function parseBuild(html: string): SiteBuild | null {
   return build.core.length || build.boots.length ? build : null;
 }
 
+/**
+ * Most winning first among the choices picked often enough to trust (2% of games), then the rest as listed. The site
+ * lists the most picked first, and against larger Mayhem samples the most picked items lose more often than these.
+ */
+export const byWinRate = (list: SiteItems[], minPick = 0.02): SiteItems[] => [
+  ...list.filter((x) => x.pickRate >= minPick).sort((a, b) => b.winRate - a.winRate),
+  ...list.filter((x) => x.pickRate < minPick),
+];
+
 export interface SitePage {
   augments: SiteAugment[];
   build: SiteBuild | null;

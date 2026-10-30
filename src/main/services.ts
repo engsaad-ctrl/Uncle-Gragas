@@ -9,7 +9,7 @@ import type { RawProfile } from '../lcu/profile.js';
 import { readMayhemGames } from '../lcu/mayhemGames.js';
 import { mayhemStats } from '../app/mayhemStats.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
-import { sitePage, type SiteItems } from '../stats/arammayhem.js';
+import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
@@ -190,7 +190,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const ids = x.names.map((n) => byName.get(nameKey(n)));
       return ids.every((id) => id !== undefined) ? { ids: ids as number[], games: 0, winRate: x.winRate, pickRate: x.pickRate } : null;
     };
-    const picks = (list: SiteItems[]) => list.map(toPick).filter((p): p is Pick => p !== null);
+    const picks = (list: SiteItems[]) => byWinRate(list).map(toPick).filter((p): p is Pick => p !== null);
     const base = aram && !(aram instanceof Error) ? aram.data : NO_ARAM_BUILD;
     const core = picks(b.core)[0] ?? null;
     return {
