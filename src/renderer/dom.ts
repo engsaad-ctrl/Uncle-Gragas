@@ -39,6 +39,8 @@ declare global {
       augmentFit(augmentIds: number[]): Promise<Reply<{ id: number; games: number; lift: number }[]>>;
       /** Every augment's effect on its team's win chance, from the team model. */
       augmentEffects(): Promise<Reply<AugmentEffect[]>>;
+      /** The build without AI for a champion and the augments taken, each item with why it is in. */
+      engineBuild(championId: number, augmentIds: number[]): Promise<Reply<{ item: ItemEntry; why: string[] }[]>>;
       hasAiKey(): Promise<boolean>;
       setAiKey(key: string): Promise<Reply<void>>;
       clearAiKey(): Promise<Reply<void>>;

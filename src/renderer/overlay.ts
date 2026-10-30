@@ -6,6 +6,7 @@ import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
 import { FIT_POINTS, fitOf } from './fit.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
+import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
 import type { AugmentEffect, OverlayData } from '../main/services.js';
 import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
@@ -48,11 +49,27 @@ const mechName = (id: number) => AUGMENT_MECHANICS.find((m) => m.id === id)?.nam
 const linkInArabic = (l: Link) => {
   const stat = STAT_AR[l.stat] ?? l.stat;
   if (l.kind === 'needs') return `${mechName(l.from)} مبني على ${mechName(l.to)}`;
+  if (l.kind === 'boosts') return `${mechName(l.from)} يعطي ${stat}، و${mechName(l.to)} يعتمد عليها`;
   return l.kind === 'feeds' ? `${mechName(l.from)} يزيد ${stat} بلا حد، و${mechName(l.to)} يستفيد منها` : `${mechName(l.from)} يتحوّل إلى ${stat}، و${mechName(l.to)} يستفيد منها`;
 };
 /** With augments marked: how much more each other one won alongside them in real games (see augmentPairs). */
 let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
+/** The engine's build for the champion and the marked augments; key: the marks it was made for. */
+let engine: { key: string; items: { item: ItemEntry; why: string[] }[] } | undefined;
+const WHY_AR: Record<string, string> = { base: 'شائع في ARAM', mayhem: 'يشتريه لاعبو البطل في Mayhem', link: 'يتكامل مع تعزيزاتك', synergy: 'فاز أكثر مع تعزيزاتك', required: 'يطلبه تعزيزك' };
+let engineAsked = '';
+async function refreshEngine() {
+  const key = pickedKey();
+  const champion = data?.champion;
+  if (!champion || !picked.size || engineAsked === key) return;
+  engineAsked = key;
+  const r = await window.lolh.engineBuild(champion.id, [...picked]);
+  if (pickedKey() !== key || isError(r)) return;
+  engine = { key, items: r };
+  if (data?.build) renderBuild(data.build);
+}
+
 async function refreshFit() {
   const key = [...picked].sort((a, b) => a - b).join('-');
   if (key === fitFor) return;
@@ -198,17 +215,28 @@ function icons(xs: Describable[]) {
 function adaptedSection(p: ChampionPage): HTMLElement {
   const chosen = (data?.augments ?? []).filter((a) => picked.has(a.id));
   if (!chosen.length) return section('الأيتمات حسب تعزيزاتك', el('p', 'hint', 'من تبويب التعزيزات اضغط «اخترته» على كل تعزيز تأخذه، فيُعاد ترتيب الأيتمات هنا.'));
-  const adapted = adaptBuild(p, chosen.map((a) => ({ name: shownName(a), enName: a.enName, html: a.html })), data?.items ?? []);
+  // The build without AI (services.engineBuild), fetched when the marks change; the old text-only guess until it comes.
   const rows = el('div', 'ov-adapted');
-  for (const { item, reasons } of adapted.items) {
-    const r = el('div', 'ov-adapted-row');
-    const txt = el('div', 'ov-name');
-    txt.append(el('b', '', shownName(item)), el('small', '', reasons.join(' · ')));
-    r.append(ic(item), txt);
-    rows.append(r);
+  if (engine?.key === pickedKey()) {
+    for (const { item, why } of engine.items) {
+      const r = el('div', 'ov-adapted-row');
+      const txt = el('div', 'ov-name');
+      txt.append(el('b', '', shownName(item)), el('small', '', why.map((w) => WHY_AR[w] ?? w).join(' · ')));
+      r.append(ic(item), txt);
+      rows.append(r);
+    }
+  } else {
+    void refreshEngine();
+    const adapted = adaptBuild(p, chosen.map((a) => ({ name: shownName(a), enName: a.enName, html: a.html })), data?.items ?? []);
+    for (const { item, reasons } of adapted.items) {
+      const r = el('div', 'ov-adapted-row');
+      const txt = el('div', 'ov-name');
+      txt.append(el('b', '', shownName(item)), el('small', '', reasons.join(' · ')));
+      r.append(ic(item), txt);
+      rows.append(r);
+    }
   }
-  const why = adapted.focus.length ? `تعزيزاتك تميل إلى: ${adapted.focus.slice(0, 3).map((f) => FOCUS_LABEL[f]).join('، ')}.` : '';
-  return section('الأيتمات حسب تعزيزاتك', icons(chosen), el('p', 'hint', `${why} ترتيب تقديري من نصوص اللعبة وبناء البطل، لا إحصائية مباريات.`), rows, aiBox(chosen));
+  return section('البناء حسب تعزيزاتك', icons(chosen), el('p', 'hint', 'من بناء البطل في ARAM على OP.GG ومبارياتنا، معدّلاً بتعزيزاتك. دون ذكاء اصطناعي.'), rows, aiBox(chosen));
 }
 
 /** The AI answer for the augments marked now, kept until they change. */

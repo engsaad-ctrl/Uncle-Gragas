@@ -69,3 +69,12 @@ describe('champion kits read from the texts', () => {
     expect(kit('Jayce').relies).toEqual(expect.arrayContaining(['attacks', 'abilities']));
   });
 });
+
+describe('particular stats', () => {
+  it('links a plain crit item to an augment that relies on crit, but not plain AP to an AP user', () => {
+    const essence = ITEM_MECHANICS.find((m) => m.name === 'Essence Reaver')!;
+    const jeweled = AUGMENT_MECHANICS.find((m) => m.name === 'Jeweled Gauntlet')!;
+    expect(linksBetween(essence, jeweled)).toContainEqual({ from: essence.id, to: jeweled.id, stat: 'crit', kind: 'boosts', strength: 0.5 });
+    expect(linksBetween(rabadon, bigBrain)).toEqual([]);
+  });
+});

@@ -24,8 +24,11 @@ export interface Link {
   from: number;
   to: number;
   stat: string;
-  /** feeds: a granted stat another scales with or converts; chain: a converted stat fed on; needs: built around it. */
-  kind: 'feeds' | 'chain' | 'needs';
+  /**
+   * feeds: a stat granted without limit that another scales with or converts; chain: a converted stat fed on; needs:
+   * built around it; boosts: a plain amount of a particular stat (crit, attack speed ...) that another relies on.
+   */
+  kind: 'feeds' | 'chain' | 'needs' | 'boosts';
   strength: number;
 }
 
@@ -35,6 +38,11 @@ const fed = (stat: string) => [stat, ...(FEEDS[stat] ?? [])];
 // Base stats every item of a kind has (an AD item, an AP mage augment) link everything to everything: only a stat that
 // grows without limit, or a conversion, says something particular.
 const usesOf = (m: Mechanic) => new Set([...m.scales.map((s) => s.stat), ...m.converts.map((c) => c.from)]);
+
+// Stats only some items give: a plain amount of one still says something (crit for Jeweled Gauntlet), unlike AP or AD.
+const PARTICULAR = new Set(['crit', 'crit_damage', 'attack_speed', 'health', 'bonus_health', 'armor', 'mr', 'resists', 'mana', 'heal_shield_power', 'omnivamp', 'life_steal', 'lethality', 'armor_pen', 'magic_pen', 'move_speed']);
+// What an augment relying on something wants from items: crit relies on crit chance, attacks on attack speed ...
+const WANTS: Record<string, string[]> = { crit: ['crit'], attacks: ['attack_speed'], on_hit: ['attack_speed'], healing: ['heal_shield_power', 'omnivamp', 'life_steal'], shielding: ['heal_shield_power'] };
 
 /** Every link from a to b (a produces, b uses), strongest first. */
 export function linksBetween(a: Mechanic, b: Mechanic): Link[] {
@@ -47,6 +55,10 @@ export function linksBetween(a: Mechanic, b: Mechanic): Link[] {
   }
   for (const c of a.converts) for (const stat of fed(c.to)) if (uses.has(stat)) out.push({ from: a.id, to: b.id, stat, kind: 'chain', strength: 1.5 });
   if (a.needs.includes(b.id)) out.push({ from: a.id, to: b.id, stat: '', kind: 'needs', strength: 3 });
+  const wanted = new Set([...[...uses].filter((s) => PARTICULAR.has(s)), ...b.relies.flatMap((r) => WANTS[r] ?? [])]);
+  for (const stat of new Set(a.gives.filter((g) => !g.unbounded).map((g) => g.stat))) {
+    if (wanted.has(stat) && !out.some((l) => l.stat === stat)) out.push({ from: a.id, to: b.id, stat, kind: 'boosts', strength: 0.5 });
+  }
   return out.sort((x, y) => y.strength - x.strength);
 }
 
@@ -99,6 +111,7 @@ export function championFit(kit: ChampionKit, aug: Mechanic): { score: number; r
 /** A link as one English line for the model: who produces what, and who uses it. */
 export function explainLink(l: Link, name: (id: number) => string): string {
   if (l.kind === 'needs') return `${name(l.from)} is built around ${name(l.to)}`;
+  if (l.kind === 'boosts') return `${name(l.from)} gives ${l.stat}; ${name(l.to)} relies on it`;
   const how = l.kind === 'feeds' ? `grows ${l.stat} without limit` : `turns another stat into ${l.stat}`;
   return `${name(l.from)} ${how}; ${name(l.to)} uses ${l.stat}`;
 }

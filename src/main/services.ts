@@ -12,6 +12,7 @@ import type { RawProfile } from '../lcu/profile.js';
 import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
 import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats, patchOf, rankByWins } from '../app/mayhemStats.js';
 import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, type TeamModel } from '../app/teamModel.js';
+import { buildFor } from '../app/buildEngine.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
@@ -523,5 +524,42 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, mayhemPicks, augmentFit, augmentEffect, warm };
+  /**
+   * The build without AI (src/app/buildEngine.ts) for a champion and the augments taken: OP.GG's normal-ARAM build and
+   * our Mayhem games as the base, the augments' required items, text links and measured pairings on top. Held-out
+   * test: as close to winning builds as the sites' (docs/calculator-plan.md).
+   */
+  async function engineBuild(championId: number, augmentIds: number[]): Promise<{ item: ItemEntry; why: string[] }[]> {
+    const entry = (await champions()).find((c) => c.id === championId);
+    if (!entry) throw new Error(`unknown champion ${championId}`);
+    const [all, list, games] = await Promise.all([augments(), items('mayhem'), storedGames()]);
+    const shop = list.list.filter((i) => i.group === 'legendary' || i.group === 'boots');
+    const shopIds = new Set(shop.map((i) => i.id));
+    const ids = augmentIds.map((id) => all.augments.find((a) => a.id === id)?.ids ?? [id]);
+    const b = await stats.build(entry.alias, 'aram', 'mid').then((r) => r.data, () => null);
+    const base = b ? [...(b.core ? [{ ...b.core, core: true }] : []), ...(b.boots ? [b.boots] : []), ...b.fourth, ...b.fifth, ...b.sixth] : [];
+    const ms = mayhemStats(games, championId);
+    const am = ids.flatMap((x) => AUGMENT_MECHANICS.filter((m) => x.includes(m.id)).slice(0, 1));
+    const links = new Map(ITEM_MECHANICS.filter((i) => shopIds.has(i.id)).map((i) => [i.id, linksWith(am, i).reduce((s, l) => s + l.strength, 0)] as const).filter(([, s]) => s > 0));
+    const synergy = new Map<number, number>();
+    for (const s of augmentItemSynergy(games, ids.flat(), (id) => shopIds.has(id))) synergy.set(s.item, Math.max(synergy.get(s.item) ?? 0, s.lift));
+    const kit = CHAMPION_KITS.find((k) => k.id === championId);
+    const r = buildFor({
+      championDamage: kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed',
+      switchesDamage: ids.some((x) => switchesDamage(x)),
+      pool: shop.map((i) => ({ id: i.id, boots: i.group === 'boots', damage: itemDamage(i.id) })),
+      base,
+      mayhem: ms.items,
+      mayhemGames: ms.championGames,
+      required: [...new Set(am.flatMap((m) => m.needs.filter((n): n is number => typeof n === 'number')))],
+      links,
+      synergy,
+    });
+    return r.items.flatMap((id) => {
+      const item = shop.find((i) => i.id === id);
+      return item ? [{ item, why: r.why.get(id) ?? [] }] : [];
+    });
+  }
+
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, mayhemPicks, augmentFit, augmentEffect, engineBuild, warm };
 }
