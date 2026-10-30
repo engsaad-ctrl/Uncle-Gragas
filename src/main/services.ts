@@ -1,4 +1,4 @@
-import { adviseBuild, type Advice, type GeminiPost } from '../ai/advisor.js';
+import { adviseBuild, namedItems, type Advice, type GeminiPost } from '../ai/advisor.js';
 import { compareBuilds } from '../ai/calculator.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
@@ -355,7 +355,15 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
           post,
           {
             champion: { name: entry.name, enName: entry.enName, abilities: page.champion.abilities.map((a) => ({ key: a.key, enName: a.enName, text: a.html })) },
-            augments: chosen.map((a) => ({ id: a.id, name: a.name, enName: a.enName, text: a.html, tier: page.augments.find((r) => r.id === a.id)?.tierLabel })),
+            augments: chosen.map((a) => ({
+              id: a.id,
+              name: a.name,
+              enName: a.enName,
+              text: a.html,
+              tier: page.augments.find((r) => r.id === a.id)?.tierLabel,
+              // The augment texts are Arabic and the model's item list English: point it to the items an augment is about.
+              items: namedItems({ enName: a.enName, text: a.html }, shop),
+            })),
             pool: shop.map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: english.get(i.id) || i.html })),
             usual: usual.filter((id) => gameItems[id]),
             played: { games: champ.championGames, items: bought(champ), withAugments: withThem.championGames, itemsWithAugments: bought(withThem) },

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { adviseBuild, contextText, legalBuilds, MODELS, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
+import { adviseBuild, contextText, legalBuilds, MODELS, namedItems, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
 import type { BuildResult } from '../../src/ai/calculator.js';
 
 const input: AdviceInput = {
@@ -49,6 +49,23 @@ describe('contextText', () => {
     expect(text).toContain("games of this champion: 12. Items bought: 3031 Infinity Edge (9 games, 5 wins)");
     expect(text).toContain("chosen augments: 2 (too few). Items bought: 3089 Rabadon's Deathcap (2 games, 2 wins)");
     expect(contextText(input)).toContain('none recorded yet');
+  });
+
+  it('finds the items an augment is about, by its English name or the whole Arabic item name in its text', () => {
+    const shop = [
+      { id: 3084, name: 'القلب الفولاذي', enName: 'Heartsteel' },
+      { id: 6676, name: 'الجامع', enName: 'The Collector' },
+      { id: 6701, name: 'الفرصة', enName: 'Opportunity' },
+    ];
+    expect(namedItems({ enName: 'Steel Your Heart', text: 'المهمة: امتلك <b>القلب الفولاذي</b> مع 300+ من التكدسات.' }, shop)).toEqual([3084]);
+    expect(namedItems({ enName: 'Upgrade Collector', text: 'يؤدي الإجهاز باستخدام عنصر جامع الضرائب' }, shop)).toEqual([6676]);
+    expect(namedItems({ enName: 'Time Warp: Heartsteel', text: '' }, shop)).toEqual([3084]);
+    expect(namedItems({ enName: "It's Critical", text: 'تكسب 20% فرصة ضربة حرجة' }, shop)).toEqual([]); // "chance", not the item
+  });
+
+  it('points an augment to the items its text names', () => {
+    const text = contextText({ ...input, augments: [{ ...input.augments[0], items: [3089] }] });
+    expect(text).toContain("| names items: 3089 Rabadon's Deathcap");
   });
 });
 

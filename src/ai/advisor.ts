@@ -19,7 +19,8 @@ export type BuildStyle = (typeof BUILD_STYLES)[number];
 export interface AdviceInput {
   champion: { name: string; enName: string; abilities: { key: string; enName: string; text: string }[] };
   /** tier: how strong the augment is on this champion in real Mayhem games ("S+" to "C"), when known. */
-  augments: { id: number; name: string; enName: string; text: string; tier?: string }[];
+  /** items: the ids of items the augment's text names (a quest that asks for Heartsteel, "Upgrade Collector"). */
+  augments: { id: number; name: string; enName: string; text: string; tier?: string; items?: number[] }[];
   /** Every finished item and boots on the map. */
   pool: { id: number; enName: string; gold: number; boots: boolean; text: string }[];
   /** The champion's usual build: what its Mayhem players buy whatever their augments (ARAM's when Mayhem's is unknown). */
@@ -126,6 +127,7 @@ const Final = z.object({
 const RULES = `You recommend League of Legends ARAM: Mayhem item builds for one champion after the player chose some augments.
 A single augment can change the whole build: one that adds magic damage to attacks can turn an AD marksman into AP, an attack-speed or on-hit augment favours on-hit items, and an "Upgrade <item>" augment makes that item a priority.
 The usual build is what players of this champion buy in Mayhem whatever their augments: keep its items when they still fit, replace them when an augment points elsewhere.
+An augment that names items (listed after "names items") is built around them: a quest that asks you to own an item, or an upgrade of an item. Every candidate includes that item (when several are named, at least one of them), unless the champion truly cannot use it.
 Only use item ids from the item list. A build is six different items with at most one pair of boots (boots first when the champion buys boots).
 Real Mayhem games, when listed, show what players actually bought and how often they won. With ${FEW_GAMES} or more games they outweigh your reading of the texts; with fewer, treat them as a hint only and say in the summary that there are too few real games to confirm the build.
 Write every reason and summary in Arabic, short and concrete (one sentence, numbers when you have them). Item and champion names stay in English. Never name any website or data provider.`;
@@ -150,6 +152,20 @@ Pick the best candidate for these augments (chosen: its index), name the style o
 Many augments open more than one strong path (an ability damage augment suits both AP and AD versions of a champion). If another candidate of a different style is also strong, give it as the alternative (its index), with its style, one sentence on when to pick it instead (alternativeWhen) and a reason for each of its items. If there is only one sensible path, set alternative to -1.`;
 
 const plain = (html: string) => html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/[ \t]+/g, ' ').trim();
+const nameKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * The items an augment is about. "Upgrade Hubris" / "Time Warp: Heartsteel" by English name; otherwise the full Arabic
+ * name of an item in the augment's (Arabic) text, as the quest "Steel Your Heart" writes Heartsteel's. Only the whole
+ * name with its article counts: "فرصة" in "crit chance" is not the item الفرصة (Opportunity).
+ */
+export function namedItems(augment: { enName: string; text: string }, shop: { id: number; name: string; enName: string }[]): number[] {
+  const upgrade = /^(?:upgrade:?|time warp:)\s*(.+)$/i.exec(augment.enName);
+  const byEnglish = upgrade ? shop.filter((i) => nameKey(i.enName).includes(nameKey(upgrade[1]))) : [];
+  const text = plain(augment.text);
+  const found = byEnglish.length ? byEnglish : shop.filter((i) => i.name.length > 4 && text.includes(i.name));
+  return [...new Set(found.map((i) => i.id))];
+}
 
 /** The champion, the augments and the item list, as the model reads them. */
 export function contextText(input: AdviceInput): string {
@@ -162,7 +178,10 @@ export function contextText(input: AdviceInput): string {
     ...c.abilities.map((a) => `${a.key} ${a.enName}: ${plain(a.text)}`),
     '',
     'Chosen augments (id | name | tier on this champion | effect):',
-    ...input.augments.map((a) => `${a.id} | ${a.enName} (${a.name}) | ${a.tier ?? 'unknown'} | ${plain(a.text)}`),
+    ...input.augments.map((a) => {
+      const named = a.items?.length ? ` | names items: ${a.items.map((id) => `${id} ${name(id)}`).join(', ')}` : '';
+      return `${a.id} | ${a.enName} (${a.name}) | ${a.tier ?? 'unknown'} | ${plain(a.text)}${named}`;
+    }),
     '',
     `Usual build: ${input.usual.length ? input.usual.map((id) => `${id} ${name(id)}`).join(', ') : 'none'}`,
     '',
