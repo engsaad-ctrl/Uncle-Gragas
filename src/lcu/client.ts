@@ -25,7 +25,8 @@ export function lcuCaller(creds: LcuCredentials, host = '127.0.0.1'): LcuCall {
             ...(payload === undefined ? {} : { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }),
           },
           rejectUnauthorized: false, // the client serves a Riot self-signed certificate, on this machine only
-          timeout: 5000,
+          // Another player's match history is fetched from Riot on first ask and regularly takes 5-10 s.
+          timeout: path.startsWith('/lol-match-history/') ? 20_000 : 5000,
         },
         (res) => {
           let text = '';
