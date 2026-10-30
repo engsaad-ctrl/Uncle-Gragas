@@ -30,5 +30,6 @@ contextBridge.exposeInMainWorld('lolh', {
   checkUpdate: () => ipcRenderer.invoke('update:check'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
   onUpdateStatus: (callback) => ipcRenderer.on('update:status', (_event, status) => callback(status)),
-  onOverlayShow: (callback) => ipcRenderer.on('overlay:show', () => callback()),
+  onOverlayShow: (callback) => ipcRenderer.on('overlay:show', (_event, tab) => callback(tab)),
+  gameTeams: () => ipcRenderer.invoke('game:teams'),
 });

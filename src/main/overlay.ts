@@ -48,10 +48,10 @@ export function overlayWindow(root: string) {
     prepare() {
       win ??= create();
     },
-    toggle() {
+    toggle(tab?: string) {
       win ??= create();
       if (win.isVisible()) return win.hide();
-      win.webContents.send('overlay:show'); // refresh for the current champion
+      win.webContents.send('overlay:show', tab); // refresh for the current champion
       win.setAlwaysOnTop(true, 'screen-saver'); // Windows can drop the level across hide/show
       place(win);
       win.show();
@@ -60,6 +60,15 @@ export function overlayWindow(root: string) {
     },
     hide() {
       win?.hide();
+    },
+    /** Shows the window on a tab without hiding it when already open (the loading screen opens it on the teams). */
+    show(tab: string) {
+      win ??= create();
+      win.webContents.send('overlay:show', tab);
+      if (win.isVisible()) return;
+      win.setAlwaysOnTop(true, 'screen-saver');
+      place(win);
+      win.showInactive(); // the game keeps the focus: F7 or Esc hides it
     },
     setLarge(on: boolean) {
       large = on;

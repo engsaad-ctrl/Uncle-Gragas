@@ -8,7 +8,7 @@ import type { Suggestion } from '../app/suggestions.js';
 import type { ApplyResult, FlashKey } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
 import type { Advice } from '../ai/advisor.js';
-import type { AppMode, AugmentEffect, Listed, OverlayData } from '../main/services.js';
+import type { AppMode, AugmentEffect, GameTeams, Listed, OverlayData } from '../main/services.js';
 import type { UpdateStatus } from '../main/updater.js';
 import type { LanePosition } from '../stats/opgg.js';
 import type { RankRow } from '../texts/abilityDetails.js';
@@ -47,7 +47,9 @@ declare global {
       /** The game's display mode from the client (0 fullscreen, 1 windowed, 2 borderless); null without the client. */
       gameWindowMode(): Promise<Reply<number | null>>;
       setBorderless(): Promise<Reply<number | null>>;
-      onOverlayShow(callback: () => void): void;
+      onOverlayShow(callback: (tab?: string) => void): void;
+      /** Both teams once the game is loaded, with ranks and how they compare; null before. */
+      gameTeams(): Promise<Reply<GameTeams | null>>;
       updateStatus(): Promise<{ version: string; status: UpdateStatus }>;
       checkUpdate(): Promise<UpdateStatus>;
       installUpdate(): Promise<void>;

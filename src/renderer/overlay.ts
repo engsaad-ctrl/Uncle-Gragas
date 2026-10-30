@@ -8,7 +8,7 @@ import { FIT_POINTS, fitOf } from './fit.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
-import type { AugmentEffect, OverlayData } from '../main/services.js';
+import type { AugmentEffect, GameTeams, OverlayData } from '../main/services.js';
 import { adviceNodes, AI_HINT, AI_LOADING } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
 import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, withTooltip, type Describable } from './dom.js';
@@ -184,12 +184,15 @@ function render() {
 const tabs = byId('ov-tabs');
 const buildBox = byId('ov-build');
 const augBox = byId('ov-aug');
-let tab: 'build' | 'augments' = 'build';
+let tab: 'build' | 'augments' | 'teams' = 'build';
+const teamsBox = byId('ov-teams');
 
 function showTab(t: typeof tab) {
   tab = t;
   buildBox.hidden = t !== 'build';
   augBox.hidden = t !== 'augments';
+  teamsBox.hidden = t !== 'teams';
+  if (t === 'teams') void renderTeams();
   for (const b of tabs.querySelectorAll<HTMLButtonElement>('button')) b.classList.toggle('active', b.dataset.tab === t);
   if (t === 'augments') search.focus();
 }
@@ -410,9 +413,53 @@ sizeButton.addEventListener('click', () => {
   applySize();
 });
 applySize();
-window.lolh.onOverlayShow(() => {
+window.lolh.onOverlayShow((t) => {
   search.value = '';
   open = undefined;
-  void load();
+  void load().then(() => t === 'teams' && showTab('teams'));
 });
 void load();
+
+// The loading screen's view: both teams with ranks, how they compare, and the best augments and full build for the
+// player's champion (the build already answers the enemy team's magic damage).
+const SIDE_AR = { stronger: 'فريقك أقوى بالأبطال', even: 'الفريقان متقاربان بالأبطال', weaker: 'فريق الخصم أقوى بالأبطال' };
+const TIER_AR: Record<string, string> = { IRON: 'حديد', BRONZE: 'برونز', SILVER: 'فضة', GOLD: 'ذهب', PLATINUM: 'بلاتين', EMERALD: 'زمرد', DIAMOND: 'ألماس', MASTER: 'ماستر', GRANDMASTER: 'جراند ماستر', CHALLENGER: 'تشالنجر' };
+let championList: { id: number; name: string; enName: string; portraitUrl: string }[] = [];
+let teamsRun = 0;
+async function renderTeams() {
+  const run = ++teamsRun;
+  teamsBox.replaceChildren(el('p', 'hint', 'جاري القراءة…'));
+  const [teams, champs] = await Promise.all([window.lolh.gameTeams(), championList.length ? Promise.resolve(championList) : window.lolh.listChampions()]);
+  if (run !== teamsRun) return;
+  if (!isError(champs)) championList = champs;
+  if (isError(teams)) return void teamsBox.replaceChildren(el('p', 'missing', teams.error));
+  if (!teams) return void teamsBox.replaceChildren(el('p', 'hint', 'يظهر الفريقان بعد تحميل المباراة (شاشة الانتظار).'));
+  const player = (p: GameTeams['mine'][number]) => {
+    const c = championList.find((x) => x.id === p.championId);
+    const row = el('div', 'ov-adapted-row');
+    const txt = el('div', 'ov-name');
+    const rank = p.rank ? `${TIER_AR[p.rank.tier] ?? p.rank.tier} ${p.rank.division}`.trim() : 'بلا رتبة فردية';
+    txt.append(el('b', '', c ? shownName(c) : String(p.championId)), el('small', '', [p.name, rank].filter(Boolean).join(' · ')));
+    if (c) row.append(icon(c.portraitUrl, 'ic'));
+    row.append(txt);
+    return row;
+  };
+  const list = (title: string, ps: GameTeams['mine']) => section(title, ...ps.map(player));
+  const sum = teams.summary;
+  const notes = [SIDE_AR[sum.side], `ضرر الخصم السحري: ${sum.magic.enemy} من 5${sum.magic.enemy >= 3 ? ' (البناء يرفع مقاومة السحر)' : ''}`];
+  const body: HTMLElement[] = [section('ملخص', ...notes.map((n) => el('p', 'hint', n))), list('فريقك', teams.mine), list('فريق الخصم', teams.enemy)];
+  // Best augments for this champion (team model effect, kit fit as a tie breaker) and the full build without augments.
+  const champion = data?.champion;
+  if (champion && data?.mode === 'mayhem') {
+    const best = [...data.augments]
+      .map((a) => ({ a, score: (effects.get(a.id)?.points ?? -9) + FIT_POINTS * (fitOf(champion.id, a.ids ?? [a.id])?.score ?? 0) }))
+      .sort((x, y) => y.score - x.score)
+      .slice(0, 8)
+      .map(({ a }) => a);
+    body.push(section('أفضل التعزيزات لبطلك', icons(best)));
+    const b = await window.lolh.engineBuild(champion.id, []);
+    if (run !== teamsRun) return;
+    if (!isError(b)) body.push(section('البناء الكامل', icons(b.map((x) => x.item)), el('p', 'hint', 'يتغير حين تختار تعزيزاتك من تبويب التعزيزات.')));
+  }
+  teamsBox.replaceChildren(...body);
+}

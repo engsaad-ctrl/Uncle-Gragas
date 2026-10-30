@@ -6,7 +6,8 @@ import { applyAll, toPayloads } from '../lcu/apply.js';
 import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
 import { mayhemAugmentCheck } from '../lcu/diagnostics.js';
 import { collectMayhemGames } from '../lcu/mayhemGames.js';
-import { loadProfile, parsePuuid } from '../lcu/profile.js';
+import { loadProfile, parsePuuid, toRanked, type RankedQueue } from '../lcu/profile.js';
+import { teamsInGame, type GamePlayer } from '../lcu/teams.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import { enemiesInGame } from '../lcu/state.js';
 import type { Position } from '../stats/opgg.js';
@@ -14,7 +15,7 @@ import { overlayWindow } from './overlay.js';
 import { appUpdater } from './updater.js';
 import { aiKeyStore } from './aiKey.js';
 import { geminiPost } from '../ai/advisor.js';
-import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest, type AppMode } from './services.js';
+import { createServices, parseAppMode, parseIds, parseLane, parsePageRequest, type AppMode, type GameTeams } from './services.js';
 
 // One copy only: two would each poll the client and auto-apply, racing on the same rune page.
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -62,6 +63,8 @@ let lastPick: { championId: number; mode: AppMode; position: Position | null } |
 // Mayhem games from the match history, read when the client connects and after each game; one read at a time.
 const COLLECT_ON = new Set(['None', 'Lobby', 'EndOfGame']);
 let lastPhase = 'Disconnected';
+/** F7 is turned on in settings: the loading screen may open it. */
+let overlayOn = false;
 let collecting: Promise<unknown> = Promise.resolve();
 const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) }, (state) => {
   if (state.championId && state.mode) lastPick = { championId: state.championId, mode: state.mode, position: state.position };
@@ -74,6 +77,8 @@ const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) 
       ),
     );
   }
+  // The loading screen of a Mayhem game: open F7 on both teams, as other overlays do (only with F7 turned on).
+  if (state.phase === 'InProgress' && lastPhase !== 'InProgress' && lastPick?.mode === 'mayhem' && overlayOn) overlay.show('teams');
   lastPhase = state.phase;
   mainWindow?.webContents.send('lcu:state', state);
 });
@@ -126,6 +131,27 @@ ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
   }),
 );
 ipcMain.handle('ai:last', () => lastAi);
+// The loading screen's teams: champions and solo ranks (the client's own data, nine reads per game, cached), and how
+// the teams compare. null before a game is loaded.
+const rankCache = new Map<string, RankedQueue[]>();
+ipcMain.handle('game:teams', () =>
+  reply(async (): Promise<GameTeams | null> => {
+    const teams = teamsInGame(watcher.session, lastPick?.championId);
+    const creds = watcher.creds;
+    if (!teams || !creds) return null;
+    const call = lcuCaller(creds);
+    const rank = async (puuid: string) => {
+      if (!puuid) return null;
+      if (!rankCache.has(puuid)) rankCache.set(puuid, toRanked(await call('GET', `/lol-ranked/v1/ranked-stats/${puuid}`).catch(() => null)));
+      const r = rankCache.get(puuid)!;
+      const q = r.find((x) => x.queue === 'solo') ?? r[0];
+      return q ? { tier: q.tier, division: q.division } : null;
+    };
+    const withRank = (list: GamePlayer[]) => Promise.all(list.map(async (p) => ({ championId: p.championId, name: p.name, rank: await rank(p.puuid) })));
+    const [mine, enemy] = await Promise.all([withRank(teams.mine), withRank(teams.enemy)]);
+    return { mine, enemy, summary: await services.teamSummary(mine.map((p) => p.championId), enemy.map((p) => p.championId)) };
+  }),
+);
 ipcMain.handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.augmentFit(parseIds(augmentIds))));
 ipcMain.handle('mayhem:effects', () => reply(() => services.augmentEffect()));
 // In a loaded game the enemy team is known (enemiesInGame): the build answers its magic damage.
@@ -154,6 +180,7 @@ ipcMain.handle('game:borderless', () =>
   }),
 );
 ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
+  overlayOn = on === true;
   globalShortcut.unregister(OVERLAY_KEY);
   // register() returns false when another app already holds the key
   return on === true ? globalShortcut.register(OVERLAY_KEY, () => overlay.toggle()) : false;

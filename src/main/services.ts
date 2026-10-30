@@ -11,7 +11,7 @@ import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js'
 import type { RawProfile } from '../lcu/profile.js';
 import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
 import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats } from '../app/mayhemStats.js';
-import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, type TeamModel } from '../app/teamModel.js';
+import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, strength, type TeamModel } from '../app/teamModel.js';
 import { buildFor } from '../app/buildEngine.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
@@ -70,6 +70,19 @@ export interface AugmentEffect {
   high?: number;
   /** Player appearances with it in the current patch's games. */
   games: number;
+}
+
+/** Both teams on the loading screen: each player's champion and solo rank, and how the teams compare. */
+export interface GameTeams {
+  mine: { championId: number; name: string; rank: { tier: string; division: string } | null }[];
+  enemy: { championId: number; name: string; rank: { tier: string; division: string } | null }[];
+  summary: TeamSummary;
+}
+
+/** The teams by the team model's champion strengths (no augments yet), and their magic damage (magic 1, mixed 0.5). */
+export interface TeamSummary {
+  side: 'stronger' | 'even' | 'weaker';
+  magic: { mine: number; enemy: number };
 }
 
 export interface Listed<T> {
@@ -517,5 +530,14 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, warm };
+  async function teamSummary(mine: number[], enemy: number[]): Promise<TeamSummary> {
+    const m = await teamModel();
+    const sum = (ids: number[]) => ids.reduce((t, id) => t + strength(m.fit, id, []), 0);
+    const magic = (ids: number[]) => ids.reduce((t, id) => { const d = CHAMPION_KITS.find((k) => k.id === id)?.damage; return t + (d === 'magic' ? 1 : d === 'mixed' ? 0.5 : 0); }, 0);
+    // 0.15 on the team log-odds is about 4 points of win chance: under that the champions alone do not split the teams.
+    const diff = sum(mine) - sum(enemy);
+    return { side: diff > 0.15 ? 'stronger' : diff < -0.15 ? 'weaker' : 'even', magic: { mine: magic(mine), enemy: magic(enemy) } };
+  }
+
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, teamSummary, warm };
 }

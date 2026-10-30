@@ -1,4 +1,5 @@
 import type { AppMode } from '../main/services.js';
+import { teamsInGame } from './teams.js';
 import type { Position } from '../stats/opgg.js';
 
 export interface LcuState {
@@ -61,14 +62,6 @@ export function toLcuState(phase: string, gameflow: unknown, champSelect: unknow
   };
 }
 
-/**
- * The other team's champions once a game is loaded: the gameflow session lists both teams; the player's is the one with
- * their champion (Mayhem never has a champion twice). Empty before the game, or when the player's champion is unknown.
- */
-export function enemiesInGame(gameflow: unknown, myChampion: number | null | undefined): number[] {
-  const data = obj(obj(gameflow)?.gameData);
-  const ids = (v: unknown) => (Array.isArray(v) ? v : []).map((p) => num(obj(p)?.championId) || 0).filter((id) => id > 0);
-  const one = ids(data?.teamOne), two = ids(data?.teamTwo);
-  if (!myChampion) return [];
-  return one.includes(myChampion) ? two : two.includes(myChampion) ? one : [];
-}
+/** The other team's champions once a game is loaded; empty before (see teamsInGame). */
+export const enemiesInGame = (gameflow: unknown, myChampion: number | null | undefined): number[] =>
+  teamsInGame(gameflow, myChampion)?.enemy.map((p) => p.championId) ?? [];
