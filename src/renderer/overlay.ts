@@ -1,10 +1,9 @@
 // The over-the-game window: the picked champion's build (spells, runes, skills, items) and augments, with a quick search.
 
-import { adaptBuild, FOCUS_LABEL } from '../app/augmentBuild.js';
 import type { Advice } from '../ai/advisor.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
-import { FIT_POINTS, fitOf } from './fit.js';
+import { FIT_POINTS, fitOf, gradeOf } from './fit.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
@@ -33,6 +32,7 @@ let open: number | undefined;
 /** The Mayhem augments the player marked this game (up to 6), for the adapted build; cleared for a new champion. */
 const picked = new Set<number>();
 let pickedFor: number | undefined;
+let restoredFor: number | undefined;
 const MAX_PICKS = 6;
 const FIT_GAMES = 150;
 /** Each augment's effect on its team's win chance (team model), loaded with the window's data. */
@@ -56,7 +56,7 @@ const linkInArabic = (l: Link) => {
 let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
-let engine: { key: string; items: { item: ItemEntry; why: string[] }[] } | undefined;
+let engine: { key: string; items: { item: ItemEntry; why: string[] }[]; error?: string } | undefined;
 let engineAsked = '';
 async function refreshEngine() {
   const key = pickedKey();
@@ -64,8 +64,8 @@ async function refreshEngine() {
   if (!champion || !picked.size || engineAsked === key) return;
   engineAsked = key;
   const r = await window.lolh.engineBuild(champion.id, [...picked]);
-  if (pickedKey() !== key || isError(r)) return;
-  engine = { key, items: r };
+  if (pickedKey() !== key) return;
+  engine = isError(r) ? { key, items: [], error: r.error } : { key, items: r };
   if (data?.build) renderBuild(data.build);
 }
 
@@ -81,6 +81,15 @@ async function refreshFit() {
   render();
 }
 
+function toggleMark(id: number) {
+  if (picked.has(id)) picked.delete(id);
+  else if (picked.size < MAX_PICKS) picked.add(id);
+  buildView = undefined; // the marks changed: back to the build that follows them
+  render();
+  if (data?.build) renderBuild(data.build);
+  void refreshFit();
+}
+
 function render() {
   if (!data) return;
   // Grouped by type (prismatic, gold, silver, special) like the champion page; in each group this champion's rated
@@ -92,12 +101,18 @@ function render() {
   const linksOf = (a: OverlayData['augments'][number]) => (picked.has(a.id) || !pickedMechs.length ? [] : linksWith(pickedMechs, mechOf(a) ?? NO_MECH));
   // One score in win-chance points: the augment's own effect (team model), plus, next to the marked augments, a point per
   // unit of text-link strength and a pair's measured lift when it has enough games.
-  const fits = (a: OverlayData['augments'][number]) => {
-    if (picked.has(a.id)) return Infinity;
+  const score = (a: OverlayData['augments'][number]) => {
     const f = fit.get(a.id);
     const kit = fitOf(data!.champion?.id, a.ids ?? [a.id])?.score ?? 0; // a near-tie breaker only (src/renderer/fit.ts)
     return (effects.get(a.id)?.points ?? 0) + FIT_POINTS * kit + linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 100 * f.lift : 0);
   };
+  const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : score(a));
+  // Letters compare an augment with the others of its rarity for this champion, the choice the game actually offers.
+  const grades = new Map<number, string>();
+  for (const rarity of Object.keys(RARITY_LABEL)) {
+    const ranked = data.augments.filter((a) => a.rarity === rarity).sort((x, y) => score(y) - score(x));
+    ranked.forEach((a, i) => grades.set(a.id, gradeOf(i, ranked.length)));
+  }
   const all = filterAugments(data.augments, search.value, 'all', 'all');
   const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).filter((r) => shownRarity === 'all' || r === shownRarity).flatMap((rarity) => {
     const list = all
@@ -118,60 +133,44 @@ function render() {
   }
 
   function row(a: OverlayData['augments'][number]) {
+    const mayhem = data!.mode === 'mayhem';
     const r = el('button', `ov-row r-${a.rarity}${open === a.id ? ' open' : ''}`);
     r.type = 'button';
     const name = el('div', 'ov-name');
-    name.append(el('b', '', shownName(a)), el('small', '', RARITY_LABEL[a.rarity]));
+    name.append(el('b', '', shownName(a)));
+    if (!mayhem) name.append(el('small', '', RARITY_LABEL[a.rarity]));
     r.append(icon(a.iconUrl), name);
-    // The labels share one column that wraps, so the pick button keeps its own place at the row's end.
     const tags = el('div', 'ov-tags');
-    if (rated(a) === 0) tags.append(el('span', 'ov-score', `${a.tierLabel ?? `#${a.rank}`} · ${pct(a.popularity ?? 0)}`));
-    const e = effects.get(a.id);
-    if (e) {
-      const sure = e.low !== undefined && e.high !== undefined && (e.low > 0 || e.high < 0);
-      const tag = el('span', `ov-fit ${!sure ? 'few' : e.points > 0 ? 'good' : 'bad'}`, `${e.points > 0 ? '+' : ''}${e.points.toFixed(1)}${sure ? '' : '؟'}`);
-      tag.title = `أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا${e.low !== undefined ? ` (بين ${e.low.toFixed(1)} و${e.high!.toFixed(1)})` : ''}. «؟»: غير مؤكد بعد.`;
-      tags.append(tag);
-    }
-    const f = picked.has(a.id) ? undefined : fit.get(a.id);
-    if (f) {
-      const d = Math.round(100 * f.lift);
-      // Below FIT_GAMES a pair's number is mostly noise: say so instead of showing it.
-      const few = f.games < FIT_GAMES;
-      const tag = el('span', `ov-fit ${few || !d ? 'few' : d > 0 ? 'good' : 'bad'}`, few ? 'أدلة قليلة' : `${d > 0 ? '+' : ''}${d}% مع اختياراتك`);
-      tag.title = `${f.games} لاعباً أخذوه مع ما اخترته. الرقم: كم زاد فوزه معه فوق ما يفوز به عادةً (${d > 0 ? '+' : ''}${d}%).`;
-      tags.append(tag);
-    }
-    const kit = picked.has(a.id) ? null : fitOf(data!.champion?.id, a.ids ?? [a.id]);
-    if (kit && (kit.score >= 2 || kit.score <= -1)) {
-      const tag = el('span', `ov-fit ${kit.score > 0 ? 'good' : 'bad'}`, kit.score > 0 ? '✓ يناسب البطل' : '✗ لا يناسب البطل');
-      tag.title = kit.reasons.join('\n');
-      tags.append(tag);
-    }
-    const links = linksOf(a);
-    if (links.length) {
-      const tag = el('span', 'ov-mech', '⚙ يتكامل مع اختيارك');
-      tag.title = links.map(linkInArabic).join('\n');
-      tags.append(tag);
-    }
-    r.append(tags);
-    if (data!.mode === 'mayhem') {
+    if (mayhem) {
+      // One letter to read at a glance; what it is made of stays in its tooltip.
+      const e = effects.get(a.id);
+      const f = picked.has(a.id) ? undefined : fit.get(a.id);
+      const kit = picked.has(a.id) ? null : fitOf(data!.champion?.id, a.ids ?? [a.id]);
+      const links = linksOf(a);
+      const why = [
+        ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
+        ...(a.tierLabel ? [`تقييم المواقع: ${a.tierLabel}.`] : []),
+        ...(f && f.games >= FIT_GAMES ? [`مع اختياراتك: ${Math.round(100 * f.lift)}% من ${f.games} لاعباً.`] : []),
+        ...(kit?.reasons ?? []),
+        ...links.map(linkInArabic),
+      ];
+      const known = e || links.length || (f && f.games >= FIT_GAMES);
+      const letter = known ? (grades.get(a.id) ?? '–') : '–';
+      const grade = el('span', `ov-grade g-${letter}`, letter);
+      grade.title = why.join('\n');
+      tags.append(grade);
+      if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
+      r.append(tags);
       const on = picked.has(a.id);
-      const pick = el('span', `ov-pick${on ? ' on' : ''}`, on ? '✓ اخترته' : 'اخترته');
-      pick.setAttribute('role', 'button');
-      pick.title = 'علّم التعزيز الذي أخذته ليُعاد ترتيب الأيتمات في تبويب البناء';
-      pick.addEventListener('click', (e) => {
-        e.stopPropagation(); // not the row's "show description"
-        if (on) picked.delete(a.id);
-        else if (picked.size < MAX_PICKS) picked.add(a.id);
-        buildView = undefined; // the marks changed: back to the build that follows them
-        render();
-        if (data?.build) renderBuild(data.build);
-        void refreshFit();
-      });
+      r.append(el('span', `ov-pick${on ? ' on' : ''}`, on ? '✓' : '+'));
       r.classList.toggle('picked', on);
-      r.append(pick);
+      // One click marks it, and the build beside it follows; hovering shows what it does.
+      r.addEventListener('click', () => toggleMark(a.id));
+      withTooltip(r, a, { className: `r-${a.rarity}` });
+      return r;
     }
+    if (rated(a) === 0) tags.append(el('span', 'ov-score', `${a.tierLabel ?? `#${a.rank}`} · ${pct(a.popularity ?? 0)}`));
+    r.append(tags);
     if (open === a.id) {
       const desc = el('div', 'ov-desc');
       if (a.html) desc.innerHTML = a.html; // safe: produced by cleanText (escaped text, whitelisted tags only)
@@ -191,12 +190,20 @@ let tab: 'build' | 'augments' | 'teams' = 'build';
 const teamsBox = byId('ov-teams');
 
 function showTab(t: typeof tab) {
+  // Mayhem in the large window: augments and build side by side, so a click on an augment shows its build at once.
+  const both = document.body.classList.contains('large') && data?.mode === 'mayhem';
+  if (both && t === 'augments') t = 'build';
   tab = t;
+  byId('ov-main').classList.toggle('both', both && t === 'build');
   buildBox.hidden = t !== 'build';
-  augBox.hidden = t !== 'augments';
+  augBox.hidden = t !== 'augments' && !(both && t === 'build');
   teamsBox.hidden = t !== 'teams';
   if (t === 'teams') void renderTeams();
-  for (const b of tabs.querySelectorAll<HTMLButtonElement>('button')) b.classList.toggle('active', b.dataset.tab === t);
+  for (const b of tabs.querySelectorAll<HTMLButtonElement>('button')) {
+    b.classList.toggle('active', b.dataset.tab === t);
+    if (b.dataset.tab === 'augments') b.hidden = both;
+    if (b.dataset.tab === 'build') b.textContent = both ? 'التعزيزات والبناء' : 'البناء';
+  }
   if (t === 'augments') search.focus();
 }
 tabs.addEventListener('click', (e) => {
@@ -218,37 +225,43 @@ function icons(xs: Describable[]) {
 }
 
 /** Mayhem: the items re-ranked for the augments the player marked, each with its reason. */
-function adaptedSection(p: ChampionPage): HTMLElement {
+function chosenChips(chosen: OverlayData['augments']): HTMLElement {
+  const row = el('div', 'ov-chosen');
+  for (const a of chosen) {
+    const chip = el('button', `ov-chip r-${a.rarity}`);
+    chip.type = 'button';
+    chip.title = 'اضغط لإزالته';
+    chip.append(icon(a.iconUrl), el('span', '', shownName(a)), el('b', '', '✕'));
+    chip.addEventListener('click', () => toggleMark(a.id));
+    row.append(chip);
+  }
+  return row;
+}
+
+function adaptedSection(): HTMLElement {
   const chosen = (data?.augments ?? []).filter((a) => picked.has(a.id));
   if (!chosen.length) return section('البناء حسب تعزيزاتك', el('p', 'hint', NO_PICKS));
-  // The build without AI (services.engineBuild), fetched when the marks change; the old text-only guess until it comes.
+  // The build without AI (services.engineBuild), fetched when the marks change.
   const rows = el('div', 'ov-adapted');
-  if (engine?.key === pickedKey()) {
-    for (const { item, why } of engine.items) {
-      const r = el('div', 'ov-adapted-row');
-      const txt = el('div', 'ov-name');
-      txt.append(el('b', '', shownName(item)), el('small', '', why.map((w) => WHY_AR[w] ?? w).join(' · ')));
-      r.append(ic(item), txt);
-      rows.append(r);
-    }
-  } else {
+  if (engine?.key !== pickedKey()) {
     void refreshEngine();
-    const adapted = adaptBuild(p, chosen.map((a) => ({ name: shownName(a), enName: a.enName, html: a.html })), data?.items ?? []);
-    for (const { item, reasons } of adapted.items) {
-      const r = el('div', 'ov-adapted-row');
-      const txt = el('div', 'ov-name');
-      txt.append(el('b', '', shownName(item)), el('small', '', reasons.join(' · ')));
-      r.append(ic(item), txt);
-      rows.append(r);
-    }
+    return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'جاري حساب البناء…'));
   }
-  return section('البناء حسب تعزيزاتك', icons(chosen), el('p', 'hint', 'ننصحك به: محسوب ليناسب بطلك وتعزيزاتك.'), rows);
+  if (engine.error) return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'missing', `تعذّر حساب البناء: ${engine.error}`));
+  for (const { item, why } of engine.items) {
+    const r = el('div', 'ov-adapted-row');
+    const txt = el('div', 'ov-name');
+    txt.append(el('b', '', shownName(item)), el('small', '', why.map((w) => WHY_AR[w] ?? w).join(' · ')));
+    r.append(ic(item), txt);
+    rows.append(r);
+  }
+  return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'ننصحك به: محسوب ليناسب بطلك وتعزيزاتك.'), rows);
 }
 
 function aiSection(): HTMLElement {
   const chosen = (data?.augments ?? []).filter((a) => picked.has(a.id));
   if (!chosen.length) return section('بناء الذكاء الاصطناعي', el('p', 'hint', NO_PICKS));
-  return section('بناء الذكاء الاصطناعي', icons(chosen), el('p', 'hint', 'رأي إضافي، وقد يختلف عن بناء «حسب تعزيزاتك».'), aiBox(chosen));
+  return section('بناء الذكاء الاصطناعي', chosenChips(chosen), el('p', 'hint', 'رأي إضافي، وقد يختلف عن بناء «حسب تعزيزاتك».'), aiBox(chosen));
 }
 
 /** The finished items of the champion's usual build, by slot. */
@@ -339,7 +352,7 @@ function renderBuild(p: ChampionPage) {
   const items = baseItems(p);
   if (mayhem) {
     out.push(viewSwitch(view, p));
-    if (view === 'engine') out.push(adaptedSection(p));
+    if (view === 'engine') out.push(adaptedSection());
     else if (view === 'ai') out.push(aiSection());
     else {
       // Without the site's Mayhem build the ARAM one is shown: say so, or it looks like a wrong mode.
@@ -399,7 +412,8 @@ async function load() {
   if (pickedFor !== reply.champion?.id) (picked.clear(), (pickedFor = reply.champion?.id)); // a new game's champion
   // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.
   let restored = false;
-  if (!picked.size && reply.champion && reply.mode === 'mayhem') {
+  if (!picked.size && reply.champion && reply.mode === 'mayhem' && restoredFor !== reply.champion.id) {
+    restoredFor = reply.champion.id;
     const last = await window.lolh.lastAiPicks();
     if (id !== loadId) return;
     for (const a of last?.championId === reply.champion.id ? last.augmentIds : []) {
@@ -446,6 +460,7 @@ const applySize = () => {
   sizeButton.textContent = large ? 'تصغير النافذة' : 'تكبير النافذة';
   document.body.classList.toggle('large', large);
   void window.lolh.setOverlayLarge(large);
+  showTab(tab);
 };
 sizeButton.addEventListener('click', () => {
   large = !large;

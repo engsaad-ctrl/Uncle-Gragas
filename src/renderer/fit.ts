@@ -38,3 +38,9 @@ export function fitOf(championId: number | undefined, augmentIds: number[]): { s
     }),
   };
 }
+
+/** A letter from a place in the ranking (0 = best): the top tenth S, the next quarter A, the next 40% B, the rest C. */
+export function gradeOf(place: number, count: number): 'S' | 'A' | 'B' | 'C' {
+  const at = (place + 0.5) / count;
+  return at <= 0.1 ? 'S' : at <= 0.35 ? 'A' : at <= 0.75 ? 'B' : 'C';
+}

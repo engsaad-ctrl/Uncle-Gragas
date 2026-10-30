@@ -442,7 +442,7 @@ a.band-champ:hover { background: var(--panel-2); }
 .ov-group { margin: 8px 2px 2px; font-size: 12px; color: var(--muted); } .ov-group:first-child { margin-top: 0; }
 .ov-group.r-prismatic { color: var(--prism); } .ov-group.r-gold { color: var(--goldtxt); }
 .ov-fit { flex: none; padding: 1px 6px; font-size: 11px; font-weight: 700; border-radius: 3px; } .ov-fit.good { color: var(--heal); } .ov-fit.bad { color: var(--status); } .ov-fit.few { color: var(--muted); font-weight: 600; } .ov-mech { flex: none; padding: 1px 6px; font-size: 11px; font-weight: 700; color: var(--accent); }
-.ov-pick { flex: none; padding: 2px 8px; font-size: 11px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.ov-pick { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; font-size: 14px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
 .ov-pick:hover { color: var(--text); border-color: var(--accent); }
 .ov-pick.on { color: var(--bg); background: var(--accent); border-color: var(--accent); }
 .ov-row { grid-template-columns: 36px 1fr auto auto; } .ov-row.picked { border-color: var(--accent); }
@@ -455,9 +455,19 @@ body.overlay.large .ov-adapted { grid-template-columns: repeat(3, minmax(0, 1fr)
 body.overlay.large .ov-items { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 body.overlay.large .ov-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; }
 body.overlay.large .ov-group { grid-column: 1 / -1; }
-body.overlay.large .ov-row { grid-template-columns: 36px minmax(0, 1fr) auto; }
-body.overlay.large .ov-row .ov-tags { grid-column: 1 / -1; justify-content: flex-start; max-width: none; }
-body.overlay.large .ov-row .ov-pick { grid-row: 1; grid-column: 3; }
+.ov-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ov-main.both { flex-direction: row; gap: 12px; }
+.ov-main.both > * { flex: 1 1 0; min-width: 0; }
+.ov-main.both .ov-aug { order: -1; }
+body.overlay.large .ov-main.both .ov-build:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
+body.overlay.large .ov-main.both .ov-adapted { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.overlay.large .ov-main.both .ov-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ov-chosen { display: flex; flex-wrap: wrap; gap: 6px; }
+.ov-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text); background: var(--panel-2); border: 1px solid var(--accent); border-radius: 8px; cursor: pointer; }
+.ov-chip img { width: 24px; height: 24px; } .ov-chip b { color: var(--muted); font-size: 12px; } .ov-chip:hover b { color: var(--status); }
+.ov-grade { width: 24px; height: 24px; display: inline-grid; place-items: center; flex: none; font-size: 13px; font-weight: 800; border-radius: 6px; background: var(--panel-2); color: var(--muted); }
+.ov-grade.g-S { color: #1a1205; background: #f0c040; } .ov-grade.g-A { color: #06210f; background: var(--heal); }
+.ov-grade.g-B { color: var(--text); background: color-mix(in srgb, var(--text) 18%, transparent); } .ov-grade.g-C { color: var(--status); background: color-mix(in srgb, var(--status) 18%, transparent); }
 .ov-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; max-width: 220px; }
 .ov-adapted { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .ov-adapted-row { display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 8px; }

@@ -4,20 +4,24 @@
 
 import { BrowserWindow, screen } from 'electron';
 import { join } from 'node:path';
+import type { Rect } from './gameWindow.js';
 
 export function overlayWindow(root: string) {
   let win: BrowserWindow | undefined;
   // Large by default; the window's own button switches to the normal size, and the window remembers the choice.
   let large = true;
+  /** The game's window while it is open: F7 opens on its screen. */
+  let game: Rect | null = null;
   // Windows can drop the level across hide/show while still reporting it, and then the game stays in front:
   // turning it off first makes the call really happen.
   const onTop = (w: BrowserWindow) => {
     w.setAlwaysOnTop(false);
     w.setAlwaysOnTop(true, 'screen-saver');
   };
-  // On the screen the mouse is on: with two monitors the game is where the player presses F7, not always the main one.
+  // On the game's screen, wherever the mouse is; before the game is found, on the screen the mouse is on.
   const place = (w: BrowserWindow) => {
-    const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const at = game ? { x: game.x + game.width / 2, y: game.y + game.height / 2 } : screen.getCursorScreenPoint();
+    const { workArea } = screen.getDisplayNearestPoint(at);
     // Large fills most of the screen, centred; normal is the small box at the side.
     const width = large ? Math.round(Math.min(1500, workArea.width * 0.75)) : 400;
     const height = large ? workArea.height - 60 : 620;
@@ -76,6 +80,10 @@ export function overlayWindow(root: string) {
       place(win);
       win.showInactive(); // the game keeps the focus: F7 or Esc hides it
       onTop(win);
+    },
+    setGame(rect: Rect | null) {
+      game = rect;
+      if (rect && win?.isVisible()) place(win);
     },
     setLarge(on: boolean) {
       large = on;

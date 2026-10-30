@@ -11,6 +11,7 @@ import { teamsInGame, type GamePlayer } from '../lcu/teams.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import { enemiesInGame } from '../lcu/state.js';
 import type { Position } from '../stats/opgg.js';
+import { gameWindowRect } from './gameWindow.js';
 import { overlayWindow } from './overlay.js';
 import { appUpdater } from './updater.js';
 import { aiKeyStore } from './aiKey.js';
@@ -66,6 +67,14 @@ let lastPhase = 'Disconnected';
 /** F7 is turned on in settings: the loading screen may open it. */
 let overlayOn = false;
 let collecting: Promise<unknown> = Promise.resolve();
+/** The game's window takes a while to open after the loading screen starts: look until it is there. */
+async function followGame() {
+  for (let i = 0; i < 30 && lastPhase === 'InProgress'; i++) {
+    const rect = await gameWindowRect();
+    if (rect) return overlay.setGame(rect);
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+}
 const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) }, (state) => {
   if (state.championId && state.mode) lastPick = { championId: state.championId, mode: state.mode, position: state.position };
   const creds = watcher.creds;
@@ -80,7 +89,10 @@ const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) 
   // The loading screen of every game (not Arena, whose teams of two the session lists differently): open F7 on both
   // teams, as other overlays do (only with F7 turned on).
   if (state.phase === 'InProgress' && lastPhase !== 'InProgress' && lastPick && lastPick.mode !== 'arena' && overlayOn) overlay.show('teams');
+  const started = state.phase === 'InProgress' && lastPhase !== 'InProgress';
   lastPhase = state.phase;
+  if (started) void followGame();
+  else if (state.phase !== 'InProgress') overlay.setGame(null);
   mainWindow?.webContents.send('lcu:state', state);
 });
 ipcMain.handle('lcu:state', () => watcher.state);
