@@ -5,11 +5,12 @@ import { assetUrl } from '../texts/assets.js';
 import type { ChampionListEntry, NamedText } from '../texts/champions.js';
 import type { ItemText } from '../texts/items.js';
 
-export interface MatchView extends Omit<MatchRow, 'items' | 'spells' | 'championId'> {
+export interface MatchView extends Omit<MatchRow, 'items' | 'spells' | 'championId' | 'augments'> {
   champion: ChampionListEntry | null;
   queue: string;
   items: NamedText[];
   spells: NamedText[];
+  augments: NamedText[];
 }
 
 export interface ProfilePage {
@@ -43,18 +44,20 @@ export function composeProfile(
   items: Map<number, ItemText>,
   spells: Map<number, NamedText>,
   me: boolean,
+  augments: Map<number, NamedText> = new Map(),
 ): ProfilePage {
   const champ = new Map(champions.map((c) => [c.id, c]));
   const item = (id: number): NamedText[] => {
     const t = items.get(id);
     return t ? [{ id, name: t.name, enName: t.enName, html: t.html, iconUrl: assetUrl(t.iconPath) }] : [];
   };
-  const matches = raw.matches.map(({ items: ids, spells: sp, championId, ...m }) => ({
+  const matches = raw.matches.map(({ items: ids, spells: sp, augments: augs, championId, ...m }) => ({
     ...m,
     champion: champ.get(championId) ?? null,
     queue: QUEUES[m.queueId] ?? MODES[m.gameMode] ?? m.gameMode,
     items: ids.flatMap(item),
     spells: sp.flatMap((id) => (spells.has(id) ? [spells.get(id)!] : [])),
+    augments: augs.flatMap((id) => (augments.has(id) ? [augments.get(id)!] : [])),
   }));
   const byChamp = new Map<number, { champion: ChampionListEntry; games: number; wins: number }>();
   for (const m of matches) {

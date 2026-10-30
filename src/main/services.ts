@@ -303,8 +303,10 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
 
   /** The client's profile answer with champion, item and spell names and icons. */
   async function profilePage(raw: RawProfile, me: boolean): Promise<ProfilePage> {
-    const [list, t] = await Promise.all([champions(), texts()]);
-    return composeProfile(raw, list, t.items, t.spells, me);
+    // Without the augment texts the history still shows, only without their icons.
+    const [list, t, augs] = await Promise.all([champions(), texts(), augments().then((r) => r.augments, () => [])]);
+    const byId = new Map(augs.flatMap((a) => a.ids.map((id) => [id, a] as const)));
+    return composeProfile(raw, list, t.items, t.spells, me, byId);
   }
 
   /**

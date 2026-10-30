@@ -28,6 +28,12 @@ export interface MatchRow {
   level: number;
   items: number[];
   spells: number[];
+  /** Damage to champions, gold and seconds of crowd control: 0 when the client leaves them out. */
+  damage: number;
+  gold: number;
+  cc: number;
+  /** Empty outside modes with augments. */
+  augments: number[];
 }
 
 export interface RecentPlayer {
@@ -100,6 +106,10 @@ export function toMatches(answer: unknown, puuid: string): MatchRow[] {
       level: num(s.champLevel),
       items: [0, 1, 2, 3, 4, 5, 6].map((i) => num(s[`item${i}`])).filter((id) => id > 0),
       spells: [num(me.spell1Id), num(me.spell2Id)].filter((id) => id > 0),
+      damage: num(s.totalDamageDealtToChampions),
+      gold: num(s.goldEarned),
+      cc: num(s.timeCCingOthers),
+      augments: [1, 2, 3, 4, 5, 6].map((i) => num(s[`playerAugment${i}`])).filter((id) => id > 0),
     }];
   }).sort((a, b) => b.createdAt - a.createdAt);
 }

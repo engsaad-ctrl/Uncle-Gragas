@@ -7,7 +7,7 @@ import type { ItemText } from '../../src/texts/items.js';
 const champ = (id: number, enName: string): ChampionListEntry => ({ id, name: enName, enName, alias: enName, portraitUrl: `p${id}` });
 const item = (id: number): ItemText => ({ id, name: `i${id}`, enName: `I${id}`, html: '', translated: true, inStore: true, iconPath: `/lol-game-data/assets/i${id}.png`, categories: [], classes: [] });
 const match = (gameId: number, championId: number, win: boolean, queueId = 420, gameMode = 'CLASSIC') =>
-  ({ gameId, createdAt: gameId, durationSec: 1200, queueId, gameMode, championId, win, kills: 2, deaths: 1, assists: 3, cs: 100, level: 12, items: [3089, 9999], spells: [4] });
+  ({ gameId, createdAt: gameId, durationSec: 1200, queueId, gameMode, championId, win, kills: 2, deaths: 1, assists: 3, cs: 100, level: 12, items: [3089, 9999], spells: [4], damage: 0, gold: 0, cc: 0, augments: [] });
 
 const raw: RawProfile = {
   puuid: 'me', gameName: 'Saad', tagLine: 'ME1', level: 312, iconId: 29,

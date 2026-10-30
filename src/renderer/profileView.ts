@@ -106,25 +106,43 @@ function ltr<T extends HTMLElement>(node: T): T {
   return node;
 }
 
+/** A number with what it means under it. */
+function matchStat(big: string, small: string, hint: string): HTMLElement {
+  const s = el('div', 'match-stat');
+  s.title = hint;
+  s.append(ltr(el('b', '', big)), ltr(el('small', '', small)));
+  return s;
+}
+
 function matchRow(m: MatchView): HTMLElement {
   const row = el('div', `match ${m.win ? 'win' : 'loss'}`);
   const champ = el('a', 'match-champ');
   if (m.champion) {
     champ.href = `#/champion/${m.champion.id}/${PAGE_MODE.normal}`;
-    champ.append(icon(m.champion.portraitUrl), el('span', '', m.champion.enName));
+    champ.title = m.champion.enName;
+    champ.append(icon(m.champion.portraitUrl));
   }
-  const meta = el('div', 'match-meta');
-  meta.append(el('b', '', m.win ? 'فوز' : 'خسارة'), el('div', '', m.queue), el('div', 'en', `${timeAgo(m.createdAt)} · ${duration(m.durationSec)}`));
-  const score = el('div', 'match-score');
+  const main = el('div', 'match-main');
+  const title = el('div', 'match-title');
+  title.append(el('b', '', m.win ? 'فوز' : 'خسارة'), el('span', '', [m.champion?.enName, m.queue, duration(m.durationSec), timeAgo(m.createdAt)].filter(Boolean).join(' · ')));
+  const stats = el('div', 'match-stats');
   const minutes = m.durationSec / 60;
-  score.append(
-    ltr(el('b', '', `${m.kills} / ${m.deaths} / ${m.assists}`)),
-    el('div', 'en', `KDA ${kdaRatio(m.kills, m.deaths, m.assists)}`),
-    ltr(el('div', 'en', `${m.cs} CS${minutes ? ` (${(m.cs / minutes).toFixed(1)})` : ''}`)),
-    ...(m.level ? [el('div', 'en', `مستوى ${m.level}`)] : []),
-  );
-  const gear = el('div', 'match-items');
-  for (const x of [...m.spells, ...m.items]) gear.append(withTooltip(icon(x.iconUrl, 'ic'), x));
-  row.append(champ, meta, score, gear);
+  const each = (n: number) => Math.round(n / minutes).toLocaleString('en');
+  stats.append(matchStat(`${kdaRatio(m.kills, m.deaths, m.assists)} KDA`, `${m.kills} / ${m.deaths} / ${m.assists}`, 'القتل / الموت / المساعدة'));
+  if (minutes && m.damage) stats.append(matchStat(`${each(m.damage)} DPM`, m.damage.toLocaleString('en'), 'الضرر على الأبطال في الدقيقة، وتحته الضرر كله'));
+  if (minutes && m.gold) stats.append(matchStat(`${each(m.gold)} GPM`, m.cc ? `${m.cc} CC` : `${m.cs} CS`, m.cc ? 'الذهب في الدقيقة، وتحته ثواني التحكم بالخصوم' : 'الذهب في الدقيقة، وتحته الوحوش والجنود'));
+  main.append(title, stats);
+  const gear = el('div', 'match-gear');
+  const spells = el('div', 'match-spells');
+  for (const x of m.spells) spells.append(withTooltip(icon(x.iconUrl, 'ic'), x));
+  const items = el('div', 'match-items');
+  for (const x of m.items) items.append(withTooltip(icon(x.iconUrl, 'ic'), x));
+  gear.append(spells, items);
+  row.append(champ, main, gear);
+  if (m.augments.length) {
+    const augs = el('div', 'match-augs');
+    for (const x of m.augments) augs.append(withTooltip(icon(x.iconUrl, 'ic'), x));
+    row.append(augs);
+  }
   return row;
 }

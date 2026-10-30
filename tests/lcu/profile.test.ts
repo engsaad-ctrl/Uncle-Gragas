@@ -20,6 +20,12 @@ describe('client profile answers', () => {
     expect(m[0]).toMatchObject({ championId: 238, win: false, cs: 0, items: [], spells: [] });
   });
 
+  it('reads damage, gold, crowd control and augments, and copes without them', () => {
+    const game = (stats: object) => ({ games: { games: [{ gameId: 1, participants: [{ participantId: 1, championId: 1, stats }], participantIdentities: [{ participantId: 1, player: { puuid: ME } }] }] } });
+    expect(toMatches(game({ totalDamageDealtToChampions: 53623, goldEarned: 24000, timeCCingOthers: 10, playerAugment1: 7, playerAugment2: 0, playerAugment3: 9 }), ME)[0]).toMatchObject({ damage: 53623, gold: 24000, cc: 10, augments: [7, 9] });
+    expect(toMatches(game({}), ME)[0]).toMatchObject({ damage: 0, gold: 0, cc: 0, augments: [] });
+  });
+
   it('lists recent players once each, newest first, without me', () => {
     const r = toRecentPlayers(fx.recent, ME);
     expect(r.map((x) => [x.gameName, x.championId])).toEqual([['OldName', 54], ['Ally', 238]]);

@@ -339,16 +339,22 @@ body { display: block; }
 .rank { padding: 8px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
 .rank:last-child { border-bottom: 0; }
 .rank-queue { font-size: 12px; color: var(--muted); } .rank-tier { font-size: 17px; font-weight: 700; color: var(--goldtxt); margin: 2px 0; }
-.match { display: grid; grid-template-columns: 150px 140px 150px 1fr; align-items: center; gap: 12px; padding: 8px 10px; margin-top: 8px; border-radius: 6px; border-inline-start: 4px solid; background: color-mix(in srgb, var(--panel-2) 70%, transparent); animation: pop-in .28s ease both; animation-delay: var(--delay, 0ms); }
-.match.win { border-color: var(--heal); } .match.loss { border-color: var(--status); }
-.match.win .match-meta b { color: var(--heal); } .match.loss .match-meta b { color: var(--status); }
-.match-champ { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
-.match-champ img { width: 44px; height: 44px; border-radius: 6px; }
-.match-meta, .match-score { font-size: 13px; }
-.match-items { display: flex; flex-wrap: wrap; gap: 4px; }
-.match-items .ic { width: 28px; height: 28px; border-radius: 4px; }
+.match { --tone: var(--status); display: grid; grid-template-columns: 60px minmax(0, 1fr) auto auto; align-items: center; gap: 14px; padding: 12px 14px; margin-top: 8px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--tone) 25%, var(--line)); background: linear-gradient(to left, color-mix(in srgb, var(--tone) 18%, var(--panel-2)), var(--panel-2) 45%); animation: pop-in .28s ease both; animation-delay: var(--delay, 0ms); transition: border-color .15s ease; }
+.match.win { --tone: var(--heal); }
+.match:hover { border-color: var(--tone); }
+.match-champ img { display: block; width: 56px; height: 56px; border-radius: 10px; border: 2px solid var(--tone); }
+.match-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 12px; color: var(--muted); }
+.match-title b { font-size: 15px; color: var(--tone); }
+.match-stats { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 6px; }
+.match-stat b { display: block; font-size: 14px; color: var(--text); } .match-stat small { font-size: 11px; color: var(--muted); }
+.match-gear { display: flex; align-items: center; gap: 8px; }
+.match-spells { display: grid; gap: 3px; }
+.match-items { display: grid; grid-template-columns: repeat(4, 28px); gap: 3px; }
+.match-gear .ic { width: 28px; height: 28px; border-radius: 5px; }
+.match-augs { display: grid; grid-template-columns: repeat(2, 30px); gap: 4px; }
+.match-augs .ic { width: 30px; height: 30px; border-radius: 50%; background: var(--panel); }
 .champ.mini.player span { font-size: 11px; word-break: break-all; }
-@media (max-width: 760px) { .match { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) { .match { grid-template-columns: 60px minmax(0, 1fr); } .match-gear, .match-augs { grid-column: 2; } .match-augs { grid-template-columns: repeat(6, 30px); } }
 
 /* The game's stat icons inside descriptions (%i:scaleAP% …) */
 .t-ico { width: 1.05em; height: 1.05em; vertical-align: -.2em; margin-inline: .12em; }
