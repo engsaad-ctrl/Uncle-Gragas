@@ -154,8 +154,9 @@ function render() {
       const letter = known ? (grades.get(a.id) ?? '–') : '–';
       const grade = el('span', `ov-grade g-${letter}`, letter);
       grade.title = why.join('\n');
-      tags.append(grade);
+      // The letter comes last, against the row's end, so the letters of all rows line up.
       if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
+      tags.append(grade);
       r.append(tags);
       const on = picked.has(a.id);
       r.append(el('span', `ov-pick${on ? ' on' : ''}`, on ? '✓' : '+'));

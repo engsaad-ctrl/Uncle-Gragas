@@ -465,6 +465,8 @@ body.overlay.large .ov-main.both .ov-list { grid-template-columns: repeat(2, min
 .ov-chosen { display: flex; flex-wrap: wrap; gap: 6px; }
 .ov-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text); background: var(--panel-2); border: 1px solid var(--accent); border-radius: 8px; cursor: pointer; }
 .ov-chip img { width: 24px; height: 24px; } .ov-chip b { color: var(--muted); font-size: 12px; } .ov-chip:hover b { color: var(--status); }
+.chip .ov-grade { margin-inline-start: auto; }
+.ov-tags { align-items: center; }
 .ov-grade { width: 24px; height: 24px; display: inline-grid; place-items: center; flex: none; font-size: 13px; font-weight: 800; border-radius: 6px; background: var(--panel-2); color: var(--muted); }
 .ov-grade.g-S { color: #1a1205; background: #f0c040; } .ov-grade.g-A { color: #06210f; background: var(--heal); }
 .ov-grade.g-B { color: var(--text); background: color-mix(in srgb, var(--text) 18%, transparent); } .ov-grade.g-C { color: var(--status); background: color-mix(in srgb, var(--status) 18%, transparent); }
