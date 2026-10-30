@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { adviseBuild, contextText, legalBuilds, MODELS, namedItems, realBuild, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
+import { adviseBuild, contextText, damageProfile, fitsDamage, legalBuilds, MODELS, namedItems, realBuild, toEffect, type AdviceInput, type GeminiPost } from '../../src/ai/advisor.js';
 import type { BuildResult } from '../../src/ai/calculator.js';
 
 const input: AdviceInput = {
@@ -150,5 +150,27 @@ describe('augment texts for the model', () => {
     const html = 'تكسب <span class="s-scaleap">300% <img class="t-ico" src="https://x/statsicon/scaleap.png" alt="قوة القدرة"></span> درع.';
     const text = contextText({ ...input, augments: [{ id: 1180, name: 'دماغ كبير', enName: 'Big Brain', text: html }] });
     expect(text).toContain('تكسب 300% AP درع.');
+  });
+});
+
+describe('damage kind', () => {
+  const ap = '<span class="s-scaleap">(+70% <img src="x/statsicon/scaleap.png">)</span>';
+  const ad = '<span class="s-scalead">(+100% <img src="x/statsicon/scalead.png">)</span>';
+  it('reads what the abilities scale with', () => {
+    expect(damageProfile([{ text: ap }, { text: ap }]).kind).toBe('ap');
+    expect(damageProfile([{ text: ad }]).kind).toBe('ad');
+    expect(damageProfile([{ text: ap }, { text: ad }]).kind).toBe('mixed');
+  });
+  it('drops builds of the other damage kind, unless an augment switches it, and never empties the list', () => {
+    const apChamp: AdviceInput = {
+      ...input,
+      champion: { ...input.champion, abilities: [{ key: 'Q', enName: 'Q', text: ap }] },
+      pool: [{ id: 1, enName: 'AP1', gold: 3000, boots: false, text: '', damage: 'ap' }, { id: 2, enName: 'AD1', gold: 3000, boots: false, text: '', damage: 'ad' }, { id: 3, enName: 'AD2', gold: 3000, boots: false, text: '', damage: 'ad' }],
+    };
+    const builds = [{ label: 'ap', items: [1] }, { label: 'ad', items: [2, 3] }];
+    expect(fitsDamage(builds, apChamp).map((b) => b.label)).toEqual(['ap']);
+    expect(fitsDamage(builds, { ...apChamp, switchesDamage: true })).toHaveLength(2);
+    expect(fitsDamage([builds[1]], apChamp)).toHaveLength(1);
+    expect(contextText(apChamp)).toContain('is an AP champion');
   });
 });

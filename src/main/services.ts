@@ -366,7 +366,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
               // The augment texts are Arabic and the model's item list English: point it to the items an augment is about.
               items: namedItems({ enName: a.enName, text: a.html }, shop),
             })),
-            pool: shop.map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: english.get(i.id) || i.html })),
+            pool: shop.map((i) => ({ id: i.id, enName: i.enName, gold: i.gold, boots: i.group === 'boots', text: english.get(i.id) || i.html, damage: itemDamage(i.id) })),
+            switchesDamage: chosen.some((a) => switchesDamage(a.ids)),
             usual: usual.filter((id) => gameItems[id]),
             played: { games: champ.championGames, items: bought(champ), withAugments: withThem.championGames, itemsWithAugments: bought(withThem) },
             links: mechanicLinks(chosen.map((a) => a.ids), shopIds),
@@ -419,6 +420,17 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       }),
     };
   }
+
+  const AD_STATS = new Set(['ad', 'bonus_ad', 'lethality']);
+  /** An item's damage kind from what it gives: AP only, AD only (lethality counts), or neither / both. */
+  function itemDamage(id: number): 'ap' | 'ad' | 'none' {
+    const gives = new Set(ITEM_MECHANICS.find((m) => m.id === id)?.gives.map((g) => g.stat) ?? []);
+    const ad = [...gives].some((s) => AD_STATS.has(s));
+    return gives.has('ap') && !ad ? 'ap' : ad && !gives.has('ap') ? 'ad' : 'none';
+  }
+  /** An augment that turns AD into AP or the reverse (ADAPt). */
+  const switchesDamage = (ids: number[]) =>
+    AUGMENT_MECHANICS.some((m) => ids.includes(m.id) && m.converts.some((c) => (AD_STATS.has(c.from) && c.to === 'ap') || (c.from === 'ap' && AD_STATS.has(c.to))));
 
   /** The chosen augments' links to shop items and to each other, read from the texts (src/ai/mechanics.ts). */
   function mechanicLinks(chosenIds: number[][], shopIds: Set<number>, max = 12): string[] {

@@ -26,7 +26,9 @@ export interface AdviceInput {
   /** Items that won more with a chosen augment than without it, in real games of every champion (best first). */
   synergy?: { augment: number; item: number; games: number; wins: number; lift: number }[];
   /** Every finished item and boots on the map. */
-  pool: { id: number; enName: string; gold: number; boots: boolean; text: string }[];
+  pool: { id: number; enName: string; gold: number; boots: boolean; text: string; damage?: 'ap' | 'ad' | 'none' }[];
+  /** A chosen augment turns AD into AP or the reverse (ADAPt): builds of the other damage kind are then allowed. */
+  switchesDamage?: boolean;
   /** The champion's usual build: what its Mayhem players buy whatever their augments (ARAM's when Mayhem's is unknown). */
   usual: number[];
   /**
@@ -197,6 +199,7 @@ export function contextText(input: AdviceInput): string {
     RULES,
     '',
     `Champion: ${c.enName} (${c.name})`,
+    damageLine(input),
     ...c.abilities.map((a) => `${a.key} ${a.enName}: ${plain(a.text)}`),
     '',
     'Chosen augments (id | name | tier on this champion | effect):',
@@ -240,6 +243,41 @@ function playedText(p: AdviceInput['played'], name: (id: number) => string): str
 export function toEffect(raw: Record<string, unknown>): Effect | null {
   const r = Effect.safeParse(raw.kind === 'attackSpeedCap' ? { ...raw, cap: raw.cap === 0 ? null : raw.cap } : raw);
   return r.success ? r.data : null;
+}
+
+/**
+ * What the champion's abilities scale with, counted from the stat marks in their texts: Diana's are all AP, Kayn's and
+ * Talon's all AD, Varus' and Ezreal's both. A champion whose marks are 75% one kind is that kind.
+ */
+export function damageProfile(abilities: { text: string }[]): { ap: number; ad: number; kind: 'ap' | 'ad' | 'mixed' } {
+  const html = abilities.map((a) => a.text).join(' ');
+  const ap = (html.match(/s-scaleap\b/g) ?? []).length;
+  const ad = (html.match(/s-scale(?:bonus)?ad\b/g) ?? []).length;
+  const kind = ap + ad === 0 ? 'mixed' : ap / (ap + ad) >= 0.75 ? 'ap' : ad / (ap + ad) >= 0.75 ? 'ad' : 'mixed';
+  return { ap, ad, kind };
+}
+
+/**
+ * Builds that fight the champion's damage: mostly AD items on an AP champion, or the reverse (a Diana got Overlord's
+ * Bloodmail and Titanic Hydra). Allowed when an augment turns one kind into the other (ADAPt). Never empties the list.
+ */
+export function fitsDamage<T extends { items: number[] }>(candidates: T[], input: AdviceInput): T[] {
+  const kind = damageProfile(input.champion.abilities).kind;
+  if (kind === 'mixed' || input.switchesDamage) return candidates;
+  const byId = new Map(input.pool.map((i) => [i.id, i]));
+  const fits = candidates.filter((c) => {
+    const count = (k: 'ap' | 'ad') => c.items.filter((id) => byId.get(id)?.damage === k).length;
+    const own = count(kind), other = count(kind === 'ap' ? 'ad' : 'ap');
+    return !(other >= 2 && other > own);
+  });
+  return fits.length ? fits : candidates;
+}
+
+function damageLine(input: AdviceInput): string {
+  const d = damageProfile(input.champion.abilities);
+  const what = d.kind === 'ap' ? 'an AP champion: build ability power, not attack damage' : d.kind === 'ad' ? 'an AD champion: build attack damage, not ability power' : 'mixed: either kind can work';
+  const unless = input.switchesDamage && d.kind !== 'mixed' ? ' (but a chosen augment turns one damage kind into the other, so the other kind is allowed)' : '';
+  return `Damage: the abilities' scaling marks are ${d.ap} AP and ${d.ad} AD, so ${input.champion.enName} is ${what}${unless}.`;
 }
 
 /** The items most bought by players who took one of the chosen augments, boots first; null with too few games. */
@@ -322,9 +360,12 @@ export async function adviseBuild(post: GeminiPost, input: AdviceInput, calculat
   // the model's own ideas are then weighed against what players do (a Diana with Steel Your Heart got no Riftmaker,
   // which 4 of the 10 such players bought).
   const real = realBuild(input);
-  const candidates = legalBuilds(
-    [...plan.candidates, ...(real ? [{ label: 'what players with these augments bought', items: real }] : []), { label: 'usual build', items: input.usual.slice(0, 6) }],
-    input.pool,
+  const candidates = fitsDamage(
+    legalBuilds(
+      [...plan.candidates, ...(real ? [{ label: 'what players with these augments bought', items: real }] : []), { label: 'usual build', items: input.usual.slice(0, 6) }],
+      input.pool,
+    ),
+    input,
   ).slice(0, 6);
   if (!candidates.length) throw new Error('لم يقترح Gemini بناءً صالحاً من أيتمات هذه الخريطة.');
   const results = calculate(candidates.map((c) => c.items), effects);
