@@ -8,7 +8,7 @@ import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
 import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stagger, withTooltip, type Describable } from './dom.js';
-import { FIT_POINTS, fitOf, gradesFor, playedOnly, siteBonus } from './fit.js';
+import { FIT_POINTS, fitOf, gradesFor, outsidePoints, playedOnly } from './fit.js';
 import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
 
@@ -72,11 +72,12 @@ const MAX_PICKS = 6;
 
 /** Mayhem's played augments for this champion, best first with their letters, as F7 scores them before anything is marked. */
 async function rankAugments(championId: number, site: RatedAugment[]): Promise<{ list: AugmentText[]; grades: Map<number, string> } | null> {
-  const [r, e] = await Promise.all([window.lolh.getAugments(), window.lolh.augmentEffects()]);
+  const [r, e, o] = await Promise.all([window.lolh.getAugments(), window.lolh.augmentEffects(), window.lolh.openAugments(championId)]);
   if (isError(r) || isError(e)) return null;
+  const open = new Map(isError(o) ? [] : o.map((x) => [x.id, x.points]));
   const effects = new Map(e.map((x) => [x.id, x.points]));
   const tiers = new Map(site.map((a) => [a.id, a.tierLabel]));
-  const score = (a: AugmentText) => (effects.get(a.id) ?? 0) + siteBonus(tiers.get(a.id)) + FIT_POINTS * (fitOf(championId, a.ids)?.score ?? 0);
+  const score = (a: AugmentText) => (effects.get(a.id) ?? 0) + outsidePoints(open.get(a.id), tiers.get(a.id)) + FIT_POINTS * (fitOf(championId, a.ids)?.score ?? 0);
   const list = playedOnly(r.augments.filter((a) => a.modes.includes('mayhem')), effects).sort((x, y) => score(y) - score(x));
   return { list, grades: gradesFor(list, score) };
 }
@@ -274,7 +275,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     section.append(groups);
     // Each group shows 6 at first: offer the rest whenever any group has more.
     if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
-    section.append(el('p', 'hint', 'الحرف كما في F7، من مبارياتنا (70%) وتقييم الموقع لهذا البطل (30%): S الأفضل و C الأضعف بين تعزيزات الندرة نفسها.'));
+    section.append(el('p', 'hint', 'الحرف كما في F7، من مبارياتنا (30%) ونِسب هذا البطل في بيانات AramHex (70%): S الأفضل و C الأضعف بين تعزيزات الندرة نفسها.'));
     body.push(section, aiPanel(p, iconButton, ranking)); // our games feed the calculator; they are not shown as a list
   }
 

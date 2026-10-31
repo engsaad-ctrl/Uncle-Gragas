@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gradeOf, gradesFor, playedOnly, siteBonus } from '../../src/renderer/fit.js';
+import { gradeOf, gradesFor, outsidePoints, playedOnly, siteBonus } from '../../src/renderer/fit.js';
 
 describe('gradeOf', () => {
   it('splits a ranking of 100 into a tenth S, a quarter A, 40% B and the rest C', () => {
@@ -37,5 +37,14 @@ describe('siteBonus', () => {
     expect(siteBonus('D')).toBeLessThan(0);
     expect(siteBonus(undefined)).toBe(0);
     expect(siteBonus('Z')).toBe(0);
+  });
+});
+
+describe('outsidePoints', () => {
+  it('prefers the open data, and falls back on the site only where it knows nothing', () => {
+    expect(outsidePoints(2, 'S+')).toBeCloseTo(3);
+    expect(outsidePoints(0, 'S+')).toBe(0);
+    expect(outsidePoints(undefined, 'S+')).toBeCloseTo(siteBonus('S+'));
+    expect(outsidePoints(undefined, undefined)).toBe(0);
   });
 });

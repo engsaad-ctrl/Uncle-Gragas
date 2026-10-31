@@ -16,6 +16,7 @@ import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, strength, ty
 import { buildFor } from '../app/buildEngine.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
+import { augmentLift, heroEdge, openStats } from '../stats/openStats.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
@@ -535,8 +536,20 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
 
   /** Each champion's effect on its team's win chance in our games, in points (see augmentEffects for the scale). */
   async function championStrengths(ids: number[]): Promise<{ id: number; points: number }[]> {
-    const m = await teamModel();
-    return ids.map((id) => ({ id, points: 25 * strength(m.fit, id, []) }));
+    // The open data first: with it, ranking winners on held-out games went from AUC 0.684 to 0.708.
+    const [open, m] = await Promise.all([openStats({ cacheDir, fetchImpl }).catch(() => null), teamModel()]);
+    return ids.map((id) => ({ id, points: (open && heroEdge(open.data, id)) ?? 25 * strength(m.fit, id, []) }));
+  }
+
+  /** What each Mayhem augment adds to this champion in the open data; empty when it can't be had. */
+  async function openAugments(championId: number): Promise<{ id: number; points: number }[]> {
+    const open = await openStats({ cacheDir, fetchImpl }).catch(() => null);
+    if (!open) return [];
+    return (await augments()).augments.flatMap((a) => {
+      // An augment's copies (Arena's id) are listed apart: take the one with the most games.
+      const best = a.ids.flatMap((id) => augmentLift(open.data, championId, id) ?? []).sort((x, y) => y.games - x.games)[0];
+      return best ? [{ id: a.id, points: best.points }] : [];
+    });
   }
 
   async function teamSummary(mine: number[], enemy: number[]): Promise<TeamSummary> {
@@ -548,5 +561,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { side: diff > 0.15 ? 'stronger' : diff < -0.15 ? 'weaker' : 'even', magic: { mine: magic(mine), enemy: magic(enemy) } };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, championStrengths, teamSummary, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, championStrengths, openAugments, teamSummary, warm };
 }

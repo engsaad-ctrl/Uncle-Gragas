@@ -240,6 +240,7 @@ function askShare() {
   document.body.append(box);
 }
 settings.append(shareSection);
+settings.append(section('مصادر البيانات', el('p', 'hint', 'نِسب فوز الأبطال والتعزيزات من AramHex (السيرفر الصيني): github.com/czgreat/aramhex-data برخصة CC BY-NC 4.0. غيّرناها بخلطها مع مبارياتنا لحساب الحروف، وليس البرنامج تجارياً.')));
 settings.append(
   section('التحديثات', updateButton, updateNote, versionNote),
   section(

@@ -3,7 +3,7 @@
 import type { Advice } from '../ai/advisor.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
-import { FIT_POINTS, fitOf, gradesFor, playedOnly, siteBonus } from './fit.js';
+import { FIT_POINTS, fitOf, gradesFor, outsidePoints, playedOnly } from './fit.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
@@ -37,6 +37,8 @@ const MAX_PICKS = 6;
 const FIT_GAMES = 150;
 /** Each augment's effect on its team's win chance (team model), loaded with the window's data. */
 let effects = new Map<number, AugmentEffect>();
+/** What each augment adds to this champion in the open data, in points. */
+let openPoints = new Map<number, number>();
 const mechOf = (a: { id: number; ids?: number[] }) => AUGMENT_MECHANICS.find((m) => (a.ids ?? [a.id]).includes(m.id));
 const NO_MECH: Mechanic = { id: -1, name: '', gives: [], scales: [], converts: [], relies: [], needs: [], note: '' };
 const STAT_AR: Record<string, string> = {
@@ -104,7 +106,7 @@ function render() {
   const score = (a: OverlayData['augments'][number]) => {
     const f = fit.get(a.id);
     const kit = fitOf(data!.champion?.id, a.ids ?? [a.id])?.score ?? 0; // a near-tie breaker only (src/renderer/fit.ts)
-    return (effects.get(a.id)?.points ?? 0) + siteBonus(a.tierLabel) + FIT_POINTS * kit + linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 100 * f.lift : 0);
+    return (effects.get(a.id)?.points ?? 0) + outsidePoints(openPoints.get(a.id), a.tierLabel) + FIT_POINTS * kit + linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 100 * f.lift : 0);
   };
   const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : score(a));
   const pool = data.mode === 'mayhem' ? playedOnly(data.augments, effects, picked) : data.augments;
@@ -145,12 +147,12 @@ function render() {
       const links = linksOf(a);
       const why = [
         ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
-        ...(a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
+        ...(openPoints.has(a.id) ? [`مع هذا البطل في بيانات AramHex: ${openPoints.get(a.id)!.toFixed(1)} نقطة.`] : a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
         ...(f && f.games >= FIT_GAMES ? [`مع اختياراتك: ${Math.round(100 * f.lift)}% من ${f.games} لاعباً.`] : []),
         ...(kit?.reasons ?? []),
         ...links.map(linkInArabic),
       ];
-      const known = e || links.length || (f && f.games >= FIT_GAMES);
+      const known = e || openPoints.has(a.id) || links.length || (f && f.games >= FIT_GAMES);
       const letter = known ? (grades.get(a.id) ?? '–') : '–';
       const grade = el('span', `ov-grade g-${letter}`, letter);
       grade.title = why.join('\n');
@@ -435,9 +437,10 @@ async function load() {
   if (restored) void startAi(); // the app's answer is cached: shown without asking Gemini again
   void refreshFit();
   if (reply.mode === 'mayhem') {
-    const r = await window.lolh.augmentEffects();
-    if (id !== loadId || isError(r)) return;
-    effects = new Map(r.map((x) => [x.id, x]));
+    const [r, o] = await Promise.all([window.lolh.augmentEffects(), reply.champion ? window.lolh.openAugments(reply.champion.id) : []]);
+    if (id !== loadId) return;
+    if (!isError(r)) effects = new Map(r.map((x) => [x.id, x]));
+    openPoints = new Map(isError(o) ? [] : o.map((x) => [x.id, x.points]));
     render();
   }
 }
@@ -508,7 +511,7 @@ async function renderTeams() {
   const champion = data?.champion;
   if (champion && data?.mode === 'mayhem') {
     const best = [...data.augments]
-      .map((a) => ({ a, score: (effects.get(a.id)?.points ?? -9) + siteBonus(a.tierLabel) + FIT_POINTS * (fitOf(champion.id, a.ids ?? [a.id])?.score ?? 0) }))
+      .map((a) => ({ a, score: (effects.get(a.id)?.points ?? -9) + outsidePoints(openPoints.get(a.id), a.tierLabel) + FIT_POINTS * (fitOf(champion.id, a.ids ?? [a.id])?.score ?? 0) }))
       .sort((x, y) => y.score - x.score)
       .slice(0, 8)
       .map(({ a }) => a);

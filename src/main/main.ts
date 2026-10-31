@@ -191,6 +191,7 @@ ipcMain.handle('game:teams', () =>
 );
 ipcMain.handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.augmentFit(parseIds(augmentIds))));
 ipcMain.handle('mayhem:effects', () => reply(() => services.augmentEffect()));
+ipcMain.handle('mayhem:open', (_e, id: unknown) => reply(() => services.openAugments(Number(id))));
 ipcMain.handle('mayhem:strengths', (_e, ids: unknown) => reply(() => services.championStrengths(parseIds(ids))));
 // In a loaded game the enemy team is known (enemiesInGame): the build answers its magic damage.
 ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown) =>
