@@ -275,7 +275,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     section.append(groups);
     // Each group shows 6 at first: offer the rest whenever any group has more.
     if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
-    section.append(el('p', 'hint', 'الحرف كما في F7، من مبارياتنا (30%) ونِسب هذا البطل في بيانات AramHex (70%): S الأفضل و C الأضعف بين تعزيزات الندرة نفسها.'));
+    section.append(el('p', 'hint', 'الحرف كما في F7، من مبارياتنا (20%) ونِسب هذا البطل في AramHex وARAMKit (80%): S الأفضل و C الأضعف بين تعزيزات الندرة نفسها.'));
     body.push(section, aiPanel(p, iconButton, ranking)); // our games feed the calculator; they are not shown as a list
   }
 

@@ -1,8 +1,17 @@
-// The build without AI, in two layers. The base: what players of the champion buy in normal ARAM on OP.GG (tens of
-// thousands of games, same map) and in our Mayhem games. The augment layer on top: items an augment is built around come
-// first, items its mechanics feed or that won more with it move up, and items of the other damage kind drop out. The
-// player's chosen augments change the build by changing that layer only.
+// The build without AI, in two layers. The base: what players of the champion buy in Mayhem on ARAMKit (millions of
+// games); without it, normal ARAM on OP.GG and our own Mayhem games. The augment layer on top: items an augment is built
+// around come first, items that won more with it move up, and items of the other damage kind drop out. The player's
+// chosen augments change the build by changing that layer only.
 
+import { AUGMENT_ITEMS } from './augmentItemsData.js';
+
+/**
+ * What one point in AUGMENT_ITEMS adds to an item's score. With ARAMKit's items as the base, on 9,952 held-out players:
+ * correlation between matching the build and winning 0.040 against 0.027 for normal ARAM and text links (difference
+ * 0.014, 95% range -0.005 to 0.034), and 50.9% of the items in 28 creators' builds against 44.4% (6.5, 1.8 to 11.7).
+ * The best of four weights tried on those same games, so the first number needs new games to confirm it.
+ */
+export const AUGMENT_ITEM_WEIGHT = 0.1;
 /** What one unit of text-link strength is worth next to the base scores (a core item is about 1). */
 export const LINK_WEIGHT = 0.6;
 /** How far magic resist moves for the enemy team's damage (see scoreItems). */
@@ -65,6 +74,17 @@ export const boughtAs = (id: number) => {
 // bought early, the item itself later. Mejai's by its text alone. By the id's last four digits, like BOUGHT_AS.
 const STACKING = new Set([3084, 3032, 6697, 6657, 3041]);
 const stacks = (id: number) => STACKING.has(id % 10000);
+
+/** `synergy` for buildFor from what the chosen augments did to items across champions; an augment's copies count once. */
+export function synergyAcrossChampions(chosen: number[][], shopIds: Iterable<number>): Map<number, number> {
+  const tables = chosen.flatMap((ids) => { const known = ids.find((id) => AUGMENT_ITEMS[id]); return known === undefined ? [] : [AUGMENT_ITEMS[known]]; });
+  const out = new Map<number, number>();
+  for (const id of shopIds) {
+    const points = tables.reduce((t, table) => t + (table[boughtAs(id) % 10000] ?? 0), 0);
+    if (points) out.set(id, (AUGMENT_ITEM_WEIGHT * points) / 3); // scoreItems multiplies by 3
+  }
+  return out;
+}
 
 /** Each item's score; the parts are kept for the explanation. */
 export function scoreItems(input: EngineInput): Map<number, { score: number; why: string[] }> {

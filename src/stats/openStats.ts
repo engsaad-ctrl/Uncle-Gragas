@@ -53,6 +53,9 @@ export function openStats(opts: { cacheDir: string; fetchImpl: typeof fetch; now
 
 const logit = (p: number) => Math.log(p / (1 - p));
 
+/** What winning `wins` of `games` adds to a champion's `rate`, in points (25 per unit of log-odds near even); few games stay near nothing. */
+export const liftPoints = (wins: number, games: number, rate: number) => 25 * (logit((wins + PRIOR_GAMES * rate) / (games + PRIOR_GAMES)) - logit(rate));
+
 /** How far a champion's win rate is from even, in points. */
 export function heroEdge(s: OpenStats, champion: number): number | null {
   const h = s.heroes[String(champion)];
@@ -66,5 +69,5 @@ export function augmentLift(s: OpenStats, champion: number, augment: number): { 
   if (!h || !a) return null;
   const rate = h.wins / h.games;
   if (rate <= 0 || rate >= 1) return null;
-  return { points: 25 * (logit((a.wins + PRIOR_GAMES * rate) / (a.games + PRIOR_GAMES)) - logit(rate)), games: a.games };
+  return { points: liftPoints(a.wins, a.games, rate), games: a.games };
 }

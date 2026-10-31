@@ -42,7 +42,7 @@ describe('siteBonus', () => {
 
 describe('outsidePoints', () => {
   it('prefers the open data, and falls back on the site only where it knows nothing', () => {
-    expect(outsidePoints(2, 'S+')).toBeCloseTo(3);
+    expect(outsidePoints(2, 'S+')).toBeCloseTo(5.2);
     expect(outsidePoints(0, 'S+')).toBe(0);
     expect(outsidePoints(undefined, 'S+')).toBeCloseTo(siteBonus('S+'));
     expect(outsidePoints(undefined, undefined)).toBe(0);

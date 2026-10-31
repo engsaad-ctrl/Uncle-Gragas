@@ -147,7 +147,7 @@ function render() {
       const links = linksOf(a);
       const why = [
         ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
-        ...(openPoints.has(a.id) ? [`مع هذا البطل في بيانات AramHex: ${openPoints.get(a.id)!.toFixed(1)} نقطة.`] : a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
+        ...(openPoints.has(a.id) ? [`مع هذا البطل في AramHex وARAMKit: ${openPoints.get(a.id)!.toFixed(1)} نقطة.`] : a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
         ...(f && f.games >= FIT_GAMES ? [`مع اختياراتك: ${Math.round(100 * f.lift)}% من ${f.games} لاعباً.`] : []),
         ...(kit?.reasons ?? []),
         ...links.map(linkInArabic),

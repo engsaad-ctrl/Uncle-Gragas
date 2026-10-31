@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { buildFor, type EngineInput } from '../../src/app/buildEngine.js';
+import { AUGMENT_ITEM_WEIGHT, buildFor, synergyAcrossChampions, type EngineInput } from '../../src/app/buildEngine.js';
+import { AUGMENT_ITEMS } from '../../src/app/augmentItemsData.js';
+
+describe('synergy across champions', () => {
+  const [a, b] = Object.keys(AUGMENT_ITEMS).map(Number);
+  const item = Number(Object.keys(AUGMENT_ITEMS[a]).find((i) => AUGMENT_ITEMS[b][+i] !== undefined));
+  const lift = (points: number) => (AUGMENT_ITEM_WEIGHT * points) / 3;
+  it('adds up the chosen augments, and counts an augment with copies once', () => {
+    expect(synergyAcrossChampions([[a]], [item]).get(item)).toBeCloseTo(lift(AUGMENT_ITEMS[a][item]));
+    expect(synergyAcrossChampions([[a], [b]], [item]).get(item)).toBeCloseTo(lift(AUGMENT_ITEMS[a][item] + AUGMENT_ITEMS[b][item]));
+    expect(synergyAcrossChampions([[a, b]], [item]).get(item)).toBeCloseTo(lift(AUGMENT_ITEMS[a][item]));
+  });
+  it("finds an item by the shop's own id, and leaves out what it doesn't know", () => {
+    expect(synergyAcrossChampions([[a]], [770000 + item]).has(770000 + item)).toBe(true);
+    expect(synergyAcrossChampions([[-1]], [item]).size).toBe(0);
+    expect(synergyAcrossChampions([], [item]).size).toBe(0);
+  });
+  it('moves an item up or down in the build', () => {
+    const mayhem = [{ id: 10, games: 30, wins: 15 }, { id: 11, games: 28, wins: 14 }];
+    const pool = [10, 11].map((id) => ({ id, boots: false, damage: 'ap' as const }));
+    const order = (synergy: Map<number, number>) => buildFor({ championDamage: 'ap', pool, base: [], mayhem, mayhemGames: 100, required: [], links: new Map(), synergy }).items;
+    expect(order(new Map())).toEqual([10, 11]);
+    expect(order(new Map([[11, lift(2)]]))).toEqual([11, 10]);
+  });
+});
 
 const pool = [
   { id: 1, boots: true, damage: 'none' as const },

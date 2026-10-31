@@ -13,10 +13,11 @@ import { uniqueGames } from '../lcu/gameShape.js';
 import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
 import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats } from '../app/mayhemStats.js';
 import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, strength, type TeamModel } from '../app/teamModel.js';
-import { buildFor } from '../app/buildEngine.js';
+import { boughtAs, buildFor, synergyAcrossChampions } from '../app/buildEngine.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
-import { augmentLift, heroEdge, openStats } from '../stats/openStats.js';
+import { kitStats, type KitStats } from '../stats/aramKit.js';
+import { augmentLift, heroEdge, liftPoints, openStats } from '../stats/openStats.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
@@ -496,9 +497,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   }
 
   /**
-   * The build without AI (src/app/buildEngine.ts) for a champion and the augments taken: OP.GG's normal-ARAM build and
-   * our Mayhem games as the base, the augments' required items, text links and measured pairings on top. Held-out
-   * test: as close to winning builds as the sites' (docs/calculator-plan.md).
+   * The build without AI (src/app/buildEngine.ts) for a champion and the augments taken: ARAMKit's Mayhem items as the
+   * base and what the augments did to items across champions on top, with the augments' required items. If ARAMKit can't
+   * be had: OP.GG's normal-ARAM build, our Mayhem games, text links and our measured pairings.
    */
   async function engineBuild(championId: number, augmentIds: number[], enemies: number[] = []): Promise<{ item: ItemEntry; why: string[] }[]> {
     const entry = (await champions()).find((c) => c.id === championId);
@@ -507,26 +508,35 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const shop = list.list.filter((i) => i.group === 'legendary' || i.group === 'boots');
     const shopIds = new Set(shop.map((i) => i.id));
     const ids = augmentIds.map((id) => all.augments.find((a) => a.id === id)?.ids ?? [id]);
-    const b = await stats.build(entry.alias, 'aram', 'mid').then((r) => r.data, () => null);
-    const base = b ? [...(b.core ? [{ ...b.core, core: true }] : []), ...(b.boots ? [b.boots] : []), ...b.fourth, ...b.fifth, ...b.sixth] : [];
-    const ms = mayhemStats(games, championId);
+    const kitData = await champKit(championId);
+    const toShop = (id: number) => [boughtAs(id), boughtAs(id % 10000)].find((x) => shopIds.has(x));
+    const kitItems = kitData?.items.flatMap((i) => { const id = toShop(i.id); return id ? [{ id, games: i.games, wins: i.games * i.winRate }] : []; });
     const am = ids.flatMap((x) => AUGMENT_MECHANICS.filter((m) => x.includes(m.id)).slice(0, 1));
-    const links = new Map(ITEM_MECHANICS.filter((i) => shopIds.has(i.id)).map((i) => [i.id, linksWith(am, i).reduce((s, l) => s + l.strength, 0)] as const).filter(([, s]) => s > 0));
-    const synergy = new Map<number, number>();
-    for (const s of augmentItemSynergy(games, ids.flat(), (id) => shopIds.has(id))) synergy.set(s.item, Math.max(synergy.get(s.item) ?? 0, s.lift));
+    const fallback = async () => {
+      const b = await stats.build(entry.alias, 'aram', 'mid').then((r) => r.data, () => null);
+      const ms = mayhemStats(games, championId);
+      const synergy = new Map<number, number>();
+      for (const s of augmentItemSynergy(games, ids.flat(), (id) => shopIds.has(id))) synergy.set(s.item, Math.max(synergy.get(s.item) ?? 0, s.lift));
+      return {
+        base: b ? [...(b.core ? [{ ...b.core, core: true }] : []), ...(b.boots ? [b.boots] : []), ...b.fourth, ...b.fifth, ...b.sixth] : [],
+        mayhem: ms.items,
+        mayhemGames: ms.championGames,
+        links: new Map(ITEM_MECHANICS.filter((i) => shopIds.has(i.id)).map((i) => [i.id, linksWith(am, i).reduce((s, l) => s + l.strength, 0)] as const).filter(([, s]) => s > 0)),
+        synergy,
+      };
+    };
+    const sources = kitItems?.length
+      ? { base: [], mayhem: kitItems, mayhemGames: kitData!.games, links: new Map<number, number>(), synergy: synergyAcrossChampions(ids, shopIds) }
+      : await fallback();
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     const r = buildFor({
       championDamage: kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed',
       switchesDamage: ids.some((x) => switchesDamage(x)),
       pool: shop.map((i) => ({ id: i.id, boots: i.group === 'boots', damage: itemDamage(i.id), mr: ITEM_MECHANICS.some((m) => m.id === i.id && m.gives.some((g) => g.stat === 'mr' || g.stat === 'resists')) })),
-      base,
+      ...sources,
       // Only with the whole enemy team known (the game loaded): magic 1, mixed 0.5.
       enemyMagic: enemies.length === 5 ? enemies.reduce((s, id) => { const d = CHAMPION_KITS.find((k) => k.id === id)?.damage; return s + (d === 'magic' ? 1 : d === 'mixed' ? 0.5 : 0); }, 0) : undefined,
-      mayhem: ms.items,
-      mayhemGames: ms.championGames,
       required: [...new Set(am.flatMap((m) => m.needs.filter((n): n is number => typeof n === 'number')))],
-      links,
-      synergy,
     });
     return r.items.flatMap((id) => {
       const item = shop.find((i) => i.id === id);
@@ -534,21 +544,31 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
   }
 
-  /** Each champion's effect on its team's win chance in our games, in points (see augmentEffects for the scale). */
+  /** ARAMKit's numbers for a champion; null when they can't be had, and the app goes on without them. */
+  const champKit = (id: number): Promise<KitStats | null> => kitStats(id, { cacheDir, fetchImpl }).then((r) => r.data, () => null);
+
+  /** Each champion's distance from an even win rate in the outside data, averaged over the sources; our model where they have none. */
   async function championStrengths(ids: number[]): Promise<{ id: number; points: number }[]> {
-    // The open data first: with it, ranking winners on held-out games went from AUC 0.684 to 0.708.
-    const [open, m] = await Promise.all([openStats({ cacheDir, fetchImpl }).catch(() => null), teamModel()]);
-    return ids.map((id) => ({ id, points: (open && heroEdge(open.data, id)) ?? 25 * strength(m.fit, id, []) }));
+    // On held-out games the two rates together rank winners at AUC 0.713, against 0.708 and 0.712 apart.
+    const [open, m, kits] = await Promise.all([openStats({ cacheDir, fetchImpl }).catch(() => null), teamModel(), Promise.all(ids.map(champKit))]);
+    return ids.map((id, i) => {
+      const kit = kits[i];
+      const known = [open && heroEdge(open.data, id), kit && 100 * kit.winRate - 50].filter((x): x is number => typeof x === 'number');
+      return { id, points: known.length ? known.reduce((t, x) => t + x, 0) / known.length : 25 * strength(m.fit, id, []) };
+    });
   }
 
-  /** What each Mayhem augment adds to this champion in the open data; empty when it can't be had. */
+  /** What each Mayhem augment adds to this champion in the outside data, averaged over the sources; empty when none can be had. */
   async function openAugments(championId: number): Promise<{ id: number; points: number }[]> {
-    const open = await openStats({ cacheDir, fetchImpl }).catch(() => null);
-    if (!open) return [];
+    const [open, kit] = await Promise.all([openStats({ cacheDir, fetchImpl }).catch(() => null), champKit(championId)]);
+    if (!open && !kit) return [];
+    const kitById = new Map(kit?.augments.map((a) => [a.id, a]));
     return (await augments()).augments.flatMap((a) => {
       // An augment's copies (Arena's id) are listed apart: take the one with the most games.
-      const best = a.ids.flatMap((id) => augmentLift(open.data, championId, id) ?? []).sort((x, y) => y.games - x.games)[0];
-      return best ? [{ id: a.id, points: best.points }] : [];
+      const hex = open ? a.ids.flatMap((id) => augmentLift(open.data, championId, id) ?? []).sort((x, y) => y.games - x.games)[0] : undefined;
+      const row = kit ? a.ids.flatMap((id) => kitById.get(id) ?? []).sort((x, y) => y.games - x.games)[0] : undefined;
+      const known = [hex?.points, row && kit && liftPoints(row.games * row.winRate, row.games, kit.winRate)].filter((x): x is number => x !== undefined);
+      return known.length ? [{ id: a.id, points: known.reduce((t, x) => t + x, 0) / known.length }] : [];
     });
   }
 

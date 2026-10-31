@@ -37,7 +37,7 @@ export function pickPanel(): HTMLElement {
       team.append(...s.allies.flatMap((id, i) => card(id, i)));
       body.push(el('h3', 'sub-title', 'اختيارات فريقك'), team);
     }
-    if (points.size) body.push(el('p', 'hint', 'الرقم: فرق نسبة فوز البطل عن 50%، من بيانات AramHex، بالنقاط. الأعلى أولاً.'));
+    if (points.size) body.push(el('p', 'hint', 'الرقم: فرق نسبة فوز البطل عن 50%، من AramHex وARAMKit، بالنقاط. الأعلى أولاً.'));
     panel.hidden = false;
     panel.replaceChildren(...body);
   };

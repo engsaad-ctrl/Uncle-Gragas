@@ -48,11 +48,12 @@ const SITE_TIER: Record<string, number> = { 'S+': 3, S: 2.5, 'S-': 2, 'A+': 1.5,
 /** What the site's tier for this champion adds to an augment's score; nothing for an augment the site doesn't list. */
 export const siteBonus = (tier: string | undefined) => SITE_POINTS * (SITE_TIER[tier ?? ''] ?? 0);
 
-// The open data, where it knows the augment, joins our effect at 30/70 on one scale: each divided by its spread over the
-// training players (0.068 and 0.105 log-odds), which comes to this weight in points. On 1,057 held-out games: ranking AUC
-// 0.695, against 0.684 for the open data alone (95% range of the gain 0.001 to 0.021) and 0.633 for our model alone.
-const OPEN_WEIGHT = 1.5;
-/** The outside view of an augment for this champion, in points: the open data, or the site's tier where it has none. */
+// AramHex and ARAMKit, where they know the augment, join our effect at 40/40/20 on one scale: each divided by its spread
+// over the training players (0.068 and 0.105 log-odds), which comes to this weight in points. On 1,057 held-out games:
+// ranking AUC 0.695, the same as ours with either source alone, since the two sources nearly agree (correlation 0.968);
+// 0.633 for our model alone. ARAMKit's spread is taken as AramHex's.
+const OPEN_WEIGHT = 2.6;
+/** The outside view of an augment for this champion, in points: the two data sources, or the site's tier where they have nothing. */
 export const outsidePoints = (open: number | undefined, tier: string | undefined) => (open === undefined ? siteBonus(tier) : OPEN_WEIGHT * open);
 
 /** A letter from a place in the ranking (0 = best): the top tenth S, the next quarter A, the next 40% B, the rest C. */
