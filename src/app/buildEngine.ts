@@ -60,10 +60,10 @@ export const boughtAs = (id: number) => {
   return BOUGHT_AS[tail] ? id - tail + BOUGHT_AS[tail] : id;
 };
 
-// Items that grow with time or play, by the game's texts: the sooner bought, the bigger they get. By the id's last four
-// digits, like BOUGHT_AS. Heartsteel, Yun Tal Wildarrows, Hubris, Manamune, Archangel's Staff, Winter's Approach, Rod of
-// Ages, Mejai's Soulstealer.
-const STACKING = new Set([3084, 3032, 6697, 3004, 3003, 3119, 6657, 3041]);
+// Items that grow with time or play and that players really finish first: of ARAMKit's purchase routes on 25 champions,
+// Heartsteel 100%, Rod of Ages 84%, Yun Tal 82%, Hubris 79%. Manamune (17%) and Archangel's (2%) stay out: their Tear is
+// bought early, the item itself later. Mejai's by its text alone. By the id's last four digits, like BOUGHT_AS.
+const STACKING = new Set([3084, 3032, 6697, 6657, 3041]);
 const stacks = (id: number) => STACKING.has(id % 10000);
 
 /** Each item's score; the parts are kept for the explanation. */
