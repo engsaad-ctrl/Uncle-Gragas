@@ -187,6 +187,29 @@ const flashPills = pills('مكان الفلاش', [['keep', 'كما هو'], ['D'
   route(); // the build page shows the spells in key order
 });
 for (const b of [...flashPills.children].slice(1)) b.prepend(icon(FLASH_ICON, 'flash-ico'));
+// Sharing games with the other players: off until the player turns it on, and only offered once a server exists.
+const shareSection = section(
+  'مشاركة المباريات لتحسين التقييمات',
+  pills('مشاركة المباريات', [['on', 'مفعّلة'], ['off', 'معطّلة']], storedShare() ? 'on' : 'off', (v) => {
+    try {
+      localStorage.setItem('shareGames', v);
+    } catch {
+      // not remembered this time; harmless
+    }
+    void window.lolh.setShareGames(v === 'on');
+  }),
+  el('p', 'hint', 'تُرسل مباريات Mayhem التي يجمعها البرنامج إلى خادمنا: الأبطال والتعزيزات والأيتمات والأرقام فقط، دون أسماء أو حسابات، ويأخذ البرنامج مباريات غيرك في المقابل. يمكنك إيقافها في أي وقت، لكن ما أُرسل لا يمكن حذفه لأنه بلا اسم يدل عليه.'),
+);
+function storedShare() {
+  try {
+    return localStorage.getItem('shareGames') === 'on';
+  } catch {
+    return false;
+  }
+}
+shareSection.hidden = true;
+void window.lolh.setShareGames(storedShare()).then((offered) => (shareSection.hidden = !offered));
+settings.append(shareSection);
 settings.append(
   section('التحديثات', updateButton, updateNote, versionNote),
   section(

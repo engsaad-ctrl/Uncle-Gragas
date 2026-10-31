@@ -50,6 +50,7 @@ declare global {
       setBorderless(): Promise<Reply<number | null>>;
       onOverlayShow(callback: (tab?: string) => void): void;
       /** Both teams once the game is loaded, with ranks and how they compare; null before. */
+      setShareGames(on: boolean): Promise<boolean>;
       gameTeams(): Promise<Reply<GameTeams | null>>;
       updateStatus(): Promise<{ version: string; status: UpdateStatus }>;
       checkUpdate(): Promise<UpdateStatus>;

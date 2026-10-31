@@ -5,6 +5,9 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { LcuCall } from './client.js';
 import { isMayhem } from './diagnostics.js';
+import { STAT_KEYS, type StatKey } from './gameShape.js';
+
+export { STAT_KEYS, type StatKey };
 
 export interface MayhemPlayer {
   champion: number;
@@ -31,17 +34,6 @@ const obj = (v: unknown): Json | null => (v && typeof v === 'object' && !Array.i
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const AUGMENT_KEYS = [1, 2, 3, 4, 5, 6].map((i) => `playerAugment${i}`);
 const ITEM_KEYS = [0, 1, 2, 3, 4, 5, 6].map((i) => `item${i}`);
-// A player's impact beyond the win: damage, healing, what they took and soaked, crowd control. The client's game
-// details have no shielding or healing-on-allies figures (totalUnitsHealed counts who was healed); a missing key is
-// left out.
-export const STAT_KEYS = [
-  'kills', 'deaths', 'assists', 'champLevel', 'goldEarned',
-  'totalDamageDealtToChampions', 'physicalDamageDealtToChampions', 'magicDamageDealtToChampions', 'trueDamageDealtToChampions',
-  'totalDamageTaken', 'damageSelfMitigated', 'totalHeal', 'totalUnitsHealed',
-  'timeCCingOthers', 'totalTimeCrowdControlDealt', 'damageDealtToTurrets',
-] as const;
-export type StatKey = (typeof STAT_KEYS)[number];
-
 /** /lol-match-history/v1/games/{id}, reduced to what a build needs; null for anything but a Mayhem game with augments. */
 export function toMayhemGame(answer: unknown): MayhemGame | null {
   const g = obj(answer);

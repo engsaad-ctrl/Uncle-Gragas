@@ -42,6 +42,14 @@ describe('build engine', () => {
   });
 });
 
+describe('buying order', () => {
+  it('puts what stacks before boots and the rest, on any map copy of the item, and says why', () => {
+    const r = buildFor({ ...input, pool: [...pool, { id: 223084, boots: false, damage: 'none' }], base: [...input.base, { ids: [223084], pickRate: 0.95, winRate: 0.5 }] });
+    expect(r.items.slice(0, 2)).toEqual([223084, 1]);
+    expect(r.why.get(223084)?.[0]).toBe('stacks');
+  });
+});
+
 describe('enemy team', () => {
   it('moves magic resist up against a magic-heavy team and down against a physical one', () => {
     const withMr = { ...input, pool: [...pool, { id: 40, boots: false, damage: 'none' as const, mr: true }], base: [...input.base, { ids: [40], pickRate: 0.35, winRate: 0.5 }] };

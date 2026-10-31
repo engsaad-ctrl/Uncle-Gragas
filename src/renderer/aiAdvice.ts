@@ -10,7 +10,7 @@ export const STYLE_LABEL: Record<BuildStyle, string> = {
 };
 export const AI_HINT = 'يقرأ Gemini نصوص البطل والتعزيزات والأيتمات، وتحسب حاسبة البرنامج الأرقام. يأخذ حتى نصف دقيقة، والنتيجة تُحفظ.';
 /** Why the engine chose an item, as shown next to it. */
-export const WHY_AR: Record<string, string> = { base: 'شائع لهذا البطل', mayhem: 'يشتريه لاعبو البطل في Mayhem', link: 'يتكامل مع تعزيزاتك', synergy: 'فاز أكثر مع تعزيزاتك', required: 'يطلبه تعزيزك', enemy: 'ضد ضرر الخصم السحري' };
+export const WHY_AR: Record<string, string> = { stacks: 'يتراكم: اشتره أولاً', base: 'شائع لهذا البطل', mayhem: 'يشتريه لاعبو البطل في Mayhem', link: 'يتكامل مع تعزيزاتك', synergy: 'فاز أكثر مع تعزيزاتك', required: 'يطلبه تعزيزك', enemy: 'ضد ضرر الخصم السحري' };
 export const AI_LOADING = 'يفكّر Gemini… قد يأخذ حتى نصف دقيقة.';
 
 const n = (x: number) => Math.round(x).toLocaleString('en');

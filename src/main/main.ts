@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, globalShortcut, ipcMain, net } from 'electron';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { applyAll, toPayloads } from '../lcu/apply.js';
@@ -11,7 +11,9 @@ import { teamsInGame, type GamePlayer } from '../lcu/teams.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import { enemiesInGame } from '../lcu/state.js';
 import type { Position } from '../stats/opgg.js';
+import { errorLog } from './errorLog.js';
 import { gameWindowRect } from './gameWindow.js';
+import { shareGames } from '../lcu/shareGames.js';
 import { overlayWindow } from './overlay.js';
 import { appUpdater } from './updater.js';
 import { aiKeyStore } from './aiKey.js';
@@ -34,10 +36,23 @@ const fetchImpl = net.fetch as typeof fetch; // Chromium network stack: follows 
 const services = createServices({ cacheDir, fetchImpl });
 
 /** Errors cross IPC as { error } so the window can show them instead of hanging. */
+const logFile = join(cacheDir, 'errors.log');
+const logError = errorLog(logFile);
+// Monitor only: an uncaught error behaves as it did, with its line in the log first.
+process.on('uncaughtExceptionMonitor', (err) => logError('main', err));
+process.on('unhandledRejection', (err) => logError('main', err));
+app.on('web-contents-created', (_e, page) => {
+  page.on('console-message', (e) => {
+    if (e.level === 'error') logError('page', e.message);
+  });
+  page.on('render-process-gone', (_ev, details) => logError('page', `gone: ${details.reason}`));
+});
+
 const reply = async <T>(work: () => Promise<T>) => {
   try {
     return await work();
   } catch (err) {
+    logError('ipc', err);
     return { error: err instanceof Error ? err.message : String(err) };
   }
 };
@@ -67,6 +82,9 @@ let lastPhase = 'Disconnected';
 /** F7 is turned on in settings: the loading screen may open it. */
 let overlayOn = false;
 let collecting: Promise<unknown> = Promise.resolve();
+/** The player's own choice in settings, off until they turn it on. Empty address: sharing isn't offered at all. */
+const SHARE_URL = 'https://uncle-gragas-games.nodr-99.workers.dev';
+let shareOn = false;
 /** The game's window takes a while to open after the loading screen starts: look until it is there. */
 async function followGame() {
   for (let i = 0; i < 30 && lastPhase === 'InProgress'; i++) {
@@ -75,15 +93,21 @@ async function followGame() {
     await new Promise((r) => setTimeout(r, 2000));
   }
 }
-const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c) }, (state) => {
+const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c), onError: (err) => logError('client', err) }, (state) => {
   if (state.championId && state.mode) lastPick = { championId: state.championId, mode: state.mode, position: state.position };
   const creds = watcher.creds;
   if (creds && state.phase !== lastPhase && COLLECT_ON.has(state.phase)) {
     collecting = collecting.then(() =>
       collectMayhemGames(lcuCaller(creds), services.mayhemFile).then(
         (n) => n && watcher.note(`mayhem games: ${n} added`),
-        (err) => watcher.note(`mayhem games: ${err instanceof Error ? err.message : String(err)}`),
-      ),
+        (err) => (logError('collect', err), watcher.note(`mayhem games: ${err instanceof Error ? err.message : String(err)}`)),
+      ).then(() => {
+        if (!shareOn || !SHARE_URL) return;
+        return shareGames(services.mayhemFile, SHARE_URL, fetchImpl).then(
+          (r) => watcher.note(`shared games: ${r.sent} sent, ${r.taken} taken`),
+          (err) => (logError('share', err), watcher.note(`shared games: ${err instanceof Error ? err.message : String(err)}`)),
+        );
+      }),
     );
   }
   // The loading screen of every game (not Arena, whose teams of two the session lists differently): open F7 on both
@@ -199,6 +223,10 @@ ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
   // register() returns false when another app already holds the key
   return on === true ? globalShortcut.register(OVERLAY_KEY, () => overlay.toggle()) : false;
 });
+ipcMain.handle('share:enabled', (_e, on: unknown) => {
+  shareOn = on === true;
+  return Boolean(SHARE_URL);
+});
 const updates = appUpdater(() => mainWindow);
 ipcMain.handle('update:status', () => ({ version: app.getVersion(), status: updates.status }));
 ipcMain.handle('update:check', () => updates.check());
@@ -219,7 +247,8 @@ ipcMain.handle('diagnostics:export', () => reply(async () => {
         return mayhemAugmentCheck(list, (id) => call('GET', `/lol-match-history/v1/games/${id}`));
       })().catch((err) => ({ error: err instanceof Error ? err.message : String(err) }))
     : 'عميل اللعبة غير مفتوح';
-  await writeFile(filePath, JSON.stringify({ ...(watcher.report(app.getVersion()) as object), mayhemAugments }, null, 2));
+  const errors = await readFile(logFile, 'utf8').then((t) => t.split('\n').slice(-200), () => []);
+  await writeFile(filePath, JSON.stringify({ ...(watcher.report(app.getVersion()) as object), mayhemAugments, errors }, null, 2));
   return { saved: filePath };
 }));
 

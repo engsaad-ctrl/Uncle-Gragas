@@ -60,6 +60,12 @@ export const boughtAs = (id: number) => {
   return BOUGHT_AS[tail] ? id - tail + BOUGHT_AS[tail] : id;
 };
 
+// Items that grow with time or play, by the game's texts: the sooner bought, the bigger they get. By the id's last four
+// digits, like BOUGHT_AS. Heartsteel, Yun Tal Wildarrows, Hubris, Manamune, Archangel's Staff, Winter's Approach, Rod of
+// Ages, Mejai's Soulstealer.
+const STACKING = new Set([3084, 3032, 6697, 3004, 3003, 3119, 6657, 3041]);
+const stacks = (id: number) => STACKING.has(id % 10000);
+
 /** Each item's score; the parts are kept for the explanation. */
 export function scoreItems(input: EngineInput): Map<number, { score: number; why: string[] }> {
   const out = new Map<number, { score: number; why: string[] }>();
@@ -123,7 +129,9 @@ export function buildFor(input: EngineInput): EngineResult {
   const boots = ranked.find(([id]) => byId.get(id)!.boots);
   if (boots && boots[1].score > 0.3) take(boots[0], boots[1].why);
   for (const [id, s] of ranked) if (!byId.get(id)!.boots && s.score > 0) take(id, s.why);
-  // Boots go first in the list, as players buy them.
-  items.sort((a, b) => Number(byId.get(b)!.boots) - Number(byId.get(a)!.boots));
+  // The order to buy them in: what grows first, then boots, then the rest by score.
+  const place = (id: number) => (stacks(id) ? 0 : byId.get(id)!.boots ? 1 : 2);
+  items.sort((a, b) => place(a) - place(b));
+  for (const id of items) if (stacks(id)) why.get(id)!.unshift('stacks');
   return { items, why };
 }

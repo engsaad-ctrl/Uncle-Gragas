@@ -1,0 +1,8 @@
+name = "uncle-gragas-games"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "uncle-gragas-games"
+database_id = "f605101c-5362-4951-bc4a-f299681be326"

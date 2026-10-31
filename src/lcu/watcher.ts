@@ -7,6 +7,7 @@ export type LcuGet = (path: string) => Promise<unknown>;
 export interface WatcherDeps {
   find: () => Promise<(LcuCredentials & { source: 'process' | 'lockfile' }) | null>;
   connect: (creds: LcuCredentials) => LcuGet;
+  onError?: (err: unknown) => void;
 }
 
 /** Polls the client's gameflow and champ select; calls onChange only when the state really changes. */
@@ -44,6 +45,7 @@ export class LcuWatcher {
       this.set(toLcuState(typeof phase === 'string' ? phase : 'None', flow, champSelect, offered));
     } catch (err) {
       this.note(`error: ${err instanceof Error ? err.message : String(err)}`);
+      this.deps.onError?.(err);
       this.get = undefined; // client closed or restarted: find it again next tick
       this.creds = undefined;
       this.set(DISCONNECTED);
