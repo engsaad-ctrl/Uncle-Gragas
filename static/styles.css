@@ -261,6 +261,7 @@ h1, h2, .sub, .status, .menu-title, .brand { text-shadow: 0 1px 2px #0009; }
 .update-btn { color: var(--accent); } .update-btn[hidden] { display: none; }
 .settings-pop { position: fixed; inset: 0; z-index: 50; width: min(820px, calc(100vw - 48px)); height: fit-content; max-height: calc(100vh - 64px); margin: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; gap: 20px 28px; padding: 24px; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 0 0 100vmax #0009, 0 20px 50px #000a; animation: pop-in .18s ease both; }
 .settings-pop[hidden] { display: none; }
+.share-ask { width: min(520px, calc(100vw - 48px)); grid-template-columns: minmax(0, 1fr); }
 .settings-pop h4 { margin: 0 0 10px; font-size: 14px; color: var(--text); }
 .settings-pop .pills { flex-wrap: nowrap; }
 .settings-pop .pill { flex: 1; display: inline-flex; align-items: center; justify-content: center; padding-inline: 8px; white-space: nowrap; }

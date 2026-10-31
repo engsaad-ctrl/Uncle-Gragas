@@ -1,8 +1,8 @@
-// The Cloudflare Worker behind game sharing: takes Mayhem games and hands them out. It stores only what validGame allows
-// (no names, no accounts) and never the sender's address. Anyone can post, so a game must pass validGame and a repeat is
+// The Cloudflare Worker behind game sharing: takes Mayhem games and hands them out. It stores only what validShared allows
+// (no names, no accounts) and never the sender's address. Anyone can post, so a game must pass validShared and a repeat is
 // ignored; a forged but well-formed game cannot be told apart here.
 
-import { validGame } from '../src/lcu/gameShape.js';
+import { validShared } from '../src/lcu/gameShape.js';
 
 const MAX_BODY = 2_000_000;
 const MAX_BATCH = 100;
@@ -40,7 +40,7 @@ export async function handle(req: Request, env: Env): Promise<Response> {
       return json({ error: 'bad json' }, 400);
     }
     if (!Array.isArray(games) || games.length > MAX_BATCH) return json({ error: 'bad batch' }, 400);
-    const good = games.filter((g) => validGame(g));
+    const good = games.filter((g) => validShared(g));
     if (good.length) {
       const insert = env.DB.prepare('INSERT OR IGNORE INTO games (id, body) VALUES (?, ?)');
       await env.DB.batch(good.map((g) => insert.bind(g.id, JSON.stringify(g))));

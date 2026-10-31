@@ -9,6 +9,7 @@ import { composeItemList, type ItemEntry } from '../app/itemList.js';
 import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
 import type { RawProfile } from '../lcu/profile.js';
+import { uniqueGames } from '../lcu/gameShape.js';
 import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
 import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats } from '../app/mayhemStats.js';
 import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, strength, type TeamModel } from '../app/teamModel.js';
@@ -443,7 +444,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   // Read at most once a minute: F7 asks on every mark.
   let gamesRead: { at: number; games: Promise<MayhemGame[]> } | undefined;
   const storedGames = () => {
-    if (!gamesRead || Date.now() - gamesRead.at > 60_000) gamesRead = { at: Date.now(), games: readMayhemGames(mayhemFile).then(latestPatch, () => []) };
+    if (!gamesRead || Date.now() - gamesRead.at > 60_000) gamesRead = { at: Date.now(), games: readMayhemGames(mayhemFile).then((g) => latestPatch(uniqueGames(g)), () => []) };
     return gamesRead.games;
   };
 

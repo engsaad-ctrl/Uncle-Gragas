@@ -3,7 +3,7 @@
 // never write the games file at once.
 
 import { readFile, rename, writeFile } from 'node:fs/promises';
-import { validGame } from './gameShape.js';
+import { anonymous, shareId, validGame, validShared } from './gameShape.js';
 import { readMayhemGames, type MayhemGame } from './mayhemGames.js';
 
 const BATCH = 100;
@@ -14,7 +14,7 @@ const MAX_STORED = 30_000;
 type Fetch = typeof fetch;
 
 export async function shareGames(file: string, url: string, fetchImpl: Fetch): Promise<{ sent: number; taken: number }> {
-  const marks = `${file}.share.json`;
+  const marks = `${file}.shared.json`;
   const saved = (await readFile(marks, 'utf8').then(JSON.parse, () => null)) as { sent?: number; after?: number } | null;
   let sentUpTo = saved?.sent ?? 0;
   let after = saved?.after ?? 0;
@@ -24,7 +24,7 @@ export async function shareGames(file: string, url: string, fetchImpl: Fetch): P
   // A failure stops here with the marks saved: the next run goes on from them.
   let sent = 0;
   for (; sentUpTo < stored.length; sentUpTo = Math.min(sentUpTo + BATCH, stored.length)) {
-    const games = stored.slice(sentUpTo, sentUpTo + BATCH).filter((g) => validGame(g));
+    const games = stored.slice(sentUpTo, sentUpTo + BATCH).filter((g) => validGame(g)).map(anonymous);
     if (!games.length) continue;
     const res = await fetchImpl(`${url}/games`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(games) });
     if (!res.ok) {
@@ -35,7 +35,7 @@ export async function shareGames(file: string, url: string, fetchImpl: Fetch): P
     await save();
   }
 
-  const have = new Set(stored.map((g) => g.id));
+  const have = new Set(stored.map(shareId));
   const taken: MayhemGame[] = [];
   for (let page = 0; page < PAGES_PER_RUN && stored.length + taken.length < MAX_STORED; page++) {
     const res = await fetchImpl(`${url}/games?after=${after}`);
@@ -43,7 +43,7 @@ export async function shareGames(file: string, url: string, fetchImpl: Fetch): P
     const body = (await res.json()) as { games?: unknown; last?: unknown };
     if (!Array.isArray(body.games) || !body.games.length || typeof body.last !== 'number') break;
     for (const g of body.games) {
-      if (validGame(g) && !have.has(g.id)) {
+      if (validShared(g) && !have.has(g.id)) {
         have.add(g.id);
         taken.push(g);
       }

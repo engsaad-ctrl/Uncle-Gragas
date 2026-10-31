@@ -40,3 +40,37 @@ export function validGame(g: unknown, now = Date.now()): g is MayhemGame {
   const team = (list: { win: boolean }[]) => list.every((p) => p.win === list[0].win);
   return team(players.slice(0, 5)) && team(players.slice(5)) && players[0].win !== players[5].win;
 }
+
+/**
+ * A shared game's number, from what happened in it: the same for every sender, so a repeat is still caught, and it
+ * can't be looked up the way Riot's game id could. 53 bits (cyrb53), plenty for games of a patch.
+ */
+export function shareId(g: Pick<MayhemGame, 'version' | 'players'>): number {
+  const text = JSON.stringify([g.version, g.players.map((p) => [p.champion, p.augments, p.items])]);
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    h1 = Math.imul(h1 ^ text.charCodeAt(i), 2654435761);
+    h2 = Math.imul(h2 ^ text.charCodeAt(i), 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+}
+
+/** What leaves this machine: Riot's game id replaced, and the start time only to the hour. */
+export const anonymous = (g: MayhemGame): MayhemGame => ({ ...g, id: shareId(g), at: g.at - (g.at % 3_600_000) });
+
+/** A shared game as it must arrive: valid, and carrying its own number rather than Riot's. */
+export const validShared = (g: unknown, now = Date.now()): g is MayhemGame => validGame(g, now) && g.id === shareId(g);
+
+/** A game collected here and the same game received from others count once. */
+export function uniqueGames(games: MayhemGame[]): MayhemGame[] {
+  const seen = new Set<number>();
+  return games.filter((g) => {
+    const id = shareId(g);
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}

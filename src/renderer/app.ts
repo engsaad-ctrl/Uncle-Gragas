@@ -187,7 +187,8 @@ const flashPills = pills('مكان الفلاش', [['keep', 'كما هو'], ['D'
   route(); // the build page shows the spells in key order
 });
 for (const b of [...flashPills.children].slice(1)) b.prepend(icon(FLASH_ICON, 'flash-ico'));
-// Sharing games with the other players: off until the player turns it on, and only offered once a server exists.
+// Sharing games with the other players: off until the player agrees, asked once, and only offered once a server exists.
+const SHARE_TEXT = 'تُرسل مباريات Mayhem التي يجمعها البرنامج: الأبطال والتعزيزات والأيتمات والأرقام فقط، دون أسماء أو حسابات أو رقم المباراة، ويأخذ البرنامج مباريات غيرك في المقابل. يمكنك الإيقاف في أي وقت، لكن ما أُرسل لا يمكن حذفه لأنه بلا ما يدل على صاحبه.';
 const shareSection = section(
   'مشاركة المباريات لتحسين التقييمات',
   pills('مشاركة المباريات', [['on', 'مفعّلة'], ['off', 'معطّلة']], storedShare() ? 'on' : 'off', (v) => {
@@ -198,7 +199,7 @@ const shareSection = section(
     }
     void window.lolh.setShareGames(v === 'on');
   }),
-  el('p', 'hint', 'تُرسل مباريات Mayhem التي يجمعها البرنامج إلى خادمنا: الأبطال والتعزيزات والأيتمات والأرقام فقط، دون أسماء أو حسابات، ويأخذ البرنامج مباريات غيرك في المقابل. يمكنك إيقافها في أي وقت، لكن ما أُرسل لا يمكن حذفه لأنه بلا اسم يدل عليه.'),
+  el('p', 'hint', SHARE_TEXT),
 );
 function storedShare() {
   try {
@@ -208,7 +209,36 @@ function storedShare() {
   }
 }
 shareSection.hidden = true;
-void window.lolh.setShareGames(storedShare()).then((offered) => (shareSection.hidden = !offered));
+void window.lolh.setShareGames(storedShare()).then((offered) => {
+  shareSection.hidden = !offered;
+  if (offered && !askedShare()) askShare();
+});
+function askedShare() {
+  try {
+    return localStorage.getItem('shareGames') !== null;
+  } catch {
+    return true; // nowhere to remember the answer: don't ask on every start
+  }
+}
+/** Asks once, first thing. Either answer goes through the setting's own buttons. */
+function askShare() {
+  const box = el('div', 'settings-pop share-ask');
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-label', 'مشاركة المباريات');
+  const answer = (index: number) => {
+    shareSection.querySelectorAll<HTMLButtonElement>('.pills button')[index].click();
+    box.remove();
+  };
+  const yes = el('button', 'pill active', 'شارك مبارياتي');
+  const no = el('button', 'pill', 'لا');
+  yes.type = no.type = 'button';
+  yes.addEventListener('click', () => answer(0));
+  no.addEventListener('click', () => answer(1));
+  const row = el('div', 'pills');
+  row.append(yes, no);
+  box.append(el('h4', '', 'هل تشارك مبارياتك لتحسين التقييمات؟'), el('p', 'hint', SHARE_TEXT), row);
+  document.body.append(box);
+}
 settings.append(shareSection);
 settings.append(
   section('التحديثات', updateButton, updateNote, versionNote),

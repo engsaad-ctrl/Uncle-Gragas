@@ -3,13 +3,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { handle, type Env } from '../../server/worker.js';
-import { validGame } from '../../src/lcu/gameShape.js';
+import { anonymous, shareId, uniqueGames, validGame, validShared } from '../../src/lcu/gameShape.js';
 import type { MayhemGame } from '../../src/lcu/mayhemGames.js';
 import { shareGames } from '../../src/lcu/shareGames.js';
 
 const now = Date.now();
-const player = (win: boolean) => ({ champion: 1, win, augments: [1054], items: [3084], stats: { kills: 2 } });
-const game = (id: number): MayhemGame => ({ id, at: now - 1000, duration: 900, version: '16.21.712.4567', players: [...Array(5).fill(0).map(() => player(true)), ...Array(5).fill(0).map(() => player(false))] });
+const player = (champion: number, win: boolean) => ({ champion, win, augments: [1054], items: [3084], stats: { kills: 2 } });
+/** A game as collected here: Riot's id, the exact start. `n` makes it a different game. */
+const game = (n: number): MayhemGame => ({ id: 7000000000 + n, at: now - 1000, duration: 900, version: '16.21.712.4567', players: [...Array(5).fill(0).map(() => player(n, true)), ...Array(5).fill(0).map(() => player(n, false))] });
 
 /** The worker's database, in memory: what the worker asks of it and no more. */
 function memoryDb(): Env & { rows: { seq: number; id: number; body: string }[] } {
@@ -40,22 +41,44 @@ describe('validGame', () => {
   });
 });
 
+describe('what leaves the machine', () => {
+  it("replaces Riot's game id and rounds the time to the hour", () => {
+    const a = anonymous(game(1));
+    expect(a.id).not.toBe(game(1).id);
+    expect(a.id).toBe(shareId(game(1)));
+    expect(a.at % 3_600_000).toBe(0);
+    expect(validShared(a, now)).toBe(true);
+    expect(validShared(game(1), now)).toBe(false);
+  });
+  it('gives different games different numbers, and the same game the same number from anyone', () => {
+    expect(shareId(game(1))).not.toBe(shareId(game(2)));
+    const same: MayhemGame = { ...game(1), id: 5, at: 1 };
+    expect(shareId(same)).toBe(shareId(game(1)));
+    expect(Number.isSafeInteger(shareId(game(1)))).toBe(true);
+  });
+  it('counts a game collected here and received from others once', () => {
+    expect(uniqueGames([game(1), anonymous(game(1)), game(2)]).map((g) => g.id)).toEqual([game(1).id, game(2).id]);
+  });
+});
+
 describe('the server', () => {
-  it('stores good games once and refuses the rest', async () => {
+  it("stores good games once, and refuses the rest, a game with Riot's id among them", async () => {
     const env = memoryDb();
-    expect(await post(env, [game(1), game(1), { id: 2 }])).toEqual({ accepted: 2, rejected: 1 });
-    expect(env.rows.map((r) => r.id)).toEqual([1]);
+    const a = anonymous(game(1));
+    expect(await post(env, [a, a, game(2), { id: 2 }])).toEqual({ accepted: 2, rejected: 2 });
+    expect(env.rows.map((r) => r.id)).toEqual([a.id]);
   });
   it('refuses a huge batch and bad json', async () => {
     const env = memoryDb();
-    expect((await handle(new Request('https://x/games', { method: 'POST', body: JSON.stringify(Array(101).fill(game(1))) }), env)).status).toBe(400);
+    expect((await handle(new Request('https://x/games', { method: 'POST', body: JSON.stringify(Array(101).fill(anonymous(game(1)))) }), env)).status).toBe(400);
     expect((await handle(new Request('https://x/games', { method: 'POST', body: '{' }), env)).status).toBe(400);
   });
   it('hands games out after a place', async () => {
     const env = memoryDb();
-    await post(env, [game(1), game(2), game(3)]);
+    const [a, b, c] = [1, 2, 3].map((n) => anonymous(game(n)));
+    await post(env, [a, b, c]);
     const r = (await (await handle(new Request('https://x/games?after=1'), env)).json()) as { games: MayhemGame[]; last: number };
-    expect(r.games.map((g) => g.id)).toEqual([2, 3]);
+    expect(r.games.map((g) => g.id)).toEqual([b.id, c.id]);
     expect(r.last).toBe(3);
   });
 });
@@ -68,14 +91,22 @@ describe('shareGames', () => {
     return f;
   };
 
-  it("sends what is here, takes the others' games, and sends nothing twice", async () => {
+  it("sends what is here without Riot's id, takes the others' games, and sends nothing twice", async () => {
     const env = memoryDb();
-    await post(env, [game(9)]);
+    await post(env, [anonymous(game(9))]);
     const f = await fileWith([game(1), game(2)]);
     expect(await shareGames(f, 'https://x', server(env))).toEqual({ sent: 2, taken: 1 });
-    expect((JSON.parse(await readFile(f, 'utf8')) as MayhemGame[]).map((g) => g.id).sort()).toEqual([1, 2, 9]);
-    expect(env.rows.map((r) => r.id).sort()).toEqual([1, 2, 9]);
+    expect((JSON.parse(await readFile(f, 'utf8')) as MayhemGame[]).map((g) => g.id)).toEqual([game(1).id, game(2).id, shareId(game(9))]);
+    expect(env.rows.map((r) => r.id).sort()).toEqual([1, 2, 9].map((n) => shareId(game(n))).sort());
+    expect(env.rows.some((r) => r.body.includes(String(game(1).id)))).toBe(false);
     expect(await shareGames(f, 'https://x', server(env))).toEqual({ sent: 0, taken: 0 });
+  });
+
+  it('does not take back a game it already has under its own id', async () => {
+    const env = memoryDb();
+    await post(env, [anonymous(game(1))]);
+    const f = await fileWith([game(1)]);
+    expect(await shareGames(f, 'https://x', server(env))).toEqual({ sent: 1, taken: 0 });
   });
 
   it('leaves the file alone and goes on later when the server fails', async () => {
@@ -89,7 +120,7 @@ describe('shareGames', () => {
 
   it("does not take a game the server shouldn't have", async () => {
     const f = await fileWith([]);
-    const bad = (async () => new Response(JSON.stringify({ games: [{ id: 5, name: 'Saad' }], last: 1 }))) as unknown as typeof fetch;
+    const bad = (async () => new Response(JSON.stringify({ games: [{ id: 5, name: 'Saad' }, game(3)], last: 1 }))) as unknown as typeof fetch;
     expect(await shareGames(f, 'https://x', bad)).toMatchObject({ taken: 0 });
     expect(JSON.parse(await readFile(f, 'utf8'))).toEqual([]);
   });
