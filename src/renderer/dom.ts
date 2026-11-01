@@ -8,7 +8,7 @@ import type { Suggestion } from '../app/suggestions.js';
 import type { ApplyResult, FlashKey } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
 import type { Advice } from '../ai/advisor.js';
-import type { AppMode, AugmentEffect, GameTeams, Listed, OverlayData } from '../main/services.js';
+import type { AppMode, AugmentEffect, ExperimentalBuild, GameTeams, Listed, OverlayData } from '../main/services.js';
 import type { UpdateStatus } from '../main/updater.js';
 import type { LanePosition } from '../stats/opgg.js';
 import type { RankRow } from '../texts/abilityDetails.js';
@@ -42,6 +42,8 @@ declare global {
       augmentEffects(): Promise<Reply<AugmentEffect[]>>;
       /** The build without AI for a champion and the augments taken, each item with why it is in. */
       engineBuild(championId: number, augmentIds: number[]): Promise<Reply<{ item: ItemEntry; why: string[] }[]>>;
+      /** A labelled second build no test vouches for, when there is one. */
+      experimentalBuild(championId: number, augmentIds: number[]): Promise<Reply<ExperimentalBuild | null>>;
       hasAiKey(): Promise<boolean>;
       setAiKey(key: string): Promise<Reply<void>>;
       clearAiKey(): Promise<Reply<void>>;

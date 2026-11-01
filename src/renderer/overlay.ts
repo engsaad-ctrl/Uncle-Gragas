@@ -7,8 +7,8 @@ import { FIT_POINTS, fitOf, gradesFor, outsidePoints, playedOnly } from './fit.j
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
-import type { AugmentEffect, GameTeams, OverlayData } from '../main/services.js';
-import { adviceNodes, AI_HINT, AI_LOADING, WHY_AR } from './aiAdvice.js';
+import type { AugmentEffect, ExperimentalBuild, GameTeams, OverlayData } from '../main/services.js';
+import { adviceNodes, AI_HINT, AI_LOADING, EXPERIMENTAL_TITLE, experimentalHint, WHY_AR } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
 import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
@@ -58,16 +58,16 @@ const linkInArabic = (l: Link) => {
 let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
-let engine: { key: string; items: { item: ItemEntry; why: string[] }[]; error?: string } | undefined;
+let engine: { key: string; items: { item: ItemEntry; why: string[] }[]; experimental?: ExperimentalBuild | null; error?: string } | undefined;
 let engineAsked = '';
 async function refreshEngine() {
   const key = pickedKey();
   const champion = data?.champion;
   if (!champion || !picked.size || engineAsked === key) return;
   engineAsked = key;
-  const r = await window.lolh.engineBuild(champion.id, [...picked]);
+  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked]), window.lolh.experimentalBuild(champion.id, [...picked])]);
   if (pickedKey() !== key) return;
-  engine = isError(r) ? { key, items: [], error: r.error } : { key, items: r };
+  engine = isError(r) ? { key, items: [], error: r.error } : { key, items: r, experimental: isError(x) ? null : x };
   if (data?.build) renderBuild(data.build);
 }
 
@@ -254,7 +254,8 @@ function adaptedSection(): HTMLElement {
     r.append(ic(item), txt);
     rows.append(r);
   }
-  return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'ننصحك به: محسوب ليناسب بطلك وتعزيزاتك.'), rows);
+  const x = engine.experimental;
+  return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'ننصحك به: محسوب ليناسب بطلك وتعزيزاتك.'), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
 }
 
 function aiSection(): HTMLElement {

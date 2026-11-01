@@ -200,6 +200,12 @@ ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown) =>
     return services.engineBuild(id, parseIds(augmentIds), enemiesInGame(watcher.session, id));
   }),
 );
+ipcMain.handle('build:experimental', (_e, championId: unknown, augmentIds: unknown) =>
+  reply(() => {
+    const [id] = parseIds([championId]);
+    return services.experimentalBuild(id, parseIds(augmentIds));
+  }),
+);
 // In exclusive fullscreen (WindowMode 0) the game draws over every window, F7's included; Borderless is 2. The setting
 // is the player's own, changed only from the button in settings, through the client so it is kept with the account.
 const GAME_SETTINGS = '/lol-game-settings/v1/game-settings';

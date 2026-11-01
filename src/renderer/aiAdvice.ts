@@ -12,6 +12,10 @@ export const AI_HINT = 'يقرأ Gemini نصوص البطل والتعزيزات
 /** Why the engine chose an item, as shown next to it. */
 export const WHY_AR: Record<string, string> = { stacks: 'يتراكم: اشتره أولاً', base: 'شائع لهذا البطل', mayhem: 'يشتريه لاعبو البطل في Mayhem', link: 'يتكامل مع تعزيزاتك', synergy: 'فاز أكثر مع تعزيزاتك', required: 'يطلبه تعزيزك', enemy: 'ضد ضرر الخصم السحري' };
 export const AI_LOADING = 'يفكّر Gemini… قد يأخذ حتى نصف دقيقة.';
+export const EXPERIMENTAL_TITLE = 'بناء تجريبي (غير مثبت)';
+/** Says where the build comes from and that nothing shows it wins more; no game counts (collected games stay out of the screens). */
+export const experimentalHint = (x: { source: 'creator' | 'players'; channel?: string; patch?: string }) =>
+  (x.source === 'creator' ? `القطع التي قرأناها من فيديو ${x.channel} على باتش ${x.patch}.` : 'بناه لاعبو هذا البطل في مبارياتنا مع هذا التعزيز.') + ' لم يثبت أنه أقوى من البناء أعلاه.';
 
 const n = (x: number) => Math.round(x).toLocaleString('en');
 

@@ -14,6 +14,8 @@ import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
 import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats } from '../app/mayhemStats.js';
 import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, strength, type TeamModel } from '../app/teamModel.js';
 import { boughtAs, buildFor, synergyAcrossChampions } from '../app/buildEngine.js';
+import { RECIPES_PATCH } from '../app/creatorRecipes.js';
+import { recipeFor, shiftedBuild, worthShowing } from '../app/experimentalBuild.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
 import { kitStats, type KitStats } from '../stats/aramKit.js';
@@ -66,6 +68,14 @@ const ITEM_MAP: Record<AppMode, ItemMap> = { normal: 'SUMMONERS_RIFT', aram: 'HO
  * An augment's effect on its team's win chance in percentage points, from the team model over every champion's games;
  * low/high: the 5th-95th percentile over bootstrap refits, once they are done (a range across 0 means not sure).
  */
+/** A second build shown with a label: a creator's, or what the champion's players turn to with the augment. */
+export interface ExperimentalBuild {
+  items: ItemEntry[];
+  source: 'creator' | 'players';
+  channel?: string;
+  patch?: string;
+}
+
 export interface AugmentEffect {
   id: number;
   points: number;
@@ -544,6 +554,22 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
   }
 
+  /** A second build the tests can't vouch for (src/app/experimentalBuild.ts); null when there's none worth showing. */
+  async function experimentalBuild(championId: number, augmentIds: number[]): Promise<ExperimentalBuild | null> {
+    const entry = (await champions()).find((c) => c.id === championId);
+    if (!entry || !augmentIds.length) return null;
+    const [all, list, games, main] = await Promise.all([augments(), items('mayhem'), storedGames(), engineBuild(championId, augmentIds)]);
+    const shop = list.list.filter((i) => i.group === 'legendary' || i.group === 'boots');
+    const ids = augmentIds.map((id) => all.augments.find((a) => a.id === id)?.ids ?? [id]);
+    const mainIds = main.map((b) => b.item.id);
+    const recipe = recipeFor(entry.enName, ids);
+    const fromRecipe = recipe?.items.flatMap((n) => shop.find((i) => i.enName === n) ?? []) ?? [];
+    if (recipe && worthShowing(fromRecipe.map((i) => i.id), mainIds)) return { items: fromRecipe, source: 'creator', channel: recipe.channel, patch: RECIPES_PATCH };
+    const shifted = shiftedBuild(games.flatMap((g) => g.players), championId, ids.flat(), new Map(shop.map((i) => [i.id, { boots: i.group === 'boots' }])));
+    if (!worthShowing(shifted, mainIds)) return null;
+    return { items: shifted.flatMap((id) => shop.find((i) => i.id === id) ?? []), source: 'players' };
+  }
+
   /** ARAMKit's numbers for a champion; null when they can't be had, and the app goes on without them. */
   const champKit = (id: number): Promise<KitStats | null> => kitStats(id, { cacheDir, fetchImpl }).then((r) => r.data, () => null);
 
@@ -581,5 +607,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { side: diff > 0.15 ? 'stronger' : diff < -0.15 ? 'weaker' : 'even', magic: { mine: magic(mine), enemy: magic(enemy) } };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, championStrengths, openAugments, teamSummary, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
 }

@@ -2,7 +2,7 @@ import type { ChampionPage, ItemChoice, Matchup, PageMode, RatedAugment, RuneRow
 import type { Position } from '../stats/opgg.js';
 import type { AugmentText, Rarity } from '../texts/augments.js';
 import type { ItemEntry } from '../app/itemList.js';
-import { adviceNodes, AI_HINT, AI_LOADING, WHY_AR } from './aiAdvice.js';
+import { adviceNodes, AI_HINT, AI_LOADING, EXPERIMENTAL_TITLE, experimentalHint, WHY_AR } from './aiAdvice.js';
 import { pickPanel } from './pickPanel.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
@@ -111,8 +111,11 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
     const id = ++engineRun;
     engineTitle.hidden = !picked.size;
     if (!picked.size) return void engineEl.replaceChildren();
-    const r = await window.lolh.engineBuild(p.champion.id, [...picked.keys()]);
+    const [r, x] = await Promise.all([window.lolh.engineBuild(p.champion.id, [...picked.keys()]), window.lolh.experimentalBuild(p.champion.id, [...picked.keys()])]);
     if (id !== engineRun || isError(r)) return;
+    const experimental = !isError(x) && x;
+    const row2 = el('div', 'icons');
+    if (experimental) row2.append(...experimental.items.map((item) => iconOf(item)));
     engineEl.replaceChildren(
       ...r.map(({ item, why }) => {
         const row = el('div', 'ov-adapted-row');
@@ -121,6 +124,7 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
         row.append(iconOf(item), txt);
         return row;
       }),
+      ...(experimental ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(experimental)), row2] : []),
     );
   }
   const drawList = () => {
