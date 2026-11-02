@@ -173,7 +173,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const stateOf = new Map<CardOp, { stacks: number; until: number; start: number }>();
   const dots: { op: Extract<CardOp, { op: 'dot' }>; until: number; stacks: number; fromAbility: boolean }[] = [];
   const lastProc = new Map<CardOp, number>();
-  let repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = 0, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
+  let armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = 0, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
   const casts: Record<string, number> = {}, perCast: Record<string, number> = {};
   const kills = [...FIGHT.killTimes];
   const damageBySecond: number[] = [];
@@ -244,6 +244,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       fire('on_hit', t, c);
       for (; repeatCarry >= 1; repeatCarry--) fire('on_hit', t, c); // a share of attacks hits twice
       fire('attack', t, c);
+      if (armed) { armed = false; fire('next_attack', t, c); } // an attack after an ability: it comes no faster than his attacks
       critCarry += c.crit;
       if (critCarry >= 1) { critCarry -= 1; fire('crit', t, c); }
     }
@@ -271,6 +272,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
           if (sl.recast) { sl.ready = t + CAST_SECONDS; sl.recast = false; }
         }
         if (one > 0) { fire('ability_hit', t, c); if (ops.some((x) => x.op === 'abilities_on_hit')) fire('on_hit', t, c); }
+        armed = true;
         fire('ability_cast', t, c);
         if (sl.key === 'R') fire('ult_cast', t, c);
         nextCast = t + CAST_SECONDS;
