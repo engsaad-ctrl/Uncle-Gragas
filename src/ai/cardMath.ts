@@ -67,6 +67,7 @@ export interface FightResult {
 type Bin = Record<string, { __type?: string; mSpell?: SpellData & { cooldownTime?: number[]; Cooldown?: number; mClientData?: { mTooltipData?: { mLists?: { LevelUp?: { levelCount?: number } } } } } } | undefined>;
 const scaled = (a: Amount, level: number) => (typeof a === 'number' ? a : a.min + ((a.max - a.min) * (Math.min(level, 18) - 1)) / 17);
 const CAST_SECONDS = 0.75;
+const NO_COOLDOWN_IN_FILE = 10; // shortcut: Morgana Q, Milio Q and a few have none in any record; a typical basic ability
 /** The mode's extra base health, 20 at level 1 to this at 18 (Kimi, from the wiki); see the screen check. */
 const MODE_HEALTH_AT_18 = { melee: 600, ranged: 400 };
 const ATTACK_SPEED_CAP = 5; // Mayhem's cap (Kimi); screens show 2.81, past the usual 2.5.
@@ -168,10 +169,13 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (!spell || locked.has(key)) return;
     const ranks = spell.mClientData?.mTooltipData?.mLists?.LevelUp?.levelCount ?? (key === 'R' ? 3 : 5);
     const rank = Math.max(1, key === 'R' ? Math.min(ranks, Math.floor((o.level + 2) / 5)) : Math.min(ranks, Math.ceil(o.level / 3)));
-    const stated = spell.cooldownTime?.[rank] ?? 0;
+    // Some abilities keep their numbers in a sibling record of the same folder (Lux Q in LuxLightBindingMis), or name a base cooldown (Veigar W).
+    const folder = path.slice(0, path.lastIndexOf('/') + 1);
+    const sibling = folder ? Object.entries(bin).find(([p, v]) => p !== path && p.startsWith(folder) && (v?.mSpell?.cooldownTime?.[rank] ?? 0) > 1)?.[1]?.mSpell : undefined;
+    const stated = spell.cooldownTime?.[rank] || sibling?.cooldownTime?.[rank] || spell.DataValues?.find((d) => d.name === 'BaseCooldown')?.values?.[rank] || (spell.cooldownTime ? 0 : NO_COOLDOWN_IN_FILE);
     const names = Object.keys(spell.mSpellCalculations ?? {});
     // shortcut: a stated cooldown of a second or less is a toggle (Jinx's Q, Karthus's E); upgrade with a per-champion list if a real spell has one.
-    slots.push({ path, key, spell, rank, ranks, cooldown: stated || 1, cost: spell.mana?.[rank - 1] ?? 0, perSecond: names.some((n) => /dps/i.test(n)), toggle: stated > 0 && stated <= 1, ready: 0, on: false, recast: key === 'R' && ops.some((x) => x.op === 'recast' && x.key === 'R') });
+    slots.push({ path, key, spell, rank, ranks, cooldown: stated || 1, cost: spell.mana?.[rank - 1] ?? sibling?.mana?.[rank - 1] ?? 0, perSecond: names.some((n) => /dps/i.test(n)), toggle: stated > 0 && stated <= 1, ready: 0, on: false, recast: key === 'R' && ops.some((x) => x.op === 'recast' && x.key === 'R') });
   });
 
   const dt = 0.05;
