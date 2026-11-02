@@ -11,7 +11,7 @@ import type { GameItem } from '../texts/gameData.js';
 export interface PoolItem { id: number; gold: number; boots: boolean; damage?: 'ap' | 'ad' | 'none' | string }
 export interface MathStep { id: number; damage: number; health: number; reason: 'owned' | 'required' | 'boots' | 'math' }
 /** A champion's place in a team's fight: his share of the enemy's damage with no items, how fast it grows as he buys health from `health0`, that damage per second, and what a point absorbed for the team is worth in points of damage. */
-export interface TeamPlace { share: number; rise: number; health0: number; maxRatio?: number; enemyDps: number; absorbedWorth: number }
+export interface TeamPlace { healWorth?: number; share: number; rise: number; health0: number; maxRatio?: number; enemyDps: number; absorbedWorth: number }
 
 const LEVEL_BY_ITEMS = [5, 9, 12, 15, 17, 18, 18];
 const FULL_BUILD_LEVEL = 15;
@@ -44,6 +44,8 @@ export function enemyDpsAt(level: number): number {
 const ABSORBED_WORTH = 0.8;
 /** Stored games: real healing per minute follows the fight's self healing at a slope of 0.127 (24,135 players), in the right order by fifths, so a point healed counts this much. */
 const HEALING_WORTH = 0.127;
+/** Healing from abilities keeps someone on the team up. Stored games, healers by fifths of the file's healing: -24% -> -17%, -7% -> -7%, +2% -> +2%, +10% -> +12%, +28% -> +15%. */
+const ABILITY_HEALING_WORTH = 0.6;
 /** The enemies' resists at a late level with no items, the size the fixed target was, and the kind of damage their kits deal. */
 export function enemyTeam(list: { bin: Record<string, unknown>; kit: Kit }[], shop: Record<number, GameItem>): EnemyTeam | undefined {
   if (!list.length) return undefined;
@@ -62,7 +64,7 @@ export const teamPlace = (o: { championId: number; bin: Record<string, unknown>;
 const shareAt = (p: TeamPlace, health: number) => 1 / (1 + ((1 - p.share) / p.share) * Math.min(p.maxRatio ?? MAX_HEALTH_RATIO, Math.max(1, health / p.health0)) ** -p.rise);
 const dealtBy = (r: FightResult, seconds: number) => { const whole = Math.floor(seconds), from = whole ? (r.damageBySecond[whole - 1] ?? r.damage) : 0, to = r.damageBySecond[whole] ?? r.damage; return from + (to - from) * (seconds - whole); };
 /** What the fight is worth to the team: the damage he has dealt by the time he falls, and the damage he takes in others' place. Past the health that lasts the fight, more health adds nothing, which is what divides champions into roles without a weight chosen for each. */
-export const fightValue = (r: FightResult, p: TeamPlace) => { const lasting = shareAt(p, r.effectiveHp) * p.enemyDps * FIGHT.seconds, stays = r.effectiveHp + HEALING_WORTH * (r.healedHp ?? 0); return dealtBy(r, Math.min(1, stays / lasting) * FIGHT.seconds) + p.absorbedWorth * Math.min(stays, lasting); };
+export const fightValue = (r: FightResult, p: TeamPlace) => { const lasting = shareAt(p, r.effectiveHp) * p.enemyDps * FIGHT.seconds, stays = r.effectiveHp + HEALING_WORTH * (r.healedHp ?? 0); return dealtBy(r, Math.min(1, stays / lasting) * FIGHT.seconds) + p.absorbedWorth * (Math.min(stays, lasting) + (p.healWorth ?? ABILITY_HEALING_WORTH) * (r.abilityHealing ?? 0)); };
 
 /** The best set when items multiply each other, so one strong pair can beat two strong singles: keep the best few sets at each size, then swap items while that helps. No guarantee of the very best set. */
 export function searchSet(o: { start: number[]; candidates: number[]; slots: number; value: (ids: number[]) => number; fits: (id: number, held: number[]) => boolean; width: number; swaps: boolean }): number[] {

@@ -33,7 +33,7 @@ export interface CardNumbers { id: number; name: string; status: string; ops: Ca
 
 /** The fixed fight. Assumptions, all visible: changing them changes every card alike, not who is popular. */
 /** attackUptime: a real fight has moving and chasing; these best fit the share of a team's damage in stored games. */
-export const FIGHT = { attackUptime: { melee: 0.8, ranged: 0.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
+export const FIGHT = { attackUptime: { melee: 0.8, ranged: 0.7 }, everyDamageStacks: { at18: 200, power: 3.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
 
 /** Very high move speed is slowed: the game's soft caps at 415 and 490. shortcut: from memory, not from a file; check on screen. */
 const softSpeed = (x: number) => (x > 490 ? x * 0.5 + 230 : x > 415 ? x * 0.8 + 83 : x);
@@ -51,6 +51,8 @@ export interface FightResult {
   effectiveHp: number;
   /** Healing and shields he gives himself in the fight, as effective health: vamp, and what cards and items say. */
   healedHp: number;
+  /** Healing and shields his abilities give, on whoever they reach, with heal power: the files don't say whom. */
+  abilityHealing: number;
   attacks: number;
   peakMoveSpeed: number;
   peakAttackSpeed: number;
@@ -69,6 +71,7 @@ const MODE_HEALTH_AT_18 = { melee: 600, ranged: 400 };
 const ATTACK_SPEED_CAP = 5; // Mayhem's cap (Kimi); screens show 2.81, past the usual 2.5.
 const MELEE_RESISTS = 15;
 const DAMAGE_NAME = /damage|dmg|dps/i;
+const HEALING_NAME = /heal|shield/i;
 const NOT_DAMAGE = /monster|minion|shield|heal|bonus|floor|secondary/i;
 
 function formula(d: DamageFormula, s: BuildStats, level: number): number {
@@ -107,13 +110,15 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   s.hp += 20 + (((melee ? MODE_HEALTH_AT_18.melee : MODE_HEALTH_AT_18.ranged) - 20) * (o.level - 1)) / 17;
   if (melee) { s.armor += MELEE_RESISTS; s.bonusArmor += MELEE_RESISTS; s.mr += MELEE_RESISTS; s.bonusMr += MELEE_RESISTS; }
   const itemAmp = (name: string) => owned.reduce((m, it) => m * (1 + (it.DataValues?.find((d) => d.name === name)?.values?.[0] ?? 0)), 1);
+  const healPower = owned.reduce((t, it) => t + (it.DataValues?.find((d) => d.name === 'PercentHealingAmountMod')?.values?.[0] ?? 0), 0);
   const itemMana = owned.reduce((t, it) => t + (it.DataValues?.find((d) => d.name === 'FlatMPPoolMod')?.values?.[0] ?? 0), 0);
   // An item's effect marked for the other attack type doesn't count, nor a button's buff; a button's damage is pressed when ready.
   const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!); };
   const ops = [...(o.passive ?? []), ...o.cards.flatMap((c) => c.ops).filter(applies), ...o.items.flatMap((id) => o.itemOps?.[id % 10000] ?? []).filter(applies)].filter((x) => !x.after_quest);
   const notModelled = o.cards.flatMap((c) => (c.not_modelled ? [`${c.name}: ${c.not_modelled}`] : []));
   // Stacks held by this level, read from 23 screen windows with Tank Engine (health order: Heartsteel, then the multiplier, which one reading of Mundo forces): 0.6 a level when deaths take most of them, 2.2 a level of takedowns when they don't. Other stacks are a guess.
-  const stacksOf = (x: Extract<CardOp, { op: 'per_stack' }>) => { const n = x.per === 'takedown' || x.per === 'kill' ? (x.lost_on_death ? 0.6 : 2.2) * o.level : FIGHT.stacksByLevel(o.level); return x.cap ? Math.min(x.cap, n) : n; };
+  // Stacks from every instance of ability damage grow fast with the game (Phenomenal Evil); fitted to screens.
+  const stacksOf = (x: Extract<CardOp, { op: 'per_stack' }>) => { const n = x.per === 'takedown' || x.per === 'kill' ? (x.lost_on_death ? 0.6 : 2.2) * o.level : x.per === 'every_ability_damage' ? FIGHT.everyDamageStacks.at18 * (o.level / 18) ** FIGHT.everyDamageStacks.power : FIGHT.stacksByLevel(o.level); return x.cap ? Math.min(x.cap, n) : n; };
   const add = (t: BuildStats, stat: string, v: number) => { STAT_ADD[stat]?.(t, v); };
   for (const x of ops) if (x.op === 'add') add(s, x.stat, scaled(x.value, o.level));
   for (const x of ops) if (x.op === 'per_stack' && x.mode === 'add') add(s, x.stat, x.value * stacksOf(x));
@@ -168,7 +173,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const stateOf = new Map<CardOp, { stacks: number; until: number; start: number }>();
   const dots: { op: Extract<CardOp, { op: 'dot' }>; until: number; stacks: number; fromAbility: boolean }[] = [];
   const lastProc = new Map<CardOp, number>();
-  let fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = 0, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
+  let repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = 0, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
   const casts: Record<string, number> = {}, perCast: Record<string, number> = {};
   const kills = [...FIGHT.killTimes];
   const damageBySecond: number[] = [];
@@ -235,7 +240,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       attacks++;
       nextAttack = t + 1 / (c.attackSpeed * (o.kit.attacks ? 1 : 0.25) * (melee ? FIGHT.attackUptime.melee : FIGHT.attackUptime.ranged));
       fromAttacks += c.ad * (1 + c.crit * (c.critDamage - 1)) * amp('attacks') * taken.physical;
-      for (let n = 1 + onHitRepeat(c); n >= 1; n--) fire('on_hit', t, c);
+      repeatCarry += onHitRepeat(c);
+      fire('on_hit', t, c);
+      for (; repeatCarry >= 1; repeatCarry--) fire('on_hit', t, c); // a share of attacks hits twice
       fire('attack', t, c);
       critCarry += c.crit;
       if (critCarry >= 1) { critCarry -= 1; fire('crit', t, c); }
@@ -245,7 +252,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       for (const sl of slots) {
         if (t < sl.ready || sl.on || mana < sl.cost) continue;
         const scope = sl.key === 'R' ? 'ult' : 'basic';
-        const values = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef }).filter((v) => DAMAGE_NAME.test(v.name) && !NOT_DAMAGE.test(v.name));
+        const read = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef });
+        const values = read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_DAMAGE.test(v.name));
+        abilityHealing += Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
         const one = values.length ? Math.max(...values.map((v) => v.value)) : 0;
         const hit = one * amp('abilities') * amp(scope) * (1 + c.crit * critExtra);
         perCast[sl.key] = Math.round(hit);
@@ -287,6 +296,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     fromAbilities,
     fromAttacks,
     fromCards,
+    abilityHealing: abilityHealing * (1 + healPower + ops.reduce((m, x) => (x.op === 'add' && x.stat === 'heal_shield_power' ? m + scaled(x.value, o.level) : m), 0)),
     healedHp: Math.max(0, healed + s.omnivamp * (fromAbilities + fromAttacks + fromCards) + s.lifeSteal * fromAttacks) * ((o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / s.hp),
     effectiveHp: (o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / reduction,
     attacks,
