@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUGMENT_ITEM_WEIGHT, buildFor, synergyAcrossChampions, withAugmentItems, type EngineInput } from '../../src/app/buildEngine.js';
+import { AUGMENT_ITEM_WEIGHT, buildFor, synergyAcrossChampions, type EngineInput } from '../../src/app/buildEngine.js';
 import { AUGMENT_ITEMS } from '../../src/app/augmentItemsData.js';
 
 describe('synergy across champions', () => {
@@ -92,40 +92,6 @@ describe('build engine', () => {
   it('leaves out what a held card makes pointless, unless he owns it', () => {
     expect(buildFor({ ...input, avoid: [14] }).items).not.toContain(14);
     expect(buildFor({ ...input, avoid: [14], owned: [14] }).items).toContain(14);
-  });
-});
-
-describe('items with the chosen augments', () => {
-  const base = [{ id: 1, games: 900, wins: 450 }, { id: 2, games: 500, wins: 250 }];
-  const table: Record<number, { id: number; games: number; winRate: number }[]> = {
-    7: [{ id: 2, games: 800, winRate: 0.5 }, { id: 3, games: 200, winRate: 0.6 }, { id: 99, games: 500, winRate: 0.5 }],
-    8: [{ id: 2, games: 100, winRate: 0.5 }, { id: 3, games: 900, winRate: 0.6 }],
-    9: [{ id: 3, games: 50, winRate: 0.6 }],
-  };
-  const move = (chosen: number[][]) => withAugmentItems(base, 1000, chosen, (a) => table[a], () => 1000, (id) => (id === 99 ? undefined : id));
-  it('moves the champion\'s items to what was bought with the augment, leaving out what the shop lacks', () => {
-    const { mayhem, rest } = move([[7]]);
-    expect(rest).toEqual([]);
-    expect(mayhem.map((m) => [m.id, m.games])).toEqual([[2, 800], [3, 200]]);
-  });
-  it('averages several augments', () => {
-    expect(move([[7], [8]]).mayhem.find((m) => m.id === 3)!.games).toBeCloseTo(550);
-  });
-  it('finds an augment by any of its copies', () => {
-    expect(move([[70, 7]]).rest).toEqual([]);
-  });
-  it('keeps the champion\'s items, and hands back the augment, with no rows or too few games', () => {
-    const unknown = move([[5]]);
-    expect(unknown.mayhem).toBe(base);
-    expect(unknown.rest).toEqual([[5]]);
-    const few = withAugmentItems(base, 1000, [[9]], (a) => table[a], () => 50, (id) => id);
-    expect(few.mayhem).toBe(base);
-    expect(few.rest).toEqual([[9]]);
-  });
-  it('uses the rows it has and hands back the rest', () => {
-    const mixed = move([[7], [5]]);
-    expect(mixed.rest).toEqual([[5]]);
-    expect(mixed.mayhem.map((m) => m.id)).toEqual([2, 3]);
   });
 });
 

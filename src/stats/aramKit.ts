@@ -10,7 +10,6 @@ const SITE = 'https://aramkit.com';
 const DATA = 'https://data.aramkit.com/data';
 const DAY = 86_400_000;
 const WAIT_MS = 8000;
-const BIG_WAIT_MS = 60_000;
 
 export interface KitRow {
   id: number;
@@ -52,42 +51,13 @@ export function kitVersion(html: string): string {
   return m[1];
 }
 
-/** What this champion's players bought with each augment. */
-export type KitAugmentItems = Record<number, KitRow[]>;
-
-/** A champion's per-augment file, down to the numbers used. A shape that changed throws, and the older copy stays in use. */
-export function toKitAugmentItems(answer: unknown): KitAugmentItems {
-  const list = isObject(answer) && Array.isArray(answer.items) ? answer.items : [];
-  const out: KitAugmentItems = {};
-  for (const x of list) if (isObject(x) && Number.isInteger(x.augmentId)) out[x.augmentId as number] = rows(x.all);
-  if (!Object.keys(out).length) throw new Error('aramkit: unexpected shape');
-  return out;
-}
-
-const getter = (fetchImpl: typeof fetch, wait: number) => async (url: string) => {
-  const res = await fetchImpl(url, { signal: AbortSignal.timeout(wait) }); // slow internet: go on without it
-  if (!res.ok) throw new Error(`aramkit: HTTP ${res.status}`);
-  return res;
-};
-
-/** The per-augment file is about 3.8 MB, so it's read at most weekly, and only for a champion in use. */
-export function kitAugmentItems(champion: number, opts: { cacheDir: string; fetchImpl: typeof fetch; now?: () => number }): Promise<Cached<KitAugmentItems>> {
-  const now = opts.now ?? Date.now;
-  const get = getter(opts.fetchImpl, BIG_WAIT_MS);
-  return diskCache(
-    join(opts.cacheDir, 'aramkit-augments', `${champion}.json`),
-    (e) => now() - e.fetchedAt < 7 * DAY,
-    async () => {
-      const version = kitVersion(await (await get(`${SITE}/en-US`)).text());
-      return toKitAugmentItems(await (await get(`${DATA}/${version}/stats/all/champion-details/${champion}-single-augments.json`)).json());
-    },
-    { now },
-  );
-}
-
 export function kitStats(champion: number, opts: { cacheDir: string; fetchImpl: typeof fetch; now?: () => number }): Promise<Cached<KitStats>> {
   const now = opts.now ?? Date.now;
-  const get = getter(opts.fetchImpl, WAIT_MS);
+  const get = async (url: string) => {
+    const res = await opts.fetchImpl(url, { signal: AbortSignal.timeout(WAIT_MS) }); // slow internet: go on without it
+    if (!res.ok) throw new Error(`aramkit: HTTP ${res.status}`);
+    return res;
+  };
   return diskCache(
     join(opts.cacheDir, 'aramkit', `${champion}.json`),
     (e) => now() - e.fetchedAt < DAY,

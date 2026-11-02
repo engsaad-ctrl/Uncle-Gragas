@@ -3,7 +3,10 @@ import { blockedItems, itemPart, lineItems, NEEDS_ONE_OF } from '../ai/lines.js'
 import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
-import { compareBuilds } from '../ai/calculator.js';
+import { championRecord, compareBuilds } from '../ai/calculator.js';
+import { cardGain, needHolds } from '../ai/cardMath.js';
+import { CARD_NUMBERS, ITEM_NUMBERS, PASSIVE_NUMBERS } from '../ai/cardMathData.js';
+import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
 import { composeItemList, type ItemEntry } from '../app/itemList.js';
@@ -14,12 +17,12 @@ import { uniqueGames } from '../lcu/gameShape.js';
 import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
 import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats } from '../app/mayhemStats.js';
 import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, strength, type TeamModel } from '../app/teamModel.js';
-import { boughtAs, buildFor, synergyAcrossChampions, withAugmentItems } from '../app/buildEngine.js';
+import { boughtAs, buildFor, synergyAcrossChampions } from '../app/buildEngine.js';
 import { RECIPES_PATCH } from '../app/creatorRecipes.js';
 import { recipeFor, shiftedBuild, worthShowing } from '../app/experimentalBuild.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
-import { kitAugmentItems, kitStats, type KitAugmentItems, type KitStats } from '../stats/aramKit.js';
+import { kitStats, type KitStats } from '../stats/aramKit.js';
 import { augmentLift, augmentLink, heroEdge, liftPoints, openStats } from '../stats/openStats.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
@@ -31,7 +34,7 @@ import {
   buildChampionDetail, buildChampionList, buildSpellTexts, buildStyleTrees,
   type ChampionListEntry, type RawChampion, type RawChampionSummary,
 } from '../texts/champions.js';
-import { loadChampionBin, loadGameItems, loadGameVersion, loadStringTable, loadTooltipStrings } from '../texts/gameData.js';
+import { loadChampionBin, loadGameItems, loadGameVersion, loadStringTable, loadTooltipStrings, type GameItem } from '../texts/gameData.js';
 import { buildItemDetails, buildItemTexts, itemClasses, type ItemText, type RawItem } from '../texts/items.js';
 import { buildRuneTexts, type RawPerk } from '../texts/runes.js';
 
@@ -141,6 +144,9 @@ function once<T>(load: () => Promise<T>): () => Promise<T> {
       throw err;
     }));
 }
+
+interface Teams { allies: number[]; enemies: number[] }
+const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), attacks: k?.relies.includes('attacks') ?? false }; };
 
 export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch; call?: CallTool }) {
   const { cacheDir, fetchImpl } = opts;
@@ -536,12 +542,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         synergy,
       };
     };
-    const kitPairs = kitItems?.length && ids.length ? await champPairsSoon(championId) : null;
-    const fromKit = () => {
-      const moved = withAugmentItems(kitItems!, kitData!.games, ids, (a) => kitPairs?.[a], (a) => kitData!.augments.find((x) => x.id === a)?.games, toShop);
-      return { base: [], mayhem: moved.mayhem, mayhemGames: kitData!.games, links: new Map<number, number>(), synergy: synergyAcrossChampions(moved.rest, shopIds) };
-    };
-    const sources = kitItems?.length ? fromKit() : await fallback();
+    const sources = kitItems?.length
+      ? { base: [], mayhem: kitItems, mayhemGames: kitData!.games, links: new Map<number, number>(), synergy: synergyAcrossChampions(ids, shopIds) }
+      : await fallback();
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     // What he bought holds its slot, limits the rest and can open the other damage kind, but pulls nothing in. On 26,151 stored builds a pull
     // by text links and lines named the rest worse than the plain list (first item 43.8% against 55.4%; 58.6% without the pull).
@@ -564,6 +567,78 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     });
   }
 
+  /**
+   * What each card adds in one fight for this champion, given the cards held and the items owned: arithmetic only (src/ai/cardMath.ts), no pick, buy
+   * or win rates. A card with no numbers or whose condition fails isn't listed, so the screen says it can't be computed.
+   */
+  /** The real teams when a game is loaded. */
+  async function teamFacts(teams: Teams | undefined, shop: Record<number, GameItem>) {
+    if (!teams) return { enemy: undefined, allies: undefined };
+    const v = await gameVersion();
+    const list = await champions();
+    const binOf = async (id: number) => { const c = list.find((x) => x.id === id); return c ? { bin: await loadChampionBin(game, v, c.alias), kit: fightKitOf(id) } : []; };
+    const [enemies, allies] = await Promise.all([Promise.all(teams.enemies.map(binOf)), Promise.all(teams.allies.map(binOf))]);
+    return { enemy: enemyTeam(enemies.flat(), shop), allies: allies.flat().map((a) => a.bin) };
+  }
+
+  async function cardValues(championId: number, augmentIds: number[], itemIds: number[], teams?: Teams): Promise<{ id: number; damage: number; health: number; value: number; certain: boolean; missing: string | null }[]> {
+    const entry = (await champions()).find((c) => c.id === championId);
+    if (!entry) throw new Error(`unknown champion ${championId}`);
+    const v = await gameVersion();
+    const [all, bin, shop, shopNames] = await Promise.all([augments(), loadChampionBin(game, v, entry.alias), loadGameItems(game, v), items('mayhem')]);
+    const kit = CHAMPION_KITS.find((k) => k.id === championId);
+    const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined;
+    const numbersOf = (id: number) => { const ids = all.augments.find((a) => a.id === id)?.ids ?? [id]; return CARD_NUMBERS.find((c) => ids.includes(c.id)); };
+    const held = augmentIds.flatMap((id) => numbersOf(id) ?? []);
+    const base = {
+      bin, shop, level: [3, 7, 11, 15, 17, 18][Math.min(held.length, 5)]!, items: itemIds.filter((id) => shop[id]), cards: held,
+      kit: { damage: kit?.damage ?? 'mixed', attacks: kit?.relies.includes('attacks') ?? false },
+      passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [],
+    };
+    const facts = { owned: itemIds.flatMap((id) => shopNames.list.find((i) => i.id === id)?.enName ?? []), ranged: (record?.attackRangeModifiable?.baseValue ?? 0) >= 300, traits: kit?.traits ?? [] };
+    const facts2 = await teamFacts(teams, shop);
+    const place = { ...teamPlace({ championId, bin, shop, kit: base.kit, passive: base.passive, enemy: facts2.enemy, allies: facts2.allies }), enemyDps: enemyDpsAt(base.level) };
+    return all.augments.flatMap((a) => {
+      const card = numbersOf(a.id);
+      if (!card?.ops.length || augmentIds.includes(a.id)) return [];
+      const holds = needHolds(card.need, facts);
+      if (holds === 'no') return [];
+      const g = cardGain({ ...base, enemy: facts2.enemy }, card);
+      return [{ id: a.id, damage: g.damage, health: g.effectiveHp, value: fightValue(g.after, place) / Math.max(fightValue(g.before, place), 1e-9) - 1, certain: holds === 'yes' && card.status === 'computed', missing: card.not_modelled ?? null }];
+    });
+  }
+
+  const ITEM_OPS = Object.fromEntries(ITEM_NUMBERS.map((i) => [i.id, i.ops]));
+  const builds = new Map<string, Promise<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>();
+  /** The next items by arithmetic (src/ai/itemMath.ts). No pick, buy or win rates. */
+  function mathBuild(championId: number, augmentIds: number[], owned: number[] = [], teams?: Teams) {
+    const key = `${championId}|${[...augmentIds].sort((a, b) => a - b).join()}|${owned.join()}|${teams?.allies.join() ?? ''}|${teams?.enemies.join() ?? ''}`;
+    const known = builds.get(key);
+    if (known) return known;
+    const work = (async () => {
+      const entry = (await champions()).find((c) => c.id === championId);
+      if (!entry) throw new Error(`unknown champion ${championId}`);
+      const v = await gameVersion();
+      const [all, bin, shop, list] = await Promise.all([augments(), loadChampionBin(game, v, entry.alias), loadGameItems(game, v), items('mayhem')]);
+      // An item with no text isn't in the shop: Viktor's core is one champion's, given and never bought.
+      const sold = list.list.filter((i) => (i.group === 'legendary' || i.group === 'boots') && i.html);
+      const kit = CHAMPION_KITS.find((k) => k.id === championId);
+      const cards = augmentIds.flatMap((id) => { const ids = all.augments.find((a) => a.id === id)?.ids ?? [id]; return CARD_NUMBERS.find((c) => ids.includes(c.id)) ?? []; });
+      const required = [...new Set(cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []))];
+      const damageKind = kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed';
+      const switched = cards.some((c) => switchesDamage([c.id]));
+      const fightKit = { damage: kit?.damage ?? 'mixed', attacks: kit?.relies.includes('attacks') ?? false };
+      const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
+      const facts = await teamFacts(teams, shop);
+      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies }), offKind: (i) => !switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind, kit: { damage: kit?.damage ?? 'mixed', attacks: kit?.relies.includes('attacks') ?? false }, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required });
+      const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
+      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, why: s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean) }] : []; });
+    })();
+    builds.set(key, work);
+    work.catch(() => builds.delete(key));
+    return work;
+  }
+
   /** A second build the tests can't vouch for (src/app/experimentalBuild.ts); null when there's none worth showing. */
   async function experimentalBuild(championId: number, augmentIds: number[]): Promise<ExperimentalBuild | null> {
     const entry = (await champions()).find((c) => c.id === championId);
@@ -582,13 +657,6 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
 
   /** ARAMKit's numbers for a champion; null when they can't be had, and the app goes on without them. */
   const champKit = (id: number): Promise<KitStats | null> => kitStats(id, { cacheDir, fetchImpl }).then((r) => r.data, () => null);
-  // Asked once per champion per run, so a failed download isn't repeated on every card; the build doesn't wait long for a first download of 3.8 MB.
-  const PAIRS_WAIT_MS = 3000;
-  const pairAsks = new Map<number, Promise<KitAugmentItems | null>>();
-  const champPairsSoon = (id: number): Promise<KitAugmentItems | null> => {
-    if (!pairAsks.has(id)) pairAsks.set(id, kitAugmentItems(id, { cacheDir, fetchImpl }).then((r) => r.data, () => null));
-    return Promise.race([pairAsks.get(id)!, new Promise<null>((done) => setTimeout(() => done(null), PAIRS_WAIT_MS))]);
-  };
 
   /** Each champion's distance from an even win rate in the outside data, averaged over the sources; our model where they have none. */
   async function championStrengths(ids: number[]): Promise<{ id: number; points: number }[]> {
@@ -626,5 +694,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { side: diff > 0.15 ? 'stronger' : diff < -0.15 ? 'weaker' : 'even', magic: { mine: magic(mine), enemy: magic(enemy) } };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, mathBuild, cardValues, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
 }

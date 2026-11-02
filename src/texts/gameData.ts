@@ -62,7 +62,19 @@ export function loadTooltipStrings(o: Opts, version: string | null): Promise<Rec
   );
 }
 
-/** The champion's bin, trimmed to what the tooltips read: the character record and its spells' data. */
+type ModeSpell = { DataValues?: { name: string; values?: number[] }[]; DataValuesModeOverride?: Record<string, { SpellDataValues?: { name: string; values?: number[] }[] }> };
+/** Mayhem's own spell numbers, read at load so saved copies needn't be fetched again: the mode's file name is Kiwi, and it builds on ARAM. */
+function withModeValues(bin: Record<string, object>): Record<string, object> {
+  return Object.fromEntries(Object.entries(bin).map(([k, v]) => {
+    const spell = (v as { mSpell?: ModeSpell }).mSpell, modes = spell?.DataValuesModeOverride;
+    const changed = [...(modes?.ARAM?.SpellDataValues ?? []), ...(modes?.Kiwi?.SpellDataValues ?? [])];
+    if (!changed.length) return [k, v];
+    const merged = new Map([...(spell?.DataValues ?? []), ...changed].map((d) => [d.name, d]));
+    return [k, { ...v, mSpell: { ...spell, DataValues: [...merged.values()] } }];
+  }));
+}
+
+/** The champion's bin, trimmed to what the tooltips read: the character record and its spells' data, with the mode's numbers. */
 export function loadChampionBin(o: Opts, version: string | null, alias: string): Promise<Record<string, object>> {
   const a = alias.toLowerCase();
   return perVersion(join(o.cacheDir, 'game', 'champions', `${a}.json`), version, async () => {
@@ -72,7 +84,7 @@ export function loadChampionBin(o: Opts, version: string | null, alias: string):
         v?.__type === 'CharacterRecord' ? [[k, v]] : v?.__type === 'SpellObject' ? [[k, { __type: v.__type, mSpell: v.mSpell }]] : [],
       ),
     );
-  });
+  }).then(withModeValues);
 }
 
 /** An item's tooltip key and its numbers, in the shape resolveSpellValues reads. */
@@ -88,6 +100,7 @@ interface RawItemData {
   itemID?: number;
   spellName?: string;
   mDataValues?: { mName: string; mValue?: number }[];
+  DataValuesModeOverride?: Record<string, { DataValues?: { mName: string; mValue?: number }[] }>;
   mItemCalculations?: SpellData['mSpellCalculations'];
   mEffectAmount?: number[];
   mItemDataClient?: { mDescription?: string };
@@ -97,8 +110,8 @@ type ItemSpell = { mSpell?: SpellData & { cooldownTime?: number[] } };
 
 /** The items bin (16MB), trimmed to each item's values (its active spell's included) and tooltip key. */
 export function loadGameItems(o: Opts, version: string | null): Promise<Record<number, GameItem>> {
-  // "-v3": copies saved before the shop classes (v2) and the calculator's stats (v3) were read lack them.
-  return perVersion(join(o.cacheDir, 'game', 'items-v3.json'), version, async () => {
+  // "-v4": copies saved before the shop classes (v2), the calculator's stats (v3) and the mode's own values (v4) were read lack them.
+  return perVersion(join(o.cacheDir, 'game', 'items-v4.json'), version, async () => {
     const bin = await getJson<Record<string, RawItemData & ItemSpell>>(o.fetchImpl, GAME_URLS.items);
     const out: Record<number, GameItem> = {};
     for (const v of Object.values(bin)) {
@@ -109,7 +122,8 @@ export function loadGameItems(o: Opts, version: string | null): Promise<Record<n
         tooltipKey: v.mItemDataClient?.mDescription,
         classes: (v.mItemAttributes ?? []).reduce((a, b) => a | b, 0),
         DataValues: [
-          ...(v.mDataValues ?? []).map((d) => ({ name: d.mName, values: [d.mValue ?? 0] })),
+          // Mayhem's values: the mode's file name is Kiwi, and it restates base values where ARAM's change shouldn't carry over, so it builds on ARAM.
+          ...Object.entries(Object.fromEntries([v.mDataValues, v.DataValuesModeOverride?.ARAM?.DataValues, v.DataValuesModeOverride?.Kiwi?.DataValues].flatMap((list) => list ?? []).map((d) => [d.mName, d.mValue ?? 0]))).map(([name, value]) => ({ name, values: [value] })),
           // Item stats the text quotes directly, e.g. @FlatHPRegenMod*5@ reads mFlatHPRegenMod
           // Plus the stats the damage calculator adds up: haste, lethality and omnivamp are named outside that pattern.
           ...Object.entries(v).flatMap(([k, x]) => (/^m?(Flat|Percent)\w+Mod$|^mAbilityHasteMod$|^PhysicalLethality$/.test(k) && typeof x === 'number' ? [{ name: k.replace(/^m/, ''), values: [x] }] : [])),

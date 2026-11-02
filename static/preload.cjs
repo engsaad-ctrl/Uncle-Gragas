@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('lolh', {
   championStrengths: (ids) => ipcRenderer.invoke('mayhem:strengths', ids),
   engineBuild: (championId, augmentIds, followLines, owned) => ipcRenderer.invoke('build:engine', championId, augmentIds, followLines, owned),
   experimentalBuild: (championId, augmentIds) => ipcRenderer.invoke('build:experimental', championId, augmentIds),
+  cardValues: (championId, augmentIds, itemIds) => ipcRenderer.invoke('build:cardvalues', championId, augmentIds, itemIds),
   hasAiKey: () => ipcRenderer.invoke('ai:key:has'),
   setAiKey: (key) => ipcRenderer.invoke('ai:key:set', key),
   clearAiKey: () => ipcRenderer.invoke('ai:key:clear'),

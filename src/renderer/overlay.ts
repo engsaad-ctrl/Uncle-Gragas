@@ -3,7 +3,7 @@
 import type { Advice } from '../ai/advisor.js';
 import { itemsHeld, walkedPath, type BuildPath } from '../app/buildPath.js';
 import { rankOffer, walkItems } from '../app/walk.js';
-import { cardFit, compatibility, conflictsWith, itemPart, openLines, pathShare, placesOf, type ChampionDamage } from '../ai/lines.js';
+import { cardFit, conflictsWith, itemPart, openLines, placesOf, type ChampionDamage } from '../ai/lines.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
@@ -44,7 +44,6 @@ let effects = new Map<number, AugmentEffect>();
 /** What each augment adds to this champion in the open data, in points. */
 let openPoints = new Map<number, number>();
 /** How much more this champion's players take each augment than all players do; winning plays no part. */
-let openLinks = new Map<number, number>();
 const mechOf = (a: { id: number; ids?: number[] }) => AUGMENT_MECHANICS.find((m) => (a.ids ?? [a.id]).includes(m.id));
 const NO_MECH: Mechanic = { id: -1, name: '', gives: [], scales: [], converts: [], relies: [], needs: [], note: '' };
 const STAT_AR: Record<string, string> = {
@@ -64,15 +63,32 @@ const championDamage = (): ChampionDamage | undefined => {
 const heldParts = () => {
   return [...(data?.augments ?? []).filter((a) => picked.has(a.id)).flatMap((a) => mechOf(a)?.id ?? []), ...itemsHeld(path, owned).map(itemPart)];
 };
-/** Each augment's place by its tie to this champion, among those of its rarity with data. */
-const placesFor = (pool: OverlayData['augments']) =>
-  new Map((Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).flatMap((rarity) => [...placesOf(new Map(pool.filter((a) => a.rarity === rarity && openLinks.has(a.id)).map((a) => [a.id, openLinks.get(a.id)!])))]));
-/** The two parts of a percent in words, since one number hides them: how much more his champion's players take it, and what of the path it works with. */
-const linkParts = (a: OverlayData['augments'][number], places: Map<number, number>, share: number | undefined) => {
-  const taken = openLinks.has(a.id) ? `يأخذه لاعبو البطل ${openLinks.get(a.id)!.toFixed(1)} ضعف غيرهم` : 'لا بيانات مع البطل';
-  return share === undefined ? taken : `${taken}، ورابطه بمسارك ${Math.round(100 * share)}%`;
+/** What each card adds to this champion's fight, by arithmetic (src/ai/cardMath.ts); a card missing here can't be computed. */
+let cardMath = new Map<number, { damage: number; health: number; value: number; certain: boolean; missing: string | null }>();
+let cardMathFor = '';
+async function refreshCardMath() {
+  const champion = data?.champion;
+  const held = itemsHeld(path, owned);
+  const key = `${champion?.id}|${[...picked].join()}|${held.join()}`;
+  if (key === cardMathFor || !champion || data?.mode !== 'mayhem') return;
+  cardMathFor = key;
+  const r = await window.lolh.cardValues(champion.id, [...picked], held);
+  if (cardMathFor !== key) return;
+  cardMath = new Map(isError(r) ? [] : r.map((x) => [x.id, x]));
+  render();
+  if (tab === 'walk') renderWalk();
+}
+const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
+const mathValue = (id: number) => cardMath.get(id)?.value;
+const mathWords = (id: number) => { const m = cardMath.get(id); return m ? `ضرر ${signed(m.damage)}، تحمّل ${signed(m.health)}${m.certain ? '' : ' (مشروطة أو جزئية)'}` : 'لا يُحسب'; };
+/** Each card's place among its rarity by what it adds; only cards offered in one round can be compared, and these share a rarity. */
+const mathPlaces = (pool: OverlayData['augments']) =>
+  new Map((Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).flatMap((rarity) => [...placesOf(new Map(pool.filter((a) => a.rarity === rarity && cardMath.has(a.id)).map((a) => [a.id, mathValue(a.id)!])))]));
+const percentOf = (a: OverlayData['augments'][number], places: Map<number, number>) => {
+  if (picked.has(a.id)) return undefined;
+  const place = places.get(a.id);
+  return place === undefined ? undefined : Math.round(100 * place);
 };
-const percentOf = (a: OverlayData['augments'][number], places: Map<number, number>) => (picked.has(a.id) ? undefined : compatibility(places.get(a.id), pathShare(heldParts(), mechOf(a)?.id)));
 const lineText = (f: NonNullable<ReturnType<typeof cardFit>>) => (f.share === undefined ? `يبدأ ${f.line.name}.` : `${f.line.name}: يتناسق مع ${Math.round(100 * f.share)}% مما عندك من أجزاء الخطوط المعروفة.`);
 /** Why two augments work together, in one Arabic line. */
 const linkInArabic = (l: Link) => {
@@ -127,6 +143,7 @@ function toggleMark(id: number) {
   render();
   if (data?.build) renderBuild(data.build);
   void refreshEngine(); // the walk tab needs it even when the champion's page failed to load, as on a weak connection
+  void refreshCardMath();
   void refreshFit();
 }
 
@@ -151,7 +168,7 @@ function render() {
   const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : score(a));
   const pool = data.mode === 'mayhem' ? playedOnly(data.augments, effects, picked) : data.augments;
   const grades = gradesFor(pool, score);
-  const places = placesFor(pool);
+  const places = mathPlaces(pool);
   const all = filterAugments(pool, search.value, 'all', 'all');
   const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).filter((r) => shownRarity === 'all' || r === shownRarity).flatMap((rarity) => {
     const list = all
@@ -187,12 +204,11 @@ function render() {
       const kit = picked.has(a.id) ? null : fitOf(data!.champion?.id, a.ids ?? [a.id]);
       const links = linksOf(a);
       const onLine = picked.has(a.id) ? undefined : cardFit(heldParts(), mechOf(a)?.id, championDamage());
-      const share = picked.has(a.id) ? undefined : pathShare(heldParts(), mechOf(a)?.id);
       const compat = percentOf(a, places);
       const clashes = picked.has(a.id) ? [] : conflictsWith(heldParts(), mechOf(a)?.id);
       const why = [
         ...clashes.map((c) => `تعارض: ${c}.`),
-        ...(compat === undefined ? [] : [`الارتباط ${compat}%: ${linkParts(a, places, share)}. لا يقيس الفوز.`]),
+        ...(compat === undefined ? [] : [`التوافق بالحساب ${compat}%: ${mathWords(a.id)}. لا يقيس الفوز.`]),
         ...(onLine ? [lineText(onLine)] : []),
         ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
         ...(openPoints.has(a.id) ? [`مع هذا البطل في AramHex وARAMKit: ${openPoints.get(a.id)!.toFixed(1)} نقطة.`] : a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
@@ -278,6 +294,7 @@ const pill = (text: string, onClick: () => void, cls = 'pill') => {
 
 const ownedChanged = () => {
   void refreshEngine();
+  void refreshCardMath();
   render();
   renderWalk();
 };
@@ -293,7 +310,7 @@ function renderWalk() {
     });
   }
   const pool = playedOnly(data.augments, effects, picked);
-  const places = placesFor(pool);
+  const places = mathPlaces(pool);
   const percent = (a: OverlayData['augments'][number]) => percentOf(a, places);
   const finder = (placeholder: string, results: (q: string) => HTMLElement[]) => {
     const input = el('input', '') as HTMLInputElement;
@@ -314,7 +331,7 @@ function renderWalk() {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
     const p = percent(a);
-    txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? 'لا بيانات لهذا البطل' : [`الارتباط ${p}%: ${linkParts(a, places, pathShare(heldParts(), mechOf(a)?.id))}${a === cards[0] && cards.length > 1 ? ' · الأعلى هنا' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
+    txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? 'لا يُحسب: لا أرقام في نصها، أو شرطها لا ينطبق' : [`${p}%: ${mathWords(a.id)}${a === cards[0] && cards.length > 1 ? ' · الأعلى هنا' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
     r.append(ic(a), txt, pill('اخترته', () => { offer.clear(); toggleMark(a.id); renderWalk(); }), pill('✕', () => { offer.delete(a.id); renderWalk(); }, 'pill ghost'));
     rows.append(r);
   }
@@ -356,7 +373,7 @@ function renderWalk() {
     nextRow.append(r);
   }
   walkBox.replaceChildren(
-    section(`الجولة ${picked.size + 1}: البطاقات المعروضة`, findCard.label, findCard.box, rows, el('p', 'hint', 'النسبة تقيس ارتباط البطاقة ببطلك ومسارك، ولا تقيس الفوز. اختر ما تريد، والبناء يتبع اختيارك.')),
+    section(`الجولة ${picked.size + 1}: البطاقات المعروضة`, findCard.label, findCard.box, rows, el('p', 'hint', 'النسبة من الحساب فقط: ما تضيفه البطاقة لقتال بطلك مع ما تحمله، مقارنة بغيرها من ندرتها. لا تقيس الفوز.')),
     ...(chosen.length ? [section('ما أخذته', chosenChips(chosen))] : []),
     section('أغراضك', findItem.label, findItem.box, ownedRow),
     ...(chosen.length ? [section('الأغراض التالية', advised.length ? nextRow : el('p', 'hint', 'جاري حساب البناء…'))] : []),
@@ -593,13 +610,13 @@ async function load() {
   if (reply.build) renderBuild(reply.build);
   showTab(reply.build ? 'build' : 'augments');
   if (restored) void startAi(); // the app's answer is cached: shown without asking Gemini again
+  void refreshCardMath();
   void refreshFit();
   if (reply.mode === 'mayhem') {
     const [r, o] = await Promise.all([window.lolh.augmentEffects(), reply.champion ? window.lolh.openAugments(reply.champion.id) : []]);
     if (id !== loadId) return;
     if (!isError(r)) effects = new Map(r.map((x) => [x.id, x]));
     openPoints = new Map(isError(o) ? [] : o.map((x) => [x.id, x.points]));
-    openLinks = new Map(isError(o) ? [] : o.flatMap((x) => (x.link === undefined ? [] : [[x.id, x.link] as const])));
     render();
   }
 }

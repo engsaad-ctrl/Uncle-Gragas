@@ -193,11 +193,22 @@ ipcMain.handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.a
 ipcMain.handle('mayhem:effects', () => reply(() => services.augmentEffect()));
 ipcMain.handle('mayhem:open', (_e, id: unknown) => reply(() => services.openAugments(Number(id))));
 ipcMain.handle('mayhem:strengths', (_e, ids: unknown) => reply(() => services.championStrengths(parseIds(ids))));
-// In a loaded game the enemy team is known (enemiesInGame): the build answers its magic damage.
+// In a loaded game both teams are known: items and cards answer them.
+const teamsNow = () => {
+  const t = teamsInGame(watcher.session, lastPick?.championId);
+  const ids = (list: GamePlayer[]) => list.map((p) => p.championId).filter((id) => id > 0 && id !== lastPick?.championId);
+  return t ? { allies: ids(t.mine), enemies: ids(t.enemy) } : undefined;
+};
 ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
-    return services.engineBuild(id, parseIds(augmentIds), enemiesInGame(watcher.session, id), followLines === true, Array.isArray(owned) ? parseIds(owned) : []);
+    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow());
+  }),
+);
+ipcMain.handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemIds: unknown) =>
+  reply(() => {
+    const [id] = parseIds([championId]);
+    return services.cardValues(id, parseIds(augmentIds), Array.isArray(itemIds) ? parseIds(itemIds) : [], teamsNow());
   }),
 );
 ipcMain.handle('build:experimental', (_e, championId: unknown, augmentIds: unknown) =>

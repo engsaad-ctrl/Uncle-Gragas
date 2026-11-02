@@ -96,40 +96,6 @@ export function synergyAcrossChampions(chosen: number[][], shopIds: Iterable<num
   return out;
 }
 
-/** Under this many games with an augment, its item rows say little and the table across champions serves instead. */
-const MIN_AUGMENT_GAMES = 200;
-
-/**
- * The champion's own items, moved to what its players bought with the chosen augments: the share with each augment, averaged. Augments without
- * enough rows come back in `rest`, for synergyAcrossChampions. It says what players buy, not what is best. On 111 creators' videos, 40 champions:
- * next item first 12.3% against 9.7% for the table across champions, in the first three 33.5% against 31.9%.
- */
-export function withAugmentItems(
-  base: { id: number; games: number; wins: number }[],
-  games: number,
-  chosen: number[][],
-  rowsOf: (augment: number) => { id: number; games: number; winRate: number }[] | undefined,
-  gamesOf: (augment: number) => number | undefined,
-  toShop: (id: number) => number | undefined,
-): { mayhem: { id: number; games: number; wins: number }[]; rest: number[][] } {
-  const rest: number[][] = [];
-  const shares = new Map<number, { share: number; wins: number }>();
-  let used = 0;
-  for (const ids of chosen) {
-    const augment = ids.find((id) => rowsOf(id)?.length);
-    const rows = augment === undefined ? undefined : rowsOf(augment)!;
-    const total = augment === undefined || !rows ? 0 : (gamesOf(augment) ?? Math.max(...rows.map((r) => r.games)));
-    if (!rows || total < MIN_AUGMENT_GAMES) { rest.push(ids); continue; }
-    used++;
-    // An item and its map copy are one purchase: the larger row stands for it.
-    const best = new Map<number, { games: number; winRate: number }>();
-    for (const r of rows) { const id = toShop(r.id); if (id !== undefined && r.games > (best.get(id)?.games ?? 0)) best.set(id, r); }
-    for (const [id, r] of best) { const s = shares.get(id) ?? { share: 0, wins: 0 }; s.share += r.games / total; s.wins += (r.games / total) * r.winRate; shares.set(id, s); }
-  }
-  if (!used) return { mayhem: base, rest };
-  return { mayhem: [...shares].map(([id, s]) => ({ id, games: (s.share / used) * games, wins: (s.wins / used) * games })), rest };
-}
-
 /** Each item's score; the parts are kept for the explanation. */
 export function scoreItems(input: EngineInput): Map<number, { score: number; why: string[] }> {
   const out = new Map<number, { score: number; why: string[] }>();
@@ -170,7 +136,7 @@ export function scoreItems(input: EngineInput): Map<number, { score: number; why
 }
 
 // The game allows one of each: Last Whisper, Spellblade, Lifeline and Immolate. None of these pairs is in 63,810 stored builds, against 13 to 167 by chance. Icathia's Fall requires both Immolate items, and required items pass.
-const ONE_OF = [[3033, 3036, 6694], [3078, 3100, 3508, 6662], [3053, 6673, 3156], [3068, 6664]];
+export const ONE_OF = [[3033, 3036, 6694], [3078, 3100, 3508, 6662], [3053, 6673, 3156], [3068, 6664]];
 
 /**
  * Six items: the required ones, the best boots (when the champion's players buy boots), then the best-scoring others.
