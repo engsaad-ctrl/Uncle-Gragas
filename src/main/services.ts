@@ -605,7 +605,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const holds = needHolds(card.need, facts);
       if (holds === 'no') return [];
       const g = cardGain({ ...base, enemy: facts2.enemy }, card);
-      return [{ id: a.id, damage: g.damage, health: g.effectiveHp, value: fightValue(g.after, place) / Math.max(fightValue(g.before, place), 1e-9) - 1, certain: holds === 'yes' && card.status === 'computed', missing: card.not_modelled ?? null }];
+      return [{ id: a.id, damage: g.damage, health: g.effectiveHp, value: fightValue(g.after, place) / Math.max(fightValue(g.before, place), 1e-9) - 1, certain: holds === 'yes' && card.status === 'computed' && card.ops.every((x) => x.op === 'add' || x.op === 'mult'), missing: card.not_modelled ?? null }];
     });
   }
 

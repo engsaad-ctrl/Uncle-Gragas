@@ -80,7 +80,7 @@ async function refreshCardMath() {
 }
 const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
 const mathValue = (id: number) => cardMath.get(id)?.value;
-const mathWords = (id: number) => { const m = cardMath.get(id); return m ? `ضرر ${signed(m.damage)}، تحمّل ${signed(m.health)}${m.certain ? '' : ' (مشروطة أو جزئية)'}` : 'لا يُحسب'; };
+const mathWords = (id: number) => { const m = cardMath.get(id); return m ? `ضرر ${signed(m.damage)}، تحمّل ${signed(m.health)}${m.certain ? '' : ' (تقديرية)'}` : 'لا يُحسب'; };
 /** Each card's place among its rarity by what it adds; only cards offered in one round can be compared, and these share a rarity. */
 const mathPlaces = (pool: OverlayData['augments']) =>
   new Map((Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).flatMap((rarity) => [...placesOf(new Map(pool.filter((a) => a.rarity === rarity && cardMath.has(a.id)).map((a) => [a.id, mathValue(a.id)!])))]));
@@ -331,7 +331,7 @@ function renderWalk() {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
     const p = percent(a);
-    txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? 'لا يُحسب: لا أرقام في نصها، أو شرطها لا ينطبق' : [`${p}%: ${mathWords(a.id)}${a === cards[0] && cards.length > 1 ? ' · الأعلى هنا' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
+    txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? 'غير مقاسة: أثرها في حركة أو إيقاف أو هدف آخر، أو شرطها لا ينطبق. هذا لا يعني أنها ضعيفة' : [`${p}%: ${mathWords(a.id)}${a === cards[0] && cards.length > 1 ? ' · الأعلى هنا' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
     r.append(ic(a), txt, pill('اخترته', () => { offer.clear(); toggleMark(a.id); renderWalk(); }), pill('✕', () => { offer.delete(a.id); renderWalk(); }, 'pill ghost'));
     rows.append(r);
   }
@@ -374,7 +374,7 @@ function renderWalk() {
     nextRow.append(r);
   }
   walkBox.replaceChildren(
-    section(`الجولة ${picked.size + 1}: البطاقات المعروضة`, findCard.label, findCard.box, rows, el('p', 'hint', 'النسبة من الحساب فقط: ما تضيفه البطاقة لقتال بطلك مع ما تحمله، مقارنة بغيرها من ندرتها. لا تقيس الفوز.')),
+    section(`الجولة ${picked.size + 1}: البطاقات المعروضة`, findCard.label, findCard.box, rows, el('p', 'hint', 'النسبة من الحساب فقط: ما تضيفه البطاقة لقتال بطلك مع ما تحمله، مقارنة بغيرها من ندرتها. اقرأها كاتجاه: أثرها في المباريات أقل مما يظهر هنا، ولا تقيس الفوز.')),
     ...(chosen.length ? [section('ما أخذته', chosenChips(chosen))] : []),
     section('أغراضك', findItem.label, findItem.box, ownedRow),
     ...(chosen.length ? [section('الأغراض التالية', advised.length ? nextRow : el('p', 'hint', 'جاري حساب البناء…'))] : []),
