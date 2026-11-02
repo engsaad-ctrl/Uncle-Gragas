@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { kitStats, kitVersion, toKitStats } from '../../src/stats/aramKit.js';
+import { kitStats, kitVersion, toKitAugmentItems, toKitStats } from '../../src/stats/aramKit.js';
 
 const file = {
   champion: { stats: { sampleCount: 1000, winRate: 0.57, name: 'x' } },
@@ -16,6 +16,16 @@ describe('toKitStats', () => {
   });
   it('refuses a changed shape', () => {
     for (const bad of [null, {}, { ...file, champion: {} }, { ...file, augments: { all: [] } }, { ...file, items: {} }]) expect(() => toKitStats(bad)).toThrow(/shape/);
+  });
+});
+
+describe('toKitAugmentItems', () => {
+  it('keeps each augment\'s item rows and drops bad ones', () => {
+    const j = { items: [{ augmentId: 1004, all: [{ id: 3089, sampleCount: 9, winRate: 0.5, extra: 1 }, { id: -1, sampleCount: 1, winRate: 0.5 }] }, { augmentId: 'x', all: [] }] };
+    expect(toKitAugmentItems(j)).toEqual({ 1004: [{ id: 3089, games: 9, winRate: 0.5 }] });
+  });
+  it('refuses a changed shape', () => {
+    for (const bad of [null, {}, { items: [] }, { items: [{ all: [] }] }]) expect(() => toKitAugmentItems(bad)).toThrow(/shape/);
   });
 });
 

@@ -14,12 +14,12 @@ import { uniqueGames } from '../lcu/gameShape.js';
 import { readMayhemGames, type MayhemGame } from '../lcu/mayhemGames.js';
 import { augmentItemSynergy, augmentPairs, latestPatch, mayhemStats } from '../app/mayhemStats.js';
 import { augmentEffects, bootstrapWeights, fitTeamModel, fullGames, strength, type TeamModel } from '../app/teamModel.js';
-import { boughtAs, buildFor, synergyAcrossChampions } from '../app/buildEngine.js';
+import { boughtAs, buildFor, synergyAcrossChampions, withAugmentItems } from '../app/buildEngine.js';
 import { RECIPES_PATCH } from '../app/creatorRecipes.js';
 import { recipeFor, shiftedBuild, worthShowing } from '../app/experimentalBuild.js';
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
-import { kitStats, type KitStats } from '../stats/aramKit.js';
+import { kitAugmentItems, kitStats, type KitAugmentItems, type KitStats } from '../stats/aramKit.js';
 import { augmentLift, augmentLink, heroEdge, liftPoints, openStats } from '../stats/openStats.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
@@ -536,9 +536,12 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         synergy,
       };
     };
-    const sources = kitItems?.length
-      ? { base: [], mayhem: kitItems, mayhemGames: kitData!.games, links: new Map<number, number>(), synergy: synergyAcrossChampions(ids, shopIds) }
-      : await fallback();
+    const kitPairs = kitItems?.length && ids.length ? await champPairsSoon(championId) : null;
+    const fromKit = () => {
+      const moved = withAugmentItems(kitItems!, kitData!.games, ids, (a) => kitPairs?.[a], (a) => kitData!.augments.find((x) => x.id === a)?.games, toShop);
+      return { base: [], mayhem: moved.mayhem, mayhemGames: kitData!.games, links: new Map<number, number>(), synergy: synergyAcrossChampions(moved.rest, shopIds) };
+    };
+    const sources = kitItems?.length ? fromKit() : await fallback();
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     // What he bought holds its slot, limits the rest and can open the other damage kind, but pulls nothing in. On 26,151 stored builds a pull
     // by text links and lines named the rest worse than the plain list (first item 43.8% against 55.4%; 58.6% without the pull).
@@ -579,6 +582,13 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
 
   /** ARAMKit's numbers for a champion; null when they can't be had, and the app goes on without them. */
   const champKit = (id: number): Promise<KitStats | null> => kitStats(id, { cacheDir, fetchImpl }).then((r) => r.data, () => null);
+  // Asked once per champion per run, so a failed download isn't repeated on every card; the build doesn't wait long for a first download of 3.8 MB.
+  const PAIRS_WAIT_MS = 3000;
+  const pairAsks = new Map<number, Promise<KitAugmentItems | null>>();
+  const champPairsSoon = (id: number): Promise<KitAugmentItems | null> => {
+    if (!pairAsks.has(id)) pairAsks.set(id, kitAugmentItems(id, { cacheDir, fetchImpl }).then((r) => r.data, () => null));
+    return Promise.race([pairAsks.get(id)!, new Promise<null>((done) => setTimeout(() => done(null), PAIRS_WAIT_MS))]);
+  };
 
   /** Each champion's distance from an even win rate in the outside data, averaged over the sources; our model where they have none. */
   async function championStrengths(ids: number[]): Promise<{ id: number; points: number }[]> {
