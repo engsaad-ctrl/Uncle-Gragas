@@ -62,6 +62,22 @@ export function heroEdge(s: OpenStats, champion: number): number | null {
   return h ? (100 * h.wins) / h.games - 50 : null;
 }
 
+/**
+ * How tied an augment is to a champion, leaving winning out: how much more often its players take it than all players do, 1 being the
+ * same. So a strong augment everyone takes isn't tied to anyone, and one taken mostly by this champion's players is.
+ */
+export function augmentLink(s: OpenStats, champion: number, augment: number): number | null {
+  const h = s.heroes[String(champion)];
+  const a = s.augments[String(champion)]?.[String(augment)];
+  if (!h || !a) return null;
+  let taken = 0, games = 0;
+  for (const [id, hero] of Object.entries(s.heroes)) {
+    games += hero.games;
+    taken += s.augments[id]?.[String(augment)]?.games ?? 0;
+  }
+  return taken && games ? a.games / h.games / (taken / games) : null;
+}
+
 /** What an augment adds to its champion's win chance here, in points (25 per unit of log-odds near even), and from how many games. */
 export function augmentLift(s: OpenStats, champion: number, augment: number): { points: number; games: number } | null {
   const h = s.heroes[String(champion)];

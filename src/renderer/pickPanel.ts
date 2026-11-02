@@ -1,3 +1,4 @@
+import { fillsGaps, teamGaps } from '../ai/teamFit.js';
 import type { LcuState } from '../lcu/state.js';
 import { champLink, el, isError, lcuNow, PAGE_MODE, pageSignal, stagger } from './dom.js';
 
@@ -24,18 +25,22 @@ export function pickPanel(): HTMLElement {
     if (key !== shownKey || isError(list)) return;
     const points = new Map(scores && !isError(scores) ? scores.map((x) => [x.id, x.points]) : []);
     const caption = (id: number) => (points.has(id) ? `${points.get(id)! > 0 ? '+' : ''}${points.get(id)!.toFixed(1)}` : '');
-    const card = (id: number, i: number, cls = '') => {
+    const gaps = teamGaps(s.allies);
+    const lacks = [...(gaps.frontline ? ['خط أمامي'] : []), ...(gaps.damage ? [gaps.damage === 'magic' ? 'ضرر سحري' : 'ضرر جسدي'] : [])];
+    const card = (id: number, i: number, cls = '', canFill = false) => {
       const c = list.find((x) => x.id === id);
-      return c ? [stagger(champLink(c, `#/champion/${id}/${PAGE_MODE[s.mode!]}`, caption(id), `champ mini ${cls}`), i)] : [];
+      const text = [caption(id), ...(canFill && fillsGaps(id, gaps) ? ['يكمّل'] : [])].filter(Boolean).join(' · ');
+      return c ? [stagger(champLink(c, `#/champion/${id}/${PAGE_MODE[s.mode!]}`, text, `champ mini ${cls}`), i)] : [];
     };
     const sorted = [...choices].sort((a, b) => (points.get(b) ?? 0) - (points.get(a) ?? 0));
     const row = el('div', 'champ-row');
-    row.append(...sorted.flatMap((id, i) => card(id, i, `${id === s.championId ? 'me' : ''}${i === 0 && points.size ? ' best' : ''}`)));
+    row.append(...sorted.flatMap((id, i) => card(id, i, `${id === s.championId ? 'me' : ''}${i === 0 && points.size ? ' best' : ''}`, true)));
     const body: HTMLElement[] = [el('h2', '', 'اختر بطلك'), row];
     if (s.allies.length) {
       const team = el('div', 'champ-row');
       team.append(...s.allies.flatMap((id, i) => card(id, i)));
       body.push(el('h3', 'sub-title', 'اختيارات فريقك'), team);
+      if (lacks.length) body.push(el('p', 'hint', `ينقص فريقك: ${lacks.join('، ')}. كلمة «يكمّل» تدل على من يسدّ ذلك، وهي ملاحظة غير مثبتة ولا تغيّر الترتيب.`));
     }
     if (points.size) body.push(el('p', 'hint', 'الرقم: فرق نسبة فوز البطل عن 50%، من AramHex وARAMKit، بالنقاط. الأعلى أولاً.'));
     panel.hidden = false;

@@ -1,4 +1,5 @@
 import { adviseBuild, namedItems, type Advice, type GeminiPost } from '../ai/advisor.js';
+import { lineItems } from '../ai/lines.js';
 import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
@@ -19,7 +20,7 @@ import { recipeFor, shiftedBuild, worthShowing } from '../app/experimentalBuild.
 import { composeAllLanes, composeTierList, mainLane, type TierRow } from '../app/tierList.js';
 import { byWinRate, sitePage, type SiteItems } from '../stats/arammayhem.js';
 import { kitStats, type KitStats } from '../stats/aramKit.js';
-import { augmentLift, heroEdge, liftPoints, openStats } from '../stats/openStats.js';
+import { augmentLift, augmentLink, heroEdge, liftPoints, openStats } from '../stats/openStats.js';
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
@@ -511,7 +512,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
    * base and what the augments did to items across champions on top, with the augments' required items. If ARAMKit can't
    * be had: OP.GG's normal-ARAM build, our Mayhem games, text links and our measured pairings.
    */
-  async function engineBuild(championId: number, augmentIds: number[], enemies: number[] = []): Promise<{ item: ItemEntry; why: string[] }[]> {
+  async function engineBuild(championId: number, augmentIds: number[], enemies: number[] = [], followLines = false): Promise<{ item: ItemEntry; why: string[] }[]> {
     const entry = (await champions()).find((c) => c.id === championId);
     if (!entry) throw new Error(`unknown champion ${championId}`);
     const [all, list, games] = await Promise.all([augments(), items('mayhem'), storedGames()]);
@@ -547,6 +548,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       // Only with the whole enemy team known (the game loaded): magic 1, mixed 0.5.
       enemyMagic: enemies.length === 5 ? enemies.reduce((s, id) => { const d = CHAMPION_KITS.find((k) => k.id === id)?.damage; return s + (d === 'magic' ? 1 : d === 'mixed' ? 0.5 : 0); }, 0) : undefined,
       required: [...new Set(am.flatMap((m) => m.needs.filter((n): n is number => typeof n === 'number')))],
+      ...(followLines ? { lineItems: lineItems(am.map((m) => m.id)) } : {}),
     });
     return r.items.flatMap((id) => {
       const item = shop.find((i) => i.id === id);
@@ -585,7 +587,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   }
 
   /** What each Mayhem augment adds to this champion in the outside data, averaged over the sources; empty when none can be had. */
-  async function openAugments(championId: number): Promise<{ id: number; points: number }[]> {
+  async function openAugments(championId: number): Promise<{ id: number; points: number; link?: number }[]> {
     const [open, kit] = await Promise.all([openStats({ cacheDir, fetchImpl }).catch(() => null), champKit(championId)]);
     if (!open && !kit) return [];
     const kitById = new Map(kit?.augments.map((a) => [a.id, a]));
@@ -594,7 +596,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const hex = open ? a.ids.flatMap((id) => augmentLift(open.data, championId, id) ?? []).sort((x, y) => y.games - x.games)[0] : undefined;
       const row = kit ? a.ids.flatMap((id) => kitById.get(id) ?? []).sort((x, y) => y.games - x.games)[0] : undefined;
       const known = [hex?.points, row && kit && liftPoints(row.games * row.winRate, row.games, kit.winRate)].filter((x): x is number => x !== undefined);
-      return known.length ? [{ id: a.id, points: known.reduce((t, x) => t + x, 0) / known.length }] : [];
+      // The copy with the most games, as above: a share taken across copies would count one augment twice.
+      const link = open ? a.ids.flatMap((id) => { const l = augmentLink(open.data, championId, id); return l === null ? [] : [{ l, games: open.data.augments[String(championId)]?.[String(id)]?.games ?? 0 }]; }).sort((x, y) => y.games - x.games)[0]?.l : undefined;
+      return known.length ? [{ id: a.id, points: known.reduce((t, x) => t + x, 0) / known.length, ...(link === undefined ? {} : { link }) }] : [];
     });
   }
 

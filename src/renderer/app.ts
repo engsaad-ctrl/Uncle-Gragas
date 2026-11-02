@@ -295,7 +295,7 @@ settings.append(
         // not remembered this time; harmless
       }
     }),
-    el('p', 'hint', 'يقلل وزن الروابط بين التعزيزات إلى حجمها المقاس، ويضيف سلسلة الصحة بين Steel Your Heart وTank Engine، ويترك الشرح كما هو. تجربة غير مثبتة، والبناء لا يتغير.'),
+    el('p', 'hint', 'يقلل وزن الروابط بين التعزيزات إلى حجمها المقاس، ويضيف سلسلة الصحة بين Steel Your Heart وTank Engine، ويجعل البناء يتبع خط تعزيزاتك ولو كانت أغراضه غير معتادة لبطلك. تجربة غير مثبتة.'),
   ),
   section('مفتاح Gemini (بناء Mayhem بالذكاء الاصطناعي)', aiKeyInput, aiKeySave, aiKeyNote),
   section('التشخيص', exportButton, exportNote),

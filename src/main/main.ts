@@ -194,10 +194,10 @@ ipcMain.handle('mayhem:effects', () => reply(() => services.augmentEffect()));
 ipcMain.handle('mayhem:open', (_e, id: unknown) => reply(() => services.openAugments(Number(id))));
 ipcMain.handle('mayhem:strengths', (_e, ids: unknown) => reply(() => services.championStrengths(parseIds(ids))));
 // In a loaded game the enemy team is known (enemiesInGame): the build answers its magic damage.
-ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown) =>
+ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
-    return services.engineBuild(id, parseIds(augmentIds), enemiesInGame(watcher.session, id));
+    return services.engineBuild(id, parseIds(augmentIds), enemiesInGame(watcher.session, id), followLines === true);
   }),
 );
 ipcMain.handle('build:experimental', (_e, championId: unknown, augmentIds: unknown) =>

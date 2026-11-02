@@ -52,6 +52,8 @@ export interface EngineInput {
   synergy: Map<number, number>;
   /** Magic damage among the five enemies (magic 1, mixed 0.5), once the game is loaded; unknown before. */
   enemyMagic?: number;
+  /** The trial only: items the player's open lines ask for and their scores (src/ai/lines.ts). They pass the share gate and the damage kind, since the player chose them. */
+  lineItems?: Map<number, number>;
 }
 
 export interface EngineResult {
@@ -112,6 +114,7 @@ export function scoreItems(input: EngineInput): Map<number, { score: number; why
     const win = (m.wins + 10) / (m.games + 20);
     add(boughtAs(m.id), share * (1 + 4 * (win - 0.5)), 'mayhem');
   }
+  for (const [id, s] of input.lineItems ?? []) add(boughtAs(id), s, 'line');
   for (const [id, s] of input.links) if (known(id)) add(id, LINK_WEIGHT * s, 'link');
   for (const [id, lift] of input.synergy) if (known(id)) add(id, 3 * lift, 'synergy');
   // The one enemy answer our games bear out: magic resist bought against 3+ magic-damage enemies led by 6.6 points more
@@ -131,8 +134,9 @@ export function scoreItems(input: EngineInput): Map<number, { score: number; why
 export function buildFor(input: EngineInput): EngineResult {
   const byId = new Map(input.pool.map((i) => [i.id, i]));
   const scores = scoreItems(input);
+  const asked = new Set([...(input.lineItems?.keys() ?? [])].map(boughtAs));
   const offKind = (i: EngineItem) =>
-    !input.switchesDamage && input.championDamage !== 'mixed' && i.damage !== 'none' && i.damage !== input.championDamage;
+    !input.switchesDamage && !asked.has(i.id) && input.championDamage !== 'mixed' && i.damage !== 'none' && i.damage !== input.championDamage;
   const ranked = [...scores]
     .filter(([id]) => byId.has(id) && !offKind(byId.get(id)!))
     .sort((a, b) => b[1].score - a[1].score);

@@ -27,7 +27,7 @@ declare global {
       lcuState(): Promise<LcuState>;
       applyToClient(id: number, mode: PageMode, position: Position | 'auto', flash: FlashKey | null): Promise<Reply<ApplyResult>>;
       suggestions(position: LanePosition, enemies: number[], taken: number[]): Promise<Reply<Suggestion[]>>;
-      openAugments(championId: number): Promise<Reply<{ id: number; points: number }[]>>;
+      openAugments(championId: number): Promise<Reply<{ id: number; points: number; link?: number }[]>>;
       championStrengths(ids: number[]): Promise<Reply<{ id: number; points: number }[]>>;
       profile(puuid?: string): Promise<Reply<ProfilePage>>;
       overlayData(): Promise<Reply<OverlayData>>;
@@ -41,7 +41,7 @@ declare global {
       /** Every augment's effect on its team's win chance, from the team model. */
       augmentEffects(): Promise<Reply<AugmentEffect[]>>;
       /** The build without AI for a champion and the augments taken, each item with why it is in. */
-      engineBuild(championId: number, augmentIds: number[]): Promise<Reply<{ item: ItemEntry; why: string[] }[]>>;
+      engineBuild(championId: number, augmentIds: number[], followLines?: boolean): Promise<Reply<{ item: ItemEntry; why: string[] }[]>>;
       /** A labelled second build no test vouches for, when there is one. */
       experimentalBuild(championId: number, augmentIds: number[]): Promise<Reply<ExperimentalBuild | null>>;
       hasAiKey(): Promise<boolean>;

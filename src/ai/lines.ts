@@ -2,6 +2,9 @@
 // and the game's numbers imply (knowledge/network.jsonl), kept to links said good twice or more, or verified by src/ai/setCalc.ts.
 // Coherence here is a count, not a win chance: how many of the parts already held share a line with a card.
 
+import { linksWith, type Mechanic } from './mechanics.js';
+import { AUGMENT_MECHANICS, ITEM_MECHANICS } from './mechanicsData.js';
+
 export type ChampionDamage = 'ap' | 'ad' | 'mixed';
 
 export interface Line {
@@ -78,6 +81,57 @@ export function cardFit(held: number[], card: number | undefined, damage?: Champ
   const scored = options.map((line) => ({ line, on: known.filter((id) => partsOf(line).includes(id)).length }));
   const best = scored.reduce((a, b) => (b.on > a.on ? b : a));
   return known.length ? { line: best.line, share: best.on / known.length } : { line: best.line };
+}
+
+const mechanicOf = (part: number): Mechanic | undefined => (part < 0 ? ITEM_MECHANICS : AUGMENT_MECHANICS).find((m) => m.id === Math.abs(part));
+const sameLine = (a: number, b: number) => LINES.some((l) => partsOf(l).includes(a) && partsOf(l).includes(b));
+
+/**
+ * The share of the player's path that a card works with: augments taken and items suggested, each joined to it by a line or by a text
+ * link. Parts the tables don't know are left out. A card they do know with no link to the path gets 0, so it can't outrank one known to
+ * conflict. Undefined at the start of the path, or for a card the tables don't know.
+ */
+export function pathShare(path: number[], card: number | undefined): number | undefined {
+  if (card === undefined) return undefined;
+  const mech = mechanicOf(card);
+  const known = path.filter((p) => p !== card && mechanicOf(p));
+  if (!mech || !known.length) return undefined;
+  return known.filter((p) => sameLine(p, card) || linksWith([mechanicOf(p)!], mech).length > 0).length / known.length;
+}
+
+/**
+ * Each augment's place among those given, 0 for the lowest and 1 for the highest; ties share a place. Places within a rarity
+ * are what a round of cards compares, since cards in one offer share it.
+ */
+export function placesOf(points: Map<number, number>): Map<number, number> {
+  const all = [...points.values()];
+  return new Map([...points].map(([id, p]) => [id, all.length > 1 ? all.filter((x) => x < p).length / (all.length - 1) : 1]));
+}
+
+/** How much a card's percent leans on the path rather than on the champion. A first guess. */
+export const HELD_WEIGHT = 0.5;
+
+/**
+ * A card's link percent: its place by how tied it is to this champion (augmentLink in src/stats/openStats.ts), and the share of the
+ * player's path it works with (pathShare). Unknown without data. Winning plays no part: the owner asked for this over win rates.
+ */
+export const compatibility = (place: number | undefined, share: number | undefined): number | undefined =>
+  place === undefined ? undefined : Math.round(100 * (share === undefined ? place : (1 - HELD_WEIGHT) * place + HELD_WEIGHT * share));
+
+/**
+ * What the player's augments ask of the build: each item on the fullest open lines and how much it adds, on the build's scale where
+ * a core item is about 1. No champion filter, since the player chose: Phenomenal Evil on Nasus asks for AP items. The sizes are a first
+ * guess, so this stays behind the trial switch: a core item counts in full from two held parts, a branch item half.
+ */
+export function lineItems(held: number[]): Map<number, number> {
+  const lines = openLines(held);
+  const out = new Map<number, number>();
+  for (const { line, held: on } of lines.filter((l) => l.held.length === lines[0]!.held.length)) {
+    const size = Math.min(1, on.length / 2);
+    for (const part of line.branches) if (part < 0) out.set(-part, Math.max(out.get(-part) ?? 0, 0.5 * size));
+    for (const part of line.core) if (part < 0) out.set(-part, Math.max(out.get(-part) ?? 0, size));
+  }
+  return out;
 }
 
 /** The lines with held parts, most held first, with the core parts still missing. */

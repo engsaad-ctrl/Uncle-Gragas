@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { augmentLift, heroEdge, openStats, toOpenStats } from '../../src/stats/openStats.js';
+import { augmentLift, augmentLink, heroEdge, openStats, toOpenStats } from '../../src/stats/openStats.js';
 
 const heroes = { 4: { name: 'x', games: 1000, wins: 570, win_rate: 0.57 }, bad: { games: 1, wins: 1 }, 5: { games: 10, wins: 11 } };
 const augments = { 4: { 1054: { games: 100000, wins: 68000, low_sample: false }, 1055: { games: 3, wins: 3 } } };
@@ -51,5 +51,21 @@ describe('openStats', () => {
   });
   it('refuses a path that leaves the data folder', async () => {
     await expect(openStats({ cacheDir: dir(), fetchImpl: server({ '/latest.json': { path: '../../evil', patch: '16.21' } }) })).rejects.toThrow(/bad path/);
+  });
+});
+
+describe('augmentLink', () => {
+  const s = toOpenStats('16.21', { 1: { games: 100, wins: 50 }, 2: { games: 100, wins: 50 } }, { 1: { 10: { games: 30, wins: 15 }, 20: { games: 10, wins: 9 } }, 2: { 10: { games: 10, wins: 5 }, 20: { games: 10, wins: 1 } } });
+  it('reads how much more often the champion takes it than everyone does', () => {
+    expect(augmentLink(s, 1, 10)).toBeCloseTo(0.3 / 0.2);
+    expect(augmentLink(s, 2, 10)).toBeCloseTo(0.1 / 0.2);
+  });
+  it('leaves winning out', () => {
+    expect(augmentLink(s, 1, 20)).toBeCloseTo(1);
+    expect(augmentLink(s, 2, 20)).toBeCloseTo(1);
+  });
+  it('is null without data', () => {
+    expect(augmentLink(s, 3, 10)).toBeNull();
+    expect(augmentLink(s, 1, 30)).toBeNull();
   });
 });
