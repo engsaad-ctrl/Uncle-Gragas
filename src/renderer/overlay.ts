@@ -126,6 +126,7 @@ function toggleMark(id: number) {
   buildView = undefined; // the marks changed: back to the build that follows them
   render();
   if (data?.build) renderBuild(data.build);
+  void refreshEngine(); // the walk tab needs it even when the champion's page failed to load, as on a weak connection
   void refreshFit();
 }
 
@@ -408,7 +409,7 @@ function adaptedSection(): HTMLElement {
   });
   const dropped = engine.dropped ?? [];
   const x = engine.experimental;
-  const lines = openLines(heldParts(), championDamage()).map((o) => el('p', 'hint', `${o.line.name}: ${o.held.length} أجزاء. يفشل إذا: ${o.line.breaks.join('، ')}.`));
+  const lines = openLines(heldParts(), championDamage()).filter((o) => o.held.some((part) => part > 0)).map((o) => el('p', 'hint', `${o.line.name}: ${o.held.length} أجزاء. يفشل إذا: ${o.line.breaks.join('، ')}.`));
   return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'مسارك: يبقى ما نصحناك به ما دام مناسباً، ونكمل بالغرض التالي.'), ...lines, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
 }
 
