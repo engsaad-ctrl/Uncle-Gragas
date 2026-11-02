@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { cardGain, fight, type CardNumbers, type CardOp } from '../../src/ai/cardMath.js';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { FIGHT, cardGain, fight, type CardNumbers, type CardOp } from '../../src/ai/cardMath.js';
+
+// These tests count attacks exactly; the uptime has its own test.
+beforeAll(() => { FIGHT.attackUptime.melee = 1; FIGHT.attackUptime.ranged = 1; });
+afterAll(() => { FIGHT.attackUptime.melee = 0.8; FIGHT.attackUptime.ranged = 0.5; });
 
 const num = (baseValue: number) => ({ baseValue });
 const bin = {

@@ -8,7 +8,7 @@ import { calculationsAt, type SpellData } from '../texts/spellValues.js';
 import { buildStats, championRecord, statReader, type BuildStats } from './calculator.js';
 
 type Amount = number | { min: number; max: number };
-export interface DamageFormula { flat?: Amount; ap?: number; ad?: number; bonus_ad?: number; hp?: number; bonus_hp?: number; armor?: number; mr?: number; target_max_hp?: number; target_missing_hp?: number; target_current_hp?: number }
+export interface DamageFormula { flat?: Amount; ap?: number; ad?: number; bonus_ad?: number; hp?: number; bonus_hp?: number; armor?: number; mr?: number; bonus_armor?: number; bonus_mr?: number; target_max_hp?: number; target_missing_hp?: number; target_current_hp?: number }
 export type CardOp =
   | { op: 'add'; stat: string; value: Amount; after_quest?: boolean }
   | { op: 'mult'; stat: string; factor: number; scope?: string; after_quest?: boolean }
@@ -24,13 +24,16 @@ export type CardOp =
   | { op: 'heal' | 'shield'; amount: DamageFormula; trigger: string; internal_cooldown?: number | null; after_quest?: boolean }
   | { op: 'crit_abilities'; extra: number; after_quest?: boolean }
   | { op: 'crit_dot'; extra: number; after_quest?: boolean }
+  | { op: 'heal_damage'; ratio: number; after_quest?: boolean }
+  | { op: 'abilities_on_hit'; after_quest?: boolean }
   | { op: 'on_hit_repeat'; extra_hits: number; trigger: string; after_quest?: boolean }
   | { op: 'timed'; trigger: string; stat: string; value: Amount; mode: 'add' | 'percent'; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; after_quest?: boolean };
 
 export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null }
 
 /** The fixed fight. Assumptions, all visible: changing them changes every card alike, not who is popular. */
-export const FIGHT = { seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
+/** attackUptime: a real fight has moving and chasing; these best fit the share of a team's damage in stored games. */
+export const FIGHT = { attackUptime: { melee: 0.8, ranged: 0.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
 
 /** Very high move speed is slowed: the game's soft caps at 415 and 490. shortcut: from memory, not from a file; check on screen. */
 const softSpeed = (x: number) => (x > 490 ? x * 0.5 + 230 : x > 415 ? x * 0.8 + 83 : x);
@@ -46,6 +49,8 @@ export interface FightResult {
   fromAttacks: number;
   fromCards: number;
   effectiveHp: number;
+  /** Healing and shields he gives himself in the fight, as effective health: vamp, and what cards and items say. */
+  healedHp: number;
   attacks: number;
   peakMoveSpeed: number;
   peakAttackSpeed: number;
@@ -68,7 +73,7 @@ const NOT_DAMAGE = /monster|minion|shield|heal|bonus|floor|secondary/i;
 
 function formula(d: DamageFormula, s: BuildStats, level: number): number {
   const t = FIGHT.target.hp;
-  return (d.flat === undefined ? 0 : scaled(d.flat, level)) + (d.ap ?? 0) * s.ap + (d.ad ?? 0) * s.ad + (d.bonus_ad ?? 0) * s.bonusAd + (d.hp ?? 0) * s.hp + (d.bonus_hp ?? 0) * s.bonusHp + (d.armor ?? 0) * s.armor + (d.mr ?? 0) * s.mr + (d.target_max_hp ?? 0) * t + (d.target_missing_hp ?? 0) * (t / 2) + (d.target_current_hp ?? 0) * (t / 2);
+  return (d.flat === undefined ? 0 : scaled(d.flat, level)) + (d.ap ?? 0) * s.ap + (d.ad ?? 0) * s.ad + (d.bonus_ad ?? 0) * s.bonusAd + (d.hp ?? 0) * s.hp + (d.bonus_hp ?? 0) * s.bonusHp + (d.armor ?? 0) * s.armor + (d.mr ?? 0) * s.mr + (d.bonus_armor ?? 0) * s.bonusArmor + (d.bonus_mr ?? 0) * s.bonusMr + (d.target_max_hp ?? 0) * t + (d.target_missing_hp ?? 0) * (t / 2) + (d.target_current_hp ?? 0) * (t / 2);
 }
 
 const STAT_ADD: Record<string, (s: BuildStats, v: number) => void> = {
@@ -105,7 +110,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const itemMana = owned.reduce((t, it) => t + (it.DataValues?.find((d) => d.name === 'FlatMPPoolMod')?.values?.[0] ?? 0), 0);
   // An item's effect marked for the other attack type doesn't count, nor a button's buff; a button's damage is pressed when ready.
   const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!); };
-  const ops = [...(o.passive ?? []), ...o.cards.flatMap((c) => c.ops), ...o.items.flatMap((id) => o.itemOps?.[id % 10000] ?? []).filter(applies)].filter((x) => !x.after_quest);
+  const ops = [...(o.passive ?? []), ...o.cards.flatMap((c) => c.ops).filter(applies), ...o.items.flatMap((id) => o.itemOps?.[id % 10000] ?? []).filter(applies)].filter((x) => !x.after_quest);
   const notModelled = o.cards.flatMap((c) => (c.not_modelled ? [`${c.name}: ${c.not_modelled}`] : []));
   // Stacks held by this level, read from 23 screen windows with Tank Engine (health order: Heartsteel, then the multiplier, which one reading of Mundo forces): 0.6 a level when deaths take most of them, 2.2 a level of takedowns when they don't. Other stacks are a guess.
   const stacksOf = (x: Extract<CardOp, { op: 'per_stack' }>) => { const n = x.per === 'takedown' || x.per === 'kill' ? (x.lost_on_death ? 0.6 : 2.2) * o.level : FIGHT.stacksByLevel(o.level); return x.cap ? Math.min(x.cap, n) : n; };
@@ -131,7 +136,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const as0 = baseRates.attackSpeedModifiable?.baseValue ?? 0.625;
   const asRatio = baseRates.attackSpeedRatioModifiable?.baseValue || as0;
   // An amp for magic damage reaches a champion's abilities unless the kit deals only physical.
-  const amp = (scope: string) => ops.reduce((m, x) => (x.op === 'damage_amp' && (x.scope === 'all' || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical')) ? m * x.factor : m), 1);
+  // An amp on one chosen ability counts for one of the three basic ones.
+  const amp = (scope: string) => ops.reduce((m, x) => (x.op !== 'damage_amp' ? m : x.scope === 'all' || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical') ? m * x.factor : x.scope === 'one_ability' && scope === 'abilities' ? m * (1 + (x.factor - 1) / 3) : m), 1);
   const cdFactor = (scope: string) => ops.reduce((m, x) => (x.op === 'cooldown' && (x.scope === 'all' || x.scope === scope) ? m * x.factor : m), 1);
   const locked = new Set(ops.flatMap((x) => (x.op === 'lock' ? [x.key] : [])));
   const critExtra = ops.reduce((m, x) => (x.op === 'crit_abilities' ? m + x.extra : m), 0);
@@ -171,7 +177,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     let flatMs = 0, pctMs = 0;
     for (const [x, st] of stateOf) {
       if (x.op !== 'timed' || t > st.until) continue;
-      const fade = x.decays ? Math.max(0, 1 - (t - st.start) / x.duration) : 1;
+      const fade = x.decays && x.duration ? Math.max(0, 1 - (t - st.start) / x.duration) : 1;
       const v = scaled(x.value, o.level) * st.stacks * fade;
       if (x.stat === 'move_speed') { if (x.mode === 'percent') pctMs += v; else flatMs += v; }
       else if (x.mode === 'percent' && x.stat !== 'attack_speed') multiply(c, x.stat, 1 + v);
@@ -194,20 +200,23 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (left > 0) sl.ready -= unit === 'fraction' ? left * Math.min(1, scaled(amount, o.level)) : scaled(amount, o.level);
     }
   };
+  let healed = 0;
   const fire = (trigger: string, t: number, c: BuildStats) => {
     const taken = takenBy(c);
     for (const x of ops) {
-      if (!('trigger' in x) || x.trigger !== trigger) continue;
-      const icd = 'internal_cooldown' in x ? (x.internal_cooldown ?? 0) : 0;
+      if (!('trigger' in x) || (x.trigger !== trigger && !(trigger === 'ability_hit' && (x.trigger === 'spell_hit' || x.trigger === 'burn')))) continue;
+      // A card's summoner spell or chosen spell comes once in a fight, whatever the abilities do.
+      const icd = x.trigger === 'spell_hit' ? (('internal_cooldown' in x ? x.internal_cooldown : 0) || FIGHT.seconds) : 'internal_cooldown' in x ? (x.internal_cooldown ?? 0) : 0;
       if (icd && t - (lastProc.get(x) ?? -Infinity) < icd) continue;
+      if (x.op === 'heal' || x.op === 'shield') { healed += formula(x.amount, c, o.level); lastProc.set(x, t); }
       if (x.op === 'proc') { fromCards += formula(x.damage, c, o.level) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all'); lastProc.set(x, t); }
       if (x.op === 'refund') { reduce(x.scope, x.amount, x.unit, t); lastProc.set(x, t); }
-      if (x.op === 'dot') { const d = dots.find((y) => y.op === x); if (d) { d.until = t + x.duration; d.stacks = Math.min(x.stacks_max ?? 1, d.stacks + 1); } else dots.push({ op: x, until: t + x.duration, stacks: 1, fromAbility: false }); }
+      if (x.op === 'dot') { const d = dots.find((y) => y.op === x); if (d) { d.until = t + (x.duration ?? FIGHT.seconds); d.stacks = Math.min(x.stacks_max ?? 1, d.stacks + 1); } else dots.push({ op: x, until: t + (x.duration ?? FIGHT.seconds), stacks: 1, fromAbility: false }); }
       if (x.op === 'timed') {
         const st = stateOf.get(x);
         const live = st && t <= st.until;
         if (live && !x.refresh && (x.stacks_max ?? 1) <= 1) continue;
-        stateOf.set(x, { stacks: live ? Math.min(x.stacks_max ?? Infinity, st.stacks + 1) : 1, until: t + x.duration, start: t });
+        stateOf.set(x, { stacks: live ? Math.min(x.stacks_max ?? Infinity, st.stacks + 1) : 1, until: t + (x.duration ?? FIGHT.seconds), start: t }); // a card that names no end lasts the fight
         lastProc.set(x, t);
       }
     }
@@ -224,7 +233,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     // Non-attackers attack between casts only: an assumption, the same for every card.
     if (t >= nextAttack) {
       attacks++;
-      nextAttack = t + 1 / (c.attackSpeed * (o.kit.attacks ? 1 : 0.25));
+      nextAttack = t + 1 / (c.attackSpeed * (o.kit.attacks ? 1 : 0.25) * (melee ? FIGHT.attackUptime.melee : FIGHT.attackUptime.ranged));
       fromAttacks += c.ad * (1 + c.crit * (c.critDamage - 1)) * amp('attacks') * taken.physical;
       for (let n = 1 + onHitRepeat(c); n >= 1; n--) fire('on_hit', t, c);
       fire('attack', t, c);
@@ -252,14 +261,14 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
           sl.ready = t + Math.max(0.5, (sl.cooldown * cdFactor(scope) * 100) / (100 + haste(scope)));
           if (sl.recast) { sl.ready = t + CAST_SECONDS; sl.recast = false; }
         }
-        if (one > 0) fire('ability_hit', t, c);
+        if (one > 0) { fire('ability_hit', t, c); if (ops.some((x) => x.op === 'abilities_on_hit')) fire('on_hit', t, c); }
         fire('ability_cast', t, c);
         if (sl.key === 'R') fire('ult_cast', t, c);
         nextCast = t + CAST_SECONDS;
         break;
       }
     }
-    for (const x of ops) if (x.op === 'proc' && x.trigger === 'periodic' && t - (lastProc.get(x) ?? -Infinity) >= (x.internal_cooldown || FIGHT.seconds)) fire('periodic', t, c);
+    for (const x of ops) if ((x.op === 'proc' || x.op === 'heal' || x.op === 'shield') && x.trigger === 'periodic' && t - (lastProc.get(x) ?? -Infinity) >= (x.internal_cooldown || FIGHT.seconds)) fire('periodic', t, c);
     for (const d of dots) {
       if (t > d.until) continue;
       const each = formula(d.op.per_second, c, o.level) * dt * d.stacks * (taken[d.op.type as keyof typeof taken] ?? taken.adaptive) * (1 + c.crit * dotCrit);
@@ -268,6 +277,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     }
     if (t + dt >= damageBySecond.length + 1) damageBySecond.push(fromAbilities + fromAttacks + fromCards);
   }
+  fromCards += healed * ops.reduce((m, x) => (x.op === 'heal_damage' ? m + x.ratio : m), 0) * takenBy(s).magic;
   for (const sl of slots) perCast[sl.key] ??= 0;
   const physical = s.hp * (1 + Math.max(0, s.armor) / 100), magic = s.hp * (1 + Math.max(0, s.mr) / 100);
   const reduction = ops.reduce((m, x) => (x.op === 'add' && x.stat === 'damage_reduction' ? m * (1 - scaled(x.value, o.level)) : m), 1);
@@ -277,6 +287,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     fromAbilities,
     fromAttacks,
     fromCards,
+    healedHp: Math.max(0, healed + s.omnivamp * (fromAbilities + fromAttacks + fromCards) + s.lifeSteal * fromAttacks) * ((o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / s.hp),
     effectiveHp: (o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / reduction,
     attacks,
     peakMoveSpeed: Math.round(peakMs),
