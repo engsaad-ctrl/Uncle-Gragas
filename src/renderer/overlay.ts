@@ -1,9 +1,12 @@
 // The over-the-game window: the picked champion's build (spells, runes, skills, items) and augments, with a quick search.
 
 import type { Advice } from '../ai/advisor.js';
+import { followPath, type BuildPath } from '../app/buildPath.js';
+import { cardFit, itemPart, openLines, type ChampionDamage } from '../ai/lines.js';
+import { CHAMPION_KITS } from '../ai/championKits.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
-import { FIT_POINTS, fitOf, gradesFor, outsidePoints, playedOnly } from './fit.js';
+import { FIT_POINTS, fitOf, gradesFor, healthChain, nextToPicked, outsidePoints, playedOnly, trialScoring } from './fit.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
@@ -47,6 +50,13 @@ const STAT_AR: Record<string, string> = {
   move_speed: 'سرعة الحركة', gold: 'الذهب', omnivamp: 'الامتصاص', heal_shield_power: 'قوة العلاج والدروع',
 };
 const mechName = (id: number) => AUGMENT_MECHANICS.find((m) => m.id === id)?.name ?? String(id);
+const championDamage = (): ChampionDamage | undefined => {
+  const d = CHAMPION_KITS.find((k) => k.id === data?.champion?.id)?.damage;
+  return d === 'magic' ? 'ap' : d === 'physical' ? 'ad' : d === 'mixed' ? 'mixed' : undefined;
+};
+/** What the player holds on the way: the marked augments and the items the path has reached (src/ai/lines.ts). */
+const heldParts = () => [...(data?.augments ?? []).filter((a) => picked.has(a.id)).flatMap((a) => mechOf(a)?.id ?? []), ...(path?.items.slice(0, path.bought) ?? []).map(itemPart)];
+const lineText = (f: NonNullable<ReturnType<typeof cardFit>>) => (f.share === undefined ? `يبدأ ${f.line.name}.` : `${f.line.name}: يتناسق مع ${Math.round(100 * f.share)}% مما عندك من أجزاء الخطوط المعروفة.`);
 /** Why two augments work together, in one Arabic line. */
 const linkInArabic = (l: Link) => {
   const stat = STAT_AR[l.stat] ?? l.stat;
@@ -58,8 +68,10 @@ const linkInArabic = (l: Link) => {
 let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
-let engine: { key: string; items: { item: ItemEntry; why: string[] }[]; experimental?: ExperimentalBuild | null; error?: string } | undefined;
+let engine: { key: string; items: { item: ItemEntry; why: string[] }[]; dropped?: ItemEntry[]; experimental?: ExperimentalBuild | null; error?: string } | undefined;
 let engineAsked = '';
+/** The items the player is walking, kept from augment to augment (src/app/buildPath.ts). */
+let path: BuildPath | undefined;
 async function refreshEngine() {
   const key = pickedKey();
   const champion = data?.champion;
@@ -67,7 +79,13 @@ async function refreshEngine() {
   engineAsked = key;
   const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked]), window.lolh.experimentalBuild(champion.id, [...picked])]);
   if (pickedKey() !== key) return;
-  engine = isError(r) ? { key, items: [], error: r.error } : { key, items: r, experimental: isError(x) ? null : x };
+  if (isError(r)) engine = { key, items: [], error: r.error };
+  else {
+    path = followPath(path, [...picked], r.map((e) => e.item.id));
+    const onPath = path.items.flatMap((id) => r.find((e) => e.item.id === id) ?? []);
+    const dropped = path.dropped.flatMap((id) => engine?.items.find((e) => e.item.id === id)?.item ?? []);
+    engine = { key, items: onPath, dropped, experimental: isError(x) ? null : x };
+  }
   if (data?.build) renderBuild(data.build);
 }
 
@@ -103,10 +121,12 @@ function render() {
   const linksOf = (a: OverlayData['augments'][number]) => (picked.has(a.id) || !pickedMechs.length ? [] : linksWith(pickedMechs, mechOf(a) ?? NO_MECH));
   // One score in win-chance points: the augment's own effect (team model), plus, next to the marked augments, a point per
   // unit of text-link strength and a pair's measured lift when it has enough games.
+  const trial = trialScoring();
   const score = (a: OverlayData['augments'][number]) => {
     const f = fit.get(a.id);
     const kit = fitOf(data!.champion?.id, a.ids ?? [a.id])?.score ?? 0; // a near-tie breaker only (src/renderer/fit.ts)
-    return (effects.get(a.id)?.points ?? 0) + outsidePoints(openPoints.get(a.id), a.tierLabel) + FIT_POINTS * kit + linksOf(a).reduce((s, l) => s + l.strength, 0) + (f && f.games >= FIT_GAMES ? 100 * f.lift : 0);
+    const chain = trial && !picked.has(a.id) ? healthChain(pickedMechs.map((m) => m.id), mechOf(a)?.id) : 0;
+    return (effects.get(a.id)?.points ?? 0) + outsidePoints(openPoints.get(a.id), a.tierLabel) + FIT_POINTS * kit + nextToPicked(linksOf(a).reduce((s, l) => s + l.strength, 0) + chain, f && f.games >= FIT_GAMES ? f.lift : undefined, trial);
   };
   const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : score(a));
   const pool = data.mode === 'mayhem' ? playedOnly(data.augments, effects, picked) : data.augments;
@@ -145,7 +165,9 @@ function render() {
       const f = picked.has(a.id) ? undefined : fit.get(a.id);
       const kit = picked.has(a.id) ? null : fitOf(data!.champion?.id, a.ids ?? [a.id]);
       const links = linksOf(a);
+      const onLine = picked.has(a.id) ? undefined : cardFit(heldParts(), mechOf(a)?.id, championDamage());
       const why = [
+        ...(onLine ? [lineText(onLine)] : []),
         ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
         ...(openPoints.has(a.id) ? [`مع هذا البطل في AramHex وARAMKit: ${openPoints.get(a.id)!.toFixed(1)} نقطة.`] : a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
         ...(f && f.games >= FIT_GAMES ? [`مع اختياراتك: ${Math.round(100 * f.lift)}% من ${f.games} لاعباً.`] : []),
@@ -158,6 +180,7 @@ function render() {
       grade.title = why.join('\n');
       // The letter comes last, against the row's end, so the letters of all rows line up.
       if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
+      if (onLine?.share) tags.append(el('span', 'ov-mech', `${Math.round(100 * onLine.share)}%`));
       tags.append(grade);
       r.append(tags);
       const on = picked.has(a.id);
@@ -247,15 +270,19 @@ function adaptedSection(): HTMLElement {
     return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'جاري حساب البناء…'));
   }
   if (engine.error) return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'missing', `تعذّر حساب البناء: ${engine.error}`));
-  for (const { item, why } of engine.items) {
+  const bought = path?.bought ?? 0;
+  engine.items.forEach(({ item, why }, place) => {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
-    txt.append(el('b', '', shownName(item)), el('small', '', why.map((w) => WHY_AR[w] ?? w).join(' · ')));
+    const step = place < bought ? ['في مسارك'] : place === bought ? ['التالي'] : [];
+    txt.append(el('b', '', shownName(item)), el('small', '', [...step, ...why.map((w) => WHY_AR[w] ?? w)].join(' · ')));
     r.append(ic(item), txt);
     rows.append(r);
-  }
+  });
+  const dropped = engine.dropped ?? [];
   const x = engine.experimental;
-  return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'ننصحك به: محسوب ليناسب بطلك وتعزيزاتك.'), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
+  const lines = openLines(heldParts(), championDamage()).map((o) => el('p', 'hint', `${o.line.name}: ${o.held.length} أجزاء. يفشل إذا: ${o.line.breaks.join('، ')}.`));
+  return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'مسارك: يبقى ما نصحناك به ما دام مناسباً، ونكمل بالغرض التالي.'), ...lines, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
 }
 
 function aiSection(): HTMLElement {
@@ -409,7 +436,7 @@ async function load() {
   engine = undefined;
   engineAsked = '';
   buildView = undefined;
-  if (pickedFor !== reply.champion?.id) (picked.clear(), (pickedFor = reply.champion?.id)); // a new game's champion
+  if (pickedFor !== reply.champion?.id) (picked.clear(), (path = undefined), (pickedFor = reply.champion?.id)); // a new game's champion
   // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.
   let restored = false;
   if (!picked.size && reply.champion && reply.mode === 'mayhem' && restoredFor !== reply.champion.id) {

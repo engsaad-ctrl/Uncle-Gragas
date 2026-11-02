@@ -1,5 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { gradeOf, gradesFor, outsidePoints, playedOnly, siteBonus } from '../../src/renderer/fit.js';
+import { gradeOf, gradesFor, healthChain, nextToPicked, outsidePoints, playedOnly, siteBonus, TRIAL_LINK_POINTS, trialScoring } from '../../src/renderer/fit.js';
+
+describe('the health chain', () => {
+  it('links Steel Your Heart and Tank Engine either way', () => {
+    expect(healthChain([1152], 1353)).toBe(2);
+    expect(healthChain([1353, 1181], 1152)).toBe(2);
+  });
+  it('needs the other part marked', () => {
+    expect(healthChain([], 1353)).toBe(0);
+    expect(healthChain([1353], 1353)).toBe(0);
+    expect(healthChain([1181], 1353)).toBe(0);
+    expect(healthChain([1353], undefined)).toBe(0);
+  });
+});
+
+describe('next to the marked augments', () => {
+  it('stays as it was unless the trial is on', () => {
+    expect(nextToPicked(2, 0.03, false)).toBeCloseTo(5);
+    expect(nextToPicked(2, undefined, false)).toBe(2);
+  });
+  it('in the trial counts links by their measured size and leaves out the pair table', () => {
+    expect(nextToPicked(2, 0.03, true)).toBeCloseTo(2 * TRIAL_LINK_POINTS);
+  });
+  it('is off when the choice cannot be read', () => {
+    expect(trialScoring()).toBe(false);
+  });
+});
 
 describe('gradeOf', () => {
   it('splits a ranking of 100 into a tenth S, a quarter A, 40% B and the rest C', () => {

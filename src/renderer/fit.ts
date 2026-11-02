@@ -56,6 +56,29 @@ const OPEN_WEIGHT = 2.6;
 /** The outside view of an augment for this champion, in points: the two data sources, or the site's tier where they have nothing. */
 export const outsidePoints = (open: number | undefined, tier: string | undefined) => (open === undefined ? siteBonus(tier) : OPEN_WEIGHT * open);
 
+// What one unit of text-link strength measured on 1,176 held-out games: 0.003 log-odds, about 0.075 win-chance points, or
+// 0.2 on this score's scale (OPEN_WEIGHT). Today a unit counts as 1. The gain is small (log loss +0.00045, 95% range +0.00009
+// to +0.00081) and sits inside what shuffled augments give, so this is an off-by-default trial, not a proven improvement.
+export const TRIAL_LINK_POINTS = 0.2;
+/** The player's choice in the settings: score links by their measured size and leave out the small pair table. */
+export function trialScoring(): boolean {
+  try {
+    return localStorage.getItem('trialScore') === 'on';
+  } catch {
+    return false;
+  }
+}
+// Steel Your Heart feeds Tank Engine's percent health, which the text links can't see since both only give health. On 12 games read from
+// the screen, counting the chain cut the health error 41.7% against adding parts up (src/ai/setCalc.ts). That measures health, not wins,
+// so its strength is a guess: the same as a text link that feeds another (src/ai/mechanics.ts).
+const HEALTH_CHAINS = [[1152, 1353]];
+const HEALTH_CHAIN_STRENGTH = 2;
+/** The trial's extra link strength between the marked augments' ids and a card's id. */
+export const healthChain = (marked: number[], id: number | undefined) =>
+  HEALTH_CHAIN_STRENGTH * HEALTH_CHAINS.filter((pair) => id !== undefined && pair.includes(id) && pair.some((p) => p !== id && marked.includes(p))).length;
+/** What being next to the marked augments adds to a card's score: the text links, and a pair's own win lift (0 to 1) if it has enough games. */
+export const nextToPicked = (linkStrength: number, pairLift: number | undefined, trial: boolean) => (trial ? TRIAL_LINK_POINTS * linkStrength : linkStrength + 100 * (pairLift ?? 0));
+
 /** A letter from a place in the ranking (0 = best): the top tenth S, the next quarter A, the next 40% B, the rest C. */
 export function gradeOf(place: number, count: number): 'S' | 'A' | 'B' | 'C' {
   const at = (place + 0.5) / count;

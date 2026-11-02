@@ -286,6 +286,17 @@ settings.append(
     modeNote,
     borderlessButton,
   ),
+  section(
+    'ترتيب تجريبي للتعزيزات (F7)',
+    pills('الترتيب التجريبي', [['off', 'معطّل'], ['on', 'مفعّل']], localStorage.getItem('trialScore') === 'on' ? 'on' : 'off', (v) => {
+      try {
+        localStorage.setItem('trialScore', v);
+      } catch {
+        // not remembered this time; harmless
+      }
+    }),
+    el('p', 'hint', 'يقلل وزن الروابط بين التعزيزات إلى حجمها المقاس، ويضيف سلسلة الصحة بين Steel Your Heart وTank Engine، ويترك الشرح كما هو. تجربة غير مثبتة، والبناء لا يتغير.'),
+  ),
   section('مفتاح Gemini (بناء Mayhem بالذكاء الاصطناعي)', aiKeyInput, aiKeySave, aiKeyNote),
   section('التشخيص', exportButton, exportNote),
   section(
