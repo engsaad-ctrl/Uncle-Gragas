@@ -6,6 +6,7 @@
 import type { GameItem } from '../texts/gameData.js';
 import { calculationsAt, type SpellData } from '../texts/spellValues.js';
 import { buildStats, championRecord, statReader, type BuildStats } from './calculator.js';
+import { SPELL_HITS } from './cardMathData.js';
 
 type Amount = number | { min: number; max: number };
 export interface DamageFormula { flat?: Amount; ap?: number; ad?: number; bonus_ad?: number; hp?: number; bonus_hp?: number; armor?: number; mr?: number; bonus_armor?: number; bonus_mr?: number; target_max_hp?: number; target_missing_hp?: number; target_current_hp?: number }
@@ -159,17 +160,18 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const resLevel = (res?.['{6216bf7b}'] as { baseValue?: number } | undefined)?.baseValue ?? 0;
   let mana = (res?.arType ?? 0) === 0 && resBase > 0 ? resBase + resLevel * (o.level - 1) + itemMana : Infinity;
 
-  interface Slot { key: string; spell: NonNullable<NonNullable<Bin[string]>['mSpell']>; rank: number; ranks: number; cooldown: number; cost: number; perSecond: boolean; toggle: boolean; ready: number; on: boolean; recast: boolean }
+  interface Slot { path: string; key: string; spell: NonNullable<NonNullable<Bin[string]>['mSpell']>; rank: number; ranks: number; cooldown: number; cost: number; perSecond: boolean; toggle: boolean; ready: number; on: boolean; recast: boolean }
   const slots: Slot[] = [];
   (['R', 'Q', 'W', 'E'] as const).forEach((key) => {
-    const spell = bin[record.spells?.['QWER'.indexOf(key)] ?? '']?.mSpell;
+    const path = record.spells?.['QWER'.indexOf(key)] ?? '';
+    const spell = bin[path]?.mSpell;
     if (!spell || locked.has(key)) return;
     const ranks = spell.mClientData?.mTooltipData?.mLists?.LevelUp?.levelCount ?? (key === 'R' ? 3 : 5);
     const rank = Math.max(1, key === 'R' ? Math.min(ranks, Math.floor((o.level + 2) / 5)) : Math.min(ranks, Math.ceil(o.level / 3)));
     const stated = spell.cooldownTime?.[rank] ?? 0;
     const names = Object.keys(spell.mSpellCalculations ?? {});
     // shortcut: a stated cooldown of a second or less is a toggle (Jinx's Q, Karthus's E); upgrade with a per-champion list if a real spell has one.
-    slots.push({ key, spell, rank, ranks, cooldown: stated || 1, cost: spell.mana?.[rank - 1] ?? 0, perSecond: names.some((n) => /dps/i.test(n)), toggle: stated > 0 && stated <= 1, ready: 0, on: false, recast: key === 'R' && ops.some((x) => x.op === 'recast' && x.key === 'R') });
+    slots.push({ path, key, spell, rank, ranks, cooldown: stated || 1, cost: spell.mana?.[rank - 1] ?? 0, perSecond: names.some((n) => /dps/i.test(n)), toggle: stated > 0 && stated <= 1, ready: 0, on: false, recast: key === 'R' && ops.some((x) => x.op === 'recast' && x.key === 'R') });
   });
 
   const dt = 0.05;
@@ -259,10 +261,13 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const read = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef });
         const named = read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_DAMAGE.test(v.name));
         // A spell whose only damage is named as bonus or secondary still deals it; a share of the target's health counts on the target.
-        const values = named.length ? named : read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_ANY_DAMAGE.test(v.name));
+        const reading = SPELL_HITS[sl.path];
+        const chosen = reading?.calc ? read.filter((v) => v.name === reading.calc) : [];
+        const values = chosen.length ? chosen : named.length ? named : read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_ANY_DAMAGE.test(v.name));
         const healthShare = Math.max(0, ...read.filter((v) => HEALTH_SHARE_NAME.test(v.name) && !NOT_HEALTH_SHARE.test(v.name)).map((v) => (v.value <= 1 ? v.value : v.value <= 100 ? v.value / 100 : 0)));
         abilityHealing += Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
-        const one = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + healthShare * FIGHT.target.hp;
+        const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * FIGHT.target.hp);
+        const one = each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
         const hit = one * amp('abilities') * amp(scope) * (1 + c.crit * critExtra);
         perCast[sl.key] = Math.round(hit);
         casts[sl.key] = (casts[sl.key] ?? 0) + 1;
