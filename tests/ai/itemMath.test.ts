@@ -29,10 +29,10 @@ describe('next items by arithmetic', () => {
     expect(fightValue(result(6000, 9000), place)).toBe(6000 + 3000);
   });
   it('reads the enemy damage for a level, between the measured ones', () => {
-    expect(enemyDpsAt(3)).toBe(186);
-    expect(enemyDpsAt(4)).toBeCloseTo((186 + 235) / 2);
-    expect(enemyDpsAt(18)).toBe(2851);
-    expect(enemyDpsAt(30)).toBe(2851);
+    expect(enemyDpsAt(3)).toBe(176);
+    expect(enemyDpsAt(4)).toBeCloseTo((176 + 223) / 2);
+    expect(enemyDpsAt(18)).toBe(2702);
+    expect(enemyDpsAt(30)).toBe(2702);
   });
   it('counts a burst dealt before he falls', () => {
     const burst = Array.from({ length: 15 }, () => 6000);

@@ -368,7 +368,8 @@ function renderWalk() {
     if (!item) continue;
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
-    txt.append(el('b', '', shownName(item)), el('small', '', id === next[0] ? 'التالي' : ''));
+    const why = engine?.items.find((x) => x.item.id === id)?.why.filter((w) => w !== 'owned') ?? [];
+    txt.append(el('b', '', shownName(item)), el('small', '', [...(id === next[0] ? ['التالي'] : []), ...why].join(' · ')));
     r.append(ic(item), txt);
     nextRow.append(r);
   }

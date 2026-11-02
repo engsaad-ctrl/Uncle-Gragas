@@ -5,7 +5,8 @@
 import { ONE_OF } from '../app/buildEngine.js';
 import { FIGHT, fight, type CardNumbers, type CardOp, type EnemyTeam, type FightResult, type Kit } from './cardMath.js';
 import { championRecord } from './calculator.js';
-import { DAMAGE_SHARE, HEALTH_RATIO_SEEN } from './shareData.js';
+import { DAMAGE_SHARE } from './shareData.js';
+import { CHAMPION_KITS } from './championKits.js';
 import type { GameItem } from '../texts/gameData.js';
 
 export interface PoolItem { id: number; gold: number; boots: boolean; damage?: 'ap' | 'ad' | 'none' | string }
@@ -30,10 +31,12 @@ const TYPICAL_TARGET_WEIGHT = 1954; // the median over 173 champions
 const SHARE_RISE = { melee: 0.915, ranged: 0.551 };
 /** Stored games rarely go past this much health over none (99th percentile 3.17), so the share stops rising here rather than guess beyond them. */
 const MAX_HEALTH_RATIO = 3;
-/** Settles by itself over 173 champions choosing with it: searches from 2000 and 3000 end near 2,670. Absorbed worth: with even teams, four allies' damage over five enemies'. shortcut: one figure for every level and team, late-game sized; use real allies and levels when they're passed in. */
-const ENEMY_DPS = 2670;
+/** A champion whose kit doesn't stand in front draws fire only so far, however much health he buys: from his kit's reading, not from what anyone buys. */
+const MAX_HEALTH_RATIO_NOT_FRONT = 1.6;
+/** Settles by itself over 173 champions choosing with it: searches from 2000 and 3000 end near 2,530. Absorbed worth: with even teams, four allies' damage over five enemies'. shortcut: one figure for every level and team, late-game sized; use real allies and levels when they're passed in. */
+const ENEMY_DPS = 2530;
 /** Early cards face far less damage: with 2600 fixed, the order of cards at levels 3 and 7 agrees only 0.73 and 0.80 with this. From the fight, 173 champions with items as a game goes. Full builds keep the fixed figure: their order agrees 0.97 or more across enemy teams. */
-const ENEMY_DPS_BY_LEVEL: [number, number][] = [[1, 169], [3, 186], [5, 235], [7, 340], [9, 388], [11, 627], [12, 644], [15, 1152], [17, 1885], [18, 2851]];
+const ENEMY_DPS_BY_LEVEL: [number, number][] = [[1,160], [3,176], [5,223], [7,322], [9,368], [11,594], [12,610], [15,1092], [17,1786], [18,2702]];
 export function enemyDpsAt(level: number): number {
   const after = ENEMY_DPS_BY_LEVEL.findIndex(([l]) => l >= level);
   if (after <= 0) return after === 0 ? ENEMY_DPS_BY_LEVEL[0]![1] : ENEMY_DPS_BY_LEVEL.at(-1)![1];
@@ -59,12 +62,12 @@ export const teamPlace = (o: { championId: number; bin: Record<string, unknown>;
   const others = (o.allies ?? []).slice(0, 4).reduce((sum, bin) => sum + targetWeight(bin), TYPICAL_TARGET_WEIGHT * (4 - Math.min(4, o.allies?.length ?? 0))) / (4 * TYPICAL_TARGET_WEIGHT);
   const alone = DAMAGE_SHARE[o.championId] ?? w / (w + 4 * TYPICAL_TARGET_WEIGHT);
   const melee = ((championRecord(o.bin) as unknown as { attackRangeModifiable?: { baseValue?: number } })?.attackRangeModifiable?.baseValue ?? 0) < 300;
-  return { maxRatio: HEALTH_RATIO_SEEN[o.championId], share: 1 / (1 + ((1 - alone) / alone) * others), rise: melee ? SHARE_RISE.melee : SHARE_RISE.ranged, health0: fight({ bin: o.bin, shop: o.shop, kit: o.kit, passive: o.passive, enemy: o.enemy, cards: [], items: [], level: FULL_BUILD_LEVEL }).effectiveHp, enemyDps: ENEMY_DPS, absorbedWorth: ABSORBED_WORTH };
+  return { maxRatio: CHAMPION_KITS.find((k) => k.id === o.championId)?.traits.includes('frontline') ? MAX_HEALTH_RATIO : MAX_HEALTH_RATIO_NOT_FRONT, share: 1 / (1 + ((1 - alone) / alone) * others), rise: melee ? SHARE_RISE.melee : SHARE_RISE.ranged, health0: fight({ bin: o.bin, shop: o.shop, kit: o.kit, passive: o.passive, enemy: o.enemy, cards: [], items: [], level: FULL_BUILD_LEVEL }).effectiveHp, enemyDps: ENEMY_DPS, absorbedWorth: ABSORBED_WORTH };
 };
 const shareAt = (p: TeamPlace, health: number) => 1 / (1 + ((1 - p.share) / p.share) * Math.min(p.maxRatio ?? MAX_HEALTH_RATIO, Math.max(1, health / p.health0)) ** -p.rise);
 const dealtBy = (r: FightResult, seconds: number) => { const whole = Math.floor(seconds), from = whole ? (r.damageBySecond[whole - 1] ?? r.damage) : 0, to = r.damageBySecond[whole] ?? r.damage; return from + (to - from) * (seconds - whole); };
 /** What the fight is worth to the team: the damage he has dealt by the time he falls, and the damage he takes in others' place. Past the health that lasts the fight, more health adds nothing, which is what divides champions into roles without a weight chosen for each. */
-export const fightValue = (r: FightResult, p: TeamPlace) => { const lasting = shareAt(p, r.effectiveHp) * p.enemyDps * FIGHT.seconds, stays = r.effectiveHp + HEALING_WORTH * (r.healedHp ?? 0); return dealtBy(r, Math.min(1, stays / lasting) * FIGHT.seconds) + p.absorbedWorth * (Math.min(stays, lasting) + (p.healWorth ?? ABILITY_HEALING_WORTH) * (r.abilityHealing ?? 0)); };
+export const fightValue = (r: FightResult, p: TeamPlace) => { const lasting = shareAt(p, r.effectiveHp) * p.enemyDps * FIGHT.seconds, stays = r.effectiveHp + HEALING_WORTH * (r.healedHp ?? 0); const alive = Math.min(1, stays / lasting); return dealtBy(r, alive * FIGHT.seconds) + p.absorbedWorth * (Math.min(stays, lasting) + (p.healWorth ?? ABILITY_HEALING_WORTH) * (r.abilityHealing ?? 0) * alive); };
 
 /** The best set when items multiply each other, so one strong pair can beat two strong singles: keep the best few sets at each size, then swap items while that helps. No guarantee of the very best set. */
 export function searchSet(o: { start: number[]; candidates: number[]; slots: number; value: (ids: number[]) => number; fits: (id: number, held: number[]) => boolean; width: number; swaps: boolean }): number[] {
