@@ -13,6 +13,14 @@ export interface BuildPath {
   dropped: number[];
 }
 
+/** The path given what the player says he bought: that's fact, so nothing is inferred from the augments, and his items lead the engine's list. */
+export function walkedPath(path: BuildPath | undefined, marks: number[], owned: number[], fresh: number[]): BuildPath {
+  return owned.length ? { marks, items: fresh, bought: owned.length, dropped: [] } : followPath(path, marks, fresh);
+}
+
+/** The items on the player's path: what he bought once he says; until then those reached and the next one suggested. */
+export const itemsHeld = (path: BuildPath | undefined, owned: number[]) => (owned.length ? owned : (path?.items.slice(0, path.bought + 1) ?? []));
+
 /** The path after the marks changed to `marks`, with `fresh` the engine's list for them. */
 export function followPath(path: BuildPath | undefined, marks: number[], fresh: number[]): BuildPath {
   if (path && path.marks.length === marks.length && path.marks.every((m) => marks.includes(m))) return { ...path, dropped: [] }; // the same marks: nothing to walk

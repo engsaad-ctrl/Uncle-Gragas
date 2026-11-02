@@ -1,7 +1,7 @@
 // The over-the-game window: the picked champion's build (spells, runes, skills, items) and augments, with a quick search.
 
 import type { Advice } from '../ai/advisor.js';
-import { followPath, type BuildPath } from '../app/buildPath.js';
+import { itemsHeld, walkedPath, type BuildPath } from '../app/buildPath.js';
 import { rankOffer, walkItems } from '../app/walk.js';
 import { cardFit, compatibility, itemPart, openLines, pathShare, placesOf, type ChampionDamage } from '../ai/lines.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
@@ -58,12 +58,11 @@ const championDamage = (): ChampionDamage | undefined => {
   return d === 'magic' ? 'ap' : d === 'physical' ? 'ad' : d === 'mixed' ? 'mixed' : undefined;
 };
 /**
- * The player's path so far: the marked augments, and the items he says he bought with the next one suggested; until he says, the items
- * reached and the next one (src/ai/lines.ts).
+ * The player's path so far: the marked augments, and the items he says he bought; until he says, the items reached and the next one
+ * suggested (src/ai/lines.ts).
  */
 const heldParts = () => {
-  const items = owned.length ? [...owned, ...walkItems(path?.items ?? [], owned).next.slice(0, 1)] : (path?.items.slice(0, path.bought + 1) ?? []);
-  return [...(data?.augments ?? []).filter((a) => picked.has(a.id)).flatMap((a) => mechOf(a)?.id ?? []), ...items.map(itemPart)];
+  return [...(data?.augments ?? []).filter((a) => picked.has(a.id)).flatMap((a) => mechOf(a)?.id ?? []), ...itemsHeld(path, owned).map(itemPart)];
 };
 /** Each augment's place by its tie to this champion, among those of its rarity with data. */
 const placesFor = (pool: OverlayData['augments']) =>
@@ -81,20 +80,20 @@ const linkInArabic = (l: Link) => {
 let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
-let engine: { key: string; items: { item: ItemEntry; why: string[] }[]; dropped?: ItemEntry[]; experimental?: ExperimentalBuild | null; error?: string } | undefined;
+let engine: { key: string; items: { item: ItemEntry; why: string[]; offPath?: boolean }[]; dropped?: ItemEntry[]; experimental?: ExperimentalBuild | null; error?: string } | undefined;
 let engineAsked = '';
 /** The items the player is walking, kept from augment to augment (src/app/buildPath.ts). */
 let path: BuildPath | undefined;
 async function refreshEngine() {
-  const key = pickedKey();
+  const key = engineKey();
   const champion = data?.champion;
-  if (!champion || !picked.size || engineAsked === key) return;
+  if (!champion || (!picked.size && !owned.length) || engineAsked === key) return;
   engineAsked = key;
-  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked], trialScoring()), window.lolh.experimentalBuild(champion.id, [...picked])]);
-  if (pickedKey() !== key) return;
+  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked], trialScoring(), [...owned]), window.lolh.experimentalBuild(champion.id, [...picked])]);
+  if (engineKey() !== key) return;
   if (isError(r)) engine = { key, items: [], error: r.error };
   else {
-    path = followPath(path, [...picked], r.map((e) => e.item.id));
+    path = walkedPath(path, [...picked], owned, r.map((e) => e.item.id));
     const onPath = path.items.flatMap((id) => r.find((e) => e.item.id === id) ?? []);
     const dropped = path.dropped.flatMap((id) => engine?.items.find((e) => e.item.id === id)?.item ?? []);
     engine = { key, items: onPath, dropped, experimental: isError(x) ? null : x };
@@ -269,6 +268,12 @@ const pill = (text: string, onClick: () => void, cls = 'pill') => {
   return b;
 };
 
+const ownedChanged = () => {
+  void refreshEngine();
+  render();
+  renderWalk();
+};
+
 /** The walk: type the cards on offer, read their percents, take one, say what you bought, and the rest follows. */
 function renderWalk() {
   if (!data) return;
@@ -315,22 +320,23 @@ function renderWalk() {
   // What he bought, and what's next.
   const chosen = data.augments.filter((a) => picked.has(a.id));
   const known = new Map((shopItems ?? []).map((i) => [i.id, i]));
-  const advised = engine?.key === pickedKey() ? engine.items : [];
+  const advised = engine?.key === engineKey() ? engine.items : [];
   for (const { item } of advised) known.set(item.id, item);
-  const { next, offPath } = walkItems(advised.map((e) => e.item.id), owned);
+  const { next } = walkItems(advised.map((e) => e.item.id), owned);
+  const offPath = advised.flatMap((e) => (e.offPath ? e.item.id : []));
   const ownedRow = el('div', 'ov-adapted');
   for (const id of owned) {
     const item = known.get(id);
     if (!item) continue;
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
-    txt.append(el('b', '', shownName(item)), el('small', '', offPath.includes(id) ? 'ليس في قائمة المسار الآن' : 'في مسارك'));
-    r.append(ic(item), txt, pill('✕', () => { owned.splice(owned.indexOf(id), 1); render(); renderWalk(); }, 'pill ghost'));
+    txt.append(el('b', '', shownName(item)), el('small', '', offPath.includes(id) ? 'لم يكن المحرك ليختاره الآن' : 'في مسارك'));
+    r.append(ic(item), txt, pill('✕', () => { owned.splice(owned.indexOf(id), 1); ownedChanged(); }, 'pill ghost'));
     ownedRow.append(r);
   }
   const findItem = finder('اكتب اسم الغرض الذي اشتريته…', (q) =>
     (shopItems ?? []).filter((i) => !owned.includes(i.id) && `${i.name} ${shownName(i)}`.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6).map((i) =>
-      pill(shownName(i), () => { owned.push(i.id); render(); renderWalk(); })));
+      pill(shownName(i), () => { owned.push(i.id); ownedChanged(); })));
   const nextRow = el('div', 'ov-adapted');
   for (const id of next) {
     const item = known.get(id);
@@ -379,7 +385,7 @@ function adaptedSection(): HTMLElement {
   if (!chosen.length) return section('البناء حسب تعزيزاتك', el('p', 'hint', NO_PICKS));
   // The build without AI (services.engineBuild), fetched when the marks change.
   const rows = el('div', 'ov-adapted');
-  if (engine?.key !== pickedKey()) {
+  if (engine?.key !== engineKey()) {
     void refreshEngine();
     return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'جاري حساب البناء…'));
   }
@@ -442,6 +448,8 @@ const NO_PICKS = 'من تبويب التعزيزات اضغط «اخترته» �
 /** The AI answer for the augments marked now, kept until they change. */
 let ai: { key: string; state: 'loading' | 'done' | 'error'; advice?: Advice; error?: string } | undefined;
 const pickedKey = () => [...picked].sort((a, b) => a - b).join('-');
+/** What the engine's answer depends on: the marks and what he bought. */
+const engineKey = () => `${pickedKey()}|${owned.join('-')}`;
 
 /** Asks for the marked augments' build (once per set of marks) and shows it in the build tab. */
 async function startAi() {

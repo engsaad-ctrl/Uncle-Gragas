@@ -1,5 +1,5 @@
 import { adviseBuild, namedItems, type Advice, type GeminiPost } from '../ai/advisor.js';
-import { lineItems } from '../ai/lines.js';
+import { itemPart, lineItems } from '../ai/lines.js';
 import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
@@ -512,7 +512,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
    * base and what the augments did to items across champions on top, with the augments' required items. If ARAMKit can't
    * be had: OP.GG's normal-ARAM build, our Mayhem games, text links and our measured pairings.
    */
-  async function engineBuild(championId: number, augmentIds: number[], enemies: number[] = [], followLines = false): Promise<{ item: ItemEntry; why: string[] }[]> {
+  async function engineBuild(championId: number, augmentIds: number[], enemies: number[] = [], followLines = false, owned: number[] = []): Promise<{ item: ItemEntry; why: string[]; offPath?: boolean }[]> {
     const entry = (await champions()).find((c) => c.id === championId);
     if (!entry) throw new Error(`unknown champion ${championId}`);
     const [all, list, games] = await Promise.all([augments(), items('mayhem'), storedGames()]);
@@ -540,19 +540,24 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       ? { base: [], mayhem: kitItems, mayhemGames: kitData!.games, links: new Map<number, number>(), synergy: synergyAcrossChampions(ids, shopIds) }
       : await fallback();
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
+    // What he bought pulls the rest: text links to those items, and the lines they lie on.
+    const ownedMechs = ITEM_MECHANICS.filter((m) => owned.includes(m.id));
+    const ownedLinks = new Map(ownedMechs.length ? ITEM_MECHANICS.filter((i) => shopIds.has(i.id) && !owned.includes(i.id)).map((i) => [i.id, linksWith(ownedMechs, i).reduce((s, l) => s + l.strength, 0)] as const).filter(([, s]) => s > 0) : []);
     const r = buildFor({
+      owned,
       championDamage: kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed',
       switchesDamage: ids.some((x) => switchesDamage(x)),
       pool: shop.map((i) => ({ id: i.id, boots: i.group === 'boots', damage: itemDamage(i.id), mr: ITEM_MECHANICS.some((m) => m.id === i.id && m.gives.some((g) => g.stat === 'mr' || g.stat === 'resists')) })),
       ...sources,
+      links: new Map([...sources.links, ...ownedLinks].map(([id]) => [id, (sources.links.get(id) ?? 0) + (ownedLinks.get(id) ?? 0)] as const)),
       // Only with the whole enemy team known (the game loaded): magic 1, mixed 0.5.
       enemyMagic: enemies.length === 5 ? enemies.reduce((s, id) => { const d = CHAMPION_KITS.find((k) => k.id === id)?.damage; return s + (d === 'magic' ? 1 : d === 'mixed' ? 0.5 : 0); }, 0) : undefined,
       required: [...new Set(am.flatMap((m) => m.needs.filter((n): n is number => typeof n === 'number')))],
-      ...(followLines ? { lineItems: lineItems(am.map((m) => m.id)) } : {}),
+      ...(followLines || owned.length ? { lineItems: lineItems([...am.map((m) => m.id), ...owned.map(itemPart)]) } : {}),
     });
     return r.items.flatMap((id) => {
       const item = shop.find((i) => i.id === id);
-      return item ? [{ item, why: [...new Set(r.why.get(id) ?? [])] }] : []; // an item in several base options says "base" once
+      return item ? [{ item, why: [...new Set(r.why.get(id) ?? [])], ...(r.offPath.includes(id) ? { offPath: true } : {}) }] : []; // an item in several base options says "base" once
     });
   }
 

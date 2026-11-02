@@ -41,7 +41,7 @@ declare global {
       /** Every augment's effect on its team's win chance, from the team model. */
       augmentEffects(): Promise<Reply<AugmentEffect[]>>;
       /** The build without AI for a champion and the augments taken, each item with why it is in. */
-      engineBuild(championId: number, augmentIds: number[], followLines?: boolean): Promise<Reply<{ item: ItemEntry; why: string[] }[]>>;
+      engineBuild(championId: number, augmentIds: number[], followLines?: boolean, owned?: number[]): Promise<Reply<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>;
       /** A labelled second build no test vouches for, when there is one. */
       experimentalBuild(championId: number, augmentIds: number[]): Promise<Reply<ExperimentalBuild | null>>;
       hasAiKey(): Promise<boolean>;

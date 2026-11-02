@@ -54,12 +54,16 @@ export interface EngineInput {
   enemyMagic?: number;
   /** The trial only: items the player's open lines ask for and their scores (src/ai/lines.ts). They pass the share gate and the damage kind, since the player chose them. */
   lineItems?: Map<number, number>;
+  /** Items the player says he bought. They hold their slots first, whatever their score, and the rest fills around them. */
+  owned?: number[];
 }
 
 export interface EngineResult {
   items: number[];
   /** Why each item is in: base, mayhem, link, synergy, required (shown to the player). */
   why: Map<number, string[]>;
+  /** Items bought that the build wouldn't choose now, to tell the player. */
+  offPath: number[];
 }
 
 // Items that turn into another and cannot be bought as such count as the one bought: Muramana is a Manamune, Seraph's
@@ -133,10 +137,14 @@ export function scoreItems(input: EngineInput): Map<number, { score: number; why
  */
 export function buildFor(input: EngineInput): EngineResult {
   const byId = new Map(input.pool.map((i) => [i.id, i]));
+  const owned = [...new Set(input.owned ?? [])].filter((id) => byId.has(id));
+  const unowned = owned.length ? buildFor({ ...input, owned: [] }).items : [];
   const scores = scoreItems(input);
   const asked = new Set([...(input.lineItems?.keys() ?? [])].map(boughtAs));
+  // Buying an item of the other kind says the player has gone that way, as an augment that switches damage does.
+  const switched = input.switchesDamage || owned.some((id) => { const d = byId.get(id)!.damage; return d !== 'none' && input.championDamage !== 'mixed' && d !== input.championDamage; });
   const offKind = (i: EngineItem) =>
-    !input.switchesDamage && !asked.has(i.id) && input.championDamage !== 'mixed' && i.damage !== 'none' && i.damage !== input.championDamage;
+    !switched && !asked.has(i.id) && input.championDamage !== 'mixed' && i.damage !== 'none' && i.damage !== input.championDamage;
   const ranked = [...scores]
     .filter(([id]) => byId.has(id) && !offKind(byId.get(id)!))
     .sort((a, b) => b[1].score - a[1].score);
@@ -149,13 +157,14 @@ export function buildFor(input: EngineInput): EngineResult {
     items.push(id);
     why.set(id, reasons);
   };
+  for (const id of owned) take(id, ['owned']);
   for (const id of input.required) take(id, ['required', ...(scores.get(id)?.why ?? [])]);
   const boots = ranked.find(([id]) => byId.get(id)!.boots);
   if (boots && boots[1].score > 0.3) take(boots[0], boots[1].why);
   for (const [id, s] of ranked) if (!byId.get(id)!.boots && s.score > 0) take(id, s.why);
   // The order to buy them in: what grows first, then boots, then the rest by score.
-  const place = (id: number) => (stacks(id) ? 0 : byId.get(id)!.boots ? 1 : 2);
+  const place = (id: number) => (owned.includes(id) ? -1 : stacks(id) ? 0 : byId.get(id)!.boots ? 1 : 2);
   items.sort((a, b) => place(a) - place(b));
-  for (const id of items) if (stacks(id)) why.get(id)!.unshift('stacks');
-  return { items, why };
+  for (const id of items) if (stacks(id) && !owned.includes(id)) why.get(id)!.unshift('stacks');
+  return { items, why, offPath: owned.filter((id) => !unowned.includes(id)) };
 }
