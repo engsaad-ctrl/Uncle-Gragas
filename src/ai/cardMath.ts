@@ -72,6 +72,9 @@ const ATTACK_SPEED_CAP = 5; // Mayhem's cap (Kimi); screens show 2.81, past the 
 const MELEE_RESISTS = 15;
 const DAMAGE_NAME = /damage|dmg|dps/i;
 const HEALING_NAME = /heal|shield/i;
+const NOT_ANY_DAMAGE = /monster|minion|shield|heal|cap|tooltiponly/i;
+const HEALTH_SHARE_NAME = /(percent|max|total).*(health|hp)|(health|hp).*(percent|damage)|percent.*damage/i;
+const NOT_HEALTH_SHARE = /heal$|healing|shield|cost|decay|monster|minion|cap|missing|tooltip$/i;
 const NOT_DAMAGE = /monster|minion|shield|heal|bonus|floor|secondary/i;
 
 function formula(d: DamageFormula, s: BuildStats, level: number): number {
@@ -254,9 +257,12 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         if (t < sl.ready || sl.on || mana < sl.cost) continue;
         const scope = sl.key === 'R' ? 'ult' : 'basic';
         const read = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef });
-        const values = read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_DAMAGE.test(v.name));
+        const named = read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_DAMAGE.test(v.name));
+        // A spell whose only damage is named as bonus or secondary still deals it; a share of the target's health counts on the target.
+        const values = named.length ? named : read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_ANY_DAMAGE.test(v.name));
+        const healthShare = Math.max(0, ...read.filter((v) => HEALTH_SHARE_NAME.test(v.name) && !NOT_HEALTH_SHARE.test(v.name)).map((v) => (v.value <= 1 ? v.value : v.value <= 100 ? v.value / 100 : 0)));
         abilityHealing += Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
-        const one = values.length ? Math.max(...values.map((v) => v.value)) : 0;
+        const one = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + healthShare * FIGHT.target.hp;
         const hit = one * amp('abilities') * amp(scope) * (1 + c.crit * critExtra);
         perCast[sl.key] = Math.round(hit);
         casts[sl.key] = (casts[sl.key] ?? 0) + 1;
