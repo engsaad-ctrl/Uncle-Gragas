@@ -3,7 +3,7 @@
 import type { Advice } from '../ai/advisor.js';
 import { itemsHeld, walkedPath, type BuildPath } from '../app/buildPath.js';
 import { rankOffer, walkItems } from '../app/walk.js';
-import { cardFit, compatibility, itemPart, openLines, pathShare, placesOf, type ChampionDamage } from '../ai/lines.js';
+import { cardFit, compatibility, conflictsWith, itemPart, openLines, pathShare, placesOf, type ChampionDamage } from '../ai/lines.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
@@ -67,6 +67,11 @@ const heldParts = () => {
 /** Each augment's place by its tie to this champion, among those of its rarity with data. */
 const placesFor = (pool: OverlayData['augments']) =>
   new Map((Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).flatMap((rarity) => [...placesOf(new Map(pool.filter((a) => a.rarity === rarity && openLinks.has(a.id)).map((a) => [a.id, openLinks.get(a.id)!])))]));
+/** The two parts of a percent in words, since one number hides them: how much more his champion's players take it, and what of the path it works with. */
+const linkParts = (a: OverlayData['augments'][number], places: Map<number, number>, share: number | undefined) => {
+  const taken = openLinks.has(a.id) ? `يأخذه لاعبو البطل ${openLinks.get(a.id)!.toFixed(1)} ضعف غيرهم` : 'لا بيانات مع البطل';
+  return share === undefined ? taken : `${taken}، ورابطه بمسارك ${Math.round(100 * share)}%`;
+};
 const percentOf = (a: OverlayData['augments'][number], places: Map<number, number>) => (picked.has(a.id) ? undefined : compatibility(places.get(a.id), pathShare(heldParts(), mechOf(a)?.id)));
 const lineText = (f: NonNullable<ReturnType<typeof cardFit>>) => (f.share === undefined ? `يبدأ ${f.line.name}.` : `${f.line.name}: يتناسق مع ${Math.round(100 * f.share)}% مما عندك من أجزاء الخطوط المعروفة.`);
 /** Why two augments work together, in one Arabic line. */
@@ -183,8 +188,10 @@ function render() {
       const onLine = picked.has(a.id) ? undefined : cardFit(heldParts(), mechOf(a)?.id, championDamage());
       const share = picked.has(a.id) ? undefined : pathShare(heldParts(), mechOf(a)?.id);
       const compat = percentOf(a, places);
+      const clashes = picked.has(a.id) ? [] : conflictsWith(heldParts(), mechOf(a)?.id);
       const why = [
-        ...(compat === undefined ? [] : [`الارتباط ${compat}%: بالبطل${share === undefined ? '' : ` وبمسارك (يعمل مع ${Math.round(100 * share)}% منه)`}. لا يقيس الفوز.`]),
+        ...clashes.map((c) => `تعارض: ${c}.`),
+        ...(compat === undefined ? [] : [`الارتباط ${compat}%: ${linkParts(a, places, share)}. لا يقيس الفوز.`]),
         ...(onLine ? [lineText(onLine)] : []),
         ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
         ...(openPoints.has(a.id) ? [`مع هذا البطل في AramHex وARAMKit: ${openPoints.get(a.id)!.toFixed(1)} نقطة.`] : a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
@@ -198,7 +205,7 @@ function render() {
       grade.title = why.join('\n');
       // The letter comes last, against the row's end, so the letters of all rows line up.
       if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
-      if (compat !== undefined) tags.append(el('span', 'ov-mech', `${compat}%`));
+      if (compat !== undefined) tags.append(el('span', 'ov-mech', `${clashes.length ? '⚠ ' : ''}${compat}%`));
       tags.append(grade);
       r.append(tags);
       const on = picked.has(a.id);
@@ -306,7 +313,7 @@ function renderWalk() {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
     const p = percent(a);
-    txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? 'لا بيانات لهذا البطل' : `الارتباط ${p}%${a === cards[0] && cards.length > 1 ? ' · الأعلى هنا' : ''}`));
+    txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? 'لا بيانات لهذا البطل' : [`الارتباط ${p}%: ${linkParts(a, places, pathShare(heldParts(), mechOf(a)?.id))}${a === cards[0] && cards.length > 1 ? ' · الأعلى هنا' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
     r.append(ic(a), txt, pill('اخترته', () => { offer.clear(); toggleMark(a.id); renderWalk(); }), pill('✕', () => { offer.delete(a.id); renderWalk(); }, 'pill ghost'));
     rows.append(r);
   }

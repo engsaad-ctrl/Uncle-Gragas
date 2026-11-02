@@ -89,6 +89,10 @@ describe('items follow every card taken', () => {
   it('moves little on one bought item alone, as things stand', () => {
     expect(engine([], [HEARTSTEEL]).items).not.toContain(WARMOGS); // a limit, and these sizes are a first guess
   });
+  it('opens no line on a bought item alone, but counts it once a card has opened the line', () => {
+    expect(lineItems([itemPart(HEARTSTEEL)]).size).toBe(0);
+    expect(lineItems([C, itemPart(HEARTSTEEL)]).get(WARMOGS)).toBeGreaterThan(lineItems([C]).get(WARMOGS)!);
+  });
   it("doesn't let a card he didn't take pull items in", () => {
     expect(engine([C]).items).not.toContain(RABADONS);
     expect(engine([A]).items).toContain(RABADONS);

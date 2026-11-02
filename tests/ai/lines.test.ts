@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardFit, compatibility, itemPart, lineItems, LINES, openLines, pathShare, placesOf } from '../../src/ai/lines.js';
+import { blockedItems, cardFit, compatibility, conflictsWith, CONFLICTS, itemPart, lineItems, LINES, openLines, pathShare, placesOf } from '../../src/ai/lines.js';
 import { AUGMENT_MECHANICS } from '../../src/ai/mechanicsData.js';
 
 describe('placesOf', () => {
@@ -116,6 +116,38 @@ describe("the owner's walk: the path outweighs the card he didn't take", () => {
   });
   it('counts a stray card like any other for now, which lowers the share of what follows', () => {
     expect(pathShare([C, D], Ain)).toBe(0.5); // whether a stray card should weigh less is the owner's to say
+  });
+});
+
+describe('conflicts', () => {
+  const [gauntlet, liandry, vulnerability, butter, punch] = [1048, itemPart(6653), 1092, 1103, 1058];
+  it('names a clash with what is held, either way round', () => {
+    expect(conflictsWith([butter], punch)).toHaveLength(1);
+    expect(conflictsWith([punch], butter)).toHaveLength(1);
+    expect(conflictsWith([liandry], gauntlet)).toHaveLength(1);
+  });
+  it('lifts it when the card that answers it is held', () => {
+    expect(conflictsWith([liandry, vulnerability], gauntlet)).toEqual([]);
+  });
+  it('finds none without the other part', () => {
+    expect(conflictsWith([1353], punch)).toEqual([]);
+    expect(conflictsWith([], punch)).toEqual([]);
+    expect(conflictsWith([butter], undefined)).toEqual([]);
+  });
+  it('counts a clashing part as not working with the card', () => {
+    expect(pathShare([liandry], gauntlet)).toBe(0);
+  });
+  it('warns on what Back To Basics locks, and blocks only the items', () => {
+    const [basics, malignance, recursion] = [1004, 3118, 3055];
+    expect(conflictsWith([basics], itemPart(malignance))).toHaveLength(1);
+    expect(conflictsWith([basics], recursion)).toHaveLength(1);
+    expect(conflictsWith([recursion], basics)).toHaveLength(1);
+    expect(blockedItems([basics])).toEqual([3118, 2512, 3073, 6696]);
+    expect(blockedItems([recursion])).toEqual([]);
+  });
+  it('names only real augments', () => {
+    const augments = new Set(AUGMENT_MECHANICS.map((m) => m.id));
+    for (const c of CONFLICTS) for (const id of [c.a, c.b]) if (id > 0) expect(augments.has(id), String(id)).toBe(true);
   });
 });
 

@@ -64,6 +64,35 @@ describe('build engine', () => {
     expect(b).toContain(20);
     expect(b.filter((id) => id === 1 || id === 2)).toHaveLength(1);
   });
+
+  it('never suggests two of one limited group, and keeps what he owns', () => {
+    const limited = { ...input, pool: [...pool, { id: 3033, boots: false, damage: 'none' as const }, { id: 3036, boots: false, damage: 'none' as const }], base: [{ ids: [3036], pickRate: 0.9, winRate: 0.6 }, { ids: [3033], pickRate: 0.8, winRate: 0.6 }, ...input.base] };
+    const b = buildFor(limited).items;
+    expect(b).toContain(3036);
+    expect(b).not.toContain(3033);
+    expect(buildFor({ ...limited, owned: [3033] }).items).not.toContain(3036);
+    expect(buildFor({ ...limited, owned: [3033, 3036] }).items).toEqual(expect.arrayContaining([3033, 3036]));
+  });
+
+  it("lets required items pass a limit, as Icathia's Fall needs both Immolate items", () => {
+    const immolate = { ...input, pool: [...pool, { id: 3068, boots: false, damage: 'none' as const }, { id: 6664, boots: false, damage: 'none' as const }] };
+    expect(buildFor({ ...immolate, required: [3068, 6664] }).items).toEqual(expect.arrayContaining([3068, 6664]));
+    const b = buildFor({ ...immolate, base: [{ ids: [3068, 6664], pickRate: 0.9, winRate: 0.6 }, ...input.base] }).items;
+    expect(b.filter((id) => id === 3068 || id === 6664)).toHaveLength(1);
+  });
+
+  it('brings the best of a group a card needs, only one, and of the right damage kind', () => {
+    const blade = { ...input, pool: [...pool, { id: 3078, boots: false, damage: 'ad' as const }, { id: 3100, boots: false, damage: 'ap' as const }, { id: 3508, boots: false, damage: 'ad' as const }], requiredAny: [[3078, 3100, 3508, 6662]] };
+    const b = buildFor(blade).items;
+    expect(b).toContain(3100);
+    expect(b).not.toContain(3078);
+    expect(buildFor({ ...blade, owned: [3508] }).items).not.toContain(3100);
+  });
+
+  it('leaves out what a held card makes pointless, unless he owns it', () => {
+    expect(buildFor({ ...input, avoid: [14] }).items).not.toContain(14);
+    expect(buildFor({ ...input, avoid: [14], owned: [14] }).items).toContain(14);
+  });
 });
 
 describe('buying order', () => {

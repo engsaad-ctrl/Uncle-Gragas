@@ -64,18 +64,24 @@ export function heroEdge(s: OpenStats, champion: number): number | null {
 
 /**
  * How tied an augment is to a champion, leaving winning out: how much more often its players take it than all players do, 1 being the
- * same. So a strong augment everyone takes isn't tied to anyone, and one taken mostly by this champion's players is.
+ * same. So a strong augment everyone takes isn't tied to anyone, and one taken mostly by this champion's players is. It measures choice,
+ * not fit: guides and class-gated offers move it too. Few games can't say: under LINK_MIN_GAMES it's unknown, and above that it's pulled
+ * toward 1 as if LINK_PRIOR_GAMES more players had taken it at the usual rate. Both sizes are a starting point.
  */
+export const LINK_MIN_GAMES = 30;
+export const LINK_PRIOR_GAMES = 50;
 export function augmentLink(s: OpenStats, champion: number, augment: number): number | null {
   const h = s.heroes[String(champion)];
   const a = s.augments[String(champion)]?.[String(augment)];
-  if (!h || !a) return null;
+  if (!h || !a || a.games < LINK_MIN_GAMES) return null;
   let taken = 0, games = 0;
   for (const [id, hero] of Object.entries(s.heroes)) {
     games += hero.games;
     taken += s.augments[id]?.[String(augment)]?.games ?? 0;
   }
-  return taken && games ? a.games / h.games / (taken / games) : null;
+  if (!taken || !games) return null;
+  const usual = taken / games;
+  return (a.games + LINK_PRIOR_GAMES * usual) / (h.games + LINK_PRIOR_GAMES) / usual;
 }
 
 /** What an augment adds to its champion's win chance here, in points (25 per unit of log-odds near even), and from how many games. */

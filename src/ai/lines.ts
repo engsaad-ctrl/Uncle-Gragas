@@ -83,6 +83,43 @@ export function cardFit(held: number[], card: number | undefined, damage?: Champ
   return known.length ? { line: best.line, share: best.on / known.length } : { line: best.line };
 }
 
+/**
+ * Pairs that work against each other, kept apart from having no link. The first four rest on one player's test or reasoning in the video
+ * notes (knowledge/network.jsonl) that the augment's text supports; none has been checked in the game. Back To Basics locks the ultimate by
+ * its text, and of 955 stored players who held it, 1 bought Malignance (10.9% of others), 1 Axiom Arc (3.5%), and at most 1 took any of
+ * these cards (0.5 to 4.0%; Surge Field has no data). `blocks`: the build leaves that item out while the augment is held. It didn't move
+ * how well the build names 442 stored players' items; it stays since the text is certain.
+ */
+const ULT_ITEMS = [3118, 2512, 3073, 6696]; // Malignance, Fiendhunter Bolts, Experimental Hexplate, Axiom Arc
+const ULT_CARDS = [3055, 1349, 1344, 1112, 1088, 1211, 2134, 1194, 1413, 1011, 3118]; // Ultimate Recursion, Ultimate Awakening, Final Form, Ultimate Unstoppable, Ultimate Revolution, It's Killing Time, Surge Field, Fey Magic, Stuck In Here With Me, Can't Touch This, Arcane Axiom
+const LOCKED = 'Back To Basics يقفل القدرة الخارقة، فلا يعمل ما يعتمد عليها';
+
+export const CONFLICTS: { a: number; b: number; unless?: number; why: string; blocks?: boolean }[] = [
+  { a: 1048, b: it(6653), unless: 1092, why: 'حرق Liandry لا يكون حرجاً مع Jeweled Gauntlet إلا مع Vulnerability' },
+  { a: 1103, b: 1058, why: 'Mystic Punch يعيد تبريد Q، فلا قيمة لتسارع Bread And Butter عليه' },
+  { a: 1030, b: 1311, why: 'Overflow يفرغ المانا بسرعة مع كثرة القدرات التي يعطيها Eureka' },
+  { a: 1092, b: it(2512), why: 'الضرر الإضافي من Fiendhunter Bolts لا يكون حرجاً مع Vulnerability' },
+  ...ULT_ITEMS.map((id) => ({ a: 1004, b: it(id), why: LOCKED, blocks: true })),
+  ...ULT_CARDS.map((id) => ({ a: 1004, b: id, why: LOCKED })),
+];
+
+/** Items the held augments make pointless. */
+export const blockedItems = (augments: number[]): number[] => CONFLICTS.filter((c) => c.blocks && augments.includes(c.a)).map((c) => -c.b);
+
+/**
+ * Augments that need any one of a group, which `needs` can't say, since the build forces every id in it. Of 619 stored players with Upgrade
+ * Immolate, 92.2% owned Sunfire Aegis or Hollow Radiance, none both. Upgrade Sheen stays out: forcing a Spellblade item named less of 481
+ * stored builds (first item 49.3% to 47.0%), and those without one won no less.
+ */
+export const NEEDS_ONE_OF: Record<number, number[]> = { 1319: [3068, 6664] };
+
+/** What in the path works against this card, in words. */
+export function conflictsWith(path: number[], card: number | undefined): string[] {
+  return CONFLICTS.filter((c) => (c.a === card && path.includes(c.b)) || (c.b === card && path.includes(c.a)))
+    .filter((c) => c.unless === undefined || !path.includes(c.unless))
+    .map((c) => c.why);
+}
+
 const mechanicOf = (part: number): Mechanic | undefined => (part < 0 ? ITEM_MECHANICS : AUGMENT_MECHANICS).find((m) => m.id === Math.abs(part));
 const sameLine = (a: number, b: number) => LINES.some((l) => partsOf(l).includes(a) && partsOf(l).includes(b));
 
@@ -96,7 +133,8 @@ export function pathShare(path: number[], card: number | undefined): number | un
   const mech = mechanicOf(card);
   const known = path.filter((p) => p !== card && mechanicOf(p));
   if (!mech || !known.length) return undefined;
-  return known.filter((p) => sameLine(p, card) || linksWith([mechanicOf(p)!], mech).length > 0).length / known.length;
+  const clashes = (p: number) => conflictsWith([p, ...path.filter((x) => x !== p)], card).length > 0 && CONFLICTS.some((c) => (c.a === p && c.b === card) || (c.b === p && c.a === card));
+  return known.filter((p) => !clashes(p) && (sameLine(p, card) || linksWith([mechanicOf(p)!], mech).length > 0)).length / known.length;
 }
 
 /**
@@ -121,10 +159,11 @@ export const compatibility = (place: number | undefined, share: number | undefin
 /**
  * What the player's augments ask of the build: each item on the fullest open lines and how much it adds, on the build's scale where
  * a core item is about 1. No champion filter, since the player chose: Phenomenal Evil on Nasus asks for AP items. The sizes are a first
- * guess, so this stays behind the trial switch: a core item counts in full from two held parts, a branch item half.
+ * guess, so this stays behind the trial switch: a core item counts in full from two held parts, a branch item half. Only an augment opens
+ * a line: in the video pilot one bought Blackfire Torch put Archangel's Staff first on champions who rarely buy it.
  */
 export function lineItems(held: number[]): Map<number, number> {
-  const lines = openLines(held);
+  const lines = openLines(held).filter((l) => l.held.some((part) => part > 0));
   const out = new Map<number, number>();
   for (const { line, held: on } of lines.filter((l) => l.held.length === lines[0]!.held.length)) {
     const size = Math.min(1, on.length / 2);

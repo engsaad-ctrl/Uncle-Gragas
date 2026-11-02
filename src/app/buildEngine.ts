@@ -56,6 +56,10 @@ export interface EngineInput {
   lineItems?: Map<number, number>;
   /** Items the player says he bought. They hold their slots first, whatever their score, and the rest fills around them. */
   owned?: number[];
+  /** A held augment needs any one of each group: the best-scoring of it comes in, unless he has one already. */
+  requiredAny?: number[][];
+  /** Items a held augment makes pointless: never suggested, though kept if owned or required. */
+  avoid?: number[];
 }
 
 export interface EngineResult {
@@ -131,9 +135,12 @@ export function scoreItems(input: EngineInput): Map<number, { score: number; why
   return out;
 }
 
+// The game allows one of each: Last Whisper, Spellblade, Lifeline and Immolate. None of these pairs is in 63,810 stored builds, against 13 to 167 by chance. Icathia's Fall requires both Immolate items, and required items pass.
+const ONE_OF = [[3033, 3036, 6694], [3078, 3100, 3508, 6662], [3053, 6673, 3156], [3068, 6664]];
+
 /**
  * Six items: the required ones, the best boots (when the champion's players buy boots), then the best-scoring others.
- * Never two boots or repeats; items of the other damage kind are left out unless an augment switches it.
+ * Never two boots, repeats or two of one limited group; items of the other damage kind are left out unless an augment switches it.
  */
 export function buildFor(input: EngineInput): EngineResult {
   const byId = new Map(input.pool.map((i) => [i.id, i]));
@@ -146,7 +153,7 @@ export function buildFor(input: EngineInput): EngineResult {
   const offKind = (i: EngineItem) =>
     !switched && !asked.has(i.id) && input.championDamage !== 'mixed' && i.damage !== 'none' && i.damage !== input.championDamage;
   const ranked = [...scores]
-    .filter(([id]) => byId.has(id) && !offKind(byId.get(id)!))
+    .filter(([id]) => byId.has(id) && !offKind(byId.get(id)!) && !input.avoid?.includes(id % 10000))
     .sort((a, b) => b[1].score - a[1].score);
   const items: number[] = [];
   const why = new Map<number, string[]>();
@@ -154,11 +161,18 @@ export function buildFor(input: EngineInput): EngineResult {
     if (items.includes(id) || items.length >= 6) return;
     const it = byId.get(id);
     if (!it || (it.boots && items.some((x) => byId.get(x)!.boots))) return;
+    if (!owned.includes(id) && !input.required.includes(id) && ONE_OF.some((g) => g.includes(id % 10000) && items.some((x) => g.includes(x % 10000)))) return;
     items.push(id);
     why.set(id, reasons);
   };
   for (const id of owned) take(id, ['owned']);
   for (const id of input.required) take(id, ['required', ...(scores.get(id)?.why ?? [])]);
+  for (const group of input.requiredAny ?? []) {
+    const inGroup = (id: number) => group.includes(id % 10000);
+    if (items.some(inGroup)) continue;
+    const best = ranked.find(([id]) => inGroup(id))?.[0] ?? input.pool.find((i) => inGroup(i.id) && !offKind(i))?.id;
+    if (best !== undefined) take(best, ['required', ...(scores.get(best)?.why ?? [])]);
+  }
   const boots = ranked.find(([id]) => byId.get(id)!.boots);
   if (boots && boots[1].score > 0.3) take(boots[0], boots[1].why);
   for (const [id, s] of ranked) if (!byId.get(id)!.boots && s.score > 0) take(id, s.why);

@@ -55,17 +55,27 @@ describe('openStats', () => {
 });
 
 describe('augmentLink', () => {
-  const s = toOpenStats('16.21', { 1: { games: 100, wins: 50 }, 2: { games: 100, wins: 50 } }, { 1: { 10: { games: 30, wins: 15 }, 20: { games: 10, wins: 9 } }, 2: { 10: { games: 10, wins: 5 }, 20: { games: 10, wins: 1 } } });
+  const s = toOpenStats('16.21', { 1: { games: 1000, wins: 500 }, 2: { games: 1000, wins: 500 } }, { 1: { 10: { games: 300, wins: 150 }, 20: { games: 100, wins: 90 }, 40: { games: 29, wins: 29 } }, 2: { 10: { games: 100, wins: 50 }, 20: { games: 100, wins: 10 } } });
+  const shrunk = (games: number, usual: number) => (games + 50 * usual) / (1000 + 50) / usual;
   it('reads how much more often the champion takes it than everyone does', () => {
-    expect(augmentLink(s, 1, 10)).toBeCloseTo(0.3 / 0.2);
-    expect(augmentLink(s, 2, 10)).toBeCloseTo(0.1 / 0.2);
+    expect(augmentLink(s, 1, 10)).toBeCloseTo(shrunk(300, 0.2));
+    expect(augmentLink(s, 2, 10)).toBeCloseTo(shrunk(100, 0.2));
+    expect(augmentLink(s, 1, 10)!).toBeGreaterThan(1);
+    expect(augmentLink(s, 2, 10)!).toBeLessThan(1);
   });
   it('leaves winning out', () => {
     expect(augmentLink(s, 1, 20)).toBeCloseTo(1);
     expect(augmentLink(s, 2, 20)).toBeCloseTo(1);
   });
-  it('is null without data', () => {
+  it('is null without data, or with too few games to say', () => {
     expect(augmentLink(s, 3, 10)).toBeNull();
     expect(augmentLink(s, 1, 30)).toBeNull();
+    expect(augmentLink(s, 1, 40)).toBeNull();
+  });
+  it('pulls a small cell toward 1', () => {
+    const small = toOpenStats('16.21', { 1: { games: 40, wins: 20 }, 2: { games: 9960, wins: 4980 } }, { 1: { 10: { games: 30, wins: 15 } }, 2: { 10: { games: 70, wins: 35 } } });
+    const raw = 30 / 40 / (100 / 10000);
+    expect(augmentLink(small, 1, 10)!).toBeLessThan(raw);
+    expect(augmentLink(small, 1, 10)!).toBeGreaterThan(1);
   });
 });
