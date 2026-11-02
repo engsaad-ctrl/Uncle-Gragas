@@ -17,8 +17,7 @@ export interface TeamPlace { healWorth?: number; share: number; rise: number; he
 const LEVEL_BY_ITEMS = [5, 9, 12, 15, 17, 18, 18];
 const FULL_BUILD_LEVEL = 15;
 const SLOTS = 6;
-const BEAM_WIDTH = 5;
-const clashes = (id: number, held: number[]) => ONE_OF.some((g) => g.includes(id % 10000) && held.some((x) => x !== id && g.includes(x % 10000)));
+const BEAM_WIDTH = 3; // 99.7% of width 5's value on 58 champions, at two thirds of the time
 /** Who gets hit: stored games' damage taken follows E^1.24 * range^-0.53 (correlation 0.672 on 5,586 held-out teams), from the file's level 18 numbers. For a champion with too few games. */
 export function targetWeight(bin: Record<string, unknown>): number {
   const r = championRecord(bin);
@@ -93,6 +92,8 @@ export function searchSet(o: { start: number[]; candidates: number[]; slots: num
 }
 
 export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem) => boolean }): MathStep[] {
+  // The game's own limits on what can be held together, and those its file doesn't name.
+  const clashes = (id: number, held: number[]) => ONE_OF.some((g) => g.includes(id % 10000) && held.some((x) => x !== id && g.includes(x % 10000))) || (o.shop[id]?.limits ?? []).some((g) => held.some((x) => x !== id && o.shop[x]?.limits?.includes(g)));
   const run = (list: number[], level: number) => fight({ bin: o.bin, shop: o.shop, kit: o.kit, cards: o.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level });
   const allowed = (i: PoolItem, held: number[]) => !held.includes(i.id) && !clashes(i.id, held) && !!o.shop[i.id] && !o.offKind?.(i);
   const gain = (held: number[], id: number, level: number) => { const v = fightValue(run(held, level), o.place); return v > 0 ? fightValue(run([...held, id], level), o.place) / v - 1 : 0; };

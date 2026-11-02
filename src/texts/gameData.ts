@@ -92,6 +92,8 @@ export interface GameItem extends SpellData {
   tooltipKey?: string;
   /** The shop's class filters as bits (mItemAttributes): 1 fighter, 2 marksman, 4 assassin, 8 tank, 16 mage, 32 support. */
   classes?: number;
+  /** The game's groups this item is limited in: only one item of a group can be held. */
+  limits?: string[];
 }
 
 interface RawItemData {
@@ -105,13 +107,15 @@ interface RawItemData {
   mEffectAmount?: number[];
   mItemDataClient?: { mDescription?: string };
   mItemAttributes?: number[];
+  mItemGroups?: string[];
+  mMaxGroupOwnable?: number;
 }
 type ItemSpell = { mSpell?: SpellData & { cooldownTime?: number[] } };
 
 /** The items bin (16MB), trimmed to each item's values (its active spell's included) and tooltip key. */
 export function loadGameItems(o: Opts, version: string | null): Promise<Record<number, GameItem>> {
-  // "-v4": copies saved before the shop classes (v2), the calculator's stats (v3) and the mode's own values (v4) were read lack them.
-  return perVersion(join(o.cacheDir, 'game', 'items-v4.json'), version, async () => {
+  // "-v5": copies saved before the shop classes (v2), the calculator's stats (v3), the mode's own values (v4) and the item limits (v5) were read lack them.
+  return perVersion(join(o.cacheDir, 'game', 'items-v5.json'), version, async () => {
     const bin = await getJson<Record<string, RawItemData & ItemSpell>>(o.fetchImpl, GAME_URLS.items);
     const out: Record<number, GameItem> = {};
     for (const v of Object.values(bin)) {
@@ -121,6 +125,7 @@ export function loadGameItems(o: Opts, version: string | null): Promise<Record<n
       out[v.itemID] = {
         tooltipKey: v.mItemDataClient?.mDescription,
         classes: (v.mItemAttributes ?? []).reduce((a, b) => a | b, 0),
+        limits: (v.mItemGroups ?? []).filter((g) => bin[g]?.mMaxGroupOwnable === 1),
         DataValues: [
           // Mayhem's values: the mode's file name is Kiwi, and it restates base values where ARAM's change shouldn't carry over, so it builds on ARAM.
           ...Object.entries(Object.fromEntries([v.mDataValues, v.DataValuesModeOverride?.ARAM?.DataValues, v.DataValuesModeOverride?.Kiwi?.DataValues].flatMap((list) => list ?? []).map((d) => [d.mName, d.mValue ?? 0]))).map(([name, value]) => ({ name, values: [value] })),

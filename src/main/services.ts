@@ -145,6 +145,7 @@ function once<T>(load: () => Promise<T>): () => Promise<T> {
     }));
 }
 
+const PLAIN_BOOTS_GOLD = 300; // the first pair, on the way to a real one
 interface Teams { allies: number[]; enemies: number[] }
 const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), attacks: k?.relies.includes('attacks') ?? false }; };
 
@@ -621,7 +622,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const v = await gameVersion();
       const [all, bin, shop, list] = await Promise.all([augments(), loadChampionBin(game, v, entry.alias), loadGameItems(game, v), items('mayhem')]);
       // An item with no text isn't in the shop: Viktor's core is one champion's, given and never bought.
-      const sold = list.list.filter((i) => (i.group === 'legendary' || i.group === 'boots') && i.html);
+      const sold = list.list.filter((i) => (i.group === 'legendary' || (i.group === 'boots' && i.gold > PLAIN_BOOTS_GOLD)) && i.html);
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
       const cards = augmentIds.flatMap((id) => { const ids = all.augments.find((a) => a.id === id)?.ids ?? [id]; return CARD_NUMBERS.find((c) => ids.includes(c.id)) ?? []; });
       const required = [...new Set(cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []))];
@@ -630,7 +631,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const fightKit = { damage: kit?.damage ?? 'mixed', attacks: kit?.relies.includes('attacks') ?? false };
       const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
       const facts = await teamFacts(teams, shop);
-      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies }), offKind: (i) => !switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind, kit: { damage: kit?.damage ?? 'mixed', attacks: kit?.relies.includes('attacks') ?? false }, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required });
+      const noMana = ((championRecord(bin) as unknown as { primaryAbilityResource?: { arType?: number } })?.primaryAbilityResource?.arType ?? 0) !== 0;
+      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies }), offKind: (i) => (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true), kit: { damage: kit?.damage ?? 'mixed', attacks: kit?.relies.includes('attacks') ?? false }, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required });
       const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
       return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, why: s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean) }] : []; });
     })();
