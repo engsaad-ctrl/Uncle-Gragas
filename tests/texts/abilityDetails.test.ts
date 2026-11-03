@@ -87,6 +87,15 @@ describe('game files cache', () => {
     ]);
   });
 
+  it('reads mana stats the file names with a small letter', async () => {
+    const cacheDir = await mkdtemp(join(tmpdir(), 'lolh-items-'));
+    const itemsBin = { 'Items/6655': { __type: 'ItemData', itemID: 6655, mFlatMagicDamageMod: 100, flatMPPoolMod: 600, percentBaseMPRegenMod: 0.5 } };
+    const fetchImpl = (async () => new Response(JSON.stringify(itemsBin))) as unknown as typeof fetch;
+    const items = await loadGameItems({ cacheDir, fetchImpl }, '16.21');
+    expect(items[6655].DataValues).toContainEqual({ name: 'FlatMPPoolMod', values: [600] });
+    expect(items[6655].DataValues).toContainEqual({ name: 'PercentBaseMPRegenMod', values: [0.5] });
+  });
+
   it('recognises the passive key shapes found in all 173 champions', () => {
     for (const k of ['buff_ahrip_tooltip', 'spell_zedpassive_tooltip', 'game_character_passivetooltip_jax', 'game_buff_tooltip_zyrap', 'spell_ahriseduce_name', 'generatedtip_item_3146_description', 'item_cooldown'])
       expect(isTooltipKey(k)).toBe(true);

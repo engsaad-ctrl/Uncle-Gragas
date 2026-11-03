@@ -1,0 +1,4 @@
+2026-11-03T07:42:25.576Z on 4e65950 (with uncommitted changes)
+card order, players with a numbered card 93336, 81 s
+first 70%: median agreement 0.5354, champions 173, below 0.50 13, shuffled median 0.4991
+last 30%: median agreement 0.5390, champions 173, below 0.50 28, shuffled median 0.4995

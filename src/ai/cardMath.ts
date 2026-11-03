@@ -105,7 +105,7 @@ const STAT_ADD: Record<string, (s: BuildStats, v: number) => void> = {
 const statValue = (s: BuildStats, k: string) => ({ move_speed: s.moveSpeed, ap: s.ap, ad: s.ad, bonus_ad: s.bonusAd, hp: s.hp, bonus_hp: s.bonusHp, armor: s.armor, mr: s.mr, attack_speed: s.bonusAttackSpeed, crit: s.crit, haste: s.haste }[k] ?? NaN);
 
 /** One fight, second by second, with these items and cards at this level, so anything that feeds itself shows up. Cards apply in order: flat stats, then conversions, then multipliers; then the fight runs. */
-export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam }): FightResult {
+export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam; ampStack?: 'add' }): FightResult {
   const record = championRecord(o.bin);
   if (!record) throw new Error('no character record');
   const owned = o.items.flatMap((id) => o.shop[id] ?? []);
@@ -147,7 +147,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const asRatio = baseRates.attackSpeedRatioModifiable?.baseValue || as0;
   // An amp for magic damage reaches a champion's abilities unless the kit deals only physical.
   // An amp on one chosen ability counts for one of the three basic ones.
-  const amp = (scope: string) => ops.reduce((m, x) => (x.op !== 'damage_amp' ? m : x.scope === 'all' || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical') ? m * x.factor : x.scope === 'one_ability' && scope === 'abilities' ? m * (1 + (x.factor - 1) / 3) : m), 1);
+  const amp = (scope: string) => { const fs = ops.flatMap((x) => (x.op !== 'damage_amp' ? [] : x.scope === 'all' || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical') ? [x.factor] : x.scope === 'one_ability' && scope === 'abilities' ? [1 + (x.factor - 1) / 3] : [])); return o.ampStack === 'add' ? 1 + fs.reduce((m, f) => m + f - 1, 0) : fs.reduce((m, f) => m * f, 1); };
   const cdFactor = (scope: string) => ops.reduce((m, x) => (x.op === 'cooldown' && (x.scope === 'all' || x.scope === scope) ? m * x.factor : m), 1);
   const locked = new Set(ops.flatMap((x) => (x.op === 'lock' ? [x.key] : [])));
   const critExtra = ops.reduce((m, x) => (x.op === 'crit_abilities' ? m + x.extra : m), 0);

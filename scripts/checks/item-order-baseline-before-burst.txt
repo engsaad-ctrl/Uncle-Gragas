@@ -1,0 +1,4 @@
+2026-11-03T06:31:25.689Z on 4e65950 (with uncommitted changes)
+item order, players 93632, 61 s
+first 70%: median agreement 0.6148, champions 173, below 0.50 0, shuffled median 0.5002
+last 30%: median agreement 0.6186, champions 173, below 0.50 1, shuffled median 0.4994

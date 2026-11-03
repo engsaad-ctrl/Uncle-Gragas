@@ -1,0 +1,8 @@
+2026-11-03T06:39:35.183Z on 4e65950 (with uncommitted changes)
+top-third card gain, players 93632, numbered cards held 322532, ranked keys 5534, cards per rarity silver 50, gold 86, prismatic 62, ranking 379 s, all 379 s
+first 70% silver: cards held 51519, top third 26001, gain +5.61% se 0.38, chance 95th +0.73%: PASS
+first 70% gold: cards held 114733, top third 50810, gain +4.30% se 0.28, chance 95th +0.42%: PASS
+first 70% prismatic: cards held 59532, top third 28260, gain +3.55% se 0.37, chance 95th +0.63%: PASS
+last 30% silver: cards held 22178, top third 11322, gain +5.70% se 0.59, chance 95th +0.98%: PASS
+last 30% gold: cards held 49280, top third 21809, gain +3.13% se 0.42, chance 95th +0.76%: PASS
+last 30% prismatic: cards held 25290, top third 11931, gain +4.26% se 0.59, chance 95th +1.05%: PASS

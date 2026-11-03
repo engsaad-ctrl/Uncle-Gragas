@@ -114,8 +114,9 @@ type ItemSpell = { mSpell?: SpellData & { cooldownTime?: number[] } };
 
 /** The items bin (16MB), trimmed to each item's values (its active spell's included) and tooltip key. */
 export function loadGameItems(o: Opts, version: string | null): Promise<Record<number, GameItem>> {
-  // "-v5": copies saved before the shop classes (v2), the calculator's stats (v3), the mode's own values (v4) and the item limits (v5) were read lack them.
-  return perVersion(join(o.cacheDir, 'game', 'items-v5.json'), version, async () => {
+  // "-v6": copies saved before the shop classes (v2), the calculator's stats (v3), the mode's own values (v4), the item limits (v5) and mana (v6) were read lack them.
+  // v5 lost mana: the file names those stats with a small letter and no m (flatMPPoolMod).
+  return perVersion(join(o.cacheDir, 'game', 'items-v6.json'), version, async () => {
     const bin = await getJson<Record<string, RawItemData & ItemSpell>>(o.fetchImpl, GAME_URLS.items);
     const out: Record<number, GameItem> = {};
     for (const v of Object.values(bin)) {
@@ -129,9 +130,9 @@ export function loadGameItems(o: Opts, version: string | null): Promise<Record<n
         DataValues: [
           // Mayhem's values: the mode's file name is Kiwi, and it restates base values where ARAM's change shouldn't carry over, so it builds on ARAM.
           ...Object.entries(Object.fromEntries([v.mDataValues, v.DataValuesModeOverride?.ARAM?.DataValues, v.DataValuesModeOverride?.Kiwi?.DataValues].flatMap((list) => list ?? []).map((d) => [d.mName, d.mValue ?? 0]))).map(([name, value]) => ({ name, values: [value] })),
-          // Item stats the text quotes directly, e.g. @FlatHPRegenMod*5@ reads mFlatHPRegenMod
+          // Item stats the text quotes directly, e.g. @FlatHPRegenMod*5@ reads mFlatHPRegenMod, and mana's flatMPPoolMod read as FlatMPPoolMod.
           // Plus the stats the damage calculator adds up: haste, lethality and omnivamp are named outside that pattern.
-          ...Object.entries(v).flatMap(([k, x]) => (/^m?(Flat|Percent)\w+Mod$|^mAbilityHasteMod$|^PhysicalLethality$/.test(k) && typeof x === 'number' ? [{ name: k.replace(/^m/, ''), values: [x] }] : [])),
+          ...Object.entries(v).flatMap(([k, x]) => (/^m?(Flat|Percent|flat|percent)\w+Mod$|^mAbilityHasteMod$|^PhysicalLethality$/.test(k) && typeof x === 'number' ? [{ name: k.replace(/^m/, '').replace(/^./, (c) => c.toUpperCase()), values: [x] }] : [])),
           ...(spell?.DataValues ?? []),
           ...(spell?.cooldownTime ? [{ name: 'Cooldown', values: spell.cooldownTime }] : []),
         ],

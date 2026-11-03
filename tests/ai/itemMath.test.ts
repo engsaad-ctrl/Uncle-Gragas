@@ -28,6 +28,12 @@ describe('next items by arithmetic', () => {
     expect(fightValue(result(6000, 3000), place)).toBe(6000 + 3000);
     expect(fightValue(result(6000, 9000), place)).toBe(6000 + 3000);
   });
+  it('counts a burst champion\'s damage only inside his window', () => {
+    const burst = { ...place, window: 3 };
+    const late = Array.from({ length: 15 }, (_, i) => (i < 3 ? 1000 : 6000)); // 1000 by 3 s, the rest after
+    expect(fightValue(result(6000, 9000, late), burst)).toBe(1000 + 600); // and he absorbs 3 s of his share
+    expect(fightValue(result(6000, 9000, late), place)).toBe(6000 + 3000);
+  });
   it('reads the enemy damage for a level, between the measured ones', () => {
     expect(enemyDpsAt(3)).toBe(176);
     expect(enemyDpsAt(4)).toBeCloseTo((176 + 223) / 2);
