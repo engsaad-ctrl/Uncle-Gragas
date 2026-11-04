@@ -81,9 +81,9 @@ describe('a real team', () => {
     expect(ids).not.toContain(2);
   });
   it('stops counting healing on allies once he has fallen', () => {
-    const place = { share: 0.2, rise: 0, health0: 1000, enemyDps: 1000, absorbedWorth: 1, healWorth: 1 };
+    const place = { share: 0.2, rise: 0, health0: 1000, enemyDps: 1000, absorbedWorth: 1, healWorth: 1, carriesHealth: true };
     const result = (effectiveHp: number) => ({ damage: 0, damageBySecond: [], effectiveHp, abilityHealing: 300 }) as never;
-    expect(fightValue(result(1500), place)).toBeCloseTo(1500 + 150); // lasts half the fight
-    expect(fightValue(result(3000), place)).toBeCloseTo(3000 + 300);
+    expect(fightValue(result(1500), place)).toBeCloseTo(1500 + 0.8 * 150); // lasts half the fight; healing others keeps the team's 0.8
+    expect(fightValue(result(3000), place)).toBeCloseTo(3000 + 0.8 * 300);
   });
 });

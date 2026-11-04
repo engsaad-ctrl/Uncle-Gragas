@@ -1,8 +1,8 @@
-2026-11-03T07:49:11.131Z on 4e65950 (with uncommitted changes)
-top-third card gain, players 93632, numbered cards held 322532, ranked keys 5534, cards per rarity silver 50, gold 86, prismatic 62, ranking 377 s, all 377 s
-first 70% silver: cards held 51519, top third 25498, gain +5.27% se 0.37, chance 95th +0.79%: PASS
-first 70% gold: cards held 114733, top third 49194, gain +5.11% se 0.29, chance 95th +0.52%: PASS
-first 70% prismatic: cards held 59532, top third 27969, gain +4.05% se 0.33, chance 95th +0.69%: PASS
-last 30% silver: cards held 22178, top third 11068, gain +5.86% se 0.61, chance 95th +0.98%: PASS
-last 30% gold: cards held 49280, top third 21251, gain +3.96% se 0.43, chance 95th +0.74%: PASS
-last 30% prismatic: cards held 25290, top third 11701, gain +4.86% se 0.62, chance 95th +1.11%: PASS
+2026-11-04T14:05:09.835Z on 9de9d77 (with uncommitted changes)
+top-third card gain, players 93632, numbered cards held 322532, ranked keys 5534, cards per rarity silver 50, gold 86, prismatic 62, ranking 551 s, all 551 s
+first 70% silver: cards held 51519, top third 26555, gain +4.14% se 0.38, chance 95th +0.62%: PASS
+first 70% gold: cards held 114733, top third 52009, gain +4.29% se 0.29, chance 95th +0.50%: PASS
+first 70% prismatic: cards held 59532, top third 28665, gain +3.98% se 0.33, chance 95th +0.64%: PASS
+last 30% silver: cards held 22178, top third 11487, gain +4.78% se 0.59, chance 95th +0.93%: PASS
+last 30% gold: cards held 49280, top third 22274, gain +4.12% se 0.45, chance 95th +0.78%: PASS
+last 30% prismatic: cards held 25290, top third 11976, gain +4.39% se 0.59, chance 95th +0.86%: PASS

@@ -1,16 +1,17 @@
-2026-11-03T07:38:17.032Z on 4e65950 (with uncommitted changes)
+2026-11-04T14:29:37.677Z on 9de9d77 (with uncommitted changes)
 owner cases
-passed 6 of 13
-PASS 1 Lux: first item not Riftmaker: Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge (Luden's first: no)
-PASS 2 Veigar: first item not Riftmaker, Rabadon's in the first three: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
-PASS 3 Ahri: no Riftmaker nor Dusk and Dawn: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+passed 13 of 14
+PASS 1 Lux: first item not Riftmaker: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap (Luden's first: no)
+PASS 2 Veigar: first item not Riftmaker, Rabadon's in the first three: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+PASS 3 Ahri: no Riftmaker nor Dusk and Dawn: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
 PASS 4 Zed: no Warmog's nor Sorcerer's Shoes: Umbral Glaive, Plated Steelcaps, Profane Hydra
-PASS 5 Jinx: a crit item in the first three: Trinity Force, Berserker's Greaves, Lord Dominik's Regards
-FAIL 6 Yasuo: first item not Bloodthirster: Bloodthirster, Berserker's Greaves, Guinsoo's Rageblade
-FAIL 7 Ezreal: no Lord Dominik's without augments, a crit item with Jeweled Gauntlet: none Trinity Force, Berserker's Greaves, Lord Dominik's Regards | with Jeweled Gauntlet Trinity Force, Berserker's Greaves, Lord Dominik's Regards
+PASS 5 Jinx: a crit item in the first three: Lord Dominik's Regards, Berserker's Greaves, Trinity Force
+PASS 6 Yasuo: first item not Bloodthirster: Blade of The Ruined King, Berserker's Greaves, Bloodthirster
+PASS 7 Ezreal: no Lord Dominik's without augments, a crit item with Jeweled Gauntlet: none Trinity Force, Berserker's Greaves, Umbral Glaive | with Jeweled Gauntlet Lord Dominik's Regards, Berserker's Greaves, Axiom Arc
 FAIL 8 Katarina: Heartsteel in the first three: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
-FAIL 9 Sett: boots not Berserker's Greaves: Warmog's Armor, Berserker's Greaves, Jak'Sho, The Protean
-FAIL 10 Garen: boots not Sorcerer's Shoes: Warmog's Armor, Sorcerer's Shoes, Jak'Sho, The Protean
-FAIL 11 Dr. Mundo: boots not Berserker's Greaves: Warmog's Armor, Berserker's Greaves, Jak'Sho, The Protean
-FAIL 12 Soraka: no Dusk and Dawn: Riftmaker, Sorcerer's Shoes, Dusk and Dawn
-PASS 13 Master Yi: Bloodthirster or Blade of the Ruined King: Bloodthirster, Berserker's Greaves, Blade of The Ruined King
+PASS 9 Sett: boots not Berserker's Greaves: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean
+PASS 10 Garen: boots not Sorcerer's Shoes: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean
+PASS 11 Dr. Mundo: boots not Berserker's Greaves: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean
+PASS 12 Soraka: no Dusk and Dawn: Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water
+PASS 13 Master Yi: Bloodthirster or Blade of the Ruined King: Blade of The Ruined King, Berserker's Greaves, Yun Tal Wildarrows
+PASS 14 Vayne with Typhoon: Blade of the Ruined King and Bloodthirster: Blade of The Ruined King, Berserker's Greaves, Bloodthirster

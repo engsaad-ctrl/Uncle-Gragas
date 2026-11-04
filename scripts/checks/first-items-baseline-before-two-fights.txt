@@ -1,0 +1,60 @@
+2026-11-03T07:39:59.563Z on 4e65950 (with uncommitted changes)
+first items, champions 172, failed 0
+against C:\Users\FoxOS_User\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 57 of 172, any of the first three 58: MORE THAN 30, stop for the owner
+  Annie: Liandry's Torment, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge
+  Twisted Fate: Riftmaker, Sorcerer's Shoes, Lich Bane -> Deathfire Grasp, Sorcerer's Shoes, Stormsurge
+  LeBlanc: Abyssal Mask, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+  Fiddlesticks: Riftmaker, Sorcerer's Shoes, Abyssal Mask -> Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+  Soraka: Liandry's Torment, Sorcerer's Shoes, Dusk and Dawn -> Riftmaker, Sorcerer's Shoes, Dusk and Dawn
+  Miss Fortune: Overlord's Bloodmail, Berserker's Greaves, Lord Dominik's Regards -> Umbral Glaive, Berserker's Greaves, Lord Dominik's Regards
+  Evelynn: Heartsteel, Sorcerer's Shoes, Sunfire Aegis -> Redemption, Sorcerer's Shoes, Deathfire Grasp
+  Shaco: Dusk and Dawn, Berserker's Greaves, Blade of The Ruined King -> Blade of The Ruined King, Sorcerer's Shoes, Dusk and Dawn
+  Kassadin: Jak'Sho, The Protean, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Riftmaker
+  Gangplank: Warmog's Armor, Berserker's Greaves, Trinity Force -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Veigar: Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap -> Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+  Katarina: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+  Nocturne: Bloodthirster, Berserker's Greaves, Guinsoo's Rageblade -> Kraken Slayer, Plated Steelcaps, Lord Dominik's Regards
+  Elise: Bloodletter's Curse, Sorcerer's Shoes, Riftmaker -> Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap
+  Wukong: Warmog's Armor, Plated Steelcaps, Overlord's Bloodmail -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Brand: Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap -> Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+  Lee Sin: Warmog's Armor, Berserker's Greaves, Sunfire Aegis -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Nidalee: Bloodletter's Curse, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge
+  Pantheon: Warmog's Armor, Berserker's Greaves, Overlord's Bloodmail -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Akali: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Stormsurge, Sorcerer's Shoes, Rabadon's Deathcap
+  Kennen: Riftmaker, Sorcerer's Shoes, Dusk and Dawn -> Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge
+  Talon: Warmog's Armor, Berserker's Greaves, Overlord's Bloodmail -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Riven: Warmog's Armor, Berserker's Greaves, Jak'Sho, The Protean -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Lux: Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap -> Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge
+  Xerath: Riftmaker, Sorcerer's Shoes, Liandry's Torment -> Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap
+  Ahri: Riftmaker, Sorcerer's Shoes, Dusk and Dawn -> Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+  Fizz: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge
+  Rengar: Bloodthirster, Berserker's Greaves, Blade of The Ruined King -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Ziggs: Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap -> Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge
+  Kha'Zix: Warmog's Armor, Berserker's Greaves, Spear of Shojin -> Umbral Glaive, Plated Steelcaps, Profane Hydra
+  Jayce: Trinity Force, Berserker's Greaves, Blade of The Ruined King -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Lissandra: Riftmaker, Sorcerer's Shoes, Liandry's Torment -> Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge
+  Diana: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Riftmaker
+  Quinn: Bloodthirster, Berserker's Greaves, Kraken Slayer -> Umbral Glaive, Plated Steelcaps, Profane Hydra
+  Syndra: Riftmaker, Sorcerer's Shoes, Dusk and Dawn -> Stormsurge, Sorcerer's Shoes, Rabadon's Deathcap
+  Kayn: Warmog's Armor, Ionian Boots of Lucidity, Overlord's Bloodmail -> Umbral Glaive, Plated Steelcaps, Profane Hydra
+  Zoe: Riftmaker, Sorcerer's Shoes, Dusk and Dawn -> Deathfire Grasp, Sorcerer's Shoes, Stormsurge
+  Kai'Sa: Dusk and Dawn, Sorcerer's Shoes, Terminus -> Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap
+  Vel'Koz: Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap -> Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+  Taliyah: Riftmaker, Sorcerer's Shoes, Dusk and Dawn -> Deathfire Grasp, Sorcerer's Shoes, Stormsurge
+  Camille: Bloodthirster, Berserker's Greaves, Wit's End -> Umbral Glaive, Plated Steelcaps, Profane Hydra
+  Akshan: Overlord's Bloodmail, Berserker's Greaves, Trinity Force -> Umbral Glaive, Plated Steelcaps, Kraken Slayer
+  Jhin: Trinity Force, Berserker's Greaves, Lord Dominik's Regards -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Zed: Warmog's Armor, Sorcerer's Shoes, Trinity Force -> Umbral Glaive, Plated Steelcaps, Profane Hydra
+  Ekko: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+  Qiyana: Warmog's Armor, Gluttonous Greaves, Trinity Force -> Umbral Glaive, Plated Steelcaps, Profane Hydra
+  Vi: Warmog's Armor, Berserker's Greaves, Titanic Hydra -> Blade of The Ruined King, Plated Steelcaps, Lord Dominik's Regards
+  Samira: Warmog's Armor, Berserker's Greaves, Trinity Force -> Umbral Glaive, Plated Steelcaps, Profane Hydra
+  Rek'Sai: Warmog's Armor, Berserker's Greaves, Jak'Sho, The Protean -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Bard: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Rod of Ages, Sorcerer's Shoes, Riftmaker
+  Neeko: Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap -> Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
+  Pyke: Warmog's Armor, Berserker's Greaves, Overlord's Bloodmail -> Profane Hydra, Plated Steelcaps, Lord Dominik's Regards
+  Vex: Bloodletter's Curse, Sorcerer's Shoes, Riftmaker -> Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap
+  Mel: Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap -> Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap
+  Locke: Warmog's Armor, Sorcerer's Shoes, Dusk and Dawn -> Rabadon's Deathcap, Sorcerer's Shoes, Riftmaker
+  Aurora: Liandry's Torment, Sorcerer's Shoes, Riftmaker -> Deathfire Grasp, Sorcerer's Shoes, Stormsurge
+  Hwei: Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap -> Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap

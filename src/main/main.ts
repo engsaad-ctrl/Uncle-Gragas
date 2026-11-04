@@ -199,10 +199,16 @@ const teamsNow = () => {
   const ids = (list: GamePlayer[]) => list.map((p) => p.championId).filter((id) => id > 0 && id !== lastPick?.championId);
   return t ? { allies: ids(t.mine), enemies: ids(t.enemy) } : undefined;
 };
-ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown) =>
+ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown, style: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
-    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow());
+    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' ? style : undefined);
+  }),
+);
+ipcMain.handle('build:styles', (_e, championId: unknown) =>
+  reply(() => {
+    const [id] = parseIds([championId]);
+    return services.buildStyles(id);
   }),
 );
 ipcMain.handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemIds: unknown) =>

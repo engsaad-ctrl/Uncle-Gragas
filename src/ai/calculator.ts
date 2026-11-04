@@ -50,6 +50,8 @@ export interface BuildStats {
   omnivamp: number;
   moveSpeed: number;
   range: number;
+  /** Max mana, for a champion who uses it; the fight sets it. */
+  mana?: number;
 }
 
 const val = (m: Mod) => m?.baseValue ?? 0;

@@ -4,9 +4,9 @@ import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { championRecord, compareBuilds } from '../ai/calculator.js';
-import { cardGain, needHolds } from '../ai/cardMath.js';
+import { cardGain, fight, needHolds } from '../ai/cardMath.js';
 import { CARD_NUMBERS, ITEM_NUMBERS, PASSIVE_NUMBERS } from '../ai/cardMathData.js';
-import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace } from '../ai/itemMath.js';
+import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
 import { composeItemList, type ItemEntry } from '../app/itemList.js';
@@ -147,7 +147,8 @@ function once<T>(load: () => Promise<T>): () => Promise<T> {
 
 const PLAIN_BOOTS_GOLD = 300; // the first pair, on the way to a real one
 interface Teams { allies: number[]; enemies: number[] }
-const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), attacks: k?.relies.includes('attacks') ?? false }; };
+const MAGE_SUPPORTS = new Set([99, 1, 61, 147, 25, 43, 26]);
+const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), attacks: k?.relies.includes('attacks') ?? false, buffsAllies: !!k && k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')) }; };
 
 export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch; call?: CallTool }) {
   const { cacheDir, fetchImpl } = opts;
@@ -446,9 +447,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const ad = [...gives].some((s) => AD_STATS.has(s));
     return gives.has('ap') && !ad ? 'ap' : ad && !gives.has('ap') ? 'ad' : 'none';
   }
-  /** An augment that turns AD into AP or the reverse (ADAPt). */
+  /** An augment that turns AD into AP or the reverse (ADAPt), or AP into attack stats (Zealot: AP gives crit and attack speed, so AP on-hit items fit an attacker; the owner's Varus case). */
   const switchesDamage = (ids: number[]) =>
-    AUGMENT_MECHANICS.some((m) => ids.includes(m.id) && m.converts.some((c) => (AD_STATS.has(c.from) && c.to === 'ap') || (c.from === 'ap' && AD_STATS.has(c.to))));
+    AUGMENT_MECHANICS.some((m) => ids.includes(m.id) && m.converts.some((c) => (AD_STATS.has(c.from) && c.to === 'ap') || (c.from === 'ap' && (AD_STATS.has(c.to) || c.to === 'crit' || c.to === 'attack_speed'))));
 
   /** The chosen augments' links to shop items and to each other, read from the texts (src/ai/mechanics.ts). */
   function mechanicLinks(chosenIds: number[][], shopIds: Set<number>, max = 12): string[] {
@@ -593,7 +594,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const held = augmentIds.flatMap((id) => numbersOf(id) ?? []);
     const base = {
       bin, shop, level: [3, 7, 11, 15, 17, 18][Math.min(held.length, 5)]!, items: itemIds.filter((id) => shop[id]), cards: held,
-      kit: { damage: kit?.damage ?? 'mixed', attacks: kit?.relies.includes('attacks') ?? false },
+      kit: fightKitOf(championId),
       passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [],
     };
     const facts = { owned: itemIds.flatMap((id) => shopNames.list.find((i) => i.id === id)?.enName ?? []), ranged: (record?.attackRangeModifiable?.baseValue ?? 0) >= 300, traits: kit?.traits ?? [] };
@@ -612,8 +613,22 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   const ITEM_OPS = Object.fromEntries(ITEM_NUMBERS.map((i) => [i.id, i.ops]));
   const builds = new Map<string, Promise<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>();
   /** The next items by arithmetic (src/ai/itemMath.ts). No pick, buy or win rates. */
-  function mathBuild(championId: number, augmentIds: number[], owned: number[] = [], teams?: Teams) {
-    const key = `${championId}|${[...augmentIds].sort((a, b) => a - b).join()}|${owned.join()}|${teams?.allies.join() ?? ''}|${teams?.enemies.join() ?? ''}`;
+  /** The ways his kit can be built besides its own: magic or physical when his damage grows with that stat at least half as much as with the other (100 of each, no items), and tank for everyone (the owner: Katarina has all three). */
+  async function buildStyles(championId: number): Promise<BuildStyle[]> {
+    const entry = (await champions()).find((c) => c.id === championId);
+    if (!entry) throw new Error(`unknown champion ${championId}`);
+    const v = await gameVersion();
+    const [bin, shop] = await Promise.all([loadChampionBin(game, v, entry.alias), loadGameItems(game, v)]);
+    const kit = CHAMPION_KITS.find((k) => k.id === championId);
+    const fightKit = fightKitOf(championId);
+    const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
+    const damage = (stat?: string) => fight({ bin, shop, kit: fightKit, passive, items: [], level: 13, cards: stat ? [{ id: 0, name: stat, status: 'computed', ops: [{ op: 'add', stat, value: 100 }] }] : [] }).damage;
+    const base = damage(), ap = damage('ap') - base, ad = damage('ad') - base;
+    return [...(ap >= 0.5 * Math.max(ap, ad) && ap > 0 ? ['ap' as const] : []), ...(ad >= 0.5 * Math.max(ap, ad) && ad > 0 ? ['ad' as const] : []), 'tank'];
+  }
+
+  function mathBuild(championId: number, augmentIds: number[], owned: number[] = [], teams?: Teams, style?: BuildStyle) {
+    const key = `${style ?? ''}|${championId}|${[...augmentIds].sort((a, b) => a - b).join()}|${owned.join()}|${teams?.allies.join() ?? ''}|${teams?.enemies.join() ?? ''}`;
     const known = builds.get(key);
     if (known) return known;
     const work = (async () => {
@@ -622,19 +637,25 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const v = await gameVersion();
       const [all, bin, shop, list] = await Promise.all([augments(), loadChampionBin(game, v, entry.alias), loadGameItems(game, v), items('mayhem')]);
       // An item with no text isn't in the shop: Viktor's core is one champion's, given and never bought.
-      const sold = list.list.filter((i) => (i.group === 'legendary' || (i.group === 'boots' && i.gold > PLAIN_BOOTS_GOLD)) && i.html);
+      // Ids 77xxxx are old items the map list carries (Deathfire Grasp, Zephyr): 0 to 6 buyers each in 63,810 Mayhem players, so not in the shop.
+      const sold = list.list.filter((i) => (i.group === 'legendary' || (i.group === 'boots' && i.gold > PLAIN_BOOTS_GOLD)) && i.html && Math.floor(i.id / 10000) !== 77);
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
       const cards = augmentIds.flatMap((id) => { const ids = all.augments.find((a) => a.id === id)?.ids ?? [id]; return CARD_NUMBERS.find((c) => ids.includes(c.id)) ?? []; });
       const required = [...new Set(cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []))];
       const damageKind = kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed';
       const switched = cards.some((c) => switchesDamage([c.id]));
-      const fightKit = { damage: kit?.damage ?? 'mixed', attacks: kit?.relies.includes('attacks') ?? false };
+      const fightKit = fightKitOf(championId);
       const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
       const facts = await teamFacts(teams, shop);
-      const noMana = ((championRecord(bin) as unknown as { primaryAbilityResource?: { arType?: number } })?.primaryAbilityResource?.arType ?? 0) !== 0;
-      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies }), offKind: (i) => (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true), kit: { damage: kit?.damage ?? 'mixed', attacks: kit?.relies.includes('attacks') ?? false }, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required });
+      // Katarina and Garen carry no arType, read as mana, but a mana pool of 0.
+      const resource = (championRecord(bin) as unknown as { primaryAbilityResource?: { arType?: number; '{726ee5cd}'?: { baseValue?: number } } })?.primaryAbilityResource;
+      const noMana = (resource?.arType ?? 0) !== 0 || !(resource?.['{726ee5cd}']?.baseValue ?? 0);
+      // The owner: a mana item first for mages only; tanks, enchanters and attackers (Kayle, Gwen, Teemo) keep their own first item.
+      // Mages who also shield or heal allies count as mages, by the owner's word: Lux, Annie, Orianna, Seraphine, Morgana, Karma, Zilean.
+      const mage = !noMana && !fightKit.attacks && (!fightKit.buffsAllies || MAGE_SUPPORTS.has(championId)) && !kit?.traits.includes('frontline');
+      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies, style }), offKind: (i) => (style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style : !switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true), kit: fightKitOf(championId), cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required, manaFirst: mage && (style === 'ap' || (!style && !switched && damageKind === 'ap')) });
       const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
-      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, why: s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean) }] : []; });
+      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, why: s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean) }] : []; });
     })();
     builds.set(key, work);
     work.catch(() => builds.delete(key));
@@ -696,5 +717,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { side: diff > 0.15 ? 'stronger' : diff < -0.15 ? 'weaker' : 'even', magic: { mine: magic(mine), enemy: magic(enemy) } };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, mathBuild, cardValues, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, mathBuild, buildStyles, cardValues, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
 }

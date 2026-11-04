@@ -27,7 +27,7 @@ export const NUMBERED = CARD_NUMBERS.filter((c) => c.ops.length).map((c) => ({ c
 const byPlatformId = new Map();
 for (const a of augments) { const n = NUMBERED.find((x) => a.ids.includes(x.card.id)); if (n) for (const id of a.ids) byPlatformId.set(id, n); }
 
-export const kitOf = (id) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? 'mixed', attacks: k?.relies.includes('attacks') ?? false }; };
+export const kitOf = (id) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? 'mixed', attacks: k?.relies.includes('attacks') ?? false, buffsAllies: !!k && k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')) }; };
 export const passiveOf = (id) => PASSIVE_NUMBERS.find((x) => x.id === id)?.ops ?? [];
 
 /** Every stored player with a game file, a level and damage dealt, games in time order: y = damage to champions per minute, late = in the last 30% of games. */

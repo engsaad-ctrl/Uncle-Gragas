@@ -14,7 +14,9 @@ for (const k of CHAMPION_KITS) {
   try { now[k.id] = (await services.mathBuild(k.id, [])).slice(0, 3).map((s) => s.item.enName); } catch { failed++; }
 }
 writeFileSync(here('first-items-latest.json'), JSON.stringify(now, null, 1));
-const savedPath = process.argv[2] ?? here('first-items-baseline.json');
+const gapArg = process.argv.find((a) => a.startsWith('--gap='));
+if (gapArg) (await import(pathToFileURL(`${process.cwd()}/dist/ai/cardMath.js`).href)).FIGHT.gapSeconds = Number(gapArg.split('=')[1]);
+const savedPath = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? here('first-items-baseline.json');
 const lines = [`first items, champions ${Object.keys(now).length}, failed ${failed}`];
 if (!existsSync(savedPath)) {
   writeFileSync(savedPath, JSON.stringify(now, null, 1));

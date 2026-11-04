@@ -110,7 +110,7 @@ async function refreshEngine() {
   const champion = data?.champion;
   if (!champion || (!picked.size && !owned.length) || engineAsked === key) return;
   engineAsked = key;
-  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked], trialScoring(), [...owned]), window.lolh.experimentalBuild(champion.id, [...picked])]);
+  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked], trialScoring(), [...owned], buildStyle), window.lolh.experimentalBuild(champion.id, [...picked])]);
   if (engineKey() !== key) return;
   if (isError(r)) engine = { key, items: [], error: r.error };
   else {
@@ -417,6 +417,7 @@ function adaptedSection(): HTMLElement {
   }
   if (engine.error) return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'missing', `تعذّر حساب البناء: ${engine.error}`));
   const bought = path?.bought ?? 0;
+  const styleRow = styleSwitch();
   engine.items.forEach(({ item, why }, place) => {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
@@ -428,7 +429,36 @@ function adaptedSection(): HTMLElement {
   const dropped = engine.dropped ?? [];
   const x = engine.experimental;
   const lines = openLines(heldParts(), championDamage()).filter((o) => o.held.some((part) => part > 0)).map((o) => el('p', 'hint', `${o.line.name}: ${o.held.length} أجزاء. يفشل إذا: ${o.line.breaks.join('، ')}.`));
-  return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'مسارك: يبقى ما نصحناك به ما دام مناسباً، ونكمل بالغرض التالي.'), ...lines, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
+  return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...(styleRow ? [styleRow] : []), el('p', 'hint', 'مسارك: يبقى ما نصحناك به ما دام مناسباً، ونكمل بالغرض التالي.'), ...lines, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
+}
+
+/** Buttons for his kit's own build and each other style it allows; asks for the styles once per champion. */
+function styleSwitch(): HTMLElement | null {
+  const champion = data?.champion;
+  if (!champion) return null;
+  if (styles?.champion !== champion.id) {
+    styles = { champion: champion.id, list: [] };
+    void window.lolh.buildStyles(champion.id).then((x) => {
+      if (isError(x) || styles?.champion !== champion.id) return;
+      styles = { champion: champion.id, list: x };
+      if (data?.build) renderBuild(data.build);
+    });
+    return null;
+  }
+  if (!styles.list.length) return null;
+  const s = el('div', 'ov-tabs');
+  for (const v of [undefined, ...styles.list]) {
+    const b = el('button', v === buildStyle ? 'active' : '', v ? STYLE_LABEL[v] : 'حسب عدته');
+    b.type = 'button';
+    b.addEventListener('click', () => {
+      buildStyle = v;
+      path = undefined; // another way to build: what he walked was for the other one
+      if (data?.build) renderBuild(data.build);
+      if (tab === 'walk') renderWalk();
+    });
+    s.append(b);
+  }
+  return s;
 }
 
 function aiSection(): HTMLElement {
@@ -475,7 +505,13 @@ const NO_PICKS = 'من تبويب التعزيزات اضغط «اخترته» �
 let ai: { key: string; state: 'loading' | 'done' | 'error'; advice?: Advice; error?: string } | undefined;
 const pickedKey = () => [...picked].sort((a, b) => a - b).join('-');
 /** What the engine's answer depends on: the marks and what he bought. */
-const engineKey = () => `${pickedKey()}|${owned.join('-')}`;
+const engineKey = () => `${pickedKey()}|${owned.join('-')}|${buildStyle ?? ''}`;
+/** Which way to build: his kit's own (undefined), or magic, physical, tank (the owner: Katarina has all three). */
+type Style = 'ap' | 'ad' | 'tank';
+let buildStyle: Style | undefined;
+/** The styles his kit allows, for the champion they were asked for. */
+let styles: { champion: number; list: Style[] } | undefined;
+const STYLE_LABEL: Record<Style, string> = { ap: 'سحري', ad: 'جسدي', tank: 'تانك' };
 
 /** Asks for the marked augments' build (once per set of marks) and shows it in the build tab. */
 async function startAi() {
@@ -584,7 +620,7 @@ async function load() {
   engine = undefined;
   engineAsked = '';
   buildView = undefined;
-  if (pickedFor !== reply.champion?.id) (picked.clear(), offer.clear(), (owned.length = 0), (path = undefined), (pickedFor = reply.champion?.id)); // a new game's champion
+  if (pickedFor !== reply.champion?.id) (picked.clear(), offer.clear(), (owned.length = 0), (path = undefined), (buildStyle = undefined), (pickedFor = reply.champion?.id)); // a new game's champion
   // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.
   let restored = false;
   if (!picked.size && reply.champion && reply.mode === 'mayhem' && restoredFor !== reply.champion.id) {

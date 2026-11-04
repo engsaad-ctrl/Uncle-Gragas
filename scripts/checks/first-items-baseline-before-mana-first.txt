@@ -1,0 +1,41 @@
+2026-11-03T18:18:07.274Z on 9de9d77 (with uncommitted changes)
+first items, champions 172, failed 0
+against C:\Users\FoxOS_User\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 38 of 172, any of the first three 94: MORE THAN 30, stop for the owner
+  Annie: Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Teemo: Riftmaker, Berserker's Greaves, Dusk and Dawn -> Dusk and Dawn, Berserker's Greaves, Guinsoo's Rageblade
+  Ashe: Umbral Glaive, Berserker's Greaves, Lord Dominik's Regards -> Manamune, Berserker's Greaves, Umbral Glaive
+  Sona: Dead Man's Plate, Sorcerer's Shoes, Riftmaker -> Sunfire Aegis, Sorcerer's Shoes, Riftmaker
+  Janna: Riftmaker, Sorcerer's Shoes, Dusk and Dawn -> Liandry's Torment, Sorcerer's Shoes, Riftmaker
+  Corki: Edge of Night, Berserker's Greaves, Bloodthirster -> Winter's Approach, Berserker's Greaves, Overlord's Bloodmail
+  Veigar: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame -> Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap
+  Caitlyn: Trinity Force, Berserker's Greaves, Edge of Night -> Overlord's Bloodmail, Berserker's Greaves, Kraken Slayer
+  Brand: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Vayne: Trinity Force, Berserker's Greaves, Bloodthirster -> Bloodthirster, Berserker's Greaves, Guinsoo's Rageblade
+  Heimerdinger: Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Riftmaker
+  Nidalee: Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge -> Malignance, Sorcerer's Shoes, Rabadon's Deathcap
+  Udyr: Warmog's Armor, Berserker's Greaves, Kaenic Rookern -> Bloodthirster, Berserker's Greaves, Dusk and Dawn
+  Malzahar: Liandry's Torment, Sorcerer's Shoes, Riftmaker -> Riftmaker, Sorcerer's Shoes, Luden's Echo
+  Lux: Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Xerath: Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Ahri: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Fizz: Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Viktor: Liandry's Torment, Sorcerer's Shoes, Riftmaker -> Warmog's Armor, Sorcerer's Shoes, Riftmaker
+  Ziggs: Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Kha'Zix: Umbral Glaive, Plated Steelcaps, Profane Hydra -> Profane Hydra, Plated Steelcaps, Lord Dominik's Regards
+  Lissandra: Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Diana: Rabadon's Deathcap, Sorcerer's Shoes, Riftmaker -> Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap
+  Aurelion Sol: Dusk and Dawn, Sorcerer's Shoes, Riftmaker -> Riftmaker, Sorcerer's Shoes, Blackfire Torch
+  Zyra: Liandry's Torment, Sorcerer's Shoes, Riftmaker -> Riftmaker, Sorcerer's Shoes, Blackfire Torch
+  Vel'Koz: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Camille: Umbral Glaive, Plated Steelcaps, Profane Hydra -> Profane Hydra, Plated Steelcaps, Umbral Glaive
+  Jinx: Trinity Force, Berserker's Greaves, Lord Dominik's Regards -> Overlord's Bloodmail, Berserker's Greaves, Lord Dominik's Regards
+  Nami: Riftmaker, Sorcerer's Shoes, Dusk and Dawn -> Liandry's Torment, Sorcerer's Shoes, Riftmaker
+  Azir: Riftmaker, Sorcerer's Shoes, Dusk and Dawn -> Bloodletter's Curse, Sorcerer's Shoes, Blackfire Torch
+  Yuumi: Liandry's Torment, Sorcerer's Shoes, Dusk and Dawn -> Dusk and Dawn, Sorcerer's Shoes, Liandry's Torment
+  Kalista: Trinity Force, Berserker's Greaves, Bloodthirster -> Bloodthirster, Berserker's Greaves, Yun Tal Wildarrows
+  Bard: Rod of Ages, Sorcerer's Shoes, Riftmaker -> Warmog's Armor, Sorcerer's Shoes, Luden's Echo
+  Pyke: Profane Hydra, Plated Steelcaps, Lord Dominik's Regards -> Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards
+  Vex: Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+  Yunara: Bloodthirster, Berserker's Greaves, Guinsoo's Rageblade -> Dusk and Dawn, Berserker's Greaves, Bloodthirster
+  Renata Glasc: Hextech Rocketbelt, Sorcerer's Shoes, Cosmic Drive -> Abyssal Mask, Sorcerer's Shoes, Riftmaker
+  Hwei: Deathfire Grasp, Sorcerer's Shoes, Rabadon's Deathcap -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap

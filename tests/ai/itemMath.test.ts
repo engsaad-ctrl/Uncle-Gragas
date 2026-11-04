@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FightResult } from '../../src/ai/cardMath.js';
-import { enemyDpsAt, fightValue, mathBuild, searchSet, type PoolItem } from '../../src/ai/itemMath.js';
+import { FIGHTS, enemyDpsAt, fightValue, mathBuild, searchSet, type PoolItem } from '../../src/ai/itemMath.js';
 import type { GameItem } from '../../src/texts/gameData.js';
 
 const num = (baseValue: number) => ({ baseValue });
@@ -21,18 +21,44 @@ const pool: PoolItem[] = [{ id: 1, gold: 3000, boots: false }, { id: 2, gold: 30
 const base = { bin, shop, kit: { damage: 'physical' as const, attacks: true }, cards: [], pool, owned: [], required: [], place: { share: 0.2, rise: 0, health0: 1000, enemyDps: 3000, absorbedWorth: 1 } };
 
 describe('next items by arithmetic', () => {
+  beforeAll(() => { FIGHTS.inARow = 2; }); afterAll(() => { FIGHTS.inARow = 3; });
   const result = (damage: number, effectiveHp: number, damageBySecond = Array.from({ length: 15 }, (_, i) => (damage * (i + 1)) / 15)) => ({ damage, effectiveHp, damageBySecond }) as FightResult;
-  const place = { share: 0.2, rise: 0, health0: 1000, enemyDps: 1000, absorbedWorth: 1 }; // lasts the fight at 3000 health
-  it('counts health up to what lasts the fight, and no further', () => {
+  const place = { share: 0.2, rise: 0, health0: 1000, enemyDps: 1000, absorbedWorth: 1, carriesHealth: true }; // lasts the fight at 3000 health
+  it('gives nothing from the second fight to a champion who falls in the first', () => {
     expect(fightValue(result(6000, 1500), place)).toBe(3000 + 1500);
-    expect(fightValue(result(6000, 3000), place)).toBe(6000 + 3000);
-    expect(fightValue(result(6000, 9000), place)).toBe(6000 + 3000);
+    expect(fightValue(result(6000, 3000), place)).toBe(6000 + 3000); // lasts the first exactly, nothing left
+  });
+  it('counts health past what lasts one fight in the next, and no further', () => {
+    expect(fightValue(result(6000, 4500), place)).toBe(6000 + 3000 + 3000 + 1500); // 1500 left: half the second fight
+    expect(fightValue(result(6000, 6000), place)).toBe(2 * (6000 + 3000));
+    expect(fightValue(result(6000, 9000), place)).toBe(2 * (6000 + 3000));
+  });
+  it('starts everyone but the frontline at full health in the second fight', () => {
+    const back = { ...place, carriesHealth: false };
+    expect(fightValue(result(6000, 1500), back)).toBe(2 * (3000 + 1500));
+    expect(fightValue(result(6000, 9000), back)).toBe(2 * (6000 + 3000));
+  });
+  it('starts the second fight with what the first left', () => {
+    const tired = { ...result(6000, 6000), again: () => result(3000, 6000) }; // out of mana in the second
+    expect(fightValue(tired, place)).toBe(6000 + 3000 + 3000 + 3000);
+  });
+  it('counts a third fight, where a champion with no mana item has run dry', () => {
+    FIGHTS.inARow = 3;
+    const dry = result(1000, 6000), tired = { ...result(6000, 6000), again: () => ({ ...result(3000, 6000), again: () => dry }) };
+    expect(fightValue(tired, { ...place, carriesHealth: false })).toBe(6000 + 3000 + 3000 + 3000 + 1000 + 3000);
+    FIGHTS.inARow = 2;
   });
   it('counts a burst champion\'s damage only inside his window', () => {
     const burst = { ...place, window: 3 };
     const late = Array.from({ length: 15 }, (_, i) => (i < 3 ? 1000 : 6000)); // 1000 by 3 s, the rest after
-    expect(fightValue(result(6000, 9000, late), burst)).toBe(1000 + 600); // and he absorbs 3 s of his share
-    expect(fightValue(result(6000, 9000, late), place)).toBe(6000 + 3000);
+    expect(fightValue(result(6000, 9000, late), burst)).toBe(2 * (1000 + 600)); // and he absorbs 3 s of his share, twice
+    expect(fightValue(result(6000, 9000, late), place)).toBe(2 * (6000 + 3000));
+  });
+  it('starts a mage with a mana item when asked, even one the build would leave out', () => {
+    const withMana = { ...shop, 5: item({ FlatMPPoolMod: 600, FlatMagicDamageMod: 1 }) };
+    const steps = mathBuild({ ...base, shop: withMana, pool: [...pool, { id: 5, gold: 3000, boots: false }], manaFirst: true });
+    expect(steps[0]).toMatchObject({ id: 5, reason: 'mana' });
+    expect(mathBuild({ ...base, shop: withMana, pool: [...pool, { id: 5, gold: 3000, boots: false }] }).map((x) => x.id)).not.toContain(5);
   });
   it('reads the enemy damage for a level, between the measured ones', () => {
     expect(enemyDpsAt(3)).toBe(176);
@@ -47,10 +73,10 @@ describe('next items by arithmetic', () => {
   });
   it('lets the share grow with health bought, up to what stored games show', () => {
     const rising = { ...place, rise: 1 };
-    // Three times the health at rise 1: odds of 1 to 4 become 3 to 4, a share of 3/7, lasting at 45000/7.
+    // Three times the health at rise 1: odds of 1 to 4 become 3 to 4, a share of 3/7, lasting at 45000/7; what is past it goes to the second fight.
     expect(fightValue(result(0, 3000), rising)).toBeCloseTo(3000);
-    expect(fightValue(result(0, 9000), rising)).toBeCloseTo((3 / 7) * 15000);
-    expect(fightValue(result(0, 90000), rising)).toBeCloseTo((3 / 7) * 15000);
+    expect(fightValue(result(0, 9000), rising)).toBeCloseTo(9000);
+    expect(fightValue(result(0, 90000), rising)).toBeCloseTo(2 * (3 / 7) * 15000);
   });
   it('picks the resist the enemy team\'s damage answers', () => {
     const resists = { 1: item({ FlatArmorMod: 100 }), 2: item({ FlatSpellBlockMod: 100 }) };

@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FIGHT, cardGain, fight, type CardNumbers, type CardOp } from '../../src/ai/cardMath.js';
-
 // These tests count attacks exactly; the uptime has its own test.
 beforeAll(() => { FIGHT.attackUptime.melee = 1; FIGHT.attackUptime.ranged = 1; });
 afterAll(() => { FIGHT.attackUptime.melee = 0.8; FIGHT.attackUptime.ranged = 0.7; });
@@ -30,6 +29,61 @@ describe('the fight', () => {
     expect(g.effectiveHp).toBeCloseTo(1);
     expect(g.damage).toBeCloseTo(0);
   });
+});
+
+it('starts an amp that needs seconds in combat only then', () => {
+  const amp = card('amp', [{ op: 'damage_amp', scope: 'all', factor: 2, needs: '4 seconds in champion combat' } as CardOp]);
+  // Attacks at 0, 1.67 and 3.33 s come before it, the other six after.
+  expect(run([amp]).fromAttacks / run().fromAttacks).toBeCloseTo(15 / 9);
+});
+
+it('gives a mage who does not attack no attacks between casts', () => {
+  expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
+  expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often
+});
+
+it('lets an ability crit when its calculation reads crit damage', () => {
+  const q = (stat: number) => ({ rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [20, 20, 20, 20, 20], DataValues: [{ name: 'BaseDamage', values: [100, 100, 100, 100, 100, 100] }], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamage' }] }, Shown: { mFormulaParts: [{ __type: 'StatByCoefficientCalculationPart', mStat: stat, mCoefficient: 1 }] } } } } });
+  const crit = [card('crit', [{ op: 'add', stat: 'crit', value: 0.5 }])];
+  const cast = (stat: number) => fight({ bin: q(stat), shop: {}, kit, items: [], cards: crit, level: 1 }).perCast.Q!;
+  expect(cast(9) / cast(2)).toBeCloseTo(1 + 0.5 * 0.75, 2); // half the casts crit, for 175%
+});
+
+it('grows an item that keeps health from each proc, by level', () => {
+  const shop = { 1: { DataValues: [{ name: 'DamageToMaxHealthRatio', values: [0.05] }, { name: 'BaseDamage', values: [100] }, { name: 'HPRatio', values: [0] }] } } as never;
+  const hp = (level: number, items: number[]) => fight({ bin, shop, kit, items, cards: [], level }).stats.hp;
+  expect(hp(5, [1]) - hp(5, [])).toBeCloseTo(10 * 5); // two procs a level, 5 health each
+});
+
+it('starts the next fight with the mana this one left', () => {
+  const plain = run();
+  expect(plain.again!()).toBe(plain); // no mana: the same fight
+  // 100 mana and one ability at 40: two casts leave 20, so the next fight has none.
+  const caster = { rec: { ...bin.rec, spells: ['x/q'], primaryAbilityResource: { arType: 0, '{726ee5cd}': num(100), '{6216bf7b}': num(0) } }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [2, 2, 2, 2, 2, 2], mana: [40, 40, 40, 40, 40] } } };
+  const first = fight({ bin: caster, shop: {}, kit, items: [], cards: [], level: 1 });
+  expect(first.casts.Q).toBe(2);
+  expect(first.again!().casts.Q).toBeUndefined();
+});
+
+it('counts what an item gives the ally he heals, only for a kit that heals allies', () => {
+  const healer = { rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [20, 20, 20, 20, 20, 20], DataValues: [{ name: 'BaseHeal', values: [100, 100, 100, 100, 100, 100] }], mSpellCalculations: { HealAmount: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseHeal' }] } } } } };
+  const censer = { 1: { DataValues: [{ name: 'AttackSpeedMin', values: [0.25] }, { name: 'OnHitMin', values: [20] }, { name: 'Duration', values: [6] }] } } as never;
+  const allies = (buffsAllies: boolean) => fight({ bin: healer, shop: censer, kit: { ...kit, buffsAllies }, items: [1], cards: [], level: 1 }).fromAllies;
+  expect(allies(true)).toBeCloseTo((600 * 0.5 * 0.25 + 20 * 1.2) * 6, -1); // one heal at 0, the ally raised for 6 s, give or take one 0.05 s step
+  expect(allies(false)).toBe(0);
+});
+
+it('crits a cast that deals damage over time with a card that crits damage over time', () => {
+  const burn = { rec: { ...bin.rec, spells: ['', '', 'x/e'] }, 'x/e': { __type: 'SpellObject', mSpell: { cooldownTime: [99, 99, 99, 99, 99, 99], DataValues: [{ name: 'BaseDamagePerSecond', values: [100, 100, 100, 100, 100, 100] }], mSpellCalculations: { TotalDamagePerSecond: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamagePerSecond' }] } } } } };
+  const e = (cards: CardNumbers[]) => fight({ bin: burn, shop: {}, kit, items: [], cards, level: 1 }).perCast.E;
+  expect(e([card('vulnerability', [{ op: 'crit_dot', extra: 1.45 }, { op: 'add', stat: 'crit', value: 0.25 }])])! / e([])!).toBeCloseTo(1 + 0.25 * 1.45);
+});
+
+it('starts the next fight with the cooldowns this one left', () => {
+  const ult = { rec: { ...bin.rec, spells: ['', '', '', 'x/r'] }, 'x/r': { __type: 'SpellObject', mSpell: { cooldownTime: [90, 90, 90, 90] } } };
+  const next = (cards: CardNumbers[]) => { FIGHT.carryCooldowns = true; try { return fight({ bin: ult, shop: {}, kit, items: [], cards, level: 1 }).again!().casts.R; } finally { FIGHT.carryCooldowns = false; } };
+  expect(next([])).toBeUndefined(); // cast at 0, back at 90: 35 s into the next fight, which starts at 55
+  expect(next([card('haste', [{ op: 'add', stat: 'haste', value: 100 }])])).toBe(1); // back at 45, before it starts
 });
 
 it('adds the mode\'s health and resists by attack range, as screens show', () => {
