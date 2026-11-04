@@ -20,7 +20,7 @@ const read = (p) => JSON.parse(readFileSync(p, 'utf8').replace(/^﻿/, ''));
 const champs = read(`${dir}/cdragon/default/champion-summary.json`);
 const idOf = (name) => (champs.data ?? champs).find((c) => c.name === name).id;
 const services = createServices({ cacheDir: dir, fetchImpl: fetch });
-const JEWELED_GAUNTLET = 1048, TYPHOON = 1087;
+const JEWELED_GAUNTLET = 1048, TYPHOON = 1087, VULNERABILITY = 1092;
 const crit = (it) => (shop[it.id]?.DataValues?.find((d) => d.name === 'FlatCritChanceMod')?.values?.[0] ?? 0) > 0;
 const three = async (name, augments = []) => (await services.mathBuild(idOf(name), augments)).slice(0, 3).map((s) => s.item);
 const names = (its) => its.map((i) => i.enName);
@@ -51,6 +51,10 @@ for (const [label, runs, test, extra] of cases) {
   passed += ok;
   lines.push(`${ok ? 'PASS' : 'FAIL'} ${label}: ${builds.map((b, i) => `${runs.length > 1 ? (i ? 'with Jeweled Gauntlet ' : 'none ') : ''}${names(b).join(', ')}`).join(' | ')}${extra ? ` (${extra(builds)})` : ''}`);
 }
-lines.splice(1, 0, `passed ${passed} of ${cases.length}`);
+// Not a build: the magic button must be there for her once Vulnerability is held (the owner: an AP build with burns).
+const mfStyles = await services.buildStyles(idOf('Miss Fortune'), [VULNERABILITY]);
+passed += mfStyles.includes('ap');
+lines.push(`${mfStyles.includes('ap') ? 'PASS' : 'FAIL'} 15 Miss Fortune with Vulnerability: the magic build offered: ${mfStyles.join(', ')}`);
+lines.splice(1, 0, `passed ${passed} of ${cases.length + 1}`);
 writeResult(import.meta.url, lines);
 process.exit(0);

@@ -1,6 +1,6 @@
-2026-11-04T15:54:59.446Z on 451c581 (with uncommitted changes)
+2026-11-04T18:33:46.141Z on ed1fcf1 (with uncommitted changes)
 owner cases
-passed 13 of 14
+passed 14 of 15
 PASS 1 Lux: first item not Riftmaker: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap (Luden's first: no)
 PASS 2 Veigar: first item not Riftmaker, Rabadon's in the first three: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
 PASS 3 Ahri: no Riftmaker nor Dusk and Dawn: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
@@ -15,3 +15,4 @@ PASS 11 Dr. Mundo: boots not Berserker's Greaves: Heartsteel, Plated Steelcaps, 
 PASS 12 Soraka: no Dusk and Dawn: Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water
 PASS 13 Master Yi: Bloodthirster or Blade of the Ruined King: Blade of The Ruined King, Berserker's Greaves, Yun Tal Wildarrows
 PASS 14 Vayne with Typhoon: Blade of the Ruined King and Bloodthirster: Blade of The Ruined King, Berserker's Greaves, Bloodthirster
+PASS 15 Miss Fortune with Vulnerability: the magic build offered: ap, ad, tank

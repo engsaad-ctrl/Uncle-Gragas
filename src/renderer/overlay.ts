@@ -432,18 +432,19 @@ function adaptedSection(): HTMLElement {
   return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...(styleRow ? [styleRow] : []), el('p', 'hint', 'مسارك: يبقى ما نصحناك به ما دام مناسباً، ونكمل بالغرض التالي.'), ...lines, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
 }
 
-/** Buttons for his kit's own build and each other style it allows; asks for the styles once per champion. */
+/** Buttons for his kit's own build and each other style it allows; asks for the styles once per champion and marked cards. */
 function styleSwitch(): HTMLElement | null {
   const champion = data?.champion;
   if (!champion) return null;
-  if (styles?.champion !== champion.id) {
-    styles = { champion: champion.id, list: [] };
-    void window.lolh.buildStyles(champion.id).then((x) => {
-      if (isError(x) || styles?.champion !== champion.id) return;
-      styles = { champion: champion.id, list: x };
+  const key = pickedKey();
+  if (styles?.champion !== champion.id || styles.key !== key) {
+    styles = { champion: champion.id, key, list: styles?.champion === champion.id ? styles.list : [] };
+    void window.lolh.buildStyles(champion.id, [...picked]).then((x) => {
+      if (isError(x) || styles?.champion !== champion.id || styles.key !== key) return;
+      styles = { champion: champion.id, key, list: x };
+      if (buildStyle && !x.includes(buildStyle)) buildStyle = undefined; // the card that opened it was unmarked
       if (data?.build) renderBuild(data.build);
     });
-    return null;
   }
   if (!styles.list.length) return null;
   const s = el('div', 'ov-tabs');
@@ -510,7 +511,7 @@ const engineKey = () => `${pickedKey()}|${owned.join('-')}|${buildStyle ?? ''}`;
 type Style = 'ap' | 'ad' | 'tank';
 let buildStyle: Style | undefined;
 /** The styles his kit allows, for the champion they were asked for. */
-let styles: { champion: number; list: Style[] } | undefined;
+let styles: { champion: number; key: string; list: Style[] } | undefined;
 const STYLE_LABEL: Record<Style, string> = { ap: 'سحري', ad: 'جسدي', tank: 'تانك' };
 
 /** Asks for the marked augments' build (once per set of marks) and shows it in the build tab. */

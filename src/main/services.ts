@@ -613,8 +613,10 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   const ITEM_OPS = Object.fromEntries(ITEM_NUMBERS.map((i) => [i.id, i.ops]));
   const builds = new Map<string, Promise<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>();
   /** The next items by arithmetic (src/ai/itemMath.ts). No pick, buy or win rates. */
+  const cardsOf = (list: { id: number; ids?: number[] }[], augmentIds: number[]) => augmentIds.flatMap((id) => { const ids = list.find((a) => a.id === id)?.ids ?? [id]; return CARD_NUMBERS.find((c) => ids.includes(c.id)) ?? []; });
   /** The ways his kit can be built besides its own: magic or physical when his damage grows with that stat at least half as much as with the other (100 of each, no items), and tank for everyone (the owner: Katarina has all three). */
-  async function buildStyles(championId: number): Promise<BuildStyle[]> {
+  /** Magic also when a held card works on AP or on damage over time (the owner: Miss Fortune with Vulnerability builds AP and burns). */
+  async function buildStyles(championId: number, augmentIds: number[] = []): Promise<BuildStyle[]> {
     const entry = (await champions()).find((c) => c.id === championId);
     if (!entry) throw new Error(`unknown champion ${championId}`);
     const v = await gameVersion();
@@ -624,7 +626,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
     const damage = (stat?: string) => fight({ bin, shop, kit: fightKit, passive, items: [], level: 13, cards: stat ? [{ id: 0, name: stat, status: 'computed', ops: [{ op: 'add', stat, value: 100 }] }] : [] }).damage;
     const base = damage(), ap = damage('ap') - base, ad = damage('ad') - base;
-    return [...(ap >= 0.5 * Math.max(ap, ad) && ap > 0 ? ['ap' as const] : []), ...(ad >= 0.5 * Math.max(ap, ad) && ad > 0 ? ['ad' as const] : []), 'tank'];
+    const all = augmentIds.length ? await augments() : undefined;
+    const magicCard = cardsOf(all?.augments ?? [], augmentIds).some((c) => c.ops.some((x) => x.op === 'crit_dot' || (x.op === 'convert' && (x.from === 'ap' || x.to === 'ap')) || ((x.op === 'add' || x.op === 'mult' || x.op === 'per_stack') && x.stat === 'ap')));
+    return [...((ap >= 0.5 * Math.max(ap, ad) && ap > 0) || magicCard ? ['ap' as const] : []), ...(ad >= 0.5 * Math.max(ap, ad) && ad > 0 ? ['ad' as const] : []), 'tank'];
   }
 
   function mathBuild(championId: number, augmentIds: number[], owned: number[] = [], teams?: Teams, style?: BuildStyle) {
@@ -640,7 +644,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       // Ids 77xxxx are old items the map list carries (Deathfire Grasp, Zephyr): 0 to 6 buyers each in 63,810 Mayhem players, so not in the shop.
       const sold = list.list.filter((i) => (i.group === 'legendary' || (i.group === 'boots' && i.gold > PLAIN_BOOTS_GOLD)) && i.html && Math.floor(i.id / 10000) !== 77);
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
-      const cards = augmentIds.flatMap((id) => { const ids = all.augments.find((a) => a.id === id)?.ids ?? [id]; return CARD_NUMBERS.find((c) => ids.includes(c.id)) ?? []; });
+      const cards = cardsOf(all.augments, augmentIds);
       const required = [...new Set(cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []))];
       const damageKind = kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed';
       const switched = cards.some((c) => switchesDamage([c.id]));

@@ -205,10 +205,10 @@ ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown, fo
     return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' ? style : undefined);
   }),
 );
-ipcMain.handle('build:styles', (_e, championId: unknown) =>
+ipcMain.handle('build:styles', (_e, championId: unknown, augmentIds: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
-    return services.buildStyles(id);
+    return services.buildStyles(id, Array.isArray(augmentIds) ? parseIds(augmentIds) : []);
   }),
 );
 ipcMain.handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemIds: unknown) =>
