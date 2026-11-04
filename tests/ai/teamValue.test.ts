@@ -63,6 +63,12 @@ describe('a real team', () => {
     expect(e.armor).toBeCloseTo(60);
     expect(enemyTeam([], {})).toBeUndefined();
   });
+  it('takes a share of health from the real enemies\' health', () => {
+    const share: CardOp = { op: 'proc', trigger: 'attack', internal_cooldown: 100, damage: { target_max_hp: 0.1 }, type: 'true' };
+    expect(run([share]).fromCards).toBeCloseTo(0.1 * FIGHT.target.hp);
+    expect(run([share], { enemy: { armor: 0, mr: 0, physicalShare: 0.5, hp: 7000 } }).fromCards).toBeCloseTo(700);
+    expect(enemyTeam([physical, magic], {})!.hp).toBeGreaterThan(0);
+  });
   it('weighs his resists by the kind of their damage', () => {
     const r = (physicalShare: number) => fight({ bin: binOf(500, 100, 0), shop: {}, kit, items: [], cards: [], level: 1, enemy: { armor: 0, mr: 0, physicalShare } });
     expect(r(1).effectiveHp / r(1).stats.hp).toBeCloseTo(2);

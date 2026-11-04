@@ -56,11 +56,13 @@ const HEALING_WORTH = 0.127;
 /** Healing from abilities keeps someone on the team up. Stored games, healers by fifths of the file's healing: -24% -> -17%, -7% -> -7%, +2% -> +2%, +10% -> +12%, +28% -> +15%. */
 const ABILITY_HEALING_WORTH = 0.6;
 /** The enemies' resists at a late level with no items, the size the fixed target was, and the kind of damage their kits deal. */
+/** The mean health of 172 champions at level 15 with no items (measured 2026-11-04); a team's health scales FIGHT.target.hp by its own against this. */
+const TYPICAL_HP = 2415;
 export function enemyTeam(list: { bin: Record<string, unknown>; kit: Kit }[], shop: Record<number, GameItem>): EnemyTeam | undefined {
   if (!list.length) return undefined;
   const stats = list.map((e) => fight({ bin: e.bin, shop, kit: e.kit, cards: [], items: [], level: FULL_BUILD_LEVEL }).stats);
   const mean = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
-  return { armor: mean(stats.map((s) => s.armor)), mr: mean(stats.map((s) => s.mr)), physicalShare: mean(list.map((e) => (e.kit.damage === 'physical' ? 1 : e.kit.damage === 'magic' ? 0 : 0.5))) };
+  return { armor: mean(stats.map((s) => s.armor)), mr: mean(stats.map((s) => s.mr)), physicalShare: mean(list.map((e) => (e.kit.damage === 'physical' ? 1 : e.kit.damage === 'magic' ? 0 : 0.5))), hp: (FIGHT.target.hp * mean(stats.map((s) => s.hp))) / TYPICAL_HP };
 }
 /** A way to build one champion: by his kit (none), or one the owner names: magic items only, physical only, or standing in front (Katarina has all three). */
 export type BuildStyle = 'ap' | 'ad' | 'tank';

@@ -50,7 +50,8 @@ export const ALLY = { dps: 600, attacksPerSecond: 1.2, ap: 300, attackShare: 0.5
 /** buffsAllies: the kit heals or shields allies (Sona, Lulu, Janna), so items that act on the ally he heals do something. */
 export interface Kit { damage: 'magic' | 'physical' | 'mixed'; attacks: boolean; buffsAllies?: boolean }
 /** The real enemies when they're known: what their resists do to his damage, and how much of their damage his armor answers rather than his magic resist. */
-export interface EnemyTeam { armor: number; mr: number; physicalShare: number }
+/** hp: the health a share of the target's health is taken from, when the enemies are known (FIGHT.target.hp otherwise). */
+export interface EnemyTeam { armor: number; mr: number; physicalShare: number; hp?: number }
 export interface FightResult {
   damage: number;
   /** Damage dealt by the end of each second, so a burst counts even if he dies soon after. */
@@ -98,8 +99,7 @@ const HEALTH_SHARE_NAME = /(percent|max|total).*(health|hp)|(health|hp).*(percen
 const NOT_HEALTH_SHARE = /heal$|healing|shield|cost|decay|monster|minion|cap|missing|tooltip$/i;
 const NOT_DAMAGE = /monster|minion|shield|heal|bonus|floor|secondary/i;
 
-function formula(d: DamageFormula, s: BuildStats, level: number): number {
-  const t = FIGHT.target.hp;
+function formula(d: DamageFormula, s: BuildStats, level: number, t = FIGHT.target.hp): number {
   return (d.flat === undefined ? 0 : scaled(d.flat, level)) + (d.mana ?? 0) * (s.mana ?? 0) + (d.ap ?? 0) * s.ap + (d.ad ?? 0) * s.ad + (d.bonus_ad ?? 0) * s.bonusAd + (d.hp ?? 0) * s.hp + (d.bonus_hp ?? 0) * s.bonusHp + (d.armor ?? 0) * s.armor + (d.mr ?? 0) * s.mr + (d.bonus_armor ?? 0) * s.bonusArmor + (d.bonus_mr ?? 0) * s.bonusMr + (d.target_max_hp ?? 0) * t + (d.target_missing_hp ?? 0) * (t / 2) + (d.target_current_hp ?? 0) * (t / 2);
 }
 
@@ -249,6 +249,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   });
 
   const dt = 0.05;
+  const targetHp = o.enemy?.hp ?? FIGHT.target.hp;
   const stateOf = new Map<CardOp, { stacks: number; until: number; start: number }>();
   const dots: { op: Extract<CardOp, { op: 'dot' }>; until: number; stacks: number; fromAbility: boolean }[] = [];
   const lastProc = new Map<CardOp, number>();
@@ -292,8 +293,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       // A card's summoner spell or chosen spell comes once in a fight, whatever the abilities do.
       const icd = x.trigger === 'spell_hit' ? (('internal_cooldown' in x ? x.internal_cooldown : 0) || FIGHT.seconds) : 'internal_cooldown' in x ? (x.internal_cooldown ?? 0) : 0;
       if (icd && t - (lastProc.get(x) ?? -Infinity) < icd) continue;
-      if (x.op === 'heal' || x.op === 'shield') { healed += formula(x.amount, c, o.level); lastProc.set(x, t); }
-      if (x.op === 'proc') { fromCards += formula(x.damage, c, o.level) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all', t); lastProc.set(x, t); }
+      if (x.op === 'heal' || x.op === 'shield') { healed += formula(x.amount, c, o.level, targetHp); lastProc.set(x, t); }
+      if (x.op === 'proc') { fromCards += formula(x.damage, c, o.level, targetHp) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all', t); lastProc.set(x, t); }
       if (x.op === 'refund') { reduce(x.scope, x.amount, x.unit, t); lastProc.set(x, t); }
       if (x.op === 'dot') { const d = dots.find((y) => y.op === x); if (d) { d.until = t + (x.duration ?? FIGHT.seconds); d.stacks = Math.min(x.stacks_max ?? 1, d.stacks + 1); } else dots.push({ op: x, until: t + (x.duration ?? FIGHT.seconds), stacks: 1, fromAbility: false }); }
       if (x.op === 'timed') {
@@ -343,7 +344,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const healing = Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
         abilityHealing += healing;
         if (healing > 0) for (const b of allyBuffs) b.until = t + b.seconds;
-        const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * FIGHT.target.hp);
+        const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * targetHp);
         const one = each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
         // A cast that deals damage over time (Miss Fortune's E: TotalDamagePerSecond for 2 s) is dealt at once here, so a card that crits damage over time crits it here; a toggle's goes through the dots.
         const overTime = sl.overTime && !sl.toggle ? 1 + c.crit * dotCrit : 1;
@@ -379,7 +380,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     for (const x of ops) if ((x.op === 'proc' || x.op === 'heal' || x.op === 'shield') && x.trigger === 'periodic' && t - (lastProc.get(x) ?? -Infinity) >= (x.internal_cooldown || FIGHT.seconds)) fire('periodic', t, c);
     for (const d of dots) {
       if (t > d.until) continue;
-      const each = formula(d.op.per_second, c, o.level) * dt * d.stacks * (taken[d.op.type as keyof typeof taken] ?? taken.adaptive) * (1 + c.crit * dotCrit);
+      const each = formula(d.op.per_second, c, o.level, targetHp) * dt * d.stacks * (taken[d.op.type as keyof typeof taken] ?? taken.adaptive) * (1 + c.crit * dotCrit);
       if (d.fromAbility) fromAbilities += each;
       else fromCards += each;
     }
