@@ -5,14 +5,14 @@
   "Rabadon's Deathcap"
  ],
  "2": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "3": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "4": [
   "Luden's Echo",
@@ -20,14 +20,14 @@
   "Rabadon's Deathcap"
  ],
  "5": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "6": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "7": [
   "Luden's Echo",
@@ -55,9 +55,9 @@
   "Yun Tal Wildarrows"
  ],
  "12": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "13": [
   "Archangel's Staff",
@@ -65,14 +65,14 @@
   "Warmog's Armor"
  ],
  "14": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "15": [
-  "Overlord's Bloodmail",
-  "Berserker's Greaves",
-  "Trinity Force"
+  "Trinity Force",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
  ],
  "16": [
   "Ardent Censer",
@@ -95,9 +95,9 @@
   "Dusk and Dawn"
  ],
  "20": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Heartsteel"
+  "Warmog's Armor"
  ],
  "21": [
   "Lord Dominik's Regards",
@@ -130,9 +130,9 @@
   "Rabadon's Deathcap"
  ],
  "27": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "28": [
   "Luden's Echo",
@@ -150,19 +150,19 @@
   "Liandry's Torment"
  ],
  "31": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "32": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "33": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "34": [
   "Rod of Ages",
@@ -175,9 +175,9 @@
   "Lord Dominik's Regards"
  ],
  "36": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "37": [
   "Ardent Censer",
@@ -200,7 +200,7 @@
   "Staff of Flowing Water"
  ],
  "41": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
   "Lord Dominik's Regards"
  ],
@@ -215,9 +215,9 @@
   "Riftmaker"
  ],
  "44": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "45": [
   "Luden's Echo",
@@ -225,27 +225,27 @@
   "Rabadon's Deathcap"
  ],
  "48": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "50": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "51": [
-  "Blade of The Ruined King",
-  "Gluttonous Greaves",
-  "Lord Dominik's Regards"
+  "Lord Dominik's Regards",
+  "Berserker's Greaves",
+  "Kraken Slayer"
  ],
  "53": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "54": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Sorcerer's Shoes",
   "Sunfire Aegis"
  ],
@@ -260,19 +260,19 @@
   "Lord Dominik's Regards"
  ],
  "57": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "58": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "59": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "60": [
   "Stormsurge",
@@ -285,7 +285,7 @@
   "Riftmaker"
  ],
  "62": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
   "Lord Dominik's Regards"
  ],
@@ -295,7 +295,7 @@
   "Rabadon's Deathcap"
  ],
  "64": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
   "Lord Dominik's Regards"
  ],
@@ -315,9 +315,9 @@
   "Dusk and Dawn"
  ],
  "72": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "74": [
   "Luden's Echo",
@@ -325,9 +325,9 @@
   "Rabadon's Deathcap"
  ],
  "75": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "76": [
   "Malignance",
@@ -335,22 +335,22 @@
   "Rabadon's Deathcap"
  ],
  "77": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "78": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "79": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "80": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
   "Lord Dominik's Regards"
  ],
@@ -360,14 +360,14 @@
   "Umbral Glaive"
  ],
  "82": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Heartsteel"
+  "Warmog's Armor"
  ],
  "83": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Heartsteel"
+  "Warmog's Armor"
  ],
  "84": [
   "Hextech Gunblade",
@@ -380,14 +380,14 @@
   "Stormsurge"
  ],
  "86": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "89": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "90": [
   "Blackfire Torch",
@@ -395,14 +395,14 @@
   "Rabadon's Deathcap"
  ],
  "91": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
   "Lord Dominik's Regards"
  ],
  "92": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Umbral Glaive"
  ],
  "96": [
   "Blade of The Ruined King",
@@ -410,9 +410,9 @@
   "Dusk and Dawn"
  ],
  "98": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Heartsteel"
+  "Warmog's Armor"
  ],
  "99": [
   "Luden's Echo",
@@ -425,9 +425,9 @@
   "Malignance"
  ],
  "102": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Heartsteel"
+  "Warmog's Armor"
  ],
  "103": [
   "Luden's Echo",
@@ -435,9 +435,9 @@
   "Rabadon's Deathcap"
  ],
  "104": [
-  "Heartsteel",
+  "Trinity Force",
   "Berserker's Greaves",
-  "Overlord's Bloodmail"
+  "Lord Dominik's Regards"
  ],
  "105": [
   "Luden's Echo",
@@ -445,9 +445,9 @@
   "Rabadon's Deathcap"
  ],
  "106": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Heartsteel"
+  "Warmog's Armor"
  ],
  "107": [
   "Umbral Glaive",
@@ -460,9 +460,9 @@
   "Dusk and Dawn"
  ],
  "111": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "112": [
   "Blackfire Torch",
@@ -470,9 +470,9 @@
   "Liandry's Torment"
  ],
  "113": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "114": [
   "Blade of The Ruined King",
@@ -500,14 +500,14 @@
   "Sunfire Aegis"
  ],
  "121": [
-  "Umbral Glaive",
+  "Hubris",
   "Sorcerer's Shoes",
   "Profane Hydra"
  ],
  "122": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "126": [
   "Umbral Glaive",
@@ -540,7 +540,7 @@
   "Dusk and Dawn"
  ],
  "141": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
   "Profane Hydra"
  ],
@@ -565,14 +565,14 @@
   "Riftmaker"
  ],
  "150": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Heartsteel"
+  "Warmog's Armor"
  ],
  "154": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "157": [
   "Blade of The Ruined King",
@@ -605,9 +605,9 @@
   "Blade of The Ruined King"
  ],
  "201": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "202": [
   "Umbral Glaive",
@@ -620,24 +620,24 @@
   "Lord Dominik's Regards"
  ],
  "221": [
-  "Atma's Reckoning",
-  "Berserker's Greaves",
-  "Spear of Shojin"
+  "Lord Dominik's Regards",
+  "Gluttonous Greaves",
+  "Essence Reaver"
  ],
  "222": [
-  "Lord Dominik's Regards",
+  "Umbral Glaive",
   "Berserker's Greaves",
-  "Trinity Force"
+  "Lord Dominik's Regards"
  ],
  "223": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Protoplasm Harness"
+  "Warmog's Armor"
  ],
  "233": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Berserker's Greaves",
-  "Heartsteel"
+  "Warmog's Armor"
  ],
  "234": [
   "Lord Dominik's Regards",
@@ -655,14 +655,14 @@
   "Bloodthirster"
  ],
  "238": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
   "Profane Hydra"
  ],
  "240": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Heartsteel"
+  "Warmog's Armor"
  ],
  "245": [
   "Luden's Echo",
@@ -670,7 +670,7 @@
   "Rabadon's Deathcap"
  ],
  "246": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
   "Profane Hydra"
  ],
@@ -680,9 +680,9 @@
   "Lord Dominik's Regards"
  ],
  "266": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "267": [
   "Ardent Censer",
@@ -705,14 +705,14 @@
   "Lord Dominik's Regards"
  ],
  "412": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "420": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "421": [
   "Umbral Glaive",
@@ -745,9 +745,9 @@
   "Kraken Slayer"
  ],
  "516": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "517": [
   "Dusk and Dawn",
@@ -765,12 +765,12 @@
   "Guinsoo's Rageblade"
  ],
  "526": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "555": [
-  "Profane Hydra",
+  "Heartsteel",
   "Berserker's Greaves",
   "Lord Dominik's Regards"
  ],
@@ -805,9 +805,9 @@
   "Lich Bane"
  ],
  "875": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "876": [
   "Blackfire Torch",
@@ -835,9 +835,9 @@
   "Bloodthirster"
  ],
  "897": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "901": [
   "Blade of The Ruined King",
@@ -850,9 +850,9 @@
   "Staff of Flowing Water"
  ],
  "904": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Jak'Sho, The Protean"
+  "Warmog's Armor"
  ],
  "910": [
   "Blackfire Torch",

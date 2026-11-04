@@ -10,7 +10,7 @@ import { CHAMPION_KITS } from './championKits.js';
 import type { GameItem } from '../texts/gameData.js';
 
 export interface PoolItem { id: number; gold: number; boots: boolean; damage?: 'ap' | 'ad' | 'none' | string }
-export interface MathStep { id: number; damage: number; health: number; reason: 'owned' | 'required' | 'mana' | 'boots' | 'math' }
+export interface MathStep { id: number; damage: number; health: number; reason: 'owned' | 'required' | 'mana' | 'stacks' | 'boots' | 'math' }
 /** A champion's place in a team's fight: his share of the enemy's damage with no items, how fast it grows as he buys health from `health0`, that damage per second, and what a point absorbed for the team is worth in points of damage. */
 export interface TeamPlace { carriesHealth?: boolean; healWorth?: number; share: number; rise: number; health0: number; maxRatio?: number; enemyDps: number; absorbedWorth: number; window?: number }
 /** A burst champion's damage comes in a few seconds from his abilities and ultimate, then he leaves: the owner's rule (Ahri, Zed). Assumption: the window, tried at 2 to 5 s and chosen on the owner's cases (knowledge/burst-value-plan.md). */
@@ -147,6 +147,10 @@ export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number
   }
 
   // The order: owned, what a card asks for, then most per gold; boots second.
+  // The owner: Heartsteel is the first item; other stacking items (Hubris, Rod of Ages) first too, except for a marksman, whose first item is his crit.
+  const heartsteel = (id: number) => (o.shop[id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0;
+  const marksman = o.kit.attacks && ((championRecord(o.bin) as unknown as { attackRangeModifiable?: { baseValue?: number } })?.attackRangeModifiable?.baseValue ?? 0) >= 300;
+  const grows = (id: number) => heartsteel(id) || (!marksman && (o.itemOps?.[id % 10000] ?? []).some((x) => x.op === 'per_stack' && x.per !== 'attack'));
   const steps: MathStep[] = o.owned.map((id) => ({ id, damage: 0, health: 0, reason: 'owned' }));
   const held = [...o.owned];
   const buy = (id: number, reason: MathStep['reason']) => {
@@ -156,14 +160,16 @@ export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number
     held.push(id);
   };
   for (const id of o.required) if (set.includes(id) && !held.includes(id)) buy(id, 'required');
+  for (const id of set) if (heartsteel(id) && !held.includes(id)) buy(id, 'stacks');
   if (manaItem !== undefined && !held.includes(manaItem)) buy(manaItem, 'mana');
   while (held.length < set.length) {
     const boots = set.find((id) => isBoots(id) && !held.includes(id));
     if (boots !== undefined && held.length >= 1) { buy(boots, 'boots'); continue; }
     const level = LEVEL_BY_ITEMS[Math.min(held.length, 6)]!;
-    const next = set.filter((id) => !held.includes(id) && !isBoots(id)).map((id) => ({ id, g: gain(held, id, level) / Math.max(o.pool.find((p) => p.id === id)?.gold ?? 3000, 1) })).sort((a, b) => b.g - a.g)[0];
+    // An item that grows with stacks (Heartsteel, Hubris, Rod of Ages) first: the set is valued with the stacks of a whole game, which only buying it first earns (the owner).
+    const next = set.filter((id) => !held.includes(id) && !isBoots(id)).map((id) => ({ id, grows: grows(id), g: gain(held, id, level) / Math.max(o.pool.find((p) => p.id === id)?.gold ?? 3000, 1) })).sort((a, b) => Number(b.grows) - Number(a.grows) || b.g - a.g)[0];
     if (!next) { buy(boots!, 'boots'); continue; }
-    buy(next.id, 'math');
+    buy(next.id, next.grows ? 'stacks' : 'math');
   }
   return steps;
 }

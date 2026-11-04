@@ -79,6 +79,16 @@ it('crits a cast that deals damage over time with a card that crits damage over 
   expect(e([card('vulnerability', [{ op: 'crit_dot', extra: 1.45 }, { op: 'add', stat: 'crit', value: 0.25 }])])! / e([])!).toBeCloseTo(1 + 0.25 * 1.45);
 });
 
+it('gives Jinx\'s minigun its attack speed stacks instead of casting Q', () => {
+  const jinx = { rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9], DataValues: [{ name: 'MinigunAttackSpeedMax', values: [5, 30, 55, 80, 105, 130] }, { name: 'MinigunAttackSpeedStacks', values: [3, 3, 3, 3, 3, 3] }, { name: 'MinigunAttackSpeedDuration', values: [2.5, 2.5, 2.5, 2.5, 2.5, 2.5] }] } } };
+  const r = fight({ bin: jinx, shop: {}, kit, items: [], cards: [], level: 1 });
+  expect(r.attacks).toBe(11); // 9 without; 0.6 + 0.6 x 30% = 0.78 a second once three attacks stacked it
+  expect(r.perCast.Q).toBeUndefined();
+});
+it('leaves out a stat that comes only at low health', () => {
+  const nearDeath = card('bloodmail', [{ op: 'mult', stat: 'ad', factor: 1.12, needs: 'full value only at or below 30% remaining Health' } as CardOp]);
+  expect(run([nearDeath]).fromAttacks).toBeCloseTo(run().fromAttacks);
+});
 it('starts the next fight with the cooldowns this one left', () => {
   const ult = { rec: { ...bin.rec, spells: ['', '', '', 'x/r'] }, 'x/r': { __type: 'SpellObject', mSpell: { cooldownTime: [90, 90, 90, 90] } } };
   const next = (cards: CardNumbers[]) => { FIGHT.carryCooldowns = true; try { return fight({ bin: ult, shop: {}, kit, items: [], cards, level: 1 }).again!().casts.R; } finally { FIGHT.carryCooldowns = false; } };

@@ -108,6 +108,18 @@ describe('next items by arithmetic', () => {
     const b = mathBuild({ ...base, owned: [3] });
     expect(b[0]).toMatchObject({ id: 3, reason: 'owned' });
   });
+  it('buys an item that grows with stacks first, though it adds less now, but not for a marksman', () => {
+    const itemOps = { 2: [{ op: 'per_stack' as const, stat: 'ad', value: 1, mode: 'add' as const, per: 'takedown', cap: 20, lost_on_death: null }] };
+    const b = mathBuild({ ...base, kit: { damage: 'physical' as const, attacks: false }, itemOps });
+    expect(b[0]).toMatchObject({ id: 2, reason: 'stacks' });
+    expect(b[1]).toMatchObject({ reason: 'boots' });
+    expect(mathBuild({ ...base, itemOps })[0]!.id).not.toBe(2);
+  });
+  it('puts Heartsteel first, before a mage\'s mana item', () => {
+    const grown = { ...shop, 2: item({ FlatPhysicalDamageMod: 20, DamageToMaxHealthRatio: 0.1 }), 5: item({ FlatMPPoolMod: 600, FlatMagicDamageMod: 1 }) };
+    const b = mathBuild({ ...base, shop: grown, pool: [...pool, { id: 5, gold: 3000, boots: false }], manaFirst: true });
+    expect(b.slice(0, 2)).toMatchObject([{ id: 2, reason: 'stacks' }, { id: 5, reason: 'mana' }]);
+  });
   it('brings an item a held card needs', () => {
     expect(mathBuild({ ...base, required: [2] })[0]).toMatchObject({ id: 2, reason: 'required' });
   });

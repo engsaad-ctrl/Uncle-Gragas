@@ -1,3 +1,68 @@
-2026-11-04T14:34:43.159Z on 9de9d77 (with uncommitted changes)
+2026-11-04T15:56:53.830Z on 451c581 (with uncommitted changes)
 first items, champions 172, failed 0
-against C:\Users\FoxOS_User\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 0 of 172, any of the first three 0
+against C:\Users\FoxOS_User\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 65 of 172, any of the first three 65: MORE THAN 30, stop for the owner
+  Olaf: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Galio: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Xin Zhao: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Urgot: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Alistar: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Sion: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Sivir: Overlord's Bloodmail, Berserker's Greaves, Trinity Force -> Trinity Force, Plated Steelcaps, Lord Dominik's Regards
+  Nunu & Willump: Warmog's Armor, Plated Steelcaps, Heartsteel -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Singed: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Cho'Gath: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Amumu: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Rammus: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Dr. Mundo: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Gangplank: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Lord Dominik's Regards
+  Taric: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Trundle: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Swain: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Caitlyn: Blade of The Ruined King, Gluttonous Greaves, Lord Dominik's Regards -> Lord Dominik's Regards, Berserker's Greaves, Kraken Slayer
+  Blitzcrank: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Malphite: Warmog's Armor, Sorcerer's Shoes, Sunfire Aegis -> Heartsteel, Sorcerer's Shoes, Sunfire Aegis
+  Maokai: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Renekton: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Jarvan IV: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Wukong: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Lord Dominik's Regards
+  Lee Sin: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Lord Dominik's Regards
+  Skarner: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Nasus: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Udyr: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Poppy: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Gragas: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Pantheon: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Lord Dominik's Regards
+  Mordekaiser: Warmog's Armor, Plated Steelcaps, Heartsteel -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Yorick: Warmog's Armor, Plated Steelcaps, Heartsteel -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Garen: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Leona: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Talon: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Lord Dominik's Regards
+  Riven: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Umbral Glaive
+  Shen: Warmog's Armor, Plated Steelcaps, Heartsteel -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Shyvana: Warmog's Armor, Plated Steelcaps, Heartsteel -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Graves: Heartsteel, Berserker's Greaves, Overlord's Bloodmail -> Trinity Force, Berserker's Greaves, Lord Dominik's Regards
+  Volibear: Warmog's Armor, Plated Steelcaps, Heartsteel -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Nautilus: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Sejuani: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Kha'Zix: Umbral Glaive, Sorcerer's Shoes, Profane Hydra -> Hubris, Sorcerer's Shoes, Profane Hydra
+  Darius: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Kayn: Umbral Glaive, Plated Steelcaps, Profane Hydra -> Hubris, Plated Steelcaps, Profane Hydra
+  Gnar: Warmog's Armor, Plated Steelcaps, Heartsteel -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Zac: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Braum: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Zeri: Atma's Reckoning, Berserker's Greaves, Spear of Shojin -> Lord Dominik's Regards, Gluttonous Greaves, Essence Reaver
+  Jinx: Lord Dominik's Regards, Berserker's Greaves, Trinity Force -> Umbral Glaive, Berserker's Greaves, Lord Dominik's Regards
+  Tahm Kench: Warmog's Armor, Plated Steelcaps, Protoplasm Harness -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Briar: Warmog's Armor, Berserker's Greaves, Heartsteel -> Heartsteel, Berserker's Greaves, Warmog's Armor
+  Zed: Umbral Glaive, Plated Steelcaps, Profane Hydra -> Hubris, Plated Steelcaps, Profane Hydra
+  Kled: Warmog's Armor, Plated Steelcaps, Heartsteel -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Qiyana: Umbral Glaive, Plated Steelcaps, Profane Hydra -> Hubris, Plated Steelcaps, Profane Hydra
+  Aatrox: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Thresh: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Illaoi: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Ornn: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Rell: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Pyke: Profane Hydra, Berserker's Greaves, Lord Dominik's Regards -> Heartsteel, Berserker's Greaves, Lord Dominik's Regards
+  Sett: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  K'Sante: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor
+  Zaahen: Warmog's Armor, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Warmog's Armor

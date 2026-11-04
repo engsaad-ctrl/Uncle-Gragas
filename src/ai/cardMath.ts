@@ -165,7 +165,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     ];
   });
   // An item's effect marked for the other attack type doesn't count, nor a button's buff; a button's damage is pressed when ready.
-  const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!); };
+  // A stat that comes only near death (Overlord's Bloodmail: 12% AD at or below 30% health) isn't held through the fight.
+  const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!) && !((x.op === 'mult' || x.op === 'add') && /below \d+% remaining health/i.test(n)); };
   const ops = [...(o.passive ?? []), ...o.cards.flatMap((c) => c.ops).filter(applies), ...held.flatMap((id) => o.itemOps?.[id % 10000] ?? []).filter(applies), ...fromFile].filter((x) => !x.after_quest);
   const notModelled = o.cards.flatMap((c) => (c.not_modelled ? [`${c.name}: ${c.not_modelled}`] : []));
   // Stacks held by this level, read from 23 screen windows with Tank Engine (health order: Heartsteel, then the multiplier, which one reading of Mundo forces): 0.6 a level when deaths take most of them, 2.2 a level of takedowns when they don't. Other stacks are a guess.
@@ -231,6 +232,15 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     const folder = path.slice(0, path.lastIndexOf('/') + 1);
     const sibling = folder ? Object.entries(bin).find(([p, v]) => p !== path && p.startsWith(folder) && (v?.mSpell?.cooldownTime?.[rank] ?? 0) > 1)?.[1]?.mSpell : undefined;
     const stated = spell.cooldownTime?.[rank] || sibling?.cooldownTime?.[rank] || spell.DataValues?.find((d) => d.name === 'BaseCooldown')?.values?.[rank] || (spell.cooldownTime ? 0 : NO_COOLDOWN_IN_FILE);
+    // Jinx's Q: she fights in minigun, each attack a stack of attack speed (3 stacks for 2.5 s, 30% to 130% in all by rank), so Q is no cast of its own.
+    // shortcut: the rockets' splash and range aren't modelled; upgrade when area damage is (knowledge: area-model).
+    const minigun = spell.DataValues?.find((d) => d.name === 'MinigunAttackSpeedMax')?.values?.[rank];
+    if (minigun) {
+      const value = (name: string, fallback: number) => spell.DataValues?.find((d) => d.name === name)?.values?.[rank] || fallback;
+      const n = value('MinigunAttackSpeedStacks', 3);
+      ops.push({ op: 'timed', trigger: 'attack', stat: 'attack_speed', value: minigun / 100 / n, mode: 'add', duration: value('MinigunAttackSpeedDuration', 2.5), decays: false, stacks_max: n, refresh: true, internal_cooldown: null });
+      return;
+    }
     const names = Object.keys(spell.mSpellCalculations ?? {});
     // shortcut: a stated cooldown of a second or less is a toggle (Jinx's Q, Karthus's E); upgrade with a per-champion list if a real spell has one.
     // An ability whose calculation reads crit damage (stat 9) crits like an attack: Yasuo and Yone's Q, Garen's E, Talon's Q, and 40 more.

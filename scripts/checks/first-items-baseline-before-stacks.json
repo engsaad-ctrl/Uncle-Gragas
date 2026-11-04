@@ -1,0 +1,862 @@
+{
+ "1": [
+  "Rod of Ages",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "2": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "3": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "4": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "5": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "6": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "7": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "8": [
+  "Warmog's Armor",
+  "Sorcerer's Shoes",
+  "Riftmaker"
+ ],
+ "9": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "10": [
+  "Dusk and Dawn",
+  "Berserker's Greaves",
+  "Guinsoo's Rageblade"
+ ],
+ "11": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Yun Tal Wildarrows"
+ ],
+ "12": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "13": [
+  "Archangel's Staff",
+  "Sorcerer's Shoes",
+  "Warmog's Armor"
+ ],
+ "14": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "15": [
+  "Overlord's Bloodmail",
+  "Berserker's Greaves",
+  "Trinity Force"
+ ],
+ "16": [
+  "Ardent Censer",
+  "Sorcerer's Shoes",
+  "Staff of Flowing Water"
+ ],
+ "17": [
+  "Dusk and Dawn",
+  "Berserker's Greaves",
+  "Guinsoo's Rageblade"
+ ],
+ "18": [
+  "Lord Dominik's Regards",
+  "Berserker's Greaves",
+  "Yun Tal Wildarrows"
+ ],
+ "19": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Dusk and Dawn"
+ ],
+ "20": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Heartsteel"
+ ],
+ "21": [
+  "Lord Dominik's Regards",
+  "Plated Steelcaps",
+  "Infinity Edge"
+ ],
+ "22": [
+  "Umbral Glaive",
+  "Berserker's Greaves",
+  "Manamune"
+ ],
+ "23": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Bloodthirster"
+ ],
+ "24": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Bloodthirster"
+ ],
+ "25": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "26": [
+  "Rod of Ages",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "27": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "28": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Hextech Gunblade"
+ ],
+ "29": [
+  "Kraken Slayer",
+  "Berserker's Greaves",
+  "Bloodthirster"
+ ],
+ "30": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Liandry's Torment"
+ ],
+ "31": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "32": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "33": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "34": [
+  "Rod of Ages",
+  "Sorcerer's Shoes",
+  "Liandry's Torment"
+ ],
+ "35": [
+  "Blade of The Ruined King",
+  "Sorcerer's Shoes",
+  "Lord Dominik's Regards"
+ ],
+ "36": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "37": [
+  "Ardent Censer",
+  "Sorcerer's Shoes",
+  "Warmog's Armor"
+ ],
+ "38": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "39": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Guinsoo's Rageblade"
+ ],
+ "40": [
+  "Ardent Censer",
+  "Sorcerer's Shoes",
+  "Staff of Flowing Water"
+ ],
+ "41": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "42": [
+  "Bloodthirster",
+  "Berserker's Greaves",
+  "Kraken Slayer"
+ ],
+ "43": [
+  "Malignance",
+  "Sorcerer's Shoes",
+  "Riftmaker"
+ ],
+ "44": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "45": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "48": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "50": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "51": [
+  "Blade of The Ruined King",
+  "Gluttonous Greaves",
+  "Lord Dominik's Regards"
+ ],
+ "53": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "54": [
+  "Warmog's Armor",
+  "Sorcerer's Shoes",
+  "Sunfire Aegis"
+ ],
+ "55": [
+  "Rabadon's Deathcap",
+  "Sorcerer's Shoes",
+  "Shadowflame"
+ ],
+ "56": [
+  "Kraken Slayer",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "57": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "58": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "59": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "60": [
+  "Stormsurge",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "61": [
+  "Blackfire Torch",
+  "Sorcerer's Shoes",
+  "Riftmaker"
+ ],
+ "62": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "63": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "64": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "67": [
+  "Trinity Force",
+  "Berserker's Greaves",
+  "Kraken Slayer"
+ ],
+ "68": [
+  "Warmog's Armor",
+  "Sorcerer's Shoes",
+  "Riftmaker"
+ ],
+ "69": [
+  "Blackfire Torch",
+  "Sorcerer's Shoes",
+  "Dusk and Dawn"
+ ],
+ "72": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "74": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "75": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "76": [
+  "Malignance",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "77": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "78": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "79": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "80": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "81": [
+  "Trinity Force",
+  "Berserker's Greaves",
+  "Umbral Glaive"
+ ],
+ "82": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Heartsteel"
+ ],
+ "83": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Heartsteel"
+ ],
+ "84": [
+  "Hextech Gunblade",
+  "Sorcerer's Shoes",
+  "Stormsurge"
+ ],
+ "85": [
+  "Rabadon's Deathcap",
+  "Sorcerer's Shoes",
+  "Stormsurge"
+ ],
+ "86": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "89": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "90": [
+  "Blackfire Torch",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "91": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "92": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "96": [
+  "Blade of The Ruined King",
+  "Sorcerer's Shoes",
+  "Dusk and Dawn"
+ ],
+ "98": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Heartsteel"
+ ],
+ "99": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "101": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Malignance"
+ ],
+ "102": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Heartsteel"
+ ],
+ "103": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "104": [
+  "Heartsteel",
+  "Berserker's Greaves",
+  "Overlord's Bloodmail"
+ ],
+ "105": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "106": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Heartsteel"
+ ],
+ "107": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "110": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Dusk and Dawn"
+ ],
+ "111": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "112": [
+  "Blackfire Torch",
+  "Sorcerer's Shoes",
+  "Liandry's Torment"
+ ],
+ "113": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "114": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Bloodthirster"
+ ],
+ "115": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "117": [
+  "Ardent Censer",
+  "Sorcerer's Shoes",
+  "Staff of Flowing Water"
+ ],
+ "119": [
+  "Trinity Force",
+  "Berserker's Greaves",
+  "Kraken Slayer"
+ ],
+ "120": [
+  "Warmog's Armor",
+  "Berserker's Greaves",
+  "Sunfire Aegis"
+ ],
+ "121": [
+  "Umbral Glaive",
+  "Sorcerer's Shoes",
+  "Profane Hydra"
+ ],
+ "122": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "126": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "127": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "131": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "133": [
+  "Umbral Glaive",
+  "Ionian Boots of Lucidity",
+  "Blade of The Ruined King"
+ ],
+ "134": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "136": [
+  "Blackfire Torch",
+  "Sorcerer's Shoes",
+  "Dusk and Dawn"
+ ],
+ "141": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Profane Hydra"
+ ],
+ "142": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Stormsurge"
+ ],
+ "143": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "145": [
+  "Profane Hydra",
+  "Sorcerer's Shoes",
+  "Umbral Glaive"
+ ],
+ "147": [
+  "Blackfire Torch",
+  "Sorcerer's Shoes",
+  "Riftmaker"
+ ],
+ "150": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Heartsteel"
+ ],
+ "154": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "157": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Bloodthirster"
+ ],
+ "161": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "163": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "164": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Profane Hydra"
+ ],
+ "166": [
+  "Profane Hydra",
+  "Plated Steelcaps",
+  "Kraken Slayer"
+ ],
+ "200": [
+  "Warmog's Armor",
+  "Berserker's Greaves",
+  "Blade of The Ruined King"
+ ],
+ "201": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "202": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "203": [
+  "Bloodthirster",
+  "Berserker's Greaves",
+  "Lord Dominik's Regards"
+ ],
+ "221": [
+  "Atma's Reckoning",
+  "Berserker's Greaves",
+  "Spear of Shojin"
+ ],
+ "222": [
+  "Lord Dominik's Regards",
+  "Berserker's Greaves",
+  "Trinity Force"
+ ],
+ "223": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Protoplasm Harness"
+ ],
+ "233": [
+  "Warmog's Armor",
+  "Berserker's Greaves",
+  "Heartsteel"
+ ],
+ "234": [
+  "Lord Dominik's Regards",
+  "Berserker's Greaves",
+  "Infinity Edge"
+ ],
+ "235": [
+  "Bloodthirster",
+  "Berserker's Greaves",
+  "Lord Dominik's Regards"
+ ],
+ "236": [
+  "Trinity Force",
+  "Berserker's Greaves",
+  "Bloodthirster"
+ ],
+ "238": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Profane Hydra"
+ ],
+ "240": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Heartsteel"
+ ],
+ "245": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "246": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Profane Hydra"
+ ],
+ "254": [
+  "Profane Hydra",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "266": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "267": [
+  "Ardent Censer",
+  "Sorcerer's Shoes",
+  "Staff of Flowing Water"
+ ],
+ "268": [
+  "Riftmaker",
+  "Sorcerer's Shoes",
+  "Blackfire Torch"
+ ],
+ "350": [
+  "Ardent Censer",
+  "Sorcerer's Shoes",
+  "Staff of Flowing Water"
+ ],
+ "360": [
+  "Profane Hydra",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "412": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "420": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "421": [
+  "Umbral Glaive",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
+ ],
+ "427": [
+  "Staff of Flowing Water",
+  "Sorcerer's Shoes",
+  "Riftmaker"
+ ],
+ "429": [
+  "Bloodthirster",
+  "Berserker's Greaves",
+  "Kraken Slayer"
+ ],
+ "432": [
+  "Luden's Echo",
+  "Plated Steelcaps",
+  "Ardent Censer"
+ ],
+ "497": [
+  "Ardent Censer",
+  "Sorcerer's Shoes",
+  "Warmog's Armor"
+ ],
+ "498": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Kraken Slayer"
+ ],
+ "516": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "517": [
+  "Dusk and Dawn",
+  "Gluttonous Greaves",
+  "Riftmaker"
+ ],
+ "518": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "523": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Guinsoo's Rageblade"
+ ],
+ "526": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "555": [
+  "Profane Hydra",
+  "Berserker's Greaves",
+  "Lord Dominik's Regards"
+ ],
+ "711": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "777": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Dusk and Dawn"
+ ],
+ "799": [
+  "Heartsteel",
+  "Sorcerer's Shoes",
+  "Sunfire Aegis"
+ ],
+ "800": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ],
+ "804": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Dusk and Dawn"
+ ],
+ "805": [
+  "Rabadon's Deathcap",
+  "Sorcerer's Shoes",
+  "Lich Bane"
+ ],
+ "875": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "876": [
+  "Blackfire Torch",
+  "Sorcerer's Shoes",
+  "Bloodletter's Curse"
+ ],
+ "887": [
+  "Dusk and Dawn",
+  "Berserker's Greaves",
+  "Guinsoo's Rageblade"
+ ],
+ "888": [
+  "Ardent Censer",
+  "Sorcerer's Shoes",
+  "Staff of Flowing Water"
+ ],
+ "893": [
+  "Luden's Echo",
+  "Sorcerer's Shoes",
+  "Stormsurge"
+ ],
+ "895": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Bloodthirster"
+ ],
+ "897": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "901": [
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Trinity Force"
+ ],
+ "902": [
+  "Ardent Censer",
+  "Sorcerer's Shoes",
+  "Staff of Flowing Water"
+ ],
+ "904": [
+  "Warmog's Armor",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
+ ],
+ "910": [
+  "Blackfire Torch",
+  "Sorcerer's Shoes",
+  "Rabadon's Deathcap"
+ ]
+}
