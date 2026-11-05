@@ -1,3 +1,17 @@
-2026-11-04T19:33:45.782Z on df0b789 (with uncommitted changes)
+2026-11-05T08:21:41.776Z on fde7568 (with uncommitted changes)
 first items, champions 172, failed 0
-against C:\Users\FoxOS_User\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 0 of 172, any of the first three 0
+against C:\Users\dell\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 14 of 172, any of the first three 31
+  Tristana: Lord Dominik's Regards, Berserker's Greaves, Yun Tal Wildarrows -> Kraken Slayer, Gluttonous Greaves, Lord Dominik's Regards
+  Twitch: Kraken Slayer, Berserker's Greaves, Bloodthirster -> Blade of The Ruined King, Berserker's Greaves, Yun Tal Wildarrows
+  Corki: Bloodthirster, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Gluttonous Greaves, Lord Dominik's Regards
+  Rumble: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Riftmaker
+  Kog'Maw: Blade of The Ruined King, Sorcerer's Shoes, Dusk and Dawn -> Trinity Force, Berserker's Greaves, Blade of The Ruined King
+  Kindred: Bloodthirster, Berserker's Greaves, Lord Dominik's Regards -> Yun Tal Wildarrows, Berserker's Greaves, Lord Dominik's Regards
+  Zeri: Lord Dominik's Regards, Gluttonous Greaves, Essence Reaver -> Atma's Reckoning, Gluttonous Greaves, Spear of Shojin
+  Viego: Lord Dominik's Regards, Berserker's Greaves, Infinity Edge -> Hubris, Gluttonous Greaves, Lord Dominik's Regards
+  Senna: Bloodthirster, Berserker's Greaves, Lord Dominik's Regards -> Umbral Glaive, Berserker's Greaves, Lord Dominik's Regards
+  Kalista: Bloodthirster, Berserker's Greaves, Kraken Slayer -> Winter's Approach, Berserker's Greaves, Trinity Force
+  Sylas: Dusk and Dawn, Gluttonous Greaves, Riftmaker -> Warmog's Armor, Sorcerer's Shoes, Riftmaker
+  Aphelios: Blade of The Ruined King, Berserker's Greaves, Guinsoo's Rageblade -> Trinity Force, Berserker's Greaves, Kraken Slayer
+  Gwen: Dusk and Dawn, Berserker's Greaves, Guinsoo's Rageblade -> Riftmaker, Sorcerer's Shoes, Nashor's Tooth
+  Milio: Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap

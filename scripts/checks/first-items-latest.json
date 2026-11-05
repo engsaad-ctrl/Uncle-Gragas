@@ -46,7 +46,7 @@
  ],
  "10": [
   "Dusk and Dawn",
-  "Berserker's Greaves",
+  "Sorcerer's Shoes",
   "Guinsoo's Rageblade"
  ],
  "11": [
@@ -85,14 +85,14 @@
   "Guinsoo's Rageblade"
  ],
  "18": [
-  "Lord Dominik's Regards",
-  "Berserker's Greaves",
-  "Yun Tal Wildarrows"
+  "Kraken Slayer",
+  "Gluttonous Greaves",
+  "Lord Dominik's Regards"
  ],
  "19": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Dusk and Dawn"
+  "Yun Tal Wildarrows"
  ],
  "20": [
   "Heartsteel",
@@ -111,13 +111,13 @@
  ],
  "23": [
   "Blade of The Ruined King",
-  "Berserker's Greaves",
-  "Bloodthirster"
+  "Gluttonous Greaves",
+  "Experimental Hexplate"
  ],
  "24": [
   "Blade of The Ruined King",
-  "Berserker's Greaves",
-  "Bloodthirster"
+  "Gluttonous Greaves",
+  "Trinity Force"
  ],
  "25": [
   "Luden's Echo",
@@ -140,9 +140,9 @@
   "Hextech Gunblade"
  ],
  "29": [
-  "Kraken Slayer",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Bloodthirster"
+  "Yun Tal Wildarrows"
  ],
  "30": [
   "Luden's Echo",
@@ -182,7 +182,7 @@
  "37": [
   "Ardent Censer",
   "Sorcerer's Shoes",
-  "Warmog's Armor"
+  "Staff of Flowing Water"
  ],
  "38": [
   "Luden's Echo",
@@ -205,9 +205,9 @@
   "Lord Dominik's Regards"
  ],
  "42": [
-  "Bloodthirster",
-  "Berserker's Greaves",
-  "Kraken Slayer"
+  "Blade of The Ruined King",
+  "Gluttonous Greaves",
+  "Lord Dominik's Regards"
  ],
  "43": [
   "Malignance",
@@ -302,17 +302,17 @@
  "67": [
   "Trinity Force",
   "Berserker's Greaves",
-  "Kraken Slayer"
+  "Umbral Glaive"
  ],
  "68": [
-  "Warmog's Armor",
+  "Rabadon's Deathcap",
   "Sorcerer's Shoes",
   "Riftmaker"
  ],
  "69": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Dusk and Dawn"
+  "Riftmaker"
  ],
  "72": [
   "Heartsteel",
@@ -405,9 +405,9 @@
   "Umbral Glaive"
  ],
  "96": [
-  "Blade of The Ruined King",
-  "Sorcerer's Shoes",
-  "Dusk and Dawn"
+  "Trinity Force",
+  "Berserker's Greaves",
+  "Blade of The Ruined King"
  ],
  "98": [
   "Heartsteel",
@@ -456,8 +456,8 @@
  ],
  "110": [
   "Blade of The Ruined King",
-  "Berserker's Greaves",
-  "Dusk and Dawn"
+  "Gluttonous Greaves",
+  "Kraken Slayer"
  ],
  "111": [
   "Heartsteel",
@@ -467,7 +467,7 @@
  "112": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Liandry's Torment"
+  "Abyssal Mask"
  ],
  "113": [
   "Heartsteel",
@@ -477,7 +477,7 @@
  "114": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Bloodthirster"
+  "Guinsoo's Rageblade"
  ],
  "115": [
   "Luden's Echo",
@@ -492,7 +492,7 @@
  "119": [
   "Trinity Force",
   "Berserker's Greaves",
-  "Kraken Slayer"
+  "Lord Dominik's Regards"
  ],
  "120": [
   "Warmog's Armor",
@@ -537,7 +537,7 @@
  "136": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Dusk and Dawn"
+  "Rabadon's Deathcap"
  ],
  "141": [
   "Hubris",
@@ -577,7 +577,7 @@
  "157": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Bloodthirster"
+  "Lord Dominik's Regards"
  ],
  "161": [
   "Luden's Echo",
@@ -615,14 +615,14 @@
   "Lord Dominik's Regards"
  ],
  "203": [
-  "Bloodthirster",
+  "Yun Tal Wildarrows",
   "Berserker's Greaves",
   "Lord Dominik's Regards"
  ],
  "221": [
-  "Lord Dominik's Regards",
+  "Atma's Reckoning",
   "Gluttonous Greaves",
-  "Essence Reaver"
+  "Spear of Shojin"
  ],
  "222": [
   "Umbral Glaive",
@@ -640,19 +640,19 @@
   "Warmog's Armor"
  ],
  "234": [
-  "Lord Dominik's Regards",
-  "Berserker's Greaves",
-  "Infinity Edge"
+  "Hubris",
+  "Gluttonous Greaves",
+  "Lord Dominik's Regards"
  ],
  "235": [
-  "Bloodthirster",
+  "Umbral Glaive",
   "Berserker's Greaves",
   "Lord Dominik's Regards"
  ],
  "236": [
   "Trinity Force",
   "Berserker's Greaves",
-  "Bloodthirster"
+  "Lord Dominik's Regards"
  ],
  "238": [
   "Hubris",
@@ -725,9 +725,9 @@
   "Riftmaker"
  ],
  "429": [
-  "Bloodthirster",
+  "Winter's Approach",
   "Berserker's Greaves",
-  "Kraken Slayer"
+  "Trinity Force"
  ],
  "432": [
   "Luden's Echo",
@@ -750,8 +750,8 @@
   "Warmog's Armor"
  ],
  "517": [
-  "Dusk and Dawn",
-  "Gluttonous Greaves",
+  "Warmog's Armor",
+  "Sorcerer's Shoes",
   "Riftmaker"
  ],
  "518": [
@@ -760,9 +760,9 @@
   "Rabadon's Deathcap"
  ],
  "523": [
-  "Blade of The Ruined King",
+  "Trinity Force",
   "Berserker's Greaves",
-  "Guinsoo's Rageblade"
+  "Kraken Slayer"
  ],
  "526": [
   "Heartsteel",
@@ -782,7 +782,7 @@
  "777": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Dusk and Dawn"
+  "Lord Dominik's Regards"
  ],
  "799": [
   "Heartsteel",
@@ -797,7 +797,7 @@
  "804": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Dusk and Dawn"
+  "Kraken Slayer"
  ],
  "805": [
   "Rabadon's Deathcap",
@@ -815,9 +815,9 @@
   "Bloodletter's Curse"
  ],
  "887": [
-  "Dusk and Dawn",
-  "Berserker's Greaves",
-  "Guinsoo's Rageblade"
+  "Riftmaker",
+  "Sorcerer's Shoes",
+  "Nashor's Tooth"
  ],
  "888": [
   "Ardent Censer",
@@ -832,7 +832,7 @@
  "895": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Bloodthirster"
+  "Lord Dominik's Regards"
  ],
  "897": [
   "Heartsteel",
@@ -845,9 +845,9 @@
   "Trinity Force"
  ],
  "902": [
-  "Ardent Censer",
+  "Luden's Echo",
   "Sorcerer's Shoes",
-  "Staff of Flowing Water"
+  "Rabadon's Deathcap"
  ],
  "904": [
   "Heartsteel",

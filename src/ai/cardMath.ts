@@ -294,6 +294,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       const icd = x.trigger === 'spell_hit' ? (('internal_cooldown' in x ? x.internal_cooldown : 0) || FIGHT.seconds) : 'internal_cooldown' in x ? (x.internal_cooldown ?? 0) : 0;
       if (icd && t - (lastProc.get(x) ?? -Infinity) < icd) continue;
       if (x.op === 'heal' || x.op === 'shield') { healed += formula(x.amount, c, o.level, targetHp); lastProc.set(x, t); }
+      // An extra on-hit on the attack after an ability (Dusk and Dawn), not on every attack.
+      if (x.op === 'on_hit_repeat' && trigger === 'next_attack') { for (let k = 0; k < x.extra_hits; k++) fire('on_hit', t, c); lastProc.set(x, t); }
       if (x.op === 'proc') { fromCards += formula(x.damage, c, o.level, targetHp) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all', t); lastProc.set(x, t); }
       if (x.op === 'refund') { reduce(x.scope, x.amount, x.unit, t); lastProc.set(x, t); }
       if (x.op === 'dot') { const d = dots.find((y) => y.op === x); if (d) { d.until = t + (x.duration ?? FIGHT.seconds); d.stacks = Math.min(x.stacks_max ?? 1, d.stacks + 1); } else dots.push({ op: x, until: t + (x.duration ?? FIGHT.seconds), stacks: 1, fromAbility: false }); }
@@ -307,7 +309,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     }
   };
   for (const x of ops) if (x.op === 'timed' && x.trigger === 'always') stateOf.set(x, { stacks: 1, until: Infinity, start: 0 });
-  const onHitRepeat = (c: BuildStats) => ops.reduce((n, x) => (x.op === 'on_hit_repeat' ? n + x.extra_hits * (x.trigger === 'crit' ? c.crit : 1) : n), 0);
+  const onHitRepeat = (c: BuildStats) => ops.reduce((n, x) => (x.op === 'on_hit_repeat' && x.trigger !== 'next_attack' ? n + x.extra_hits * (x.trigger === 'crit' ? c.crit : 1) : n), 0);
 
   for (let t = 0; t < FIGHT.seconds; t += dt) {
     const c = current(t);
