@@ -83,6 +83,8 @@ interface Scaling {
   coefMax?: number[];
   /** A count, not a stat ratio: "(+2 لكل تكديسة)". */
   flat?: boolean;
+  /** A count of a buff's stacks, which only exist in a match: the fight may give an estimate. */
+  stack?: boolean;
 }
 
 /**
@@ -244,7 +246,7 @@ function evalPart(p: Part | undefined, c: Ctx): Value | null {
     case 'BuffCounterByNamedDataValueCalculationPart': {
       // value × the stacks of a buff, which only exist in a match
       const coef = p.__type === 'BuffCounterByCoefficientCalculationPart' ? fill(c.ranks, num(p.mCoefficient)) : dv(p.mDataValue);
-      return coef ? { ...plain(fill(c.ranks, 0)), scalings: [{ label: 'لكل تكديسة', coef, flat: true }] } : null;
+      return coef ? { ...plain(fill(c.ranks, 0)), scalings: [{ label: 'لكل تكديسة', coef, flat: true, stack: true }] } : null;
     }
     case 'SumOfSubPartsCalculationPart':
       return sumParts((p.mSubparts as Part[] | undefined) ?? [], c);
@@ -295,7 +297,7 @@ export type StatOf = (tag: string | undefined, suffix: string | undefined) => nu
  */
 export function calculationsAt(
   spell: SpellData | undefined,
-  o: { ranks: number; rank: number; level: number; statOf: StatOf; spellRef?: ResolveOptions['spellRef'] },
+  o: { ranks: number; rank: number; level: number; statOf: StatOf; spellRef?: ResolveOptions['spellRef']; stacks?: number },
 ): { name: string; value: number; partial: boolean }[] {
   const c = makeCtx(spell, o.ranks, o.spellRef);
   const i = Math.min(Math.max(o.rank, 1), o.ranks) - 1;
@@ -308,7 +310,7 @@ export function calculationsAt(
     let value = at(v.min[i], v.max[i]);
     let partial = v.other;
     for (const s of v.scalings) {
-      const stat = s.flat || !s.tag ? NaN : o.statOf(s.tag, s.suffix);
+      const stat = s.stack && o.stacks !== undefined ? o.stacks : s.flat || !s.tag ? NaN : o.statOf(s.tag, s.suffix);
       if (Number.isNaN(stat)) partial = true;
       else value += at(s.coef[i], (s.coefMax ?? s.coef)[i]) * stat;
     }

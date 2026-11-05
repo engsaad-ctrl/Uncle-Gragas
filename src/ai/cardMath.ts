@@ -45,6 +45,11 @@ export interface CardNumbers { id: number; name: string; status: string; ops: Ca
 export const FIGHT = { boltHitShare: 0.5, partialLastCast: false, carryCooldowns: false, gapSeconds: 40, growthProcsPerLevel: 2, attackUptime: { melee: 0.8, ranged: 0.7 }, everyDamageStacks: { at18: 200, power: 3.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
 
 /** Very high move speed is slowed: the game's soft caps at 415 and 490. shortcut: from memory, not from a file; check on screen. */
+/** Stacks a champion's abilities count by level 15 in ARAM Mayhem, where his ability formulas read a buff's stacks (Nasus's Q, Smolder's passive, Aurelion Sol's
+ * stardust, Thresh's souls, Kindred's marks, Cho'Gath's Feast, Draven's adoration). The files hold no count, only the per-stack value, so these are
+ * estimates (2026-11-06, Claude, to be checked on screen); without them each per-stack part counted 0. Held at the level-15 count after 15. */
+export const STACKS_AT_15: Record<string, number> = { Nasus: 250, Smolder: 125, AurelionSol: 60, Thresh: 60, Kindred: 6, Chogath: 6, Draven: 20 };
+
 const softSpeed = (x: number) => (x > 490 ? x * 0.5 + 230 : x > 415 ? x * 0.8 + 83 : x);
 
 /** ALLY: the ally an enchanter heals or shields, whom Ardent Censer and Staff of Flowing Water then raise: his damage a second after resists, attacks a second, AP, and the share of his damage from attacks. An assumption, to try on the owner's cases. */
@@ -226,6 +231,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   let mana = startMana;
 
   interface Slot { path: string; key: string; spell: NonNullable<NonNullable<Bin[string]>['mSpell']>; rank: number; ranks: number; cooldown: number; cost: number; perSecond: boolean; overTime: boolean; toggle: boolean; ready: number; on: boolean; recast: boolean; crits: boolean; last?: number; dealt?: number }
+  const stackName = (record as { mCharacterName?: string } | undefined)?.mCharacterName ?? '';
+  const stacks = STACKS_AT_15[stackName] === undefined ? undefined : STACKS_AT_15[stackName]! * Math.min(1, o.level / 15);
+  const passiveSpells = stacks === undefined ? [] : Object.values(bin).flatMap((v) => (v?.mSpell && Object.keys((v.mSpell as { mSpellCalculations?: object }).mSpellCalculations ?? {}).some((n) => /^Passive_[QWER]DamageIncrease$/.test(n)) ? [v.mSpell] : []));
   const slots: Slot[] = [];
   (['R', 'Q', 'W', 'E'] as const).forEach((key) => {
     const path = record.spells?.['QWER'.indexOf(key)] ?? '';
@@ -357,7 +365,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       for (const sl of slots) {
         if (t < sl.ready || sl.on || mana < sl.cost) continue;
         const scope = sl.key === 'R' ? 'ult' : 'basic';
-        const read = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef });
+        const read = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef, stacks });
+        // A passive that adds damage to this ability per stack (Smolder: Passive_QDamageIncrease) adds it to the cast.
+        const fromPassive = stacks === undefined ? [] : passiveSpells.flatMap((p) => calculationsAt(p, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef, stacks }).filter((v) => v.name === `Passive_${sl.key}DamageIncrease`));
         const named = read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_DAMAGE.test(v.name));
         // A spell whose only damage is named as bonus or secondary still deals it; a share of the target's health counts on the target.
         const reading = SPELL_HITS[sl.path];
@@ -367,7 +377,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const healing = Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
         if (!kitHeals) abilityHealing += healing; // read per ability as his own healing instead (knowledge/champion-heal-*.jsonl)
         if (healing > 0) for (const b of allyBuffs) b.until = t + b.seconds;
-        const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * targetHp);
+        const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * targetHp) + fromPassive.reduce((t, v) => t + v.value, 0);
         const one = each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
         // A cast that deals damage over time (Miss Fortune's E: TotalDamagePerSecond for 2 s) is dealt at once here, so a card that crits damage over time crits it here; a toggle's goes through the dots.
         const overTime = sl.overTime && !sl.toggle ? 1 + c.crit * dotCrit : 1;
