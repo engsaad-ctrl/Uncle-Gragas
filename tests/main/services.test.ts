@@ -32,4 +32,8 @@ describe('parseIds', () => {
     expect(parseIds([])).toEqual([]);
     for (const bad of [[0], [1.5], ['238'], 'x', null, Array(11).fill(1)]) expect(() => parseIds(bad)).toThrow(/bad ids/);
   });
+  it('takes a larger limit where asked: champ select sends his champion, a full bench and four allies', () => {
+    expect(parseIds(Array(15).fill(1), 20)).toHaveLength(15);
+    expect(() => parseIds(Array(21).fill(1), 20)).toThrow(/bad ids/);
+  });
 });

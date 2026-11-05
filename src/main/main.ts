@@ -192,7 +192,8 @@ ipcMain.handle('game:teams', () =>
 ipcMain.handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.augmentFit(parseIds(augmentIds))));
 ipcMain.handle('mayhem:effects', () => reply(() => services.augmentEffect()));
 ipcMain.handle('mayhem:open', (_e, id: unknown) => reply(() => services.openAugments(Number(id))));
-ipcMain.handle('mayhem:strengths', (_e, ids: unknown) => reply(() => services.championStrengths(parseIds(ids))));
+// Champ select sends his champion, the bench and his allies: up to 15 (the owner, 2026-11-06: no ranking showed with a full bench).
+ipcMain.handle('mayhem:strengths', (_e, ids: unknown) => reply(() => services.championStrengths(parseIds(ids, 20))));
 // In a loaded game both teams are known: items and cards answer them.
 const teamsNow = () => {
   const t = teamsInGame(watcher.session, lastPick?.championId);

@@ -119,8 +119,8 @@ export function parseLane(position: unknown): LanePosition {
 }
 
 /** Champion ids from the window (enemy picks, taken picks): at most 10 positive integers. */
-export function parseIds(v: unknown): number[] {
-  if (!Array.isArray(v) || v.length > 10 || !v.every((x) => Number.isInteger(x) && x > 0)) throw new Error('bad ids');
+export function parseIds(v: unknown, max = 10): number[] {
+  if (!Array.isArray(v) || v.length > max || !v.every((x) => Number.isInteger(x) && x > 0)) throw new Error('bad ids');
   return v as number[];
 }
 
