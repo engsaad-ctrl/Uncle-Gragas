@@ -50,6 +50,8 @@ export const FIGHT = { manaFights: 3, boltHitShare: 0.5, partialLastCast: false,
  * stardust, Thresh's souls, Kindred's marks, Cho'Gath's Feast, Draven's adoration). The files hold no count, only the per-stack value; without one each
  * per-stack part counted 0. The owner (2026-11-06): «سمولدر يصل الى 250 وياخذ الاعدام»، «كل الشخصيات يمكنها المراكمه لاكثر»، «ناسوس بشكل لا نهائي».
  * Smolder's 250 is his; the rest are Claude's estimates raised on his word, to check on his screens. No cap: they keep growing with level past 15. */
+/** Stored games, 176,930 players: 0.67 kills a level (2.16 takedowns, kills and assists, is the 2.2 above); Hubris stacks on kills, not takedowns (2026-11-06). */
+const KILLS_PER_LEVEL = 0.67;
 export const STACKS_AT_15: Record<string, number> = { Nasus: 700, Smolder: 250, AurelionSol: 150, Thresh: 150, Kindred: 15, Chogath: 20, Draven: 60, Veigar: 300, Senna: 150, Swain: 60 };
 
 const softSpeed = (x: number) => (x > 490 ? x * 0.5 + 230 : x > 415 ? x * 0.8 + 83 : x);
@@ -200,7 +202,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (scaleMemo === undefined) { const mine = fight({ ...o, noStackScale: true }).abilityInstances, plain = fight({ ...o, items: [], noStackScale: true }).abilityInstances; scaleMemo = plain > 0 ? mine / plain : 1; }
     return scaleMemo;
   };
-  const stacksOf = (x: Extract<CardOp, { op: 'per_stack' }>) => { const n = stacks !== undefined && ownPassive.has(x) ? (firstOfStat.get(x.stat) === x ? stacks : 0) : x.per === 'takedown' || x.per === 'kill' ? (x.lost_on_death ? 0.6 : 2.2) * o.level : x.per === 'every_ability_damage' ? FIGHT.everyDamageStacks.at18 * (o.level / 18) ** FIGHT.everyDamageStacks.power * instanceScale() : FIGHT.stacksByLevel(o.level); return x.cap ? Math.min(x.cap, n) : n; };
+  const stacksOf = (x: Extract<CardOp, { op: 'per_stack' }>) => { const n = stacks !== undefined && ownPassive.has(x) ? (firstOfStat.get(x.stat) === x ? stacks : 0) : x.per === 'takedown' ? (x.lost_on_death ? 0.6 : 2.2) * o.level : x.per === 'kill' ? (x.lost_on_death ? 0.6 : KILLS_PER_LEVEL) * o.level : x.per === 'every_ability_damage' ? FIGHT.everyDamageStacks.at18 * (o.level / 18) ** FIGHT.everyDamageStacks.power * instanceScale() : FIGHT.stacksByLevel(o.level); return x.cap ? Math.min(x.cap, n) : n; };
   const add = (t: BuildStats, stat: string, v: number) => { STAT_ADD[stat]?.(t, v); };
   for (const x of ops) if (x.op === 'add') add(s, x.stat, scaled(x.value, o.level));
   for (const x of ops) if (x.op === 'per_stack' && x.mode === 'add') add(s, x.stat, x.value * stacksOf(x));
@@ -256,7 +258,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   interface Slot { path: string; key: string; spell: NonNullable<NonNullable<Bin[string]>['mSpell']>; rank: number; ranks: number; cooldown: number; cost: number; perSecond: boolean; overTime: boolean; toggle: boolean; ready: number; on: boolean; recast: boolean; crits: boolean; last?: number; dealt?: number }
   const passiveSpells = stacks === undefined ? [] : Object.values(bin).flatMap((v) => (v?.mSpell && Object.keys((v.mSpell as { mSpellCalculations?: object }).mSpellCalculations ?? {}).some((n) => /^Passive_[QWER]DamageIncrease$/.test(n)) ? [v.mSpell] : []));
   // An execute that comes with enough stacks (Smolder's Q at 225: below 6.5% of maximum health): the rest of a dying target's health, once a kill.
-  const executeShare = stacks === undefined ? 0 : Math.max(0, ...Object.values(bin).flatMap((v) => {
+  // An item that executes below a share of health (The Collector: 5%, its file's ExecuteThreshold) does the same at each kill.
+  const itemExecute = Math.max(0, ...owned.map((it) => it.DataValues?.find((d) => d.name === 'ExecuteThreshold')?.values?.[0] ?? 0).filter((x) => x > 0 && x < 1));
+  const executeShare = stacks === undefined ? itemExecute : Math.max(itemExecute, ...Object.values(bin).flatMap((v) => {
     const sp = v?.mSpell as (SpellData & { DataValues?: { name: string; values?: number[] }[] }) | undefined;
     if (!sp?.mSpellCalculations) return [];
     return calculationsAt(sp, { ranks: 5, rank: 5, level: o.level, statOf: () => NaN, stacks }).flatMap((x) => {
