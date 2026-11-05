@@ -276,6 +276,8 @@ function renderPage(p: ChampionPage): HTMLElement[] {
       if (!r || !groups.isConnected) return;
       ours = r;
       renderGroups(all ? Infinity : 6);
+      // Our list holds every played augment, so it may have more than the site's even when the site's had 6 or fewer (Gragas).
+      if (!showAll.isConnected && AUGMENT_GROUPS.some(([rarity]) => r.list.filter((a) => a.rarity === rarity).length > 6)) groups.after(showAll);
     });
     showAll.addEventListener('click', () => {
       all = !all;

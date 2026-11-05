@@ -329,6 +329,7 @@ async function ask(post: GeminiPost, input: string, schema: object): Promise<unk
     const msg = errorMessage(r.json);
     throw new Error(/key/i.test(msg) ? 'مفتاح Gemini غير صالح. راجعه في الإعدادات.' : `رفض Gemini الطلب: ${msg.slice(0, 200)}`);
   }
+  if (r.status === 503) throw new Error('خوادم Gemini مشغولة الآن (جُرّبت النماذج الثلاثة مرتين). حاول بعد دقائق.');
   if (r.status >= 300) throw new Error(`تعذّر الاتصال بـ Gemini (HTTP ${r.status}).`);
   const reply = r.json as { candidates?: { finishReason?: string; content?: { parts?: { text?: string; thought?: boolean }[] } }[] };
   const c = reply.candidates?.[0];
