@@ -254,8 +254,10 @@ function renderPage(p: ChampionPage): HTMLElement[] {
             const site = a as RatedAugment;
             const letter = ours?.grades.get(a.id);
             const win = ours?.wins.get(a.id);
-            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), letter ? `${letter}${win === undefined ? '' : ` · ${(100 * win).toFixed(1)}%`}` : `${site.tierLabel ?? `#${site.rank}`} · ${pct(site.popularity)}`), i);
+            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), letter ?? `${site.tierLabel ?? `#${site.rank}`} · ${pct(site.popularity)}`), i);
             if (letter) chip.querySelector('small')!.className = `ov-grade g-${letter}`;
+            // Its own label: inside the 24 px letter box the rate spilled out of sight.
+            if (letter && win !== undefined) chip.querySelector('small')!.before(el('small', 'mode', `${(100 * win).toFixed(1)}% فوز`));
             return chip;
           }));
           const h = el('h3', 'sub-title', label);

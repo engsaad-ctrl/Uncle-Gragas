@@ -1,7 +1,8 @@
-2026-11-05T10:31:27.546Z on 1395731 (with uncommitted changes)
+2026-11-05T18:00:27.361Z on fd64656 (with uncommitted changes)
 first items, champions 173, failed 0
-against C:\Users\dell\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 13 of 172, any of the first three 35
+against C:\Users\FoxOS_User\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 14 of 172, any of the first three 36
   Tristana: Lord Dominik's Regards, Berserker's Greaves, Yun Tal Wildarrows -> Kraken Slayer, Gluttonous Greaves, Lord Dominik's Regards
+  Ashe: Umbral Glaive, Berserker's Greaves, Manamune -> Kraken Slayer, Berserker's Greaves, Lord Dominik's Regards
   Twitch: Kraken Slayer, Berserker's Greaves, Bloodthirster -> Blade of The Ruined King, Berserker's Greaves, Yun Tal Wildarrows
   Corki: Bloodthirster, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Gluttonous Greaves, Lord Dominik's Regards
   Rumble: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Riftmaker

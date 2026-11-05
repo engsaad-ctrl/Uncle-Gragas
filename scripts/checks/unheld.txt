@@ -1,9 +1,6 @@
-2026-11-05T12:25:27.525Z on 871cf04
-items in the kit build held by fewer than 20 of the champion's players (champions with 300+ finished builds): 185 in 162 champions
-- آش: Umbral Glaive held by 1 of 1752
-- آش: Manamune held by 3 of 1752
-- آش: Profane Hydra held by 0 of 1752
-- آش: Hubris held by 9 of 1752
+2026-11-05T17:58:37.321Z on fd64656 (with uncommitted changes)
+items in the kit build held by fewer than 20 of the champion's players (champions with 300+ finished builds): 182 in 162 champions
+- آش: Stormrazor held by 3 of 1752
 - ميس فورتشن: Profane Hydra held by 2 of 1657
 - ميس فورتشن: Stormrazor held by 18 of 1657
 - كايتلين: Profane Hydra held by 0 of 1603

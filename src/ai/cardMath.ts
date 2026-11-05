@@ -243,6 +243,18 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       ops.push({ op: 'timed', trigger: 'attack', stat: 'attack_speed', value: minigun / 100 / n, mode: 'add', duration: value('MinigunAttackSpeedDuration', 2.5), decays: false, stacks_max: n, refresh: true, internal_cooldown: null });
       return;
     }
+    // Ashe's Q: no cast of its own (cooldown 0 in the file, so it was cast every second as a 1.2 AD nuke). After MaxStacks attacks it turns her attacks
+    // for BuffDuration into a flurry of DamagePerStrike AD with BonusAS attack speed; taken here as its share of the fight: buff / (buff + stacks / attack speed).
+    const flurry = spell.DataValues?.find((d) => d.name === 'DamagePerStrike')?.values?.[rank];
+    const shots = spell.DataValues?.find((d) => d.name === 'ShotsPerStrike')?.values?.[rank];
+    if (flurry && shots) {
+      const value = (name: string, fallback: number) => spell.DataValues?.find((d) => d.name === name)?.values?.[rank] || fallback;
+      const buff = value('BuffDuration', 6), bonusAs = value('BonusAS', 0) / 100;
+      const uptime = buff / (buff + value('MaxStacks', 4) / Math.min(ATTACK_SPEED_CAP, as0 + asRatio * (s.bonusAttackSpeed + bonusAs)));
+      ops.push({ op: 'damage_amp', scope: 'attacks', factor: 1 + (flurry - 1) * uptime });
+      ops.push({ op: 'timed', trigger: 'always', stat: 'attack_speed', value: bonusAs * uptime, mode: 'add', duration: Infinity, decays: false, stacks_max: 1, refresh: false, internal_cooldown: null });
+      return;
+    }
     const names = Object.keys(spell.mSpellCalculations ?? {});
     // shortcut: a stated cooldown of a second or less is a toggle (Jinx's Q, Karthus's E); upgrade with a per-champion list if a real spell has one.
     // An ability whose calculation reads crit damage (stat 9) crits like an attack: Yasuo and Yone's Q, Garen's E, Talon's Q, and 40 more.
