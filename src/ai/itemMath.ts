@@ -55,6 +55,10 @@ export const ABSORBED_WORTH_BACK = { value: 0.2 };
 const HEALING_WORTH = 0.127;
 /** Healing from abilities keeps someone on the team up. Stored games, healers by fifths of the file's healing: -24% -> -17%, -7% -> -7%, +2% -> +2%, +10% -> +12%, +28% -> +15%. */
 const ABILITY_HEALING_WORTH = 0.6;
+/** A champion who heals or shields allies (Janna, Sona, Lulu, Nami, Soraka, Yuumi, Milio, Karma): stored games, within each of 9 enchanters (7,867 players),
+ * a point healed a minute goes with winning 1.4 to 5.1 times as much as a point of damage a minute in four quarters of the games (2.9 in all), so his
+ * healing counts at least as much as his damage: ABSORBED_WORTH x this = 1 (2026-11-05). */
+export const ALLY_HEAL_WORTH = { value: 1 / ABSORBED_WORTH };
 /** The enemies' resists at a late level with no items, the size the fixed target was, and the kind of damage their kits deal. */
 /** The mean health of 172 champions at level 15 with no items (measured 2026-11-04); a team's health scales FIGHT.target.hp by its own against this. */
 const TYPICAL_HP = 2415;
@@ -75,7 +79,7 @@ export const teamPlace = (o: { championId: number; bin: Record<string, unknown>;
   const kitTraits = CHAMPION_KITS.find((k) => k.id === o.championId)?.traits;
   // A tank build is valued as a frontline champion's: the whole fight, health carried to the next, damage taken in others' place; a magic or physical build as a damage dealer's over the whole fight (Sett's fighter build, Katarina's health and magic build), his kit's own build keeping a burst window.
   const traits = o.style === 'tank' || o.style === 'aphp' ? [...(kitTraits ?? []).filter((t) => t !== 'burst'), 'frontline'] : o.style ? kitTraits?.filter((t) => t !== 'frontline' && t !== 'burst') : kitTraits;
-  return { ...(isBurst(traits) ? { window: BURST.window } : {}), ...(traits?.includes('frontline') ? { carriesHealth: true } : {}), maxRatio: traits?.includes('frontline') ? MAX_HEALTH_RATIO : MAX_HEALTH_RATIO_NOT_FRONT, share: 1 / (1 + ((1 - alone) / alone) * others), rise: melee ? SHARE_RISE.melee : SHARE_RISE.ranged, health0: fight({ bin: o.bin, shop: o.shop, kit: o.kit, passive: o.passive, enemy: o.enemy, cards: [], items: [], level: FULL_BUILD_LEVEL }).effectiveHp, enemyDps: ENEMY_DPS, absorbedWorth: traits?.includes('frontline') ? ABSORBED_WORTH : ABSORBED_WORTH_BACK.value };
+  return { ...(isBurst(traits) ? { window: BURST.window } : {}), ...(traits?.includes('frontline') ? { carriesHealth: true } : {}), maxRatio: traits?.includes('frontline') ? MAX_HEALTH_RATIO : MAX_HEALTH_RATIO_NOT_FRONT, share: 1 / (1 + ((1 - alone) / alone) * others), rise: melee ? SHARE_RISE.melee : SHARE_RISE.ranged, health0: fight({ bin: o.bin, shop: o.shop, kit: o.kit, passive: o.passive, enemy: o.enemy, cards: [], items: [], level: FULL_BUILD_LEVEL }).effectiveHp, enemyDps: ENEMY_DPS, ...(o.kit.buffsAllies ? { healWorth: ALLY_HEAL_WORTH.value } : {}), absorbedWorth: traits?.includes('frontline') ? ABSORBED_WORTH : ABSORBED_WORTH_BACK.value };
 };
 const shareAt = (p: TeamPlace, health: number) => 1 / (1 + ((1 - p.share) / p.share) * Math.min(p.maxRatio ?? MAX_HEALTH_RATIO, Math.max(1, health / p.health0)) ** -p.rise);
 const dealtBy = (r: FightResult, seconds: number) => { const whole = Math.floor(seconds), from = whole ? (r.damageBySecond[whole - 1] ?? r.damage) : 0, to = r.damageBySecond[whole] ?? r.damage; return from + (to - from) * (seconds - whole); };
