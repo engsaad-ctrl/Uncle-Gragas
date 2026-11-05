@@ -79,8 +79,11 @@ async function rankAugments(championId: number, site: RatedAugment[]): Promise<{
   const effects = new Map(e.map((x) => [x.id, x.points]));
   const tiers = new Map(site.map((a) => [a.id, a.tierLabel]));
   const score = (a: AugmentText) => (effects.get(a.id) ?? 0) + outsidePoints(open.get(a.id), tiers.get(a.id)) + FIT_POINTS * (fitOf(championId, a.ids)?.score ?? 0);
-  const list = playedOnly(r.augments.filter((a) => a.modes.includes('mayhem')), effects).sort((x, y) => score(y) - score(x));
-  return { list, grades: gradesFor(list, score), wins };
+  // The owner's rule 1 (2026-11-05): the best augment for the champion by its win rate with him (2,425+ games each on the Chinese server);
+  // augments it has no rate for come after, in F7's order.
+  const rank = (a: AugmentText) => { const w = wins.get(a.id); return w === undefined ? score(a) : 1e6 + w; };
+  const list = playedOnly(r.augments.filter((a) => a.modes.includes('mayhem')), effects).sort((x, y) => rank(y) - rank(x));
+  return { list, grades: gradesFor(list, rank), wins };
 }
 
 /** Mayhem without a game: pick any augments and see the engine's build at once; Gemini's opinion on demand. */
