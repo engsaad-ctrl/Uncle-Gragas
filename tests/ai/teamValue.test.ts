@@ -58,6 +58,13 @@ describe('the fight, as games showed it', () => {
     expect(r.fromCards).toBeGreaterThan(0);
     expect(r.fromCards).toBeLessThanOrEqual(100 * Math.ceil(FIGHT.seconds / 1.5)); // no faster than its cooldown
   });
+  it('paces mana over the fights in a row, so haste never lowers what three fights deal', () => {
+    const spell = { __type: 'SpellObject', mSpell: { mClientData: {}, mana: [50, 50, 50, 50, 50], cooldownTime: [3, 3, 3, 3, 3, 3, 3], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ mNumber: 100, __type: 'NumberCalculationPart' }], __type: 'GameCalculation' } } } };
+    const caster = { ...binOf(), rec: { ...binOf().rec, spells: ['q'], primaryAbilityResource: { arType: 0, '{726ee5cd}': num(600) } }, q: spell };
+    const mage = { damage: 'magic' as const, attacks: false };
+    const three = (haste: number) => { let x = run([{ op: 'add', stat: 'haste', value: haste }], { bin: caster, kit: mage }); let total = 0; for (let n = 0; n < 3; n++) { total += x.damage; x = x.again?.() ?? x; } return total; };
+    expect(three(200)).toBeGreaterThanOrEqual(three(0)); // greedy, 200 haste emptied 600 mana in the first fight and dealt less over three
+  });
   it('reads a ratio on bonus armor apart from total armor', () => {
     const r = run([{ op: 'add', stat: 'armor', value: 100 }, { op: 'proc', trigger: 'attack', internal_cooldown: 100, damage: { bonus_armor: 1 }, type: 'true' }]);
     expect(r.fromCards).toBeCloseTo(100);

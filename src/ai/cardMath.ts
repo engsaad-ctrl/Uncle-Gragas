@@ -42,7 +42,8 @@ export interface CardNumbers { id: number; name: string; status: string; ops: Ca
 /** gapSeconds: the time between two fights, when mana comes back; an assumption tried at 0, 20 and 40 s on the owner's cases; 40 kept on the owner's word (Ezreal passes, Soraka still fails). */
 /** carryCooldowns: the next fight starts gapSeconds after this one ends, with what is still on cooldown (an ultimate cast at the start of a 15 s fight with 90 s of cooldown misses the next), so haste counts there. */
 /** boltHitShare: of the bolts an attack can fire at other enemies (Runaan's Hurricane), the share that finds one in range; ARAM's five enemies stand close, an assumption until area damage is modelled (knowledge: area-model). */
-export const FIGHT = { boltHitShare: 0.5, partialLastCast: false, carryCooldowns: false, gapSeconds: 40, growthProcsPerLevel: 2, attackUptime: { melee: 0.8, ranged: 0.7 }, everyDamageStacks: { at18: 200, power: 3.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
+/** manaFights: the fights in a row a player paces his mana over, the same three as itemMath's FIGHTS.inARow. */
+export const FIGHT = { manaFights: 3, boltHitShare: 0.5, partialLastCast: false, carryCooldowns: false, gapSeconds: 40, growthProcsPerLevel: 2, attackUptime: { melee: 0.8, ranged: 0.7 }, everyDamageStacks: { at18: 200, power: 3.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
 
 /** Very high move speed is slowed: the game's soft caps at 415 and 490. shortcut: from memory, not from a file; check on screen. */
 /** Stacks a champion's abilities count by level 15 in ARAM Mayhem, where his ability formulas read a buff's stacks (Nasus's Q, Smolder's passive, Aurelion Sol's
@@ -247,6 +248,10 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const manaRegen = Number.isFinite(fullMana) ? (regenOf('{c4ab3550}') + regenOf('{3a509002}') * (o.level - 1)) * (1 + owned.reduce((t, it) => t + (it.DataValues?.find((d) => d.name === 'PercentBaseMPRegenMod')?.values?.[0] ?? 0), 0)) + owned.reduce((t, it) => t + (it.DataValues?.find((d) => d.name === 'FlatMPRegenMod')?.values?.[0] ?? 0), 0) / 5 : 0;
   const startMana = Math.min(fullMana, o.mana ?? Infinity);
   let mana = startMana;
+  // A player paces his mana over the fights in a row instead of emptying it in the first (the owner, 2026-11-06): basic abilities keep back a floor,
+  // so each fight spends an even share of what he starts with and what comes back between fights; the ultimate is always cast.
+  // Without it, haste only spent mana sooner: Karthus with Nashor's dealt 4,325, 4,113, then 832 in the third fight.
+  const manaFloor = Number.isFinite(fullMana) ? startMana - (startMana + (FIGHT.manaFights - 1) * manaRegen * FIGHT.gapSeconds) / FIGHT.manaFights : -Infinity;
 
   interface Slot { path: string; key: string; spell: NonNullable<NonNullable<Bin[string]>['mSpell']>; rank: number; ranks: number; cooldown: number; cost: number; perSecond: boolean; overTime: boolean; toggle: boolean; ready: number; on: boolean; recast: boolean; crits: boolean; last?: number; dealt?: number }
   const passiveSpells = stacks === undefined ? [] : Object.values(bin).flatMap((v) => (v?.mSpell && Object.keys((v.mSpell as { mSpellCalculations?: object }).mSpellCalculations ?? {}).some((n) => /^Passive_[QWER]DamageIncrease$/.test(n)) ? [v.mSpell] : []));
@@ -389,7 +394,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (t >= nextCast) {
       const haste = (scope: string) => c.haste + ops.reduce((n, x) => (x.op === 'add' && x.stat === `${scope}_haste` ? n + scaled(x.value, o.level) : n), 0);
       for (const sl of slots) {
-        if (t < sl.ready || sl.on || mana < sl.cost) continue;
+        if (t < sl.ready || sl.on || mana < sl.cost || (sl.key !== 'R' && mana - sl.cost < manaFloor)) continue;
         const scope = sl.key === 'R' ? 'ult' : 'basic';
         const read = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef, stacks });
         // A passive that adds damage to this ability per stack (Smolder: Passive_QDamageIncrease) adds it to the cast.
