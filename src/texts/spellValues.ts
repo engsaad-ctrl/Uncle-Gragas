@@ -142,7 +142,8 @@ function add(a: Value, b: Value): Value {
 
 /** Multiplies by a value that has no stat part of its own; anything else cannot be shown as "base + ratio". */
 function times(v: Value, k: Value): Value {
-  if (!isPlain(k)) return { min: v.min.map((x, i) => x * k.min[i]), max: v.max.map((x, i) => x * k.max[i]), scalings: [], other: true };
+  // A multiplier with a stat in it (Smolder's crit multiplier on his stacks): its plain part is kept on every ratio, so a stack or stat part still counts, without the stat's share (marked other).
+  if (!isPlain(k)) return { min: v.min.map((x, i) => x * k.min[i]), max: v.max.map((x, i) => x * k.max[i]), scalings: v.scalings.map((s) => ({ ...s, coef: s.coef.map((c, i) => c * k.min[i]), ...(s.coefMax ? { coefMax: s.coefMax.map((c, i) => c * k.max[i]) } : {}) })), other: true };
   return {
     min: v.min.map((x, i) => x * k.min[i]),
     max: v.max.map((x, i) => x * k.max[i]),

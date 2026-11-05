@@ -1,4 +1,4 @@
-2026-11-05T21:24:31.805Z on 885d1e8 (with uncommitted changes)
+2026-11-05T21:37:50.943Z on 07f1f93 (with uncommitted changes)
 items in the kit build held by fewer than 20 of the champion's players (champions with 300+ finished builds): 177 in 162 champions
 - ميس فورتشن: Profane Hydra held by 2 of 1683
 - ميس فورتشن: Stormrazor held by 18 of 1683
@@ -8,13 +8,13 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - شاكو: Yun Tal Wildarrows held by 12 of 1501
 - تيمو: Wit's End held by 10 of 1488
 - تيمو: Phantom Dancer held by 2 of 1488
+- سواين: Rite of Ruin held by 5 of 1335
 - سمولدر: Runaan's Hurricane held by 8 of 1330
-- سمولدر: Yun Tal Wildarrows held by 7 of 1330
 - سيرافين: Riftmaker held by 3 of 1299
 - لوشيان: Runaan's Hurricane held by 10 of 1237
 - لوشيان: Yun Tal Wildarrows held by 17 of 1237
 - تشوغاث: Bloodletter's Curse held by 3 of 1227
-- سيت: Experimental Hexplate held by 7 of 1202
+- تشوغاث: Zhonya's Hourglass held by 11 of 1227
 - فاروس: Yun Tal Wildarrows held by 19 of 1198
 - تام كينش: Moonstone Renewer held by 0 of 1177
 - نيدالي: Malignance held by 1 of 1166
@@ -38,8 +38,8 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - سميرة: Hexoptics C44 held by 1 of 889
 - سايون: Sterak's Gage held by 10 of 848
 - سايون: Death's Dance held by 9 of 848
-- أكشان: Profane Hydra held by 0 of 802
 - أكشان: Umbral Glaive held by 2 of 802
+- أكشان: Profane Hydra held by 0 of 802
 - أوريانا: Riftmaker held by 6 of 794
 - لوك: Nashor's Tooth held by 13 of 780
 - ياسو: Hexoptics C44 held by 0 of 779
@@ -59,9 +59,9 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - أمومو: Bloodletter's Curse held by 11 of 718
 - ميليو: Riftmaker held by 2 of 710
 - غارين: Titanic Hydra held by 13 of 695
-- ناسوس: Titanic Hydra held by 8 of 689
 - ناسوس: Spear of Shojin held by 7 of 689
 - ناسوس: Lord Dominik's Regards held by 17 of 689
+- ناسوس: Profane Hydra held by 0 of 689
 - درايفن: Runaan's Hurricane held by 6 of 680
 - نونو وويلامب: Bloodletter's Curse held by 0 of 670
 - نونو وويلامب: Cosmic Drive held by 18 of 670

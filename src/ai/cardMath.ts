@@ -46,9 +46,10 @@ export const FIGHT = { boltHitShare: 0.5, partialLastCast: false, carryCooldowns
 
 /** Very high move speed is slowed: the game's soft caps at 415 and 490. shortcut: from memory, not from a file; check on screen. */
 /** Stacks a champion's abilities count by level 15 in ARAM Mayhem, where his ability formulas read a buff's stacks (Nasus's Q, Smolder's passive, Aurelion Sol's
- * stardust, Thresh's souls, Kindred's marks, Cho'Gath's Feast, Draven's adoration). The files hold no count, only the per-stack value, so these are
- * estimates (2026-11-06, Claude, to be checked on screen); without them each per-stack part counted 0. Held at the level-15 count after 15. */
-export const STACKS_AT_15: Record<string, number> = { Nasus: 250, Smolder: 125, AurelionSol: 60, Thresh: 60, Kindred: 6, Chogath: 6, Draven: 20 };
+ * stardust, Thresh's souls, Kindred's marks, Cho'Gath's Feast, Draven's adoration). The files hold no count, only the per-stack value; without one each
+ * per-stack part counted 0. The owner (2026-11-06): «سمولدر يصل الى 250 وياخذ الاعدام»، «كل الشخصيات يمكنها المراكمه لاكثر»، «ناسوس بشكل لا نهائي».
+ * Smolder's 250 is his; the rest are Claude's estimates raised on his word, to check on his screens. No cap: they keep growing with level past 15. */
+export const STACKS_AT_15: Record<string, number> = { Nasus: 700, Smolder: 250, AurelionSol: 150, Thresh: 150, Kindred: 15, Chogath: 20, Draven: 60, Veigar: 300, Senna: 150, Swain: 60 };
 
 const softSpeed = (x: number) => (x > 490 ? x * 0.5 + 230 : x > 415 ? x * 0.8 + 83 : x);
 
@@ -181,7 +182,13 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const notModelled = o.cards.flatMap((c) => (c.not_modelled ? [`${c.name}: ${c.not_modelled}`] : []));
   // Stacks held by this level, read from 23 screen windows with Tank Engine (health order: Heartsteel, then the multiplier, which one reading of Mundo forces): 0.6 a level when deaths take most of them, 2.2 a level of takedowns when they don't. Other stacks are a guess.
   // Stacks from every instance of ability damage grow fast with the game (Phenomenal Evil); fitted to screens.
-  const stacksOf = (x: Extract<CardOp, { op: 'per_stack' }>) => { const n = x.per === 'takedown' || x.per === 'kill' ? (x.lost_on_death ? 0.6 : 2.2) * o.level : x.per === 'every_ability_damage' ? FIGHT.everyDamageStacks.at18 * (o.level / 18) ** FIGHT.everyDamageStacks.power : FIGHT.stacksByLevel(o.level); return x.cap ? Math.min(x.cap, n) : n; };
+  const stackName = (record as { mCharacterName?: string } | undefined)?.mCharacterName ?? '';
+  const stacks = STACKS_AT_15[stackName] === undefined ? undefined : STACKS_AT_15[stackName]! * (o.level / 15);
+  // His own passive's stacks (Veigar's AP, Senna's and Thresh's souls) are his count above, not the generic one.
+  // One count a stat: Veigar's AP from hits and from takedowns are both in his count, so his second AP source adds nothing more.
+  const ownPassive = new Set(o.passive ?? []), firstOfStat = new Map<string, CardOp>();
+  for (const x of o.passive ?? []) if (x.op === 'per_stack' && !firstOfStat.has(x.stat)) firstOfStat.set(x.stat, x);
+  const stacksOf = (x: Extract<CardOp, { op: 'per_stack' }>) => { const n = stacks !== undefined && ownPassive.has(x) ? (firstOfStat.get(x.stat) === x ? stacks : 0) : x.per === 'takedown' || x.per === 'kill' ? (x.lost_on_death ? 0.6 : 2.2) * o.level : x.per === 'every_ability_damage' ? FIGHT.everyDamageStacks.at18 * (o.level / 18) ** FIGHT.everyDamageStacks.power : FIGHT.stacksByLevel(o.level); return x.cap ? Math.min(x.cap, n) : n; };
   const add = (t: BuildStats, stat: string, v: number) => { STAT_ADD[stat]?.(t, v); };
   for (const x of ops) if (x.op === 'add') add(s, x.stat, scaled(x.value, o.level));
   for (const x of ops) if (x.op === 'per_stack' && x.mode === 'add') add(s, x.stat, x.value * stacksOf(x));
@@ -231,9 +238,17 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   let mana = startMana;
 
   interface Slot { path: string; key: string; spell: NonNullable<NonNullable<Bin[string]>['mSpell']>; rank: number; ranks: number; cooldown: number; cost: number; perSecond: boolean; overTime: boolean; toggle: boolean; ready: number; on: boolean; recast: boolean; crits: boolean; last?: number; dealt?: number }
-  const stackName = (record as { mCharacterName?: string } | undefined)?.mCharacterName ?? '';
-  const stacks = STACKS_AT_15[stackName] === undefined ? undefined : STACKS_AT_15[stackName]! * Math.min(1, o.level / 15);
   const passiveSpells = stacks === undefined ? [] : Object.values(bin).flatMap((v) => (v?.mSpell && Object.keys((v.mSpell as { mSpellCalculations?: object }).mSpellCalculations ?? {}).some((n) => /^Passive_[QWER]DamageIncrease$/.test(n)) ? [v.mSpell] : []));
+  // An execute that comes with enough stacks (Smolder's Q at 225: below 6.5% of maximum health): the rest of a dying target's health, once a kill.
+  const executeShare = stacks === undefined ? 0 : Math.max(0, ...Object.values(bin).flatMap((v) => {
+    const sp = v?.mSpell as (SpellData & { DataValues?: { name: string; values?: number[] }[] }) | undefined;
+    if (!sp?.mSpellCalculations) return [];
+    return calculationsAt(sp, { ranks: 5, rank: 5, level: o.level, statOf: () => NaN, stacks }).flatMap((x) => {
+      const tier = /^Tier(\d)_ExecuteThreshold$/.exec(x.name);
+      const need = tier ? sp.DataValues?.find((d) => d.name === `StackTier${tier[1]}`)?.values?.[1] : undefined;
+      return tier && need !== undefined && stacks >= need && x.value > 0 && x.value < 1 ? [x.value] : [];
+    });
+  }));
   const slots: Slot[] = [];
   (['R', 'Q', 'W', 'E'] as const).forEach((key) => {
     const path = record.spells?.['QWER'.indexOf(key)] ?? '';
@@ -346,7 +361,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     peakMs = Math.max(peakMs, c.moveSpeed);
     peakAs = Math.max(peakAs, c.attackSpeed);
     const taken = takenBy(c);
-    while (kills.length && t >= kills[0]!) { kills.shift(); fire('takedown', t, c); fire('kill', t, c); }
+    while (kills.length && t >= kills[0]!) { kills.shift(); fromAbilities += executeShare * targetHp; fire('takedown', t, c); fire('kill', t, c); }
     // A mage or support who doesn't fight with attacks makes none (the owner: Ahri, Soraka); a physical non-attacker attacks between casts only, an assumption.
     if (t >= nextAttack) {
       attacks++;
