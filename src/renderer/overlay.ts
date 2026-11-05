@@ -43,6 +43,8 @@ const FIT_GAMES = 150;
 let effects = new Map<number, AugmentEffect>();
 /** What each augment adds to this champion in the open data, in points. */
 let openPoints = new Map<number, number>();
+/** The Chinese server's win rate for this champion with each augment, and its games. */
+let openWin = new Map<number, { win: number; games: number }>();
 /** How much more this champion's players take each augment than all players do; winning plays no part. */
 const mechOf = (a: { id: number; ids?: number[] }) => AUGMENT_MECHANICS.find((m) => (a.ids ?? [a.id]).includes(m.id));
 const NO_MECH: Mechanic = { id: -1, name: '', gives: [], scales: [], converts: [], relies: [], needs: [], note: '' };
@@ -211,6 +213,7 @@ function render() {
         ...(compat === undefined ? [] : [`التوافق بالحساب ${compat}%: ${mathWords(a.id)}. لا يقيس الفوز.`]),
         ...(onLine ? [lineText(onLine)] : []),
         ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
+        ...(openWin.has(a.id) ? [`فوزه مع هذا البطل في السيرفر الصيني: ${(100 * openWin.get(a.id)!.win).toFixed(1)}% من ${openWin.get(a.id)!.games.toLocaleString('en')} مباراة.`] : []),
         ...(openPoints.has(a.id) ? [`مع هذا البطل في AramHex وARAMKit: ${openPoints.get(a.id)!.toFixed(1)} نقطة.`] : a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
         ...(f && f.games >= FIT_GAMES ? [`مع اختياراتك: ${Math.round(100 * f.lift)}% من ${f.games} لاعباً.`] : []),
         ...(kit?.reasons ?? []),
@@ -656,6 +659,7 @@ async function load() {
     if (id !== loadId) return;
     if (!isError(r)) effects = new Map(r.map((x) => [x.id, x]));
     openPoints = new Map(isError(o) ? [] : o.map((x) => [x.id, x.points]));
+    openWin = new Map(isError(o) ? [] : o.flatMap((x) => (x.win === undefined || x.games === undefined ? [] : [[x.id, { win: x.win, games: x.games }]])));
     render();
   }
 }

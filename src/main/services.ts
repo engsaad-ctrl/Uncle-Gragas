@@ -701,7 +701,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   }
 
   /** What each Mayhem augment adds to this champion in the outside data, averaged over the sources; empty when none can be had. */
-  async function openAugments(championId: number): Promise<{ id: number; points: number; link?: number }[]> {
+  async function openAugments(championId: number): Promise<{ id: number; points: number; link?: number; win?: number; games?: number }[]> {
     const [open, kit] = await Promise.all([openStats({ cacheDir, fetchImpl }).catch(() => null), champKit(championId)]);
     if (!open && !kit) return [];
     const kitById = new Map(kit?.augments.map((a) => [a.id, a]));
@@ -712,7 +712,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const known = [hex?.points, row && kit && liftPoints(row.games * row.winRate, row.games, kit.winRate)].filter((x): x is number => x !== undefined);
       // The copy with the most games, as above: a share taken across copies would count one augment twice.
       const link = open ? a.ids.flatMap((id) => { const l = augmentLink(open.data, championId, id); return l === null ? [] : [{ l, games: open.data.augments[String(championId)]?.[String(id)]?.games ?? 0 }]; }).sort((x, y) => y.games - x.games)[0]?.l : undefined;
-      return known.length ? [{ id: a.id, points: known.reduce((t, x) => t + x, 0) / known.length, ...(link === undefined ? {} : { link }) }] : [];
+      // The Chinese server's own win rate for this champion with it, shown beside the letter (the owner, 2026-11-05: the best augment by percent for each champion).
+      const raw = open ? a.ids.flatMap((id) => open.data.augments[String(championId)]?.[String(id)] ?? []).sort((x, y) => y.games - x.games)[0] : undefined;
+      return known.length ? [{ id: a.id, points: known.reduce((t, x) => t + x, 0) / known.length, ...(link === undefined ? {} : { link }), ...(raw ? { win: raw.wins / raw.games, games: raw.games } : {}) }] : [];
     });
   }
 

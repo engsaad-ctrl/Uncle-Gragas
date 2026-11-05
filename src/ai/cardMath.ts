@@ -64,6 +64,8 @@ export interface FightResult {
   effectiveHp: number;
   /** Healing and shields he gives himself in the fight, as effective health: vamp, and what cards and items say. */
   healedHp: number;
+  /** healedHp by source, before resists: heals and shields cards and items name, omnivamp, life steal (to measure each against real games). */
+  healParts?: { ops: number; omnivamp: number; lifeSteal: number };
   /** Healing and shields his abilities give, on whoever they reach, with heal power: the files don't say whom. */
   abilityHealing: number;
   attacks: number;
@@ -414,6 +416,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     fromCards,
     fromAllies,
     abilityHealing: abilityHealing * (1 + healPower + chainHeal + ops.reduce((m, x) => (x.op === 'add' && x.stat === 'heal_shield_power' ? m + scaled(x.value, o.level) : x.op === 'mana_amp' && x.scope === 'heal_shield' && Number.isFinite(fullMana) ? m + (x.per100 * fullMana) / 100 : m), 0)),
+    healParts: { ops: healed, omnivamp: s.omnivamp * (fromAbilities + fromAttacks + fromCards), lifeSteal: s.lifeSteal * fromAttacks },
     healedHp: Math.max(0, healed + s.omnivamp * (fromAbilities + fromAttacks + fromCards) + s.lifeSteal * fromAttacks) * ((o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / s.hp),
     effectiveHp: (o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / reduction,
     attacks,

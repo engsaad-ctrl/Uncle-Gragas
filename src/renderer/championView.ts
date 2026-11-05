@@ -71,15 +71,16 @@ function applyControl(p: ChampionPage): HTMLElement {
 const MAX_PICKS = 6;
 
 /** Mayhem's played augments for this champion, best first with their letters, as F7 scores them before anything is marked. */
-async function rankAugments(championId: number, site: RatedAugment[]): Promise<{ list: AugmentText[]; grades: Map<number, string> } | null> {
+async function rankAugments(championId: number, site: RatedAugment[]): Promise<{ list: AugmentText[]; grades: Map<number, string>; wins: Map<number, number> } | null> {
   const [r, e, o] = await Promise.all([window.lolh.getAugments(), window.lolh.augmentEffects(), window.lolh.openAugments(championId)]);
   if (isError(r) || isError(e)) return null;
   const open = new Map(isError(o) ? [] : o.map((x) => [x.id, x.points]));
+  const wins = new Map(isError(o) ? [] : o.flatMap((x) => (x.win === undefined ? [] : [[x.id, x.win]])));
   const effects = new Map(e.map((x) => [x.id, x.points]));
   const tiers = new Map(site.map((a) => [a.id, a.tierLabel]));
   const score = (a: AugmentText) => (effects.get(a.id) ?? 0) + outsidePoints(open.get(a.id), tiers.get(a.id)) + FIT_POINTS * (fitOf(championId, a.ids)?.score ?? 0);
   const list = playedOnly(r.augments.filter((a) => a.modes.includes('mayhem')), effects).sort((x, y) => score(y) - score(x));
-  return { list, grades: gradesFor(list, score) };
+  return { list, grades: gradesFor(list, score), wins };
 }
 
 /** Mayhem without a game: pick any augments and see the engine's build at once; Gemini's opinion on demand. */
@@ -252,7 +253,8 @@ function renderPage(p: ChampionPage): HTMLElement[] {
           grid.append(...list.map((a, i) => {
             const site = a as RatedAugment;
             const letter = ours?.grades.get(a.id);
-            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), letter ?? `${site.tierLabel ?? `#${site.rank}`} · ${pct(site.popularity)}`), i);
+            const win = ours?.wins.get(a.id);
+            const chip = stagger(augmentChip(a, false, () => detail.show(a, { tags: augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }), letter ? `${letter}${win === undefined ? '' : ` · ${(100 * win).toFixed(1)}%`}` : `${site.tierLabel ?? `#${site.rank}`} · ${pct(site.popularity)}`), i);
             if (letter) chip.querySelector('small')!.className = `ov-grade g-${letter}`;
             return chip;
           }));
