@@ -428,7 +428,8 @@ function adaptedSection(): HTMLElement {
   });
   const dropped = engine.dropped ?? [];
   const x = engine.experimental;
-  const lines = openLines(heldParts(), championDamage()).filter((o) => o.held.some((part) => part > 0)).map((o) => el('p', 'hint', `${o.line.name}: ${o.held.length} أجزاء. يفشل إذا: ${o.line.breaks.join('، ')}.`));
+  // A magic build buys no crit, so the crit line isn't his road there (the owner: Miss Fortune with Vulnerability).
+  const lines = openLines(heldParts(), championDamage()).filter((o) => o.held.some((part) => part > 0) && !((buildStyle === 'ap' || buildStyle === 'aphp') && o.line.id === 'crit')).map((o) => el('p', 'hint', `${o.line.name}: ${o.held.length} أجزاء. يفشل إذا: ${o.line.breaks.join('، ')}.`));
   return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...(styleRow ? [styleRow] : []), el('p', 'hint', 'مسارك: يبقى ما نصحناك به ما دام مناسباً، ونكمل بالغرض التالي.'), ...lines, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
 }
 
@@ -508,11 +509,11 @@ const pickedKey = () => [...picked].sort((a, b) => a - b).join('-');
 /** What the engine's answer depends on: the marks and what he bought. */
 const engineKey = () => `${pickedKey()}|${owned.join('-')}|${buildStyle ?? ''}`;
 /** Which way to build: his kit's own (undefined), or magic, physical, tank (the owner: Katarina has all three). */
-type Style = 'ap' | 'ad' | 'tank';
+type Style = 'ap' | 'ad' | 'tank' | 'aphp';
 let buildStyle: Style | undefined;
 /** The styles his kit allows, for the champion they were asked for. */
 let styles: { champion: number; key: string; list: Style[] } | undefined;
-const STYLE_LABEL: Record<Style, string> = { ap: 'سحري', ad: 'جسدي', tank: 'تانك' };
+const STYLE_LABEL: Record<Style, string> = { ap: 'سحري', aphp: 'سحري مع صحة', ad: 'جسدي', tank: 'تانك' };
 
 /** Asks for the marked augments' build (once per set of marks) and shows it in the build tab. */
 async function startAi() {

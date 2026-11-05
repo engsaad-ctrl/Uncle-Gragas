@@ -628,7 +628,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const base = damage(), ap = damage('ap') - base, ad = damage('ad') - base;
     const all = augmentIds.length ? await augments() : undefined;
     const magicCard = cardsOf(all?.augments ?? [], augmentIds).some((c) => c.ops.some((x) => x.op === 'crit_dot' || (x.op === 'convert' && (x.from === 'ap' || x.to === 'ap')) || ((x.op === 'add' || x.op === 'mult' || x.op === 'per_stack') && x.stat === 'ap')));
-    return [...((ap >= 0.5 * Math.max(ap, ad) && ap > 0) || magicCard ? ['ap' as const] : []), ...(ad >= 0.5 * Math.max(ap, ad) && ad > 0 ? ['ad' as const] : []), 'tank'];
+    const magic = (ap >= 0.5 * Math.max(ap, ad) && ap > 0) || magicCard;
+    // A magic frontline champion also builds magic with health (the owner: Galio has three builds).
+    return [...(magic ? ['ap' as const] : []), ...(magic && kit?.traits.includes('frontline') ? ['aphp' as const] : []), ...(ad >= 0.5 * Math.max(ap, ad) && ad > 0 ? ['ad' as const] : []), 'tank'];
   }
 
   function mathBuild(championId: number, augmentIds: number[], owned: number[] = [], teams?: Teams, style?: BuildStyle) {
@@ -657,7 +659,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       // The owner: a mana item first for mages only; tanks, enchanters and attackers (Kayle, Gwen, Teemo) keep their own first item.
       // Mages who also shield or heal allies count as mages, by the owner's word: Lux, Annie, Orianna, Seraphine, Morgana, Karma, Zilean.
       const mage = !noMana && !fightKit.attacks && (!fightKit.buffsAllies || MAGE_SUPPORTS.has(championId)) && !kit?.traits.includes('frontline');
-      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies, style }), offKind: (i) => (style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style : !switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true), kit: fightKitOf(championId), cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required, manaFirst: mage && (style === 'ap' || (!style && !switched && damageKind === 'ap')) });
+      // Magic with health holds one item with neither AP nor attack damage besides boots; the rest is magic (two give Jak'Sho and Steelcaps, three Heartsteel and full tank).
+      const pureTank = (i?: { id: number; group?: string; boots?: boolean }) => !!i && !i.boots && i.group !== 'boots' && itemDamage(i.id) !== 'ap';
+      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies, style }), offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style : !switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true), kit: fightKitOf(championId), cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required, manaFirst: mage && (style === 'ap' || (!style && !switched && damageKind === 'ap')) });
       const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
       return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, why: s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean) }] : []; });
     })();

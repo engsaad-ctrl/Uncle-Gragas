@@ -41,9 +41,9 @@ declare global {
       /** Every augment's effect on its team's win chance, from the team model. */
       augmentEffects(): Promise<Reply<AugmentEffect[]>>;
       /** The build without AI for a champion and the augments taken, each item with why it is in. */
-      engineBuild(championId: number, augmentIds: number[], followLines?: boolean, owned?: number[], style?: 'ap' | 'ad' | 'tank'): Promise<Reply<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>;
+      engineBuild(championId: number, augmentIds: number[], followLines?: boolean, owned?: number[], style?: 'ap' | 'ad' | 'tank' | 'aphp'): Promise<Reply<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>;
       /** The other ways this champion's kit can be built (magic, physical, tank), besides his kit's own. */
-      buildStyles(championId: number, augmentIds?: number[]): Promise<Reply<('ap' | 'ad' | 'tank')[]>>;
+      buildStyles(championId: number, augmentIds?: number[]): Promise<Reply<('ap' | 'ad' | 'tank' | 'aphp')[]>>;
       cardValues(championId: number, augmentIds: number[], itemIds: number[]): Promise<Reply<{ id: number; damage: number; health: number; value: number; certain: boolean; missing: string | null }[]>>;
       /** A labelled second build no test vouches for, when there is one. */
       experimentalBuild(championId: number, augmentIds: number[]): Promise<Reply<ExperimentalBuild | null>>;

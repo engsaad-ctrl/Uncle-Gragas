@@ -55,6 +55,11 @@ for (const [label, runs, test, extra] of cases) {
 const mfStyles = await services.buildStyles(idOf('Miss Fortune'), [VULNERABILITY]);
 passed += mfStyles.includes('ap');
 lines.push(`${mfStyles.includes('ap') ? 'PASS' : 'FAIL'} 15 Miss Fortune with Vulnerability: the magic build offered: ${mfStyles.join(', ')}`);
-lines.splice(1, 0, `passed ${passed} of ${cases.length + 1}`);
+// The owner: Galio has three builds, all magic, magic with health, all tank.
+const galioStyles = await services.buildStyles(idOf('Galio'), []);
+const galioOk = ['ap', 'aphp', 'tank'].every((s) => galioStyles.includes(s));
+passed += galioOk;
+lines.push(`${galioOk ? 'PASS' : 'FAIL'} 16 Galio: magic, magic with health and tank offered: ${galioStyles.join(', ')}`);
+lines.splice(1, 0, `passed ${passed} of ${cases.length + 2}`);
 writeResult(import.meta.url, lines);
 process.exit(0);

@@ -202,7 +202,7 @@ const teamsNow = () => {
 ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown, style: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
-    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' ? style : undefined);
+    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined);
   }),
 );
 ipcMain.handle('build:styles', (_e, championId: unknown, augmentIds: unknown) =>

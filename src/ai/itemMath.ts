@@ -64,8 +64,8 @@ export function enemyTeam(list: { bin: Record<string, unknown>; kit: Kit }[], sh
   const mean = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
   return { armor: mean(stats.map((s) => s.armor)), mr: mean(stats.map((s) => s.mr)), physicalShare: mean(list.map((e) => (e.kit.damage === 'physical' ? 1 : e.kit.damage === 'magic' ? 0 : 0.5))), hp: (FIGHT.target.hp * mean(stats.map((s) => s.hp))) / TYPICAL_HP };
 }
-/** A way to build one champion: by his kit (none), or one the owner names: magic items only, physical only, or standing in front (Katarina has all three). */
-export type BuildStyle = 'ap' | 'ad' | 'tank';
+/** A way to build one champion: by his kit (none), or one the owner names: magic items only, physical only, or standing in front (Katarina has all three). 'aphp': magic with health, valued as a frontline champion's (the owner: Galio has three, all magic, magic with health, all tank). */
+export type BuildStyle = 'ap' | 'ad' | 'tank' | 'aphp';
 export const teamPlace = (o: { championId: number; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; passive?: CardOp[]; enemy?: EnemyTeam; allies?: Record<string, unknown>[]; style?: BuildStyle }): TeamPlace => {
   const w = targetWeight(o.bin);
   // Real allies beside him: his odds of being hit against theirs, scaled from the typical four the share was measured among.
@@ -74,7 +74,7 @@ export const teamPlace = (o: { championId: number; bin: Record<string, unknown>;
   const melee = ((championRecord(o.bin) as unknown as { attackRangeModifiable?: { baseValue?: number } })?.attackRangeModifiable?.baseValue ?? 0) < 300;
   const kitTraits = CHAMPION_KITS.find((k) => k.id === o.championId)?.traits;
   // A tank build is valued as a frontline champion's: the whole fight, health carried to the next, damage taken in others' place; a magic or physical build as a damage dealer's over the whole fight (Sett's fighter build, Katarina's health and magic build), his kit's own build keeping a burst window.
-  const traits = o.style === 'tank' ? [...(kitTraits ?? []).filter((t) => t !== 'burst'), 'frontline'] : o.style ? kitTraits?.filter((t) => t !== 'frontline' && t !== 'burst') : kitTraits;
+  const traits = o.style === 'tank' || o.style === 'aphp' ? [...(kitTraits ?? []).filter((t) => t !== 'burst'), 'frontline'] : o.style ? kitTraits?.filter((t) => t !== 'frontline' && t !== 'burst') : kitTraits;
   return { ...(isBurst(traits) ? { window: BURST.window } : {}), ...(traits?.includes('frontline') ? { carriesHealth: true } : {}), maxRatio: traits?.includes('frontline') ? MAX_HEALTH_RATIO : MAX_HEALTH_RATIO_NOT_FRONT, share: 1 / (1 + ((1 - alone) / alone) * others), rise: melee ? SHARE_RISE.melee : SHARE_RISE.ranged, health0: fight({ bin: o.bin, shop: o.shop, kit: o.kit, passive: o.passive, enemy: o.enemy, cards: [], items: [], level: FULL_BUILD_LEVEL }).effectiveHp, enemyDps: ENEMY_DPS, absorbedWorth: traits?.includes('frontline') ? ABSORBED_WORTH : ABSORBED_WORTH_BACK.value };
 };
 const shareAt = (p: TeamPlace, health: number) => 1 / (1 + ((1 - p.share) / p.share) * Math.min(p.maxRatio ?? MAX_HEALTH_RATIO, Math.max(1, health / p.health0)) ** -p.rise);
@@ -124,11 +124,11 @@ export function searchSet(o: { start: number[]; candidates: number[]; slots: num
   return best;
 }
 
-export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem) => boolean; manaFirst?: boolean }): MathStep[] {
+export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean }): MathStep[] {
   // The game's own limits on what can be held together, and those its file doesn't name.
   const clashes = (id: number, held: number[]) => ONE_OF.some((g) => g.includes(id % 10000) && held.some((x) => x !== id && g.includes(x % 10000))) || (o.shop[id]?.limits ?? []).some((g) => held.some((x) => x !== id && o.shop[x]?.limits?.includes(g)));
   const run = (list: number[], level: number) => fight({ bin: o.bin, shop: o.shop, kit: o.kit, cards: o.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level });
-  const allowed = (i: PoolItem, held: number[]) => !held.includes(i.id) && !clashes(i.id, held) && !!o.shop[i.id] && !o.offKind?.(i);
+  const allowed = (i: PoolItem, held: number[]) => !held.includes(i.id) && !clashes(i.id, held) && !!o.shop[i.id] && !o.offKind?.(i, held);
   const gain = (held: number[], id: number, level: number) => { const v = fightValue(run(held, level), o.place); return v > 0 ? fightValue(run([...held, id], level), o.place) / v - 1 : 0; };
 
   // The set: what adds most to the fight at the build's full size.
