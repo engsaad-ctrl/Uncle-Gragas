@@ -91,7 +91,7 @@
  ],
  "19": [
   "Blade of The Ruined King",
-  "Berserker's Greaves",
+  "Gluttonous Greaves",
   "Yun Tal Wildarrows"
  ],
  "20": [
@@ -635,14 +635,14 @@
   "Warmog's Armor"
  ],
  "233": [
-  "Heartsteel",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Warmog's Armor"
+  "Experimental Hexplate"
  ],
  "234": [
-  "Hubris",
+  "Lord Dominik's Regards",
   "Gluttonous Greaves",
-  "Lord Dominik's Regards"
+  "Infinity Edge"
  ],
  "235": [
   "Umbral Glaive",
@@ -750,9 +750,9 @@
   "Warmog's Armor"
  ],
  "517": [
-  "Warmog's Armor",
+  "Riftmaker",
   "Sorcerer's Shoes",
-  "Riftmaker"
+  "Rabadon's Deathcap"
  ],
  "518": [
   "Luden's Echo",
@@ -786,8 +786,8 @@
  ],
  "799": [
   "Heartsteel",
-  "Sorcerer's Shoes",
-  "Sunfire Aegis"
+  "Gluttonous Greaves",
+  "Hubris"
  ],
  "800": [
   "Luden's Echo",
@@ -802,7 +802,7 @@
  "805": [
   "Rabadon's Deathcap",
   "Sorcerer's Shoes",
-  "Lich Bane"
+  "Shadowflame"
  ],
  "875": [
   "Heartsteel",
@@ -812,12 +812,12 @@
  "876": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Bloodletter's Curse"
+  "Riftmaker"
  ],
  "887": [
-  "Riftmaker",
+  "Dusk and Dawn",
   "Sorcerer's Shoes",
-  "Nashor's Tooth"
+  "Riftmaker"
  ],
  "888": [
   "Ardent Censer",
@@ -858,5 +858,10 @@
   "Blackfire Torch",
   "Sorcerer's Shoes",
   "Rabadon's Deathcap"
+ ],
+ "950": [
+  "Hubris",
+  "Plated Steelcaps",
+  "Profane Hydra"
  ]
 }

@@ -24,7 +24,7 @@ export type CardOp =
   | { op: 'recast'; key: string; internal_cooldown?: number | null; after_quest?: boolean }
   | { op: 'proc'; trigger: string; internal_cooldown?: number | null; damage: DamageFormula; type: string; after_quest?: boolean }
   | { op: 'dot'; per_second: DamageFormula; duration: number; type: string; stacks_max?: number | null; trigger?: string; after_quest?: boolean }
-  | { op: 'heal' | 'shield'; amount: DamageFormula; trigger: string; internal_cooldown?: number | null; after_quest?: boolean }
+  | { op: 'heal' | 'shield'; amount: DamageFormula; trigger: string; internal_cooldown?: number | null; after_quest?: boolean; /** His kit's own healing, read per ability: then the abilities' generic healing isn't counted again. */ kit?: boolean }
   | { op: 'crit_abilities'; extra: number; after_quest?: boolean }
   | { op: 'crit_dot'; extra: number; after_quest?: boolean }
   | { op: 'heal_damage'; ratio: number; after_quest?: boolean }
@@ -255,6 +255,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const stateOf = new Map<CardOp, { stacks: number; until: number; start: number }>();
   const dots: { op: Extract<CardOp, { op: 'dot' }>; until: number; stacks: number; fromAbility: boolean }[] = [];
   const lastProc = new Map<CardOp, number>();
+  const kitHeals = ops.some((x) => (x.op === 'heal' || x.op === 'shield') && x.kit);
   let armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = o.kit.attacks || o.kit.damage !== 'magic' ? 0 : Infinity, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
   const casts: Record<string, number> = {}, perCast: Record<string, number> = {};
   const kills = [...FIGHT.killTimes];
@@ -346,7 +347,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const values = chosen.length ? chosen : named.length ? named : read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_ANY_DAMAGE.test(v.name));
         const healthShare = Math.max(0, ...read.filter((v) => HEALTH_SHARE_NAME.test(v.name) && !NOT_HEALTH_SHARE.test(v.name)).map((v) => (v.value <= 1 ? v.value : v.value <= 100 ? v.value / 100 : 0)));
         const healing = Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
-        abilityHealing += healing;
+        if (!kitHeals) abilityHealing += healing; // read per ability as his own healing instead (knowledge/champion-heal-*.jsonl)
         if (healing > 0) for (const b of allyBuffs) b.until = t + b.seconds;
         const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * targetHp);
         const one = each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
@@ -376,6 +377,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         if (one > 0) { fire('ability_hit', t, c); if (asAttack || ops.some((x) => x.op === 'abilities_on_hit')) fire('on_hit', t, c); }
         armed = true;
         fire('ability_cast', t, c);
+        fire(`cast_${sl.key}`, t, c); // one ability's own effects (a kit's self healing, knowledge/champion-heal-*.jsonl)
         if (sl.key === 'R') fire('ult_cast', t, c);
         nextCast = t + CAST_SECONDS;
         break;
