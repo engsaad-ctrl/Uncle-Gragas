@@ -9,7 +9,7 @@ import { buildStats, championRecord, statReader, type BuildStats } from './calcu
 import { SPELL_HITS } from './cardMathData.js';
 
 type Amount = number | { min: number; max: number };
-export interface DamageFormula { flat?: Amount; mana?: number; ap?: number; ad?: number; bonus_ad?: number; hp?: number; bonus_hp?: number; armor?: number; mr?: number; bonus_armor?: number; bonus_mr?: number; target_max_hp?: number; target_missing_hp?: number; target_current_hp?: number }
+export interface DamageFormula { flat?: Amount; mana?: number; ap?: number; ad?: number; bonus_ad?: number; hp?: number; bonus_hp?: number; armor?: number; mr?: number; bonus_armor?: number; bonus_mr?: number; target_max_hp?: number; target_missing_hp?: number; target_current_hp?: number; /** AP times bonus health: a ratio on AP that grows with bonus health (Tahm Kench's passive, 1.25% AP per 100 bonus health). */ ap_per_bonus_hp?: number }
 export type CardOp =
   | { op: 'add'; stat: string; value: Amount; after_quest?: boolean }
   | { op: 'mult'; stat: string; factor: number; scope?: string; after_quest?: boolean }
@@ -111,7 +111,7 @@ const NOT_HEALTH_SHARE = /heal$|healing|shield|cost|decay|monster|minion|cap|mis
 const NOT_DAMAGE = /monster|minion|shield|heal|bonus|floor|secondary/i;
 
 function formula(d: DamageFormula, s: BuildStats, level: number, t = FIGHT.target.hp): number {
-  return (d.flat === undefined ? 0 : scaled(d.flat, level)) + (d.mana ?? 0) * (s.mana ?? 0) + (d.ap ?? 0) * s.ap + (d.ad ?? 0) * s.ad + (d.bonus_ad ?? 0) * s.bonusAd + (d.hp ?? 0) * s.hp + (d.bonus_hp ?? 0) * s.bonusHp + (d.armor ?? 0) * s.armor + (d.mr ?? 0) * s.mr + (d.bonus_armor ?? 0) * s.bonusArmor + (d.bonus_mr ?? 0) * s.bonusMr + (d.target_max_hp ?? 0) * t + (d.target_missing_hp ?? 0) * (t / 2) + (d.target_current_hp ?? 0) * (t / 2);
+  return (d.flat === undefined ? 0 : scaled(d.flat, level)) + (d.mana ?? 0) * (s.mana ?? 0) + (d.ap ?? 0) * s.ap + (d.ad ?? 0) * s.ad + (d.bonus_ad ?? 0) * s.bonusAd + (d.hp ?? 0) * s.hp + (d.bonus_hp ?? 0) * s.bonusHp + (d.armor ?? 0) * s.armor + (d.mr ?? 0) * s.mr + (d.bonus_armor ?? 0) * s.bonusArmor + (d.bonus_mr ?? 0) * s.bonusMr + (d.target_max_hp ?? 0) * t + (d.target_missing_hp ?? 0) * (t / 2) + (d.target_current_hp ?? 0) * (t / 2) + (d.ap_per_bonus_hp ?? 0) * s.ap * s.bonusHp;
 }
 
 const STAT_ADD: Record<string, (s: BuildStats, v: number) => void> = {

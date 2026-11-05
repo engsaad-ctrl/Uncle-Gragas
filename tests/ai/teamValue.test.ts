@@ -44,6 +44,10 @@ describe('the fight, as games showed it', () => {
     const r = run([onHit, bolts]);
     expect(r.fromCards).toBeCloseTo(10 * (r.attacks + Math.floor(r.attacks * 2 * share)));
   });
+  it('reads a ratio on AP that grows with bonus health (Tahm Kench: 1.25% AP per 100 bonus health)', () => {
+    const r = run([{ op: 'add', stat: 'ap', value: 300 }, { op: 'add', stat: 'hp', value: 10000 }, { op: 'proc', trigger: 'attack', internal_cooldown: 100, damage: { ap_per_bonus_hp: 0.000125 }, type: 'true' }]);
+    expect(r.fromCards).toBeCloseTo(300 * 10000 * 0.000125); // 1.25 x AP = 375
+  });
   it('reads a ratio on bonus armor apart from total armor', () => {
     const r = run([{ op: 'add', stat: 'armor', value: 100 }, { op: 'proc', trigger: 'attack', internal_cooldown: 100, damage: { bonus_armor: 1 }, type: 'true' }]);
     expect(r.fromCards).toBeCloseTo(100);
