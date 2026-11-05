@@ -1,4 +1,4 @@
-2026-11-05T21:37:50.943Z on 07f1f93 (with uncommitted changes)
+2026-11-05T21:49:11.305Z on 347b991 (with uncommitted changes)
 items in the kit build held by fewer than 20 of the champion's players (champions with 300+ finished builds): 177 in 162 champions
 - ميس فورتشن: Profane Hydra held by 2 of 1683
 - ميس فورتشن: Stormrazor held by 18 of 1683
@@ -16,7 +16,7 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - تشوغاث: Bloodletter's Curse held by 3 of 1227
 - تشوغاث: Zhonya's Hourglass held by 11 of 1227
 - فاروس: Yun Tal Wildarrows held by 19 of 1198
-- تام كينش: Moonstone Renewer held by 0 of 1177
+- تام كينش: Protoplasm Harness held by 7 of 1177
 - نيدالي: Malignance held by 1 of 1166
 - إزريال: Runaan's Hurricane held by 1 of 1106
 - إزريال: Umbral Glaive held by 0 of 1106
