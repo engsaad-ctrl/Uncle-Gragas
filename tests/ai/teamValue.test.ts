@@ -35,6 +35,15 @@ describe('the fight, as games showed it', () => {
     const with3rd = run([{ op: 'proc', trigger: 'on_hit', damage: { flat: 10 }, type: 'true' }, { op: 'on_hit_repeat', extra_hits: 0.5, trigger: 'attack' }]);
     expect(with3rd.fromCards).toBeCloseTo(10 * (with3rd.attacks + Math.floor(with3rd.attacks / 2)));
   });
+  it("adds Runaan's bolts at other enemies: two for a ranged champion, one for melee, each a share of an attack, with their on-hits", () => {
+    const bolts: CardOp = { op: 'bolts', ranged: 2, melee: 1, ad: 0.6 };
+    const share = FIGHT.boltHitShare;
+    expect(run([bolts]).fromAttacks / run([]).fromAttacks).toBeCloseTo(1 + 2 * share * 0.6);
+    expect(run([bolts], { bin: binOf(125) }).fromAttacks / run([], { bin: binOf(125) }).fromAttacks).toBeCloseTo(1 + share * 0.6);
+    const onHit: CardOp = { op: 'proc', trigger: 'on_hit', damage: { flat: 10 }, type: 'true' };
+    const r = run([onHit, bolts]);
+    expect(r.fromCards).toBeCloseTo(10 * (r.attacks + Math.floor(r.attacks * 2 * share)));
+  });
   it('reads a ratio on bonus armor apart from total armor', () => {
     const r = run([{ op: 'add', stat: 'armor', value: 100 }, { op: 'proc', trigger: 'attack', internal_cooldown: 100, damage: { bonus_armor: 1 }, type: 'true' }]);
     expect(r.fromCards).toBeCloseTo(100);

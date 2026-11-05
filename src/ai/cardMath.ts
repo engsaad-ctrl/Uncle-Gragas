@@ -30,6 +30,8 @@ export type CardOp =
   | { op: 'heal_damage'; ratio: number; after_quest?: boolean }
   | { op: 'abilities_on_hit'; after_quest?: boolean }
   | { op: 'on_hit_repeat'; extra_hits: number; trigger: string; after_quest?: boolean }
+  /** Each attack also fires bolts at other enemies near the target (Runaan's Hurricane): this many for a ranged or melee champion, each a share of his AD that crits and applies on-hit. */
+  | { op: 'bolts'; ranged: number; melee: number; ad: number; after_quest?: boolean }
   | { op: 'timed'; trigger: string; stat: string; value: Amount; mode: 'add' | 'percent'; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; after_quest?: boolean };
 
 export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null }
@@ -39,7 +41,8 @@ export interface CardNumbers { id: number; name: string; status: string; ops: Ca
 /** growthProcsPerLevel: procs a game has given an item that grows for good (Heartsteel) by this level: one every 30 s of fighting and a minute of fighting a level, an assumption tried at 0 to 3 a level (knowledge/item-fit-knowledge.md). */
 /** gapSeconds: the time between two fights, when mana comes back; an assumption tried at 0, 20 and 40 s on the owner's cases; 40 kept on the owner's word (Ezreal passes, Soraka still fails). */
 /** carryCooldowns: the next fight starts gapSeconds after this one ends, with what is still on cooldown (an ultimate cast at the start of a 15 s fight with 90 s of cooldown misses the next), so haste counts there. */
-export const FIGHT = { partialLastCast: false, carryCooldowns: false, gapSeconds: 40, growthProcsPerLevel: 2, attackUptime: { melee: 0.8, ranged: 0.7 }, everyDamageStacks: { at18: 200, power: 3.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
+/** boltHitShare: of the bolts an attack can fire at other enemies (Runaan's Hurricane), the share that finds one in range; ARAM's five enemies stand close, an assumption until area damage is modelled (knowledge: area-model). */
+export const FIGHT = { boltHitShare: 0.5, partialLastCast: false, carryCooldowns: false, gapSeconds: 40, growthProcsPerLevel: 2, attackUptime: { melee: 0.8, ranged: 0.7 }, everyDamageStacks: { at18: 200, power: 3.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
 
 /** Very high move speed is slowed: the game's soft caps at 415 and 490. shortcut: from memory, not from a file; check on screen. */
 const softSpeed = (x: number) => (x > 490 ? x * 0.5 + 230 : x > 415 ? x * 0.8 + 83 : x);
@@ -324,6 +327,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     }
   };
   for (const x of ops) if (x.op === 'timed' && x.trigger === 'always') stateOf.set(x, { stacks: 1, until: Infinity, start: 0 });
+  // Bolts at other enemies: their damage in shares of an attack's, and their on-hits, both counted as damage dealt.
+  const boltHits = ops.reduce((n, x) => (x.op === 'bolts' ? n + (melee ? x.melee : x.ranged) * FIGHT.boltHitShare : n), 0);
+  const boltAd = ops.reduce((n, x) => (x.op === 'bolts' ? n + (melee ? x.melee : x.ranged) * FIGHT.boltHitShare * x.ad : n), 0);
   const onHitRepeat = (c: BuildStats) => ops.reduce((n, x) => (x.op === 'on_hit_repeat' && x.trigger !== 'next_attack' ? n + x.extra_hits * (x.trigger === 'crit' ? c.crit : 1) : n), 0);
 
   for (let t = 0; t < FIGHT.seconds; t += dt) {
@@ -337,8 +343,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (t >= nextAttack) {
       attacks++;
       nextAttack = t + 1 / (c.attackSpeed * (o.kit.attacks ? 1 : o.kit.damage === 'magic' ? 0 : 0.25) * (melee ? FIGHT.attackUptime.melee : FIGHT.attackUptime.ranged));
-      fromAttacks += c.ad * (1 + c.crit * (c.critDamage - 1)) * amp('attacks', t) * taken.physical;
-      repeatCarry += onHitRepeat(c);
+      fromAttacks += c.ad * (1 + c.crit * (c.critDamage - 1)) * amp('attacks', t) * taken.physical * (1 + boltAd);
+      repeatCarry += onHitRepeat(c) + boltHits;
       fire('on_hit', t, c);
       for (; repeatCarry >= 1; repeatCarry--) fire('on_hit', t, c); // a share of attacks hits twice
       fire('attack', t, c);
