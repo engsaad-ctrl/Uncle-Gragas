@@ -70,9 +70,9 @@
   "Titanic Hydra"
  ],
  "15": [
-  "Trinity Force",
-  "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Blade of The Ruined King",
+  "Berserker's Greaves",
+  "Runaan's Hurricane"
  ],
  "16": [
   "Ardent Censer",
@@ -80,14 +80,14 @@
   "Staff of Flowing Water"
  ],
  "17": [
-  "Dusk and Dawn",
+  "Wit's End",
   "Berserker's Greaves",
-  "Guinsoo's Rageblade"
+  "Runaan's Hurricane"
  ],
  "18": [
-  "Kraken Slayer",
-  "Gluttonous Greaves",
-  "Lord Dominik's Regards"
+  "Lord Dominik's Regards",
+  "Berserker's Greaves",
+  "Runaan's Hurricane"
  ],
  "19": [
   "Blade of The Ruined King",
@@ -105,9 +105,9 @@
   "Infinity Edge"
  ],
  "22": [
-  "Kraken Slayer",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Runaan's Hurricane"
  ],
  "23": [
   "Blade of The Ruined King",
@@ -142,7 +142,7 @@
  "29": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Yun Tal Wildarrows"
+  "Runaan's Hurricane"
  ],
  "30": [
   "Luden's Echo",
@@ -207,7 +207,7 @@
  "42": [
   "Blade of The Ruined King",
   "Gluttonous Greaves",
-  "Lord Dominik's Regards"
+  "Runaan's Hurricane"
  ],
  "43": [
   "Malignance",
@@ -235,9 +235,9 @@
   "Riftmaker"
  ],
  "51": [
-  "Lord Dominik's Regards",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Kraken Slayer"
+  "Runaan's Hurricane"
  ],
  "53": [
   "Heartsteel",
@@ -300,9 +300,9 @@
   "Lord Dominik's Regards"
  ],
  "67": [
-  "Trinity Force",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Umbral Glaive"
+  "Runaan's Hurricane"
  ],
  "68": [
   "Rabadon's Deathcap",
@@ -355,9 +355,9 @@
   "Lord Dominik's Regards"
  ],
  "81": [
-  "Trinity Force",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Umbral Glaive"
+  "Runaan's Hurricane"
  ],
  "82": [
   "Warmog's Armor",
@@ -405,9 +405,9 @@
   "Umbral Glaive"
  ],
  "96": [
-  "Trinity Force",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Blade of The Ruined King"
+  "Runaan's Hurricane"
  ],
  "98": [
   "Heartsteel",
@@ -435,9 +435,9 @@
   "Rabadon's Deathcap"
  ],
  "104": [
-  "Trinity Force",
+  "Lord Dominik's Regards",
   "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Runaan's Hurricane"
  ],
  "105": [
   "Luden's Echo",
@@ -456,8 +456,8 @@
  ],
  "110": [
   "Blade of The Ruined King",
-  "Gluttonous Greaves",
-  "Kraken Slayer"
+  "Berserker's Greaves",
+  "Runaan's Hurricane"
  ],
  "111": [
   "Heartsteel",
@@ -490,9 +490,9 @@
   "Staff of Flowing Water"
  ],
  "119": [
-  "Trinity Force",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Runaan's Hurricane"
  ],
  "120": [
   "Warmog's Armor",
@@ -525,9 +525,9 @@
   "Rabadon's Deathcap"
  ],
  "133": [
-  "Umbral Glaive",
-  "Ionian Boots of Lucidity",
-  "Blade of The Ruined King"
+  "Kraken Slayer",
+  "Plated Steelcaps",
+  "Lord Dominik's Regards"
  ],
  "134": [
   "Luden's Echo",
@@ -555,9 +555,9 @@
   "Rabadon's Deathcap"
  ],
  "145": [
-  "Profane Hydra",
+  "Infinity Edge",
   "Sorcerer's Shoes",
-  "Umbral Glaive"
+  "Runaan's Hurricane"
  ],
  "147": [
   "Blackfire Torch",
@@ -597,7 +597,7 @@
  "166": [
   "Profane Hydra",
   "Plated Steelcaps",
-  "Kraken Slayer"
+  "Runaan's Hurricane"
  ],
  "200": [
   "Warmog's Armor",
@@ -615,9 +615,9 @@
   "Lord Dominik's Regards"
  ],
  "203": [
-  "Yun Tal Wildarrows",
-  "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Blade of The Ruined King",
+  "Gluttonous Greaves",
+  "Runaan's Hurricane"
  ],
  "221": [
   "Atma's Reckoning",
@@ -625,9 +625,9 @@
   "Spear of Shojin"
  ],
  "222": [
-  "Umbral Glaive",
-  "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Blade of The Ruined King",
+  "Gluttonous Greaves",
+  "Runaan's Hurricane"
  ],
  "223": [
   "Heartsteel",
@@ -645,14 +645,14 @@
   "Infinity Edge"
  ],
  "235": [
-  "Umbral Glaive",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Runaan's Hurricane"
  ],
  "236": [
-  "Trinity Force",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Runaan's Hurricane"
  ],
  "238": [
   "Hubris",
@@ -700,7 +700,7 @@
   "Staff of Flowing Water"
  ],
  "360": [
-  "Profane Hydra",
+  "Kraken Slayer",
   "Plated Steelcaps",
   "Lord Dominik's Regards"
  ],
@@ -725,9 +725,9 @@
   "Riftmaker"
  ],
  "429": [
-  "Winter's Approach",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Trinity Force"
+  "Runaan's Hurricane"
  ],
  "432": [
   "Luden's Echo",
@@ -742,7 +742,7 @@
  "498": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Kraken Slayer"
+  "Runaan's Hurricane"
  ],
  "516": [
   "Heartsteel",
@@ -760,9 +760,9 @@
   "Rabadon's Deathcap"
  ],
  "523": [
-  "Trinity Force",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Kraken Slayer"
+  "Runaan's Hurricane"
  ],
  "526": [
   "Heartsteel",
@@ -797,7 +797,7 @@
  "804": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Kraken Slayer"
+  "Runaan's Hurricane"
  ],
  "805": [
   "Rabadon's Deathcap",
@@ -842,7 +842,7 @@
  "901": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Trinity Force"
+  "Runaan's Hurricane"
  ],
  "902": [
   "Luden's Echo",

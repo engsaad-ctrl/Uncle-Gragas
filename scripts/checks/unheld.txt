@@ -1,35 +1,25 @@
-2026-11-05T18:41:28.771Z on 742d8e1 (with uncommitted changes)
-items in the kit build held by fewer than 20 of the champion's players (champions with 300+ finished builds): 197 in 162 champions
-- آش: Stormrazor held by 3 of 1752
+2026-11-05T19:54:13.690Z on a72ab18 (with uncommitted changes)
+items in the kit build held by fewer than 20 of the champion's players (champions with 300+ finished builds): 177 in 162 champions
 - ميس فورتشن: Profane Hydra held by 2 of 1657
 - ميس فورتشن: Stormrazor held by 18 of 1657
-- كايتلين: Profane Hydra held by 0 of 1603
 - جين: Umbral Glaive held by 2 of 1562
 - جين: Profane Hydra held by 3 of 1562
-- كايسا: Profane Hydra held by 0 of 1516
-- كايسا: Umbral Glaive held by 0 of 1516
-- كايسا: Stormrazor held by 4 of 1516
-- جينكس: Umbral Glaive held by 1 of 1499
-- جينكس: Profane Hydra held by 1 of 1499
 - مورغانا: Cryptbloom held by 14 of 1492
 - شاكو: Yun Tal Wildarrows held by 12 of 1484
-- سينا: Umbral Glaive held by 4 of 1416
-- سينا: Profane Hydra held by 0 of 1416
+- تيمو: Wit's End held by 10 of 1473
+- تيمو: Phantom Dancer held by 2 of 1473
+- سمولدر: Runaan's Hurricane held by 8 of 1316
 - سمولدر: Yun Tal Wildarrows held by 7 of 1316
 - سيرافين: Riftmaker held by 3 of 1283
-- تويتش: Stormrazor held by 3 of 1277
-- لوشيان: Trinity Force held by 11 of 1227
+- لوشيان: Runaan's Hurricane held by 10 of 1227
 - لوشيان: Yun Tal Wildarrows held by 17 of 1227
-- لوشيان: Profane Hydra held by 1 of 1227
-- فاين: Umbral Glaive held by 13 of 1225
 - تشوغاث: Bloodletter's Curse held by 3 of 1220
 - سيت: Experimental Hexplate held by 7 of 1190
 - فاروس: Yun Tal Wildarrows held by 19 of 1189
 - تام كينش: Protoplasm Harness held by 7 of 1169
 - نيدالي: Malignance held by 1 of 1148
+- إزريال: Runaan's Hurricane held by 1 of 1092
 - إزريال: Umbral Glaive held by 0 of 1092
-- إزريال: Profane Hydra held by 5 of 1092
-- إزريال: Youmuu's Ghostblade held by 1 of 1092
 - د. موندو: Hullbreaker held by 2 of 1069
 - د. موندو: Experimental Hexplate held by 2 of 1069
 - زيد: Umbral Glaive held by 11 of 1063
@@ -38,20 +28,14 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - بايك: Heartsteel held by 12 of 1029
 - غانغ بلانك: Profane Hydra held by 1 of 1010
 - غانغ بلانك: Umbral Glaive held by 6 of 1010
-- كوغ ماو: Trinity Force held by 1 of 969
-- سيفير: Trinity Force held by 5 of 956
-- سيفير: Profane Hydra held by 0 of 956
-- سيفير: Umbral Glaive held by 2 of 956
-- غرايفز: Trinity Force held by 5 of 924
-- غرايفز: Profane Hydra held by 3 of 924
-- غرايفز: Youmuu's Ghostblade held by 12 of 924
-- غرايفز: Edge of Night held by 10 of 924
+- غرايفز: Runaan's Hurricane held by 2 of 924
+- غرايفز: Yun Tal Wildarrows held by 12 of 924
 - فوليبير: Spear of Shojin held by 2 of 899
 - فوليبير: Maw of Malmortius held by 0 of 899
 - فوليبير: Death's Dance held by 15 of 899
-- سميرة: Profane Hydra held by 1 of 881
-- سميرة: Axiom Arc held by 0 of 881
-- سميرة: Stormrazor held by 2 of 881
+- سميرة: Kraken Slayer held by 7 of 881
+- سميرة: Runaan's Hurricane held by 1 of 881
+- سميرة: Hexoptics C44 held by 1 of 881
 - سايون: Sterak's Gage held by 10 of 840
 - سايون: Death's Dance held by 9 of 840
 - أكشان: Profane Hydra held by 0 of 789
@@ -73,12 +57,11 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - كارما: Bloodletter's Curse held by 3 of 724
 - أمومو: Bloodletter's Curse held by 11 of 714
 - فيدل ستيكس: Luden's Echo held by 9 of 714
-- أفيليوس: Trinity Force held by 3 of 701
 - ميليو: Riftmaker held by 2 of 701
 - غارين: Titanic Hydra held by 13 of 691
 - ناسوس: Titanic Hydra held by 8 of 676
 - ناسوس: Sterak's Gage held by 13 of 676
-- درايفن: Trinity Force held by 5 of 671
+- درايفن: Runaan's Hurricane held by 6 of 671
 - نامي: Riftmaker held by 2 of 664
 - نامي: Blackfire Torch held by 19 of 664
 - نونو وويلامب: Bloodletter's Curse held by 0 of 663
@@ -89,7 +72,7 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - سوراكا: Shadowflame held by 8 of 638
 - بانثيون: Profane Hydra held by 8 of 631
 - بانثيون: Umbral Glaive held by 4 of 631
-- كوركي: Guinsoo's Rageblade held by 3 of 627
+- كوركي: Runaan's Hurricane held by 9 of 627
 - كوركي: Yun Tal Wildarrows held by 7 of 627
 - جاكس: Lord Dominik's Regards held by 3 of 624
 - جاكس: Yun Tal Wildarrows held by 1 of 624
@@ -111,9 +94,7 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - سونا: Sunfire Aegis held by 0 of 565
 - سونا: Bloodletter's Curse held by 1 of 565
 - سونا: Riftmaker held by 2 of 565
-- كاليستا: Winter's Approach held by 0 of 551
-- كاليستا: Trinity Force held by 1 of 551
-- كاليستا: Umbral Glaive held by 1 of 551
+- كاليستا: Yun Tal Wildarrows held by 11 of 551
 - رامبل: Cryptbloom held by 4 of 548
 - تالون: Umbral Glaive held by 10 of 546
 - ريناتا غلاسك: Sunfire Aegis held by 1 of 545
@@ -143,7 +124,6 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - إيلاوي: Trinity Force held by 13 of 499
 - إيلاوي: Lord Dominik's Regards held by 6 of 499
 - ترندل: Lord Dominik's Regards held by 4 of 487
-- كوين: Umbral Glaive held by 0 of 480
 - كوين: Profane Hydra held by 6 of 480
 - وارويك: Yun Tal Wildarrows held by 0 of 477
 - وارويك: Guinsoo's Rageblade held by 13 of 477
