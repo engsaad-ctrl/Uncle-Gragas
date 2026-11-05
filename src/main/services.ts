@@ -657,8 +657,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
       const facts = await teamFacts(teams, shop);
       // Katarina and Garen carry no arType, read as mana, but a mana pool of 0.
-      const resource = (championRecord(bin) as unknown as { primaryAbilityResource?: { arType?: number; '{726ee5cd}'?: { baseValue?: number } } })?.primaryAbilityResource;
-      const noMana = (resource?.arType ?? 0) !== 0 || !(resource?.['{726ee5cd}']?.baseValue ?? 0);
+      const resource = (championRecord(bin) as unknown as { primaryAbilityResource?: { arType?: number; arIsShown?: boolean; '{726ee5cd}'?: { baseValue?: number } } })?.primaryAbilityResource;
+      const noMana = (resource?.arType ?? 0) !== 0 || !(resource?.['{726ee5cd}']?.baseValue ?? 0) || resource?.arIsShown === false; // Viego: a hidden pool of 10,000, not mana
       // The owner: a mana item first for mages only; tanks, enchanters and attackers (Kayle, Gwen, Teemo) keep their own first item.
       // Mages who also shield or heal allies count as mages, by the owner's word: Lux, Annie, Orianna, Seraphine, Morgana, Karma, Zilean.
       const mage = !noMana && !fightKit.attacks && (!fightKit.buffsAllies || MAGE_SUPPORTS.has(championId)) && !kit?.traits.includes('frontline');
