@@ -14,7 +14,7 @@ import { placeFlash } from '../lcu/apply.js';
 import type { AugmentEffect, ExperimentalBuild, GameTeams, OverlayData } from '../main/services.js';
 import { adviceNodes, AI_HINT, AI_LOADING, EXPERIMENTAL_TITLE, experimentalHint, WHY_AR } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
-import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, withTooltip, type Describable } from './dom.js';
+import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, stackInput, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
 import { applyRandomTheme } from './theme.js';
 
@@ -112,7 +112,7 @@ async function refreshEngine() {
   const champion = data?.champion;
   if (!champion || (!picked.size && !owned.length) || engineAsked === key) return;
   engineAsked = key;
-  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked], trialScoring(), [...owned], buildStyle), window.lolh.experimentalBuild(champion.id, [...picked])]);
+  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked], trialScoring(), [...owned], buildStyle, stacks), window.lolh.experimentalBuild(champion.id, [...picked])]);
   if (engineKey() !== key) return;
   if (isError(r)) engine = { key, items: [], error: r.error };
   else {
@@ -421,6 +421,7 @@ function adaptedSection(): HTMLElement {
   if (engine.error) return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'missing', `تعذّر حساب البناء: ${engine.error}`));
   const bought = path?.bought ?? 0;
   const styleRow = styleSwitch();
+  const stackRow = stacksField(() => { path = undefined; if (data?.build) renderBuild(data.build); });
   engine.items.forEach(({ item, why }, place) => {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
@@ -433,10 +434,25 @@ function adaptedSection(): HTMLElement {
   const x = engine.experimental;
   // A magic build buys no crit, so the crit line isn't his road there (the owner: Miss Fortune with Vulnerability).
   const lines = openLines(heldParts(), championDamage()).filter((o) => o.held.some((part) => part > 0) && !((buildStyle === 'ap' || buildStyle === 'aphp') && o.line.id === 'crit')).map((o) => el('p', 'hint', `${o.line.name}: ${o.held.length} أجزاء. يفشل إذا: ${o.line.breaks.join('، ')}.`));
-  return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...(styleRow ? [styleRow] : []), el('p', 'hint', 'مسارك: يبقى ما نصحناك به ما دام مناسباً، ونكمل بالغرض التالي.'), ...lines, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
+  return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...(styleRow ? [styleRow] : []), ...(stackRow ? [stackRow] : []), el('p', 'hint', 'مسارك: يبقى ما نصحناك به ما دام مناسباً، ونكمل بالغرض التالي.'), ...lines, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
 }
 
 /** Buttons for his kit's own build and each other style it allows; asks for the styles once per champion and marked cards. */
+/** A field for his stacks when his abilities grow with them: stacks differ from game to game (the owner, 2026-11-06). */
+function stacksField(redraw: () => void): HTMLElement | null {
+  const champion = data?.champion;
+  if (!champion) return null;
+  if (stackBase?.champion !== champion.id) {
+    stackBase = { champion: champion.id, base: null };
+    void window.lolh.stackBase(champion.id).then((x) => {
+      if (isError(x) || stackBase?.champion !== champion.id) return;
+      stackBase = { champion: champion.id, base: x };
+      if (x !== null) redraw();
+    });
+  }
+  if (stackBase.base === null) return null;
+  return stackInput(stackBase.base, stacks, (n) => { stacks = n; redraw(); });
+}
 function styleSwitch(): HTMLElement | null {
   const champion = data?.champion;
   if (!champion) return null;
@@ -510,10 +526,13 @@ const NO_PICKS = 'من تبويب التعزيزات اضغط «اخترته» �
 let ai: { key: string; state: 'loading' | 'done' | 'error'; advice?: Advice; error?: string } | undefined;
 const pickedKey = () => [...picked].sort((a, b) => a - b).join('-');
 /** What the engine's answer depends on: the marks and what he bought. */
-const engineKey = () => `${pickedKey()}|${owned.join('-')}|${buildStyle ?? ''}`;
+const engineKey = () => `${pickedKey()}|${owned.join('-')}|${buildStyle ?? ''}|${stacks ?? ''}`;
 /** Which way to build: his kit's own (undefined), or magic, physical, tank (the owner: Katarina has all three). */
 type Style = 'ap' | 'ad' | 'tank' | 'aphp';
 let buildStyle: Style | undefined;
+/** Stacks the player typed for a champion whose abilities grow with them (Nasus, Smolder…); none: the engine's estimate. */
+let stacks: number | undefined;
+let stackBase: { champion: number; base: number | null } | undefined;
 /** The styles his kit allows, for the champion they were asked for. */
 let styles: { champion: number; key: string; list: Style[] } | undefined;
 const STYLE_LABEL: Record<Style, string> = { ap: 'سحري', aphp: 'سحري مع صحة', ad: 'جسدي', tank: 'تانك' };
@@ -625,7 +644,7 @@ async function load() {
   engine = undefined;
   engineAsked = '';
   buildView = undefined;
-  if (pickedFor !== reply.champion?.id) (picked.clear(), offer.clear(), (owned.length = 0), (path = undefined), (buildStyle = undefined), (pickedFor = reply.champion?.id)); // a new game's champion
+  if (pickedFor !== reply.champion?.id) (picked.clear(), offer.clear(), (owned.length = 0), (path = undefined), (buildStyle = undefined), (stacks = undefined), (pickedFor = reply.champion?.id)); // a new game's champion
   // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.
   let restored = false;
   if (!picked.size && reply.champion && reply.mode === 'mayhem' && restoredFor !== reply.champion.id) {

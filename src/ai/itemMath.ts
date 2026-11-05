@@ -129,10 +129,10 @@ export function searchSet(o: { start: number[]; candidates: number[]; slots: num
   return best;
 }
 
-export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean }): MathStep[] {
+export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number }): MathStep[] {
   // The game's own limits on what can be held together, and those its file doesn't name.
   const clashes = (id: number, held: number[]) => ONE_OF.some((g) => g.includes(id % 10000) && held.some((x) => x !== id && g.includes(x % 10000))) || (o.shop[id]?.limits ?? []).some((g) => held.some((x) => x !== id && o.shop[x]?.limits?.includes(g)));
-  const run = (list: number[], level: number) => fight({ bin: o.bin, shop: o.shop, kit: o.kit, cards: o.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level });
+  const run = (list: number[], level: number) => fight({ bin: o.bin, shop: o.shop, kit: o.kit, cards: o.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level, stacks: o.stacks });
   const allowed = (i: PoolItem, held: number[]) => !held.includes(i.id) && !clashes(i.id, held) && !!o.shop[i.id] && !o.offKind?.(i, held);
   const gain = (held: number[], id: number, level: number) => { const v = fightValue(run(held, level), o.place); return v > 0 ? fightValue(run([...held, id], level), o.place) / v - 1 : 0; };
 

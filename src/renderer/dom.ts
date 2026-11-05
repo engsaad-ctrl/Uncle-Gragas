@@ -41,7 +41,10 @@ declare global {
       /** Every augment's effect on its team's win chance, from the team model. */
       augmentEffects(): Promise<Reply<AugmentEffect[]>>;
       /** The build without AI for a champion and the augments taken, each item with why it is in. */
-      engineBuild(championId: number, augmentIds: number[], followLines?: boolean, owned?: number[], style?: 'ap' | 'ad' | 'tank' | 'aphp'): Promise<Reply<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>;
+      engineBuild(championId: number, augmentIds: number[], followLines?: boolean, owned?: number[], style?: 'ap' | 'ad' | 'tank' | 'aphp', stacks?: number):
+      Promise<Reply<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>;
+      /** His stacks by level 15 when his abilities grow with stacks, or null. */
+      stackBase(championId: number): Promise<Reply<number | null>>;
       /** The other ways this champion's kit can be built (magic, physical, tank), besides his kit's own. */
       buildStyles(championId: number, augmentIds?: number[]): Promise<Reply<('ap' | 'ad' | 'tank' | 'aphp')[]>>;
       cardValues(championId: number, augmentIds: number[], itemIds: number[]): Promise<Reply<{ id: number; damage: number; health: number; value: number; certain: boolean; missing: string | null }[]>>;
@@ -385,3 +388,20 @@ document.addEventListener('pointerout', (e) => {
 });
 addEventListener('scroll', hideTip, true);
 addEventListener('hashchange', hideTip);
+
+/** The stacks field: empty means the engine's estimate (shown as the placeholder); a number rebuilds on it. */
+export function stackInput(base: number, value: number | undefined, change: (n: number | undefined) => void): HTMLElement {
+  const box = el('label', 'stack-field');
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = '1';
+  input.placeholder = String(base);
+  if (value !== undefined) input.value = String(value);
+  input.addEventListener('change', () => {
+    const n = input.value.trim() === '' ? undefined : Math.max(0, Math.round(Number(input.value)));
+    change(n !== undefined && Number.isFinite(n) ? n : undefined);
+  });
+  box.append(el('span', '', 'تراكماتك الآن'), input, el('small', 'hint', `فارغ: تقدير ${base} عند المستوى 15`));
+  return box;
+}

@@ -7,7 +7,7 @@ import { pickPanel } from './pickPanel.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
-import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stagger, withTooltip, type Describable } from './dom.js';
+import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stackInput, stagger, withTooltip, type Describable } from './dom.js';
 import { FIT_POINTS, fitOf, gradesFor, outsidePoints, playedOnly } from './fit.js';
 import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
@@ -98,6 +98,10 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
   const engineTitle = el('h3', 'sub-title', 'البناء المحسوب لتعزيزاتك');
   engineTitle.hidden = true;
   let engineRun = 0;
+  // His stacks when his abilities grow with them (Nasus, Smolder…): empty is the engine's estimate.
+  let stacks: number | undefined;
+  const stackBox = el('div');
+  void window.lolh.stackBase(p.champion.id).then((x) => { if (!isError(x) && x !== null) stackBox.replaceChildren(stackInput(x, stacks, (n) => { stacks = n; void refreshEngine(); })); });
   const picked = new Map<number, AugmentText>();
   // The site's list until our own ranking loads.
   let all: AugmentText[] = p.augments;
@@ -115,7 +119,7 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
     const id = ++engineRun;
     engineTitle.hidden = !picked.size;
     if (!picked.size) return void engineEl.replaceChildren();
-    const [r, x] = await Promise.all([window.lolh.engineBuild(p.champion.id, [...picked.keys()]), window.lolh.experimentalBuild(p.champion.id, [...picked.keys()])]);
+    const [r, x] = await Promise.all([window.lolh.engineBuild(p.champion.id, [...picked.keys()], undefined, undefined, undefined, stacks), window.lolh.experimentalBuild(p.champion.id, [...picked.keys()])]);
     if (id !== engineRun || isError(r)) return;
     const experimental = !isError(x) && x;
     const row2 = el('div', 'icons');
@@ -161,7 +165,7 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
     drawList();
   });
   draw();
-  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, engineTitle, engineEl, box);
+  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, engineTitle, stackBox, engineEl, box);
   return s;
 }
 

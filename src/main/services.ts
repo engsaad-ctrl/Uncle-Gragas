@@ -4,7 +4,7 @@ import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { championRecord, compareBuilds } from '../ai/calculator.js';
-import { cardGain, fight, needHolds } from '../ai/cardMath.js';
+import { cardGain, fight, needHolds, STACKS_AT_15 } from '../ai/cardMath.js';
 import { CARD_NUMBERS, ITEM_NUMBERS, PASSIVE_NUMBERS } from '../ai/cardMathData.js';
 import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
@@ -634,8 +634,13 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return [...(magic ? ['ap' as const] : []), ...(magic && kit?.traits.includes('frontline') ? ['aphp' as const] : []), ...(ad >= 0.5 * Math.max(ap, ad) && ad > 0 ? ['ad' as const] : []), 'tank'];
   }
 
-  function mathBuild(championId: number, augmentIds: number[], owned: number[] = [], teams?: Teams, style?: BuildStyle) {
-    const key = `${style ?? ''}|${championId}|${[...augmentIds].sort((a, b) => a - b).join()}|${owned.join()}|${teams?.allies.join() ?? ''}|${teams?.enemies.join() ?? ''}`;
+  /** His stacks by level 15 when his abilities grow with stacks (the engine's estimate), or null. */
+  async function stackBase(championId: number): Promise<number | null> {
+    const alias = (await champions()).find((c) => c.id === championId)?.alias;
+    return alias ? STACKS_AT_15[alias] ?? null : null;
+  }
+  function mathBuild(championId: number, augmentIds: number[], owned: number[] = [], teams?: Teams, style?: BuildStyle, stacks?: number) {
+    const key = `${stacks ?? ''}|${style ?? ''}|${championId}|${[...augmentIds].sort((a, b) => a - b).join()}|${owned.join()}|${teams?.allies.join() ?? ''}|${teams?.enemies.join() ?? ''}`;
     const known = builds.get(key);
     if (known) return known;
     const work = (async () => {
@@ -671,7 +676,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const melee = ((championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined)?.attackRangeModifiable?.baseValue ?? 0) < 300;
       const rangedOnly = (id: number) => (ITEM_NUMBERS.find((x) => x.id === id % 10000)?.ops ?? []).some((x) => (x as { op: string }).op === 'bolts'); // cast: the bolts op may not be in CardOp yet
       const tankOnly = (i?: { id: number; group?: string; boots?: boolean }) => !!i && !i.boots && i.group !== 'boots' && itemDamage(i.id) === 'none';
-      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies, style }), offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required, manaFirst: mage && (style === 'ap' || (!style && !switched && damageKind === 'ap')) });
+      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies, style }), offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required, manaFirst: mage && (style === 'ap' || (!style && !switched && damageKind === 'ap')), stacks });
       const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
       return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, why: s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean) }] : []; });
     })();
@@ -737,5 +742,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { side: diff > 0.15 ? 'stronger' : diff < -0.15 ? 'weaker' : 'even', magic: { mine: magic(mine), enemy: magic(enemy) } };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, mathBuild, buildStyles, cardValues, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, mathBuild, stackBase, buildStyles, cardValues, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
 }

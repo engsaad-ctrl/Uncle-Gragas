@@ -199,10 +199,11 @@ const teamsNow = () => {
   const ids = (list: GamePlayer[]) => list.map((p) => p.championId).filter((id) => id > 0 && id !== lastPick?.championId);
   return t ? { allies: ids(t.mine), enemies: ids(t.enemy) } : undefined;
 };
-ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown, style: unknown) =>
+ipcMain.handle('build:stackBase', (_e, championId: unknown) => reply(() => services.stackBase(parseIds([championId])[0]!)));
+ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown, style: unknown, stacks: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
-    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined);
+    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
   }),
 );
 ipcMain.handle('build:styles', (_e, championId: unknown, augmentIds: unknown) =>

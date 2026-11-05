@@ -136,7 +136,7 @@ const STAT_ADD: Record<string, (s: BuildStats, v: number) => void> = {
 const statValue = (s: BuildStats, k: string) => ({ move_speed: s.moveSpeed, ap: s.ap, ad: s.ad, bonus_ad: s.bonusAd, hp: s.hp, bonus_hp: s.bonusHp, armor: s.armor, mr: s.mr, attack_speed: s.bonusAttackSpeed, crit: s.crit, haste: s.haste, mana: s.mana }[k] ?? NaN);
 
 /** One fight, second by second, with these items and cards at this level, so anything that feeds itself shows up. Cards apply in order: flat stats, then conversions, then multipliers; then the fight runs. */
-export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam; ampStack?: 'add'; mana?: number; cooldowns?: Record<string, number> }): FightResult {
+export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam; ampStack?: 'add'; mana?: number; cooldowns?: Record<string, number>; stacks?: number }): FightResult {
   const record = championRecord(o.bin);
   if (!record) throw new Error('no character record');
   // Tear items turn into their finished form; in Mayhem two augment rounds after purchase (their mode records' RoundCount 2): an assumption that a build has them by level 11.
@@ -183,7 +183,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // Stacks held by this level, read from 23 screen windows with Tank Engine (health order: Heartsteel, then the multiplier, which one reading of Mundo forces): 0.6 a level when deaths take most of them, 2.2 a level of takedowns when they don't. Other stacks are a guess.
   // Stacks from every instance of ability damage grow fast with the game (Phenomenal Evil); fitted to screens.
   const stackName = (record as { mCharacterName?: string } | undefined)?.mCharacterName ?? '';
-  const stacks = STACKS_AT_15[stackName] === undefined ? undefined : STACKS_AT_15[stackName]! * (o.level / 15);
+  // The stacks the player typed (they differ from game to game), else the estimate for this level.
+  const stacks = STACKS_AT_15[stackName] === undefined ? undefined : o.stacks ?? STACKS_AT_15[stackName]! * (o.level / 15);
   // His own passive's stacks (Veigar's AP, Senna's and Thresh's souls) are his count above, not the generic one.
   // One count a stat: Veigar's AP from hits and from takedowns are both in his count, so his second AP source adds nothing more.
   const ownPassive = new Set(o.passive ?? []), firstOfStat = new Map<string, CardOp>();
