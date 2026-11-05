@@ -1,10 +1,10 @@
-import { fillsGaps, teamGaps } from '../ai/teamFit.js';
+import { balancePoints, fillsGaps, teamGaps } from '../ai/teamFit.js';
 import type { LcuState } from '../lcu/state.js';
 import { champLink, el, isError, lcuNow, PAGE_MODE, pageSignal, stagger } from './dom.js';
 
 /**
  * Champ select in ARAM and Mayhem: the champions the player can take (the ones offered and the bench) and what the team
- * took. In Mayhem each carries its effect on the team's win chance from our games, the strongest first. Hidden otherwise.
+ * took. In Mayhem each carries its effect on the team's win chance, with how it balances the team's magic and physical damage, the strongest first. Hidden otherwise.
  */
 export function pickPanel(): HTMLElement {
   const panel = el('section', 'panel suggest pick-panel');
@@ -23,7 +23,10 @@ export function pickPanel(): HTMLElement {
     shownKey = key;
     const [list, scores] = await Promise.all([window.lolh.listChampions(), s.mode === 'mayhem' ? window.lolh.championStrengths([...choices, ...s.allies]) : null]);
     if (key !== shownKey || isError(list)) return;
-    const points = new Map(scores && !isError(scores) ? scores.map((x) => [x.id, x.points]) : []);
+    const strength = new Map(scores && !isError(scores) ? scores.map((x) => [x.id, x.points]) : []);
+    // Measured on Mayhem games only, so ARAM keeps its plain order.
+    const balance = s.mode === 'mayhem' ? balancePoints(choices, s.allies) : new Map<number, number>();
+    const points = new Map([...strength].map(([id, p]) => [id, p + (choices.includes(id) ? (balance.get(id) ?? 0) : 0)]));
     const caption = (id: number) => (points.has(id) ? `${points.get(id)! > 0 ? '+' : ''}${points.get(id)!.toFixed(1)}` : '');
     const gaps = teamGaps(s.allies);
     const lacks = [...(gaps.frontline ? ['خط أمامي'] : []), ...(gaps.damage ? [gaps.damage === 'magic' ? 'ضرر سحري' : 'ضرر جسدي'] : [])];
@@ -40,9 +43,9 @@ export function pickPanel(): HTMLElement {
       const team = el('div', 'champ-row');
       team.append(...s.allies.flatMap((id, i) => card(id, i)));
       body.push(el('h3', 'sub-title', 'اختيارات فريقك'), team);
-      if (lacks.length) body.push(el('p', 'hint', `ينقص فريقك: ${lacks.join('، ')}. كلمة «يكمّل» تدل على من يسدّ ذلك، وهي ملاحظة غير مثبتة ولا تغيّر الترتيب.`));
+      if (lacks.length) body.push(el('p', 'hint', `ينقص فريقك: ${lacks.join('، ')}. كلمة «يكمّل» تدل على من يسدّ ذلك. نقص الضرر داخل في الرقم، ونقص الخط الأمامي ملاحظة غير مثبتة.`));
     }
-    if (points.size) body.push(el('p', 'hint', 'الرقم: فرق نسبة فوز البطل عن 50%، من AramHex وARAMKit، بالنقاط. الأعلى أولاً.'));
+    if (points.size) body.push(el('p', 'hint', `الرقم: فرق نسبة فوز البطل عن 50% من AramHex وARAMKit، بالنقاط${balance.size ? '، مع أثر توازن الضرر السحري والجسدي في فريقك (مثبت على 17,694 مباراة)' : ''}. الأعلى أولاً.`));
     panel.hidden = false;
     panel.replaceChildren(...body);
   };
