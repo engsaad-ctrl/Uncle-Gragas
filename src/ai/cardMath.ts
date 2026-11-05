@@ -85,6 +85,8 @@ export interface FightResult {
   perCast: Record<string, number>;
   stats: Pick<BuildStats, 'ad' | 'ap' | 'hp' | 'armor' | 'mr' | 'attackSpeed' | 'crit' | 'haste'>;
   notModelled: string[];
+  /** Instances of ability damage on champions in this fight: each hit of a cast, and a tick every half second of a burn an ability or its item started. */
+  abilityInstances: number;
   /** The next fight, started with the mana this one left; this same fight when that mana covers it. */
   again?: () => FightResult;
 }
@@ -136,7 +138,7 @@ const STAT_ADD: Record<string, (s: BuildStats, v: number) => void> = {
 const statValue = (s: BuildStats, k: string) => ({ move_speed: s.moveSpeed, ap: s.ap, ad: s.ad, bonus_ad: s.bonusAd, hp: s.hp, bonus_hp: s.bonusHp, armor: s.armor, mr: s.mr, attack_speed: s.bonusAttackSpeed, crit: s.crit, haste: s.haste, mana: s.mana }[k] ?? NaN);
 
 /** One fight, second by second, with these items and cards at this level, so anything that feeds itself shows up. Cards apply in order: flat stats, then conversions, then multipliers; then the fight runs. */
-export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam; ampStack?: 'add'; mana?: number; cooldowns?: Record<string, number>; stacks?: number }): FightResult {
+export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam; ampStack?: 'add'; mana?: number; cooldowns?: Record<string, number>; stacks?: number; noStackScale?: boolean }): FightResult {
   const record = championRecord(o.bin);
   if (!record) throw new Error('no character record');
   // Tear items turn into their finished form; in Mayhem two augment rounds after purchase (their mode records' RoundCount 2): an assumption that a build has them by level 11.
@@ -189,7 +191,15 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // One count a stat: Veigar's AP from hits and from takedowns are both in his count, so his second AP source adds nothing more.
   const ownPassive = new Set(o.passive ?? []), firstOfStat = new Map<string, CardOp>();
   for (const x of o.passive ?? []) if (x.op === 'per_stack' && !firstOfStat.has(x.stat)) firstOfStat.set(x.stat, x);
-  const stacksOf = (x: Extract<CardOp, { op: 'per_stack' }>) => { const n = stacks !== undefined && ownPassive.has(x) ? (firstOfStat.get(x.stat) === x ? stacks : 0) : x.per === 'takedown' || x.per === 'kill' ? (x.lost_on_death ? 0.6 : 2.2) * o.level : x.per === 'every_ability_damage' ? FIGHT.everyDamageStacks.at18 * (o.level / 18) ** FIGHT.everyDamageStacks.power : FIGHT.stacksByLevel(o.level); return x.cap ? Math.min(x.cap, n) : n; };
+  // Stacks from every instance of ability damage (Phenomenal Evil) follow the fitted curve for a plain build, scaled by how many instances this build
+  // makes against the same kit with no items: a burn (Liandry's) or haste (Eureka) gives more (Jayell's Karthus, 181 stacks by 10:45, knowledge/video-cq0NIx0UA-0.md).
+  let scaleMemo: number | undefined;
+  const instanceScale = () => {
+    if (o.noStackScale) return 1;
+    if (scaleMemo === undefined) { const mine = fight({ ...o, noStackScale: true }).abilityInstances, plain = fight({ ...o, items: [], noStackScale: true }).abilityInstances; scaleMemo = plain > 0 ? mine / plain : 1; }
+    return scaleMemo;
+  };
+  const stacksOf = (x: Extract<CardOp, { op: 'per_stack' }>) => { const n = stacks !== undefined && ownPassive.has(x) ? (firstOfStat.get(x.stat) === x ? stacks : 0) : x.per === 'takedown' || x.per === 'kill' ? (x.lost_on_death ? 0.6 : 2.2) * o.level : x.per === 'every_ability_damage' ? FIGHT.everyDamageStacks.at18 * (o.level / 18) ** FIGHT.everyDamageStacks.power * instanceScale() : FIGHT.stacksByLevel(o.level); return x.cap ? Math.min(x.cap, n) : n; };
   const add = (t: BuildStats, stat: string, v: number) => { STAT_ADD[stat]?.(t, v); };
   for (const x of ops) if (x.op === 'add') add(s, x.stat, scaled(x.value, o.level));
   for (const x of ops) if (x.op === 'per_stack' && x.mode === 'add') add(s, x.stat, x.value * stacksOf(x));
@@ -295,7 +305,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const dots: { op: Extract<CardOp, { op: 'dot' }>; until: number; stacks: number; fromAbility: boolean }[] = [];
   const lastProc = new Map<CardOp, number>();
   const kitHeals = ops.some((x) => (x.op === 'heal' || x.op === 'shield') && x.kit);
-  let armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = o.kit.attacks || o.kit.damage !== 'magic' ? 0 : Infinity, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
+  let abilityInstances = 0, armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = o.kit.attacks || o.kit.damage !== 'magic' ? 0 : Infinity, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
   const casts: Record<string, number> = {}, perCast: Record<string, number> = {};
   const kills = [...FIGHT.killTimes];
   const damageBySecond: number[] = [];
@@ -400,6 +410,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const hit = one * amp('abilities', t) * amp(scope, t) * overTime * (1 + c.crit * (critExtra + (sl.crits ? c.critDamage - 1 : 0))); // shortcut: a crit raises the whole hit, not only its AD part
         perCast[sl.key] = Math.round(hit);
         casts[sl.key] = (casts[sl.key] ?? 0) + 1;
+        if (one > 0) abilityInstances += sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1;
         const abilityTaken = o.kit.damage === 'physical' ? taken.physical : o.kit.damage === 'magic' ? taken.magic : (taken.physical + taken.magic) / 2;
         mana -= sl.cost;
         if (sl.toggle) {
@@ -435,6 +446,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       const each = formula(d.op.per_second, c, o.level, targetHp) * dt * d.stacks * (taken[d.op.type as keyof typeof taken] ?? taken.adaptive) * (1 + c.crit * dotCrit);
       if (d.fromAbility) fromAbilities += each;
       else fromCards += each;
+      if (each > 0 && (d.fromAbility || d.op.trigger === 'ability_hit')) abilityInstances += (dt / 0.5) * d.stacks;
     }
     for (const b of allyBuffs) if (t < b.until) fromAllies += b.perSecond * dt;
     if (t + dt >= damageBySecond.length + 1) damageBySecond.push(fromAbilities + fromAttacks + fromCards + fromAllies);
@@ -474,6 +486,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     perCast,
     stats: { ad: s.ad, ap: s.ap, hp: s.hp, armor: s.armor, mr: s.mr, attackSpeed: Math.min(ATTACK_SPEED_CAP, as0 + asRatio * s.bonusAttackSpeed), crit: s.crit, haste: s.haste },
     notModelled,
+    abilityInstances,
   };
   return result;
 }
