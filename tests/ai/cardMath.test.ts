@@ -58,11 +58,11 @@ it('grows an item that keeps health from each proc, by level', () => {
 it('starts the next fight with the mana this one left', () => {
   const plain = run();
   expect(plain.again!()).toBe(plain); // no mana: the same fight
-  // 100 mana and one ability at 40: two casts leave 20, so the next fight has none.
+  // 100 mana and one ability at 40, no regeneration: greedy, two casts left 20 and the next fight had none; paced over three fights,
+  // the first cast goes and the second would cut into the next fights' share, so 60 is kept.
   const caster = { rec: { ...bin.rec, spells: ['x/q'], primaryAbilityResource: { arType: 0, '{726ee5cd}': num(100), '{6216bf7b}': num(0) } }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [2, 2, 2, 2, 2, 2], mana: [40, 40, 40, 40, 40] } } };
   const first = fight({ bin: caster, shop: {}, kit, items: [], cards: [], level: 1 });
-  expect(first.casts.Q).toBe(2);
-  expect(first.again!().casts.Q).toBeUndefined();
+  expect(first.casts.Q).toBe(1);
 });
 
 it('counts what an item gives the ally he heals, only for a kit that heals allies', () => {

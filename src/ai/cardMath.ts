@@ -249,7 +249,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const startMana = Math.min(fullMana, o.mana ?? Infinity);
   let mana = startMana;
   // A player paces his mana over the fights in a row instead of emptying it in the first (the owner, 2026-11-06): basic abilities keep back a floor,
-  // so each fight spends an even share of what he starts with and what comes back between fights; the ultimate is always cast.
+  // so each fight spends an even share of what he starts with and what comes back between fights; the first cast of a fight and the ultimate always go.
   // Without it, haste only spent mana sooner: Karthus with Nashor's dealt 4,325, 4,113, then 832 in the third fight.
   const manaFloor = Number.isFinite(fullMana) ? startMana - (startMana + (FIGHT.manaFights - 1) * manaRegen * FIGHT.gapSeconds) / FIGHT.manaFights : -Infinity;
 
@@ -394,7 +394,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (t >= nextCast) {
       const haste = (scope: string) => c.haste + ops.reduce((n, x) => (x.op === 'add' && x.stat === `${scope}_haste` ? n + scaled(x.value, o.level) : n), 0);
       for (const sl of slots) {
-        if (t < sl.ready || sl.on || mana < sl.cost || (sl.key !== 'R' && mana - sl.cost < manaFloor)) continue;
+        if (t < sl.ready || sl.on || mana < sl.cost || (sl.key !== 'R' && mana < startMana && mana - sl.cost < manaFloor)) continue;
         const scope = sl.key === 'R' ? 'ult' : 'basic';
         const read = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef, stacks });
         // A passive that adds damage to this ability per stack (Smolder: Passive_QDamageIncrease) adds it to the cast.
