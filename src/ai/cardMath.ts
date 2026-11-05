@@ -418,7 +418,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         // The file's flag for an ability that hits as an attack (Ezreal's Q): on-hit effects, and the spellblade an earlier ability armed.
         const asAttack = (sl.spell as { mApplyAttackEffect?: boolean }).mApplyAttackEffect === true;
         if (one > 0 && asAttack && armed) { armed = false; fire('next_attack', t, c); }
-        if (one > 0) { fire('ability_hit', t, c); if (asAttack || ops.some((x) => x.op === 'abilities_on_hit')) fire('on_hit', t, c); }
+        // Abilities that apply on-hit (Ethereal Weapon) also set off spellblade, its own cooldown kept: the owner's Karthus with Lich Bane (2026-11-06), seen on screen.
+        const etherealHit = ops.some((x) => x.op === 'abilities_on_hit');
+        if (one > 0) { fire('ability_hit', t, c); if (asAttack || etherealHit) fire('on_hit', t, c); if (etherealHit && !asAttack) fire('next_attack', t, c); }
         armed = true;
         fire('ability_cast', t, c);
         fire(`cast_${sl.key}`, t, c); // one ability's own effects (a kit's self healing, knowledge/champion-heal-*.jsonl)

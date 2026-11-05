@@ -48,6 +48,16 @@ describe('the fight, as games showed it', () => {
     const r = run([{ op: 'add', stat: 'ap', value: 300 }, { op: 'add', stat: 'hp', value: 10000 }, { op: 'proc', trigger: 'attack', internal_cooldown: 100, damage: { ap_per_bonus_hp: 0.000125 }, type: 'true' }]);
     expect(r.fromCards).toBeCloseTo(300 * 10000 * 0.000125); // 1.25 x AP = 375
   });
+  it('sets off spellblade on ability hits when abilities apply on-hit (Ethereal Weapon), its cooldown kept', () => {
+    const spell = { __type: 'SpellObject', mSpell: { mClientData: {}, cooldownTime: [1, 1, 1, 1, 1, 1, 1], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ mNumber: 10, __type: 'NumberCalculationPart' }], __type: 'GameCalculation' } } } };
+    const caster = { ...binOf(), rec: { ...binOf().rec, spells: ['q'] }, q: spell };
+    const blade: CardOp = { op: 'proc', trigger: 'next_attack', internal_cooldown: 1.5, damage: { flat: 100 }, type: 'true' };
+    const mage = { damage: 'magic' as const, attacks: false };
+    expect(run([blade], { bin: caster, kit: mage }).fromCards).toBe(0); // no attacks, no spellblade
+    const r = run([blade, { op: 'abilities_on_hit' }], { bin: caster, kit: mage });
+    expect(r.fromCards).toBeGreaterThan(0);
+    expect(r.fromCards).toBeLessThanOrEqual(100 * Math.ceil(FIGHT.seconds / 1.5)); // no faster than its cooldown
+  });
   it('reads a ratio on bonus armor apart from total armor', () => {
     const r = run([{ op: 'add', stat: 'armor', value: 100 }, { op: 'proc', trigger: 'attack', internal_cooldown: 100, damage: { bonus_armor: 1 }, type: 'true' }]);
     expect(r.fromCards).toBeCloseTo(100);
