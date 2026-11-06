@@ -138,7 +138,8 @@ export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number
 
   // The set: what adds most to the fight at the build's full size.
   const set = [...o.owned];
-  for (const id of o.required) if (set.length < SLOTS && !set.includes(id) && !clashes(id, set) && o.shop[id]) set.push(id);
+  // What a card asks for passes the one-of limits among themselves: Ultra Hydra's quest is to hold all three Hydras, which the shop otherwise allows one at a time.
+  for (const id of o.required) if (set.length < SLOTS && !set.includes(id) && !clashes(id, set.filter((x) => !o.required.includes(x))) && o.shop[id]) set.push(id);
   const isBoots = (id: number) => o.pool.find((p) => p.id === id)?.boots;
   // The owner's rule: a mage starts with a mana item (Luden's, Blackfire Torch), as his mana runs out fast without one; which one, by the full build.
   const mana = (id: number) => (o.shop[id]?.DataValues?.find((d) => d.name === 'FlatMPPoolMod')?.values?.[0] ?? 0) > 0;

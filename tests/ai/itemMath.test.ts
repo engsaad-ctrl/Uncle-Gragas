@@ -123,6 +123,12 @@ describe('next items by arithmetic', () => {
   it('brings an item a held card needs', () => {
     expect(mathBuild({ ...base, required: [2] })[0]).toMatchObject({ id: 2, reason: 'required' });
   });
+  it('lets a card bring items the shop holds one at a time (Ultra Hydra\'s three Hydras)', () => {
+    const hydra = (ad: number) => ({ ...item({ FlatPhysicalDamageMod: ad }), limits: ['hydra'] }) as unknown as GameItem;
+    const hydras = { ...shop, 1: hydra(100), 2: hydra(20) };
+    expect(mathBuild({ ...base, shop: hydras, required: [1, 2] }).filter((s) => s.reason === 'required').map((s) => s.id)).toEqual([1, 2]);
+    expect(mathBuild({ ...base, shop: hydras }).filter((s) => s.id === 1 || s.id === 2)).toHaveLength(1); // without the card, one Hydra
+  });
   it('counts gold in the order, not the choice: slots are the limit', () => {
     const cheap = [...pool, { id: 5, gold: 1000, boots: false }];
     const b = mathBuild({ ...base, pool: cheap, shop: { ...shop, 5: item({ FlatPhysicalDamageMod: 100 }) } });

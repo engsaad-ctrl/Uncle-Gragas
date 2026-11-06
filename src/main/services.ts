@@ -4,7 +4,7 @@ import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { championRecord, compareBuilds } from '../ai/calculator.js';
-import { cardGain, fight, needHolds, STACKS_AT_15 } from '../ai/cardMath.js';
+import { cardGain, fight, needHolds, questItems, STACKS_AT_15 } from '../ai/cardMath.js';
 import { CARD_NUMBERS, ITEM_NUMBERS, PASSIVE_NUMBERS } from '../ai/cardMathData.js';
 import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
@@ -658,7 +658,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const cards = cardsOf(all.augments, augmentIds);
       // An augment named "Upgrade X" works only through item X (Upgrade Collector, Hubris, Ravenous Hydra, Sundered Sky, Zhonya's): it asks for that item, whether or not its card names it.
       const upgraded = all.augments.filter((a) => augmentIds.some((x) => a.ids.includes(x))).flatMap((a) => { const name = /^Upgrade (.+)$/.exec(a.enName)?.[1]; const item = name ? sold.find((i) => i.enName === name || i.enName === `The ${name}` || i.enName.startsWith(`${name} `)) : undefined; return item ? [item.id] : []; });
-      const required = [...new Set([...cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []), ...upgraded])];
+      // A quest card that asks for items (Ultra Hydra, Wooglet's Witchcap) gets them, since its reward counts only once they're all held.
+      const quests = cards.filter((c) => c.ops.some((x) => x.after_quest)).flatMap((c) => questItems(c.id)).flatMap((id) => sold.find((i) => i.id % 10000 === id)?.id ?? []);
+      const required = [...new Set([...cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []), ...upgraded, ...quests])];
       const damageKind = kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed';
       const switched = cards.some((c) => switchesDamage([c.id]));
       // A held card that adds damage to his attacks (Marksmage) makes a non-attacker fight with attacks too: the owner's Gragas with Marksmage, Lich Bane and Dusk and Dawn (2026-11-05).

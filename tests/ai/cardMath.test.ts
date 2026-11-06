@@ -89,6 +89,12 @@ it('leaves out a stat that comes only at low health', () => {
   const nearDeath = card('bloodmail', [{ op: 'mult', stat: 'ad', factor: 1.12, needs: 'full value only at or below 30% remaining Health' } as CardOp]);
   expect(run([nearDeath]).fromAttacks).toBeCloseTo(run().fromAttacks);
 });
+it('counts a quest reward only once all its quest items are held', () => {
+  const ultra: CardNumbers = { id: 2141, name: 'Ultra Hydra', status: 'partial', ops: [{ op: 'add', stat: 'ad', value: 100, after_quest: true }] };
+  const at = (items: number[]) => fight({ bin, shop: {}, kit, items, cards: [ultra], level: 1 }).fromAttacks;
+  expect(at([3074, 6698])).toBeCloseTo(run().fromAttacks); // two of the three Hydras: no reward
+  expect(at([3074, 6698, 3748]) / run().fromAttacks).toBeCloseTo(2);
+});
 it('starts the next fight with the cooldowns this one left', () => {
   const ult = { rec: { ...bin.rec, spells: ['', '', '', 'x/r'] }, 'x/r': { __type: 'SpellObject', mSpell: { cooldownTime: [90, 90, 90, 90] } } };
   const next = (cards: CardNumbers[]) => { FIGHT.carryCooldowns = true; try { return fight({ bin: ult, shop: {}, kit, items: [], cards, level: 1 }).again!().casts.R; } finally { FIGHT.carryCooldowns = false; } };

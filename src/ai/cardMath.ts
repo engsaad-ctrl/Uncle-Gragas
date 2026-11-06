@@ -7,6 +7,10 @@ import type { GameItem } from '../texts/gameData.js';
 import { calculationsAt, type SpellData } from '../texts/spellValues.js';
 import { buildStats, championRecord, statReader, type BuildStats } from './calculator.js';
 import { SPELL_HITS } from './cardMathData.js';
+import { AUGMENT_MECHANICS } from './mechanicsData.js';
+
+/** The items a quest card asks to be held, read from its text (mechanicsData needs); empty for quests counted in takedowns or hits. */
+export const questItems = (cardId: number): number[] => (AUGMENT_MECHANICS.find((m) => m.id === cardId)?.needs ?? []).filter((n): n is number => typeof n === 'number');
 
 type Amount = number | { min: number; max: number };
 export interface DamageFormula { flat?: Amount; mana?: number; ap?: number; ad?: number; bonus_ad?: number; hp?: number; bonus_hp?: number; armor?: number; mr?: number; bonus_armor?: number; bonus_mr?: number; target_max_hp?: number; target_missing_hp?: number; target_current_hp?: number; /** AP times bonus health: a ratio on AP that grows with bonus health (Tahm Kench's passive, 1.25% AP per 100 bonus health). */ ap_per_bonus_hp?: number }
@@ -189,7 +193,11 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // An item's effect marked for the other attack type doesn't count, nor a button's buff; a button's damage is pressed when ready.
   // A stat that comes only near death (Overlord's Bloodmail: 12% AD at or below 30% health) isn't held through the fight.
   const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!) && !((x.op === 'mult' || x.op === 'add') && /below \d+% remaining health/i.test(n)); };
-  const ops = [...(o.passive ?? []), ...o.cards.flatMap((c) => c.ops).filter(applies), ...held.flatMap((id) => o.itemOps?.[id % 10000] ?? []).filter(applies), ...fromFile].filter((x) => !x.after_quest);
+  // A quest card's reward counts once its quest items are all held (Ultra Hydra: the three Hydras; Wooglet's Witchcap: Rabadon's and Zhonya's). Quests counted in takedowns or hits never complete here.
+  // shortcut: the reward is added on top of the quest items, not in their place, and frees no slot; model the swap if a quest build looks a slot short.
+  const questDone = (c: CardNumbers) => { const need = questItems(c.id); return need.length > 0 && need.every((id) => held.some((h) => h % 10000 === id)); };
+  const noQuest = (x: CardOp) => !x.after_quest;
+  const ops = [...(o.passive ?? []).filter(noQuest), ...o.cards.flatMap((c) => c.ops.filter((x) => noQuest(x) || questDone(c))).filter(applies), ...held.flatMap((id) => o.itemOps?.[id % 10000] ?? []).filter(applies).filter(noQuest), ...fromFile.filter(noQuest)];
   const notModelled = o.cards.flatMap((c) => (c.not_modelled ? [`${c.name}: ${c.not_modelled}`] : []));
   // Stacks held by this level, read from 23 screen windows with Tank Engine (health order: Heartsteel, then the multiplier, which one reading of Mundo forces): 0.6 a level when deaths take most of them, 2.2 a level of takedowns when they don't. Other stacks are a guess.
   // Stacks from every instance of ability damage grow fast with the game (Phenomenal Evil); fitted to screens.
