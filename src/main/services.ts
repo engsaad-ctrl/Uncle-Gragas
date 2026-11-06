@@ -655,7 +655,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const sold = list.list.filter((i) => (i.group === 'legendary' || (i.group === 'boots' && i.gold > PLAIN_BOOTS_GOLD)) && i.html && Math.floor(i.id / 10000) !== 77);
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
       const cards = cardsOf(all.augments, augmentIds);
-      const required = [...new Set(cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []))];
+      // An augment named "Upgrade X" works only through item X (Upgrade Collector, Hubris, Ravenous Hydra, Sundered Sky, Zhonya's): it asks for that item, whether or not its card names it.
+      const upgraded = all.augments.filter((a) => augmentIds.some((x) => a.ids.includes(x))).flatMap((a) => { const name = /^Upgrade (.+)$/.exec(a.enName)?.[1]; const item = name ? sold.find((i) => i.enName === name || i.enName === `The ${name}` || i.enName.startsWith(`${name} `)) : undefined; return item ? [item.id] : []; });
+      const required = [...new Set([...cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []), ...upgraded])];
       const damageKind = kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed';
       const switched = cards.some((c) => switchesDamage([c.id]));
       // A held card that adds damage to his attacks (Marksmage) makes a non-attacker fight with attacks too: the owner's Gragas with Marksmage, Lich Bane and Dusk and Dawn (2026-11-05).
@@ -673,7 +675,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const pureTank = (i?: { id: number; group?: string; boots?: boolean }) => !!i && !i.boots && i.group !== 'boots' && itemDamage(i.id) !== 'ap';
       // The owner (2026-11-05, Gragas full tank): a frontline champion who doesn't guard allies and whose kit scales with no armor or magic resist
       // builds damage with health by his kit, one item with no damage besides boots at most; full tank is his tank button.
-      const fighter = !style && !!kit?.traits.includes('frontline') && !kit.traits.includes('peel') && !kit.scales.some((x) => x === 'armor' || x === 'mr');
+      // A held card that multiplies health (Tank Engine, Goliath, Growth Spurt) lifts that limit: Jayell's Renekton with Tank Engine built Heartsteel, Unending Despair, Bloodmail.
+      const healthCard = cards.some((c) => c.ops.some((x) => (x.op === 'mult' || (x.op === 'per_stack' && x.mode === 'mult')) && x.stat === 'hp'));
+      const fighter = !style && !healthCard && !!kit?.traits.includes('frontline') && !kit.traits.includes('peel') && !kit.scales.some((x) => x === 'armor' || x === 'mr');
       // Runaan's Hurricane is sold to ranged champions only: none of 75,278 melee players held it but Kayle and Gnar, who fight at range (2026-11-05).
       const melee = ((championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined)?.attackRangeModifiable?.baseValue ?? 0) < 300;
       // A magic champion who doesn't fight with attacks gets no attack-speed or on-hit item, nor Dusk and Dawn, unless a card makes his abilities apply on-hit

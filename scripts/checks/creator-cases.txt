@@ -1,7 +1,7 @@
-2026-11-05T23:25:31.011Z on b93747b (with uncommitted changes)
-creator cases: 36; their items in the engine's build: 25 of 81 (30.9%)
-their items the engine leaves out: The Collector 7, Hubris 4, Blackfire Torch 3, Unending Despair 3, Liandry's Torment 2, Death's Dance 2, Voltaic Cyclosword 2, Zhonya's Hourglass 2, Banshee's Veil 2, Void Staff 2, Overlord's Bloodmail 2, Spirit Visage 2
-items the engine adds they didn't name: Lord Dominik's Regards 15, Infinity Edge 14, Rabadon's Deathcap 11, Yun Tal Wildarrows 11, Profane Hydra 10, Hubris 9, Shadowflame 6, Blade of The Ruined King 6, Stormsurge 5, Warmog's Armor 5, Blackfire Torch 5, Runaan's Hurricane 5
+2026-11-06T00:37:03.851Z on 38d16bb (with uncommitted changes)
+creator cases: 36; their items in the engine's build: 29 of 81 (35.8%)
+their items the engine leaves out: The Collector 5, Blackfire Torch 3, Hubris 3, Overlord's Bloodmail 3, Liandry's Torment 2, Death's Dance 2, Voltaic Cyclosword 2, Zhonya's Hourglass 2, Banshee's Veil 2, Void Staff 2, Unending Despair 2, Spirit Visage 2
+items the engine adds they didn't name: Lord Dominik's Regards 15, Infinity Edge 13, Rabadon's Deathcap 11, Yun Tal Wildarrows 10, Profane Hydra 9, Hubris 9, Shadowflame 6, Stormsurge 5, Warmog's Armor 5, Blade of The Ruined King 5, Blackfire Torch 5, Runaan's Hurricane 5
 
 - Hwei (Jayell, oKVu1NAbElA) with Infinite Recursion, Magic Missile: 0 of 1 [-Blackfire Torch] | engine: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap, Stormsurge, Void Staff, Shadowflame
 - Malphite (Jayell, uZ9OP9Vz5og) with Transmute: Chaos, Titan's Resolve, Armored Impact, Ocean Soul: 1 of 1 [Heartsteel] | engine: Heartsteel, Sorcerer's Shoes, Sunfire Aegis, Warmog's Armor, Unending Despair, Jak'Sho, The Protean
@@ -15,8 +15,8 @@ items the engine adds they didn't name: Lord Dominik's Regards 15, Infinity Edge
 - Rek'Sai (Jayell, Ij88ESNzLSo) with Purist - Caster, BEES!!!: 0 of 1 [-Voltaic Cyclosword] | engine: Hubris, Sorcerer's Shoes, Lord Dominik's Regards, Profane Hydra, Umbral Glaive, Infinity Edge
 - Rengar (Jayell, uAA9yMKtgYQ) with Apex Inventor: 0 of 4 [-Overlord's Bloodmail, -Unending Despair, -Warmog's Armor, -Spirit Visage] | engine: Hubris, Plated Steelcaps, Lord Dominik's Regards, Profane Hydra, Yun Tal Wildarrows, Infinity Edge
 - Xerath (Jayell, 0vEY8SEGhxM) with Phenomenal Evil, Skilled Sniper: 1 of 2 [Blackfire Torch, -Horizon Focus] | engine: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap, Imperial Mandate, Liandry's Torment, Shadowflame
-- Renekton (Jayell, 3WmZiGxvkyk) with Endless Decimation, Tank Engine: 1 of 3 [Overlord's Bloodmail, -Unending Despair, -Heartsteel] | engine: Warmog's Armor, Plated Steelcaps, Titanic Hydra, Sterak's Gage, Overlord's Bloodmail, Spear of Shojin
-- Jinx (Jayell, 6F1AnTrDLvI) with Upgrade Collector, Get Excited!, Soul Siphon: 2 of 4 [Blade of The Ruined King, Lord Dominik's Regards, -Yun Tal Wildarrows, -The Collector] | engine: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane, Lord Dominik's Regards, Infinity Edge, Hubris
+- Renekton (Jayell, 3WmZiGxvkyk) with Endless Decimation, Tank Engine: 2 of 3 [-Overlord's Bloodmail, Unending Despair, Heartsteel] | engine: Heartsteel, Plated Steelcaps, Warmog's Armor, Jak'Sho, The Protean, Unending Despair, Kaenic Rookern
+- Jinx (Jayell, 6F1AnTrDLvI) with Upgrade Collector, Get Excited!, Soul Siphon: 3 of 4 [Blade of The Ruined King, Lord Dominik's Regards, -Yun Tal Wildarrows, The Collector] | engine: The Collector, Berserker's Greaves, Runaan's Hurricane, Blade of The Ruined King, Lord Dominik's Regards, Hubris
 - Rell (Jayell, -f1jeOEKDNI) with Growth Spurt: 2 of 3 [Unending Despair, Warmog's Armor, -Randuin's Omen] | engine: Heartsteel, Plated Steelcaps, Warmog's Armor, Jak'Sho, The Protean, Kaenic Rookern, Unending Despair
 - Ryze (Jayell, SzHI0J_ESUE) with Warlock Juicebox, Mind to Matter, Overflow: 2 of 3 [Rabadon's Deathcap, Rod of Ages, -Actualizer] | engine: Rod of Ages, Sorcerer's Shoes, Blackfire Torch, Rabadon's Deathcap, Luden's Echo, Riftmaker
 - Ezreal (Jayell, CXJMTOpPPgM) with Purist - Caster, Giant Slayer, Zealot: 0 of 1 [-Void Staff] | engine: Lord Dominik's Regards, Gluttonous Greaves, Manamune, Axiom Arc, Hubris, Profane Hydra
@@ -28,11 +28,11 @@ items the engine adds they didn't name: Lord Dominik's Regards 15, Infinity Edge
 - Udyr (GameBoltPlays, l0brc0hbMuw) with Phenomenal Evil: 0 of 2 [-Malignance, -Stormsurge] | engine: Dusk and Dawn, Gluttonous Greaves, Blackfire Torch, Rite of Ruin, Nashor's Tooth, Rabadon's Deathcap
 - Jinx (GameBoltPlays, HEV3hRLSVbU) with Upgrade Infinity Edge, Jeweled Gauntlet: 0 of 1 [-The Collector] | engine: Infinity Edge, Berserker's Greaves, Runaan's Hurricane, Lord Dominik's Regards, Blade of The Ruined King, Hubris
 - Morgana (GameBoltPlays, Qe6YwLVVTH4) with Phenomenal Evil, Armored Impact: 0 of 1 [-Zhonya's Hourglass] | engine: Blackfire Torch, Sorcerer's Shoes, Liandry's Torment, Rabadon's Deathcap, Moonstone Renewer, Cryptbloom
-- Jayce (GameBoltPlays, kjCBd67qT4k) with Upgrade Ravenous Hydra, Ultra Hydra: 1 of 1 [Hubris] | engine: Hubris, Plated Steelcaps, Lord Dominik's Regards, Profane Hydra, Yun Tal Wildarrows, Infinity Edge
+- Jayce (GameBoltPlays, kjCBd67qT4k) with Upgrade Ravenous Hydra, Ultra Hydra: 1 of 1 [Hubris] | engine: Ravenous Hydra, Plated Steelcaps, Hubris, Lord Dominik's Regards, Yun Tal Wildarrows, Infinity Edge
 - Ekko (GameBoltPlays, OQJ0aXvnKig) with Ethereal Weapon, Multishot: 0 of 1 [-Dusk and Dawn] | engine: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap, Lich Bane, Void Staff, Shadowflame
 - Tryndamere (GameBoltPlays, _WqrhyvEDbA) with Master of Duality: 0 of 1 [-Dusk and Dawn] | engine: Blade of The Ruined King, Gluttonous Greaves, Experimental Hexplate, Kraken Slayer, Yun Tal Wildarrows, Lord Dominik's Regards
 - Rengar (GameBoltPlays, C9jK1qqYlX4) with no said augment: 1 of 1 [Hubris] | engine: Hubris, Plated Steelcaps, Lord Dominik's Regards, Profane Hydra, Yun Tal Wildarrows, Infinity Edge
-- Graves (GameBoltPlays, jf_F14eCpbI) with Upgrade Collector: 0 of 2 [-The Collector, -Hubris] | engine: Lord Dominik's Regards, Berserker's Greaves, Runaan's Hurricane, Blade of The Ruined King, Yun Tal Wildarrows, Infinity Edge
+- Graves (GameBoltPlays, jf_F14eCpbI) with Upgrade Collector: 2 of 2 [The Collector, Hubris] | engine: The Collector, Gluttonous Greaves, Runaan's Hurricane, Lord Dominik's Regards, Infinity Edge, Hubris
 - Qiyana (GameBoltPlays, UExinDVnXlk) with It's Killing Time, Ultra Hydra: 1 of 1 [Hubris] | engine: Hubris, Plated Steelcaps, Profane Hydra, Lord Dominik's Regards, Umbral Glaive, Infinity Edge
 - Katarina (GameBoltPlays, -VZ_lBj_3fo) with no said augment: 0 of 1 [-Guinsoo's Rageblade] | engine: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame, Void Staff, Stormsurge, Hextech Gunblade
 - Janna (GameBoltPlays, he1oUhL9TVw) with Ethereal Weapon, Protein Shake: 1 of 2 [-Sword of Blossoming Dawn, Lich Bane] | engine: Ardent Censer, Sorcerer's Shoes, Riftmaker, Rabadon's Deathcap, Lich Bane, Blackfire Torch
