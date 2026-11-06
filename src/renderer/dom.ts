@@ -61,6 +61,8 @@ declare global {
       /** Both teams once the game is loaded, with ranks and how they compare; null before. */
       setShareGames(on: boolean): Promise<boolean>;
       gameTeams(): Promise<Reply<GameTeams | null>>;
+      /** F7 on the phone: starts or stops the page; its link (with the access key) while on. */
+      setWebPage(on: boolean): Promise<Reply<{ url: string | null }>>;
       updateStatus(): Promise<{ version: string; status: UpdateStatus }>;
       checkUpdate(): Promise<UpdateStatus>;
       installUpdate(): Promise<void>;

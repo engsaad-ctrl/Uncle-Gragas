@@ -213,6 +213,23 @@ void window.lolh.setShareGames(storedShare()).then((offered) => {
   shareSection.hidden = !offered;
   if (offered && !askedShare()) askShare();
 });
+// F7 on the phone (off by default): the link carries the access key, so it is shown only here.
+const WEB_HINT = 'يفتح نافذة F7 في متصفح جوالك على نفس الواي فاي. اكتب الرابط في متصفح الجوال مرة واحدة واحفظه. إن سألك ويندوز عن الجدار الناري فاختر «الشبكات الخاصة». لا تشارك الرابط: فيه رمز الدخول.';
+const webLink = el('p', 'hint en web-link');
+const webNote = el('p', 'hint', WEB_HINT);
+const storedWeb = () => {
+  try {
+    return localStorage.getItem('webPage') === 'on';
+  } catch {
+    return false;
+  }
+};
+const setWeb = async (on: boolean) => {
+  const r = await window.lolh.setWebPage(on);
+  webLink.textContent = !isError(r) && r.url ? r.url : '';
+  webNote.textContent = isError(r) ? `تعذّر التشغيل: ${r.error}` : WEB_HINT;
+};
+void setWeb(storedWeb());
 function askedShare() {
   try {
     return localStorage.getItem('shareGames') !== null;
@@ -296,6 +313,19 @@ settings.append(
       }
     }),
     el('p', 'hint', 'يقلل وزن الروابط بين التعزيزات إلى حجمها المقاس، ويضيف سلسلة الصحة بين Steel Your Heart وTank Engine، ويجعل البناء يتبع خط تعزيزاتك ولو كانت أغراضه غير معتادة لبطلك. تجربة غير مثبتة.'),
+  ),
+  section(
+    'نافذة F7 على الجوال',
+    pills('صفحة الجوال', [['off', 'معطّلة'], ['on', 'مفعّلة']], storedWeb() ? 'on' : 'off', (v) => {
+      try {
+        localStorage.setItem('webPage', v);
+      } catch {
+        // not remembered this time; harmless
+      }
+      void setWeb(v === 'on');
+    }),
+    webLink,
+    webNote,
   ),
   section('مفتاح Gemini (بناء Mayhem بالذكاء الاصطناعي)', aiKeyInput, aiKeySave, aiKeyNote),
   section('التشخيص', exportButton, exportNote),

@@ -375,6 +375,10 @@ body { display: block; }
 /* Over-the-game window */
 body.overlay { background: transparent; overflow: hidden; }
 body.overlay::before, body.overlay::after { display: none; }
+/* The same page on the phone: an opaque page the height of the visible screen, no close button. */
+html.web body.overlay { background: var(--bg); margin: 0; }
+html.web .ov-panel { height: 100dvh; border-radius: 0; }
+html.web #ov-close { display: none; }
 .ov-panel { height: 100vh; display: flex; flex-direction: column; gap: 8px; padding: 12px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--panel-2) 92%, transparent); }
 .ov-head { display: flex; align-items: center; gap: 10px; -webkit-app-region: drag; }
 .ov-head img { width: 40px; height: 40px; border-radius: 6px; }
@@ -497,3 +501,4 @@ body.overlay.large .ov-main.both .ov-list { grid-template-columns: repeat(2, min
 .ov-adapted-row b { font-size: 14px; }
 .ov-adapted-row small { font-size: 11.5px; line-height: 1.5; }
 .stack-field { display: flex; align-items: center; gap: 8px; margin: 6px 0; } .stack-field input { width: 90px; padding: 4px 6px; font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; }
+.web-link { direction: ltr; user-select: text; word-break: break-all; color: var(--text); }

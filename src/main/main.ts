@@ -1,6 +1,8 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, net } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, net, type IpcMainInvokeEvent } from 'electron';
+import type { Server } from 'node:http';
+import { lanAddress, WEB_PORT, webServer, type Handler } from './webPage.js';
 import { readFile, writeFile } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { applyAll, toPayloads } from '../lcu/apply.js';
 import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
@@ -57,18 +59,26 @@ const reply = async <T>(work: () => Promise<T>) => {
   }
 };
 
-ipcMain.handle('augments:get', () => reply(services.augments));
-ipcMain.handle('champions:list', () => reply(services.champions));
-ipcMain.handle('champion:page', (_e, id: unknown, mode: unknown, position: unknown) =>
+// Every handler is kept here too, so the phone page (webPage.ts) answers its calls with the same code.
+const handlers = new Map<string, Handler>();
+// Arguments stay any here: each handler checks its own.
+const handle = (channel: string, fn: (e: IpcMainInvokeEvent | null, ...args: any[]) => unknown) => {
+  handlers.set(channel, fn);
+  ipcMain.handle(channel, fn);
+};
+
+handle('augments:get', () => reply(services.augments));
+handle('champions:list', () => reply(services.champions));
+handle('champion:page', (_e, id: unknown, mode: unknown, position: unknown) =>
   reply(() => {
     const r = parsePageRequest(id, mode, position);
     return services.championPage(r.id, r.mode, r.position);
   }),
 );
 
-ipcMain.handle('items:list', (_e, mode: unknown) => reply(() => services.items(parseAppMode(mode))));
-ipcMain.handle('tierlist:get', (_e, position: unknown, mode: unknown) => reply(() => services.tierList(position === 'all' ? 'all' : parseLane(position), parseAppMode(mode))));
-ipcMain.handle('suggest:get', (_e, position: unknown, enemies: unknown, taken: unknown) =>
+handle('items:list', (_e, mode: unknown) => reply(() => services.items(parseAppMode(mode))));
+handle('tierlist:get', (_e, position: unknown, mode: unknown) => reply(() => services.tierList(position === 'all' ? 'all' : parseLane(position), parseAppMode(mode))));
+handle('suggest:get', (_e, position: unknown, enemies: unknown, taken: unknown) =>
   reply(() => services.suggestions(parseLane(position), parseIds(enemies), parseIds(taken))),
 );
 
@@ -119,11 +129,11 @@ const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c),
   else if (state.phase !== 'InProgress') overlay.setGame(null);
   mainWindow?.webContents.send('lcu:state', state);
 });
-ipcMain.handle('lcu:state', () => watcher.state);
+handle('lcu:state', () => watcher.state);
 // The window only names the page (champion, mode, lane); the build sent to the client is composed here.
 // One write at a time: two overlapping applies would both delete and re-create the rune page.
 let applying: Promise<unknown> = Promise.resolve();
-ipcMain.handle('lcu:apply', (_e, id: unknown, mode: unknown, position: unknown, flash: unknown) =>
+handle('lcu:apply', (_e, id: unknown, mode: unknown, position: unknown, flash: unknown) =>
   (applying = applying.catch(() => undefined).then(() => reply(async () => {
     const r = parsePageRequest(id, mode, position);
     if (!watcher.creds) throw new Error('عميل اللعبة غير مفتوح.');
@@ -134,7 +144,7 @@ ipcMain.handle('lcu:apply', (_e, id: unknown, mode: unknown, position: unknown, 
   }))),
 );
 // Profile and match history come from the client itself; without it there is nothing to show.
-ipcMain.handle('profile:get', (_e, puuid: unknown) =>
+handle('profile:get', (_e, puuid: unknown) =>
   reply(async () => {
     const id = parsePuuid(puuid);
     if (!watcher.creds) throw new Error('افتح عميل اللعبة لعرض البروفايل وسجل المباريات.');
@@ -148,17 +158,17 @@ ipcMain.handle('profile:get', (_e, puuid: unknown) =>
 const overlay = overlayWindow(root);
 const OVERLAY_KEY = 'F7';
 // The game's mode as the client reports it now (it keeps it during the match) wins over the one remembered at the pick.
-ipcMain.handle('overlay:data', () => reply(() => services.overlayData(lastPick && { ...lastPick, mode: watcher.state.mode ?? lastPick.mode })));
-ipcMain.handle('overlay:hide', () => overlay.hide());
-ipcMain.handle('overlay:large', (_e, on: unknown) => overlay.setLarge(on === true));
+handle('overlay:data', () => reply(() => services.overlayData(lastPick && { ...lastPick, mode: watcher.state.mode ?? lastPick.mode })));
+handle('overlay:hide', () => overlay.hide());
+handle('overlay:large', (_e, on: unknown) => overlay.setLarge(on === true));
 // Mayhem build from Gemini, with the owner's key from settings.
 const aiKey = aiKeyStore(app.getPath('userData'));
-ipcMain.handle('ai:key:has', async () => (await aiKey.get().catch(() => null)) !== null);
-ipcMain.handle('ai:key:set', (_e, key: unknown) => reply(() => aiKey.set(key)));
-ipcMain.handle('ai:key:clear', () => reply(() => aiKey.clear()));
+handle('ai:key:has', async () => (await aiKey.get().catch(() => null)) !== null);
+handle('ai:key:set', (_e, key: unknown) => reply(() => aiKey.set(key)));
+handle('ai:key:clear', () => reply(() => aiKey.clear()));
 // The last augments asked about, from the app or F7: F7 opens on them, and the cached answer shows at once.
 let lastAi: { championId: number; augmentIds: number[] } | null = null;
-ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
+handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
   reply(async () => {
     const [id] = parseIds([championId]);
     const key = await aiKey.get();
@@ -167,11 +177,11 @@ ipcMain.handle('ai:build', (_e, championId: unknown, augmentIds: unknown) =>
     return services.aiBuild(id, lastAi.augmentIds, geminiPost(key, fetchImpl));
   }),
 );
-ipcMain.handle('ai:last', () => lastAi);
+handle('ai:last', () => lastAi);
 // The loading screen's teams: champions and solo ranks (the client's own data, nine reads per game, cached), and how
 // the teams compare. null before a game is loaded.
 const rankCache = new Map<string, RankedQueue[]>();
-ipcMain.handle('game:teams', () =>
+handle('game:teams', () =>
   reply(async (): Promise<GameTeams | null> => {
     const teams = teamsInGame(watcher.session, lastPick?.championId);
     const creds = watcher.creds;
@@ -189,37 +199,37 @@ ipcMain.handle('game:teams', () =>
     return { mine, enemy, summary: await services.teamSummary(mine.map((p) => p.championId), enemy.map((p) => p.championId)) };
   }),
 );
-ipcMain.handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.augmentFit(parseIds(augmentIds))));
-ipcMain.handle('mayhem:effects', () => reply(() => services.augmentEffect()));
-ipcMain.handle('mayhem:open', (_e, id: unknown) => reply(() => services.openAugments(Number(id))));
+handle('mayhem:fit', (_e, augmentIds: unknown) => reply(() => services.augmentFit(parseIds(augmentIds))));
+handle('mayhem:effects', () => reply(() => services.augmentEffect()));
+handle('mayhem:open', (_e, id: unknown) => reply(() => services.openAugments(Number(id))));
 // Champ select sends his champion, the bench and his allies: up to 15 (the owner, 2026-11-06: no ranking showed with a full bench).
-ipcMain.handle('mayhem:strengths', (_e, ids: unknown) => reply(() => services.championStrengths(parseIds(ids, 20))));
+handle('mayhem:strengths', (_e, ids: unknown) => reply(() => services.championStrengths(parseIds(ids, 20))));
 // In a loaded game both teams are known: items and cards answer them.
 const teamsNow = () => {
   const t = teamsInGame(watcher.session, lastPick?.championId);
   const ids = (list: GamePlayer[]) => list.map((p) => p.championId).filter((id) => id > 0 && id !== lastPick?.championId);
   return t ? { allies: ids(t.mine), enemies: ids(t.enemy) } : undefined;
 };
-ipcMain.handle('build:stackBase', (_e, championId: unknown) => reply(() => services.stackBase(parseIds([championId])[0]!)));
-ipcMain.handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown, style: unknown, stacks: unknown) =>
+handle('build:stackBase', (_e, championId: unknown) => reply(() => services.stackBase(parseIds([championId])[0]!)));
+handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown, style: unknown, stacks: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
     return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
   }),
 );
-ipcMain.handle('build:styles', (_e, championId: unknown, augmentIds: unknown) =>
+handle('build:styles', (_e, championId: unknown, augmentIds: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
     return services.buildStyles(id, Array.isArray(augmentIds) ? parseIds(augmentIds) : []);
   }),
 );
-ipcMain.handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemIds: unknown) =>
+handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemIds: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
     return services.cardValues(id, parseIds(augmentIds), Array.isArray(itemIds) ? parseIds(itemIds) : [], teamsNow());
   }),
 );
-ipcMain.handle('build:experimental', (_e, championId: unknown, augmentIds: unknown) =>
+handle('build:experimental', (_e, championId: unknown, augmentIds: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
     return services.experimentalBuild(id, parseIds(augmentIds));
@@ -233,8 +243,8 @@ const windowMode = async () => {
   const s = (await lcuCaller(watcher.creds)('GET', GAME_SETTINGS)) as { General?: { WindowMode?: unknown } } | null;
   return typeof s?.General?.WindowMode === 'number' ? s.General.WindowMode : null;
 };
-ipcMain.handle('game:windowMode', () => reply(windowMode));
-ipcMain.handle('game:borderless', () =>
+handle('game:windowMode', () => reply(windowMode));
+handle('game:borderless', () =>
   reply(async () => {
     if (!watcher.creds) throw new Error('افتح عميل اللعبة أولاً.');
     const call = lcuCaller(watcher.creds);
@@ -243,21 +253,48 @@ ipcMain.handle('game:borderless', () =>
     return windowMode();
   }),
 );
-ipcMain.handle('overlay:enabled', (_e, on: unknown) => {
+handle('overlay:enabled', (_e, on: unknown) => {
   overlayOn = on === true;
   globalShortcut.unregister(OVERLAY_KEY);
   // register() returns false when another app already holds the key
   return on === true ? globalShortcut.register(OVERLAY_KEY, () => overlay.toggle()) : false;
 });
-ipcMain.handle('share:enabled', (_e, on: unknown) => {
+handle('share:enabled', (_e, on: unknown) => {
   shareOn = on === true;
   return Boolean(SHARE_URL);
 });
+// F7 on the phone (off by default): served on the home network only while turned on in settings. The key is made once
+// and kept, so the phone's saved link keeps working.
+let web: Server | undefined;
+const webKey = async () => {
+  const file = join(app.getPath('userData'), 'web-key.txt');
+  const saved = await readFile(file, 'utf8').then((t) => t.trim(), () => '');
+  if (/^[\w-]{16,}$/.test(saved)) return saved;
+  const key = randomBytes(12).toString('base64url');
+  await writeFile(file, key);
+  return key;
+};
+handle('web:enabled', (_e, on: unknown) =>
+  reply(async () => {
+    web?.close();
+    web = undefined;
+    if (on !== true) return { url: null };
+    const ip = lanAddress();
+    if (!ip) throw new Error('الكمبيوتر غير متصل بشبكة منزلية (واي فاي أو كابل).');
+    const server = webServer(root, handlers, await webKey());
+    await new Promise<void>((ok, fail) => server.once('error', fail).listen(WEB_PORT, '0.0.0.0', ok)).catch((err: NodeJS.ErrnoException) => {
+      throw new Error(err.code === 'EADDRINUSE' ? `المنفذ ${WEB_PORT} يستخدمه برنامج آخر.` : err.message);
+    });
+    server.on('error', (err) => logError('web', err));
+    web = server;
+    return { url: `http://${ip}:${WEB_PORT}/?k=${await webKey()}` };
+  }),
+);
 const updates = appUpdater(() => mainWindow);
-ipcMain.handle('update:status', () => ({ version: app.getVersion(), status: updates.status }));
-ipcMain.handle('update:check', () => updates.check());
-ipcMain.handle('update:install', () => updates.install());
-ipcMain.handle('diagnostics:export', () => reply(async () => {
+handle('update:status', () => ({ version: app.getVersion(), status: updates.status }));
+handle('update:check', () => updates.check());
+handle('update:install', () => updates.install());
+handle('diagnostics:export', () => reply(async () => {
   const { canceled, filePath } = await dialog.showSaveDialog({
     title: 'تصدير التشخيص',
     defaultPath: join(app.getPath('desktop'), `uncle-gragas-diagnostics-${Date.now()}.json`),
