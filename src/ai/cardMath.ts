@@ -155,7 +155,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const melee = ((record as unknown as { attackRangeModifiable?: { baseValue?: number } }).attackRangeModifiable?.baseValue ?? 0) < 300;
   s.hp += 20 + (((melee ? MODE_HEALTH_AT_18.melee : MODE_HEALTH_AT_18.ranged) - 20) * (o.level - 1)) / 17;
   if (melee) { s.armor += MELEE_RESISTS; s.bonusArmor += MELEE_RESISTS; s.mr += MELEE_RESISTS; s.bonusMr += MELEE_RESISTS; }
-  const itemAmp = (name: string) => owned.reduce((m, it) => m * (1 + (it.DataValues?.find((d) => d.name === name)?.values?.[0] ?? 0)), 1);
+  // An item whose own numbers already multiply this stat (Rabadon's 1.3, Warmog's 1.12 on bonus health) isn't multiplied again from its file.
+  const itemAmp = (name: string, stat: string) => held.reduce((m, id) => ((o.itemOps?.[id % 10000] ?? []).some((x) => x.op === 'mult' && x.stat === stat) ? m : m * (1 + (o.shop[id]?.DataValues?.find((d) => d.name === name)?.values?.[0] ?? 0))), 1);
   const healPower = owned.reduce((t, it) => t + (it.DataValues?.find((d) => d.name === 'PercentHealingAmountMod')?.values?.[0] ?? 0), 0);
   // What his items do for the ally he heals or shields, from their files: Ardent Censer's attack speed and on-hit, Staff of Flowing Water's AP and haste, each for its seconds; Moonstone Renewer heals a second ally for a share.
   const allyBuffs = o.kit.buffsAllies ? owned.flatMap((it) => {
@@ -226,8 +227,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (stat === 'attack_speed') t.bonusAttackSpeed *= factor;
     if (stat === 'move_speed') t.moveSpeed *= factor;
   };
-  multiply(s, 'ap', itemAmp('APAmp'));
-  multiply(s, 'hp', itemAmp('HPAmp'));
+  multiply(s, 'ap', itemAmp('APAmp', 'ap'));
+  multiply(s, 'hp', itemAmp('HPAmp', 'hp'));
   for (const x of ops) if (x.op === 'mult') { if (x.stat === 'hp' && x.scope === 'bonus') { s.hp += s.bonusHp * (x.factor - 1); s.bonusHp *= x.factor; } else multiply(s, x.stat, x.factor); }
   for (const x of ops) if (x.op === 'per_stack' && x.mode === 'mult') multiply(s, x.stat, 1 + (x.value >= 1 ? x.value - 1 : x.value) * stacksOf(x)); // readers wrote +5% a stack as 1.05 or 0.05
   const baseRates = record as unknown as { attackSpeedModifiable?: { baseValue?: number }; attackSpeedRatioModifiable?: { baseValue?: number } };
@@ -310,6 +311,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     const crits = JSON.stringify((spell as { mSpellCalculations?: unknown }).mSpellCalculations ?? {}).includes('"mStat":9');
     slots.push({ crits, path, key, spell, rank, ranks, cooldown: stated || 1, cost: (spell.mana?.[rank - 1] ?? sibling?.mana?.[rank - 1] ?? 0) * manaCost, perSecond: names.some((n) => /dps/i.test(n)), overTime: names.some((n) => /dps|persecond/i.test(n)), toggle: stated > 0 && stated <= 1, ready: o.cooldowns?.[key] ?? 0, on: false, recast: key === 'R' && ops.some((x) => x.op === 'recast' && x.key === 'R') });
   });
+  // A toggle is switched on first: a cheaper cooldown elsewhere kept Karthus's E off until 8.6 s with Lich Bane (the owner's case 17).
+  slots.sort((a, b) => Number(b.toggle) - Number(a.toggle));
 
   const dt = 0.05;
   const targetHp = o.enemy?.hp ?? FIGHT.target.hp;
