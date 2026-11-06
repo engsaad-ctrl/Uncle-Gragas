@@ -36,7 +36,7 @@ const cases = [
   ['5 Jinx: a crit item in the first three', ['Jinx'], ([a]) => a.some(crit)],
   ['6 Yasuo: first item not Bloodthirster', ['Yasuo'], ([a]) => a[0].enName !== 'Bloodthirster'],
   ['7 Ezreal: no Lord Dominik\'s without augments, a crit item with Jeweled Gauntlet', ['Ezreal', ['Ezreal', [JEWELED_GAUNTLET]]], ([a, b]) => !has(a, "Lord Dominik's Regards") && b.some(crit)],
-  ['8 Katarina: Heartsteel in the first three', ['Katarina'], ([a]) => has(a, 'Heartsteel')],
+  // Case 8 (Katarina: Heartsteel in the first three) dropped by the owner 2026-11-06: Heartsteel lowers her build's value 18-25% and her stored games win 46.6% with it (322) against 49.7% without (1,055).
   ['9 Sett: boots not Berserker\'s Greaves', ['Sett'], ([a]) => boots(a) !== "Berserker's Greaves"],
   ['10 Garen: boots not Sorcerer\'s Shoes', ['Garen'], ([a]) => boots(a) !== "Sorcerer's Shoes"],
   ['11 Dr. Mundo: boots not Berserker\'s Greaves', ['Dr. Mundo'], ([a]) => boots(a) !== "Berserker's Greaves"],

@@ -1,23 +1,22 @@
-2026-11-06T02:39:38.693Z on 30c0f1c (with uncommitted changes)
+2026-11-06T16:37:21.338Z on f4ff4d1 (with uncommitted changes)
 owner cases
-passed 17 of 20
-PASS 1 Lux: first item not Riftmaker: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap (Luden's first: no)
+passed 17 of 19
+PASS 1 Lux: first item not Riftmaker: Luden's Echo, Sorcerer's Shoes, Stormsurge (Luden's first: no)
 PASS 2 Veigar: first item not Riftmaker, Rabadon's in the first three: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap
-PASS 3 Ahri: no Riftmaker nor Dusk and Dawn: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+PASS 3 Ahri: no Riftmaker nor Dusk and Dawn: Luden's Echo, Sorcerer's Shoes, Stormsurge
 PASS 4 Zed: no Warmog's nor Sorcerer's Shoes: Hubris, Plated Steelcaps, Profane Hydra
-PASS 5 Jinx: a crit item in the first three: Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
+PASS 5 Jinx: a crit item in the first three: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
 PASS 6 Yasuo: first item not Bloodthirster: Hubris, Berserker's Greaves, Blade of The Ruined King
 PASS 7 Ezreal: no Lord Dominik's without augments, a crit item with Jeweled Gauntlet: none Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane | with Jeweled Gauntlet Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-FAIL 8 Katarina: Heartsteel in the first three: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame
-PASS 9 Sett: boots not Berserker's Greaves: Warmog's Armor, Plated Steelcaps, Titanic Hydra
-PASS 10 Garen: boots not Sorcerer's Shoes: Warmog's Armor, Plated Steelcaps, Titanic Hydra
-PASS 11 Dr. Mundo: boots not Berserker's Greaves: Warmog's Armor, Plated Steelcaps, Titanic Hydra
-PASS 12 Soraka: no Dusk and Dawn: Ardent Censer, Sorcerer's Shoes, Moonstone Renewer
-PASS 13 Master Yi: Bloodthirster or Blade of the Ruined King: Blade of The Ruined King, Berserker's Greaves, Yun Tal Wildarrows
-FAIL 14 Vayne with Typhoon: Blade of the Ruined King and Bloodthirster: Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
-FAIL 17 Karthus with Ethereal Weapon and BEES: a mana item first, Lich Bane in the first three: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap
-PASS 18 Sona and Rakan: not Liandry's Torment first: none Ardent Censer, Sorcerer's Shoes, Warmog's Armor | with Jeweled Gauntlet Ardent Censer, Sorcerer's Shoes, Warmog's Armor
-PASS 19 Sona: no Heartsteel first: Ardent Censer, Sorcerer's Shoes, Warmog's Armor
+PASS 9 Sett: boots not Berserker's Greaves: Jak'Sho, The Protean, Plated Steelcaps, Spear of Shojin
+PASS 10 Garen: boots not Sorcerer's Shoes: Jak'Sho, The Protean, Plated Steelcaps, Titanic Hydra
+PASS 11 Dr. Mundo: boots not Berserker's Greaves: Jak'Sho, The Protean, Plated Steelcaps, Titanic Hydra
+PASS 12 Soraka: no Dusk and Dawn: Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water
+PASS 13 Master Yi: Bloodthirster or Blade of the Ruined King: Blade of The Ruined King, Gluttonous Greaves, Kraken Slayer
+FAIL 14 Vayne with Typhoon: Blade of the Ruined King and Bloodthirster: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+FAIL 17 Karthus with Ethereal Weapon and BEES: a mana item first, Lich Bane in the first three: Blackfire Torch, Sorcerer's Shoes, Riftmaker
+PASS 18 Sona and Rakan: not Liandry's Torment first: none Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water | with Jeweled Gauntlet Ardent Censer, Sorcerer's Shoes, Riftmaker
+PASS 19 Sona: no Heartsteel first: Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water
 PASS 20 Pyke: no Heartsteel: Hubris, Plated Steelcaps, Lord Dominik's Regards
 PASS 15 Miss Fortune with Vulnerability: the magic build offered: ap, ad, tank
 PASS 16 Galio: magic, magic with health and tank offered: ap, aphp, tank
