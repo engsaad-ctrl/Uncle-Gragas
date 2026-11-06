@@ -1,4 +1,4 @@
-2026-11-06T02:27:22.227Z on 8f6de8e (with uncommitted changes)
+2026-11-06T02:39:30.463Z on 30c0f1c (with uncommitted changes)
 items in the kit build held by fewer than 20 of the champion's players (champions with 300+ finished builds): 171 in 164 champions
 - ميس فورتشن: Profane Hydra held by 2 of 1708
 - جين: Umbral Glaive held by 2 of 1616
@@ -17,7 +17,7 @@ items in the kit build held by fewer than 20 of the champion's players (champion
 - د. موندو: Hullbreaker held by 2 of 1110
 - د. موندو: Experimental Hexplate held by 2 of 1110
 - زيد: Umbral Glaive held by 11 of 1087
-- بايك: Heartsteel held by 12 of 1060
+- بايك: Spear of Shojin held by 1 of 1060
 - غانغ بلانك: Profane Hydra held by 2 of 1053
 - غانغ بلانك: Umbral Glaive held by 6 of 1053
 - زايرا: Archangel's Staff held by 5 of 1045

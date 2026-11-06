@@ -49,6 +49,8 @@ const cases = [
   ["18 Sona and Rakan: not Liandry's Torment first", ['Sona', 'Rakan'], (b) => b.every((a) => !has([a[0]], "Liandry's Torment"))],
   // The owner (2026-11-06, «لا، خطأ»): Sona doesn't start Heartsteel.
   ['19 Sona: no Heartsteel first', ['Sona'], ([a]) => !has([a[0]], 'Heartsteel')],
+  // The owner (2026-11-06, «لا، خطأ»): Pyke doesn't take Heartsteel.
+  ['20 Pyke: no Heartsteel', ['Pyke'], ([a]) => !has(a, 'Heartsteel')],
 ];
 const lines = [`owner cases${w && itemMath.BURST ? `, burst window ${itemMath.BURST.window} s` : ''}`];
 let passed = 0;

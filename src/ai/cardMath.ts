@@ -16,7 +16,8 @@ export type CardOp =
   | { op: 'damage_amp'; scope: string; factor: number; after_quest?: boolean }
   | { op: 'mana_amp'; scope: string; per100: number; after_quest?: boolean }
   | { op: 'mana_cost'; factor: number; after_quest?: boolean }
-  | { op: 'convert'; from: string; to: string; ratio: number; after_quest?: boolean }
+  /** replace: the source is given up, not kept (Pyke turns bonus health into AD and gains none). */
+  | { op: 'convert'; from: string; to: string; ratio: number; replace?: boolean; scope?: string; after_quest?: boolean }
   | { op: 'per_stack'; stat: string; value: number; mode: 'add' | 'mult'; per: string; cap?: number | null; lost_on_death?: number | null; after_quest?: boolean }
   | { op: 'lock'; key: string; after_quest?: boolean }
   | { op: 'cooldown'; scope: string; factor: number; after_quest?: boolean }
@@ -214,7 +215,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     const keep = dv('DamageToMaxHealthRatio');
     if (keep) for (let i = 0; i < Math.round(FIGHT.growthProcsPerLevel * o.level); i++) add(s, 'hp', keep * (dv('BaseDamage') + dv('HPRatio') * s.hp));
   }
-  for (const x of ops) if (x.op === 'convert' && x.from !== 'move_speed') { const from = statValue(s, x.from); if (!Number.isNaN(from)) add(s, x.to, from * x.ratio); }
+  for (const x of ops) if (x.op === 'convert' && x.from !== 'move_speed') { const from = statValue(s, x.from); if (!Number.isNaN(from)) add(s, x.to, from * x.ratio); if (x.replace && x.from === 'bonus_hp') { s.hp -= s.bonusHp; s.bonusHp = 0; } }
   const multiply = (t: BuildStats, stat: string, factor: number) => {
     if (stat === 'ap') t.ap *= factor;
     if (stat === 'ad') { t.bonusAd += t.ad * (factor - 1); t.ad *= factor; }
