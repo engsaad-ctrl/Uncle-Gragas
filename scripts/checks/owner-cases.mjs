@@ -45,6 +45,8 @@ const cases = [
   ['14 Vayne with Typhoon: Blade of the Ruined King and Bloodthirster', [['Vayne', [TYPHOON]]], ([a]) => has(a, 'Blade of The Ruined King') && has(a, 'Bloodthirster')],
   // The owner (2026-11-06, BodyThoseFools' Karthus): a mana item first (Blackfire Torch); with Ethereal Weapon and BEES, Lich Bane: on-hit and AP at once.
   ['17 Karthus with Ethereal Weapon and BEES: a mana item first, Lich Bane in the first three', [['Karthus', [ETHEREAL_WEAPON, BEES]]], ([a]) => manaItem(a[0]) && has(a, 'Lich Bane')],
+  // The owner (2026-11-06, «لا، خطأ»): enchanters don't start Liandry's Torment (they took it once burns spread over two enemies).
+  ["18 Sona and Rakan: not Liandry's Torment first", ['Sona', 'Rakan'], (b) => b.every((a) => !has([a[0]], "Liandry's Torment"))],
 ];
 const lines = [`owner cases${w && itemMath.BURST ? `, burst window ${itemMath.BURST.window} s` : ''}`];
 let passed = 0;
