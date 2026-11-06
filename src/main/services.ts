@@ -150,7 +150,7 @@ function once<T>(load: () => Promise<T>): () => Promise<T> {
 const PLAIN_BOOTS_GOLD = 300; // the first pair, on the way to a real one
 interface Teams { allies: number[]; enemies: number[] }
 const MAGE_SUPPORTS = new Set([99, 1, 61, 147, 25, 43, 26]);
-const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), attacks: k?.relies.includes('attacks') ?? false, buffsAllies: !!k && k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')) }; };
+const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), aoe: !!k?.traits.includes('aoe'), attacks: k?.relies.includes('attacks') ?? false, buffsAllies: !!k && k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')) }; };
 
 export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch; call?: CallTool }) {
   const { cacheDir, fetchImpl } = opts;

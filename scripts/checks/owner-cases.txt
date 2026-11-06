@@ -1,8 +1,8 @@
-2026-11-06T00:42:35.197Z on 38d16bb (with uncommitted changes)
+2026-11-06T01:20:45.837Z on 267234c (with uncommitted changes)
 owner cases
 passed 14 of 17
 PASS 1 Lux: first item not Riftmaker: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap (Luden's first: no)
-PASS 2 Veigar: first item not Riftmaker, Rabadon's in the first three: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+PASS 2 Veigar: first item not Riftmaker, Rabadon's in the first three: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap
 PASS 3 Ahri: no Riftmaker nor Dusk and Dawn: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
 PASS 4 Zed: no Warmog's nor Sorcerer's Shoes: Hubris, Plated Steelcaps, Profane Hydra
 PASS 5 Jinx: a crit item in the first three: Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
@@ -15,6 +15,6 @@ PASS 11 Dr. Mundo: boots not Berserker's Greaves: Warmog's Armor, Plated Steelca
 PASS 12 Soraka: no Dusk and Dawn: Ardent Censer, Sorcerer's Shoes, Moonstone Renewer
 PASS 13 Master Yi: Bloodthirster or Blade of the Ruined King: Blade of The Ruined King, Berserker's Greaves, Yun Tal Wildarrows
 FAIL 14 Vayne with Typhoon: Blade of the Ruined King and Bloodthirster: Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
-FAIL 17 Karthus with Ethereal Weapon and BEES: a mana item first, Lich Bane in the first three: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
+FAIL 17 Karthus with Ethereal Weapon and BEES: a mana item first, Lich Bane in the first three: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap
 PASS 15 Miss Fortune with Vulnerability: the magic build offered: ap, ad, tank
 PASS 16 Galio: magic, magic with health and tank offered: ap, aphp, tank

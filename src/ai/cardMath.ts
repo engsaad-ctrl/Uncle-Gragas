@@ -43,7 +43,8 @@ export interface CardNumbers { id: number; name: string; status: string; ops: Ca
 /** carryCooldowns: the next fight starts gapSeconds after this one ends, with what is still on cooldown (an ultimate cast at the start of a 15 s fight with 90 s of cooldown misses the next), so haste counts there. */
 /** boltHitShare: of the bolts an attack can fire at other enemies (Runaan's Hurricane), the share that finds one in range; ARAM's five enemies stand close, an assumption until area damage is modelled (knowledge: area-model). */
 /** manaFights: the fights in a row a player paces his mana over, the same three as itemMath's FIGHTS.inARow. */
-export const FIGHT = { manaFights: 3, boltHitShare: 0.5, partialLastCast: false, carryCooldowns: false, gapSeconds: 40, growthProcsPerLevel: 2, attackUptime: { melee: 0.8, ranged: 0.7 }, everyDamageStacks: { at18: 200, power: 3.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
+/** areaTargets: enemies an area ability reaches, the owner's choice of two (2026-11-06, «نعم، عدوّان») until his lane screenshot measures it (knowledge/area-fields-found.md). */
+export const FIGHT = { areaTargets: 2, manaFights: 3, boltHitShare: 0.5, partialLastCast: false, carryCooldowns: false, gapSeconds: 40, growthProcsPerLevel: 2, attackUptime: { melee: 0.8, ranged: 0.7 }, everyDamageStacks: { at18: 200, power: 3.5 }, seconds: 15, target: { armor: 80, mr: 60, hp: 3500 }, killTimes: [5, 10], stacksByLevel: (level: number) => Math.round(level * 1.5) };
 
 /** Very high move speed is slowed: the game's soft caps at 415 and 490. shortcut: from memory, not from a file; check on screen. */
 /** Stacks a champion's abilities count by level 15 in ARAM Mayhem, where his ability formulas read a buff's stacks (Nasus's Q, Smolder's passive, Aurelion Sol's
@@ -60,7 +61,8 @@ const softSpeed = (x: number) => (x > 490 ? x * 0.5 + 230 : x > 415 ? x * 0.8 + 
 export const ALLY = { dps: 600, attacksPerSecond: 1.2, ap: 300, attackShare: 0.5 };
 
 /** buffsAllies: the kit heals or shields allies (Sona, Lulu, Janna), so items that act on the ally he heals do something. */
-export interface Kit { damage: 'magic' | 'physical' | 'mixed'; attacks: boolean; buffsAllies?: boolean }
+/** aoe: the kit's abilities hit an area (CHAMPION_KITS trait), so a burn they apply reaches FIGHT.areaTargets enemies. */
+export interface Kit { damage: 'magic' | 'physical' | 'mixed'; attacks: boolean; buffsAllies?: boolean; aoe?: boolean }
 /** The real enemies when they're known: what their resists do to his damage, and how much of their damage his armor answers rather than his magic resist. */
 /** hp: the health a share of the target's health is taken from, when the enemies are known (FIGHT.target.hp otherwise). */
 export interface EnemyTeam { armor: number; mr: number; physicalShare: number; hp?: number }
@@ -452,10 +454,12 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     for (const x of ops) if ((x.op === 'proc' || x.op === 'heal' || x.op === 'shield') && x.trigger === 'periodic' && t - (lastProc.get(x) ?? -Infinity) >= (x.internal_cooldown || FIGHT.seconds)) fire('periodic', t, c);
     for (const d of dots) {
       if (t > d.until) continue;
-      const each = formula(d.op.per_second, c, o.level, targetHp) * dt * d.stacks * (taken[d.op.type as keyof typeof taken] ?? taken.adaptive) * (1 + c.crit * dotCrit);
+      // An item's burn that area abilities apply (Liandry's, Blackfire Torch) burns every enemy they reach: the creators' burn builds on poke mages.
+      const spread = o.kit.aoe && !d.fromAbility && d.op.trigger === 'ability_hit' ? FIGHT.areaTargets : 1;
+      const each = formula(d.op.per_second, c, o.level, targetHp) * dt * d.stacks * spread * (taken[d.op.type as keyof typeof taken] ?? taken.adaptive) * (1 + c.crit * dotCrit);
       if (d.fromAbility) fromAbilities += each;
       else fromCards += each;
-      if (each > 0 && (d.fromAbility || d.op.trigger === 'ability_hit')) abilityInstances += (dt / 0.5) * d.stacks;
+      if (each > 0 && (d.fromAbility || d.op.trigger === 'ability_hit')) abilityInstances += (dt / 0.5) * d.stacks * spread;
     }
     for (const b of allyBuffs) if (t < b.until) fromAllies += b.perSecond * dt;
     if (t + dt >= damageBySecond.length + 1) damageBySecond.push(fromAbilities + fromAttacks + fromCards + fromAllies);
