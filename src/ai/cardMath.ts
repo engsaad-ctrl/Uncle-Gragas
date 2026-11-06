@@ -54,6 +54,8 @@ export const FIGHT = { areaTargets: 2, manaFights: 3, boltHitShare: 0.5, partial
  * Smolder's 250 is his; the rest are Claude's estimates raised on his word, to check on his screens. No cap: they keep growing with level past 15. */
 /** Stored games, 176,930 players: 0.67 kills a level (2.16 takedowns, kills and assists, is the 2.2 above); Hubris stacks on kills, not takedowns (2026-11-06). */
 const KILLS_PER_LEVEL = 0.67;
+/** Triggers that come from an attack: their damage heals through life steal as the attack does. */
+const ON_ATTACK = new Set(['on_hit', 'attack', 'crit', 'next_attack']);
 export const STACKS_AT_15: Record<string, number> = { Nasus: 700, Smolder: 250, AurelionSol: 150, Thresh: 150, Kindred: 15, Chogath: 20, Draven: 60, Veigar: 300, Senna: 150, Swain: 60 };
 
 const softSpeed = (x: number) => (x > 490 ? x * 0.5 + 230 : x > 415 ? x * 0.8 + 83 : x);
@@ -352,7 +354,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (left > 0) sl.ready -= unit === 'fraction' ? left * Math.min(1, scaled(amount, o.level)) : scaled(amount, o.level);
     }
   };
-  let healed = 0, fromAllies = 0;
+  let healed = 0, fromAllies = 0, fromAttackProcs = 0;
   const fire = (trigger: string, t: number, c: BuildStats) => {
     const taken = takenBy(c);
     for (const x of ops) {
@@ -363,7 +365,12 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (x.op === 'heal' || x.op === 'shield') { healed += formula(x.amount, c, o.level, targetHp); lastProc.set(x, t); }
       // An extra on-hit on the attack after an ability (Dusk and Dawn), not on every attack.
       if (x.op === 'on_hit_repeat' && trigger === 'next_attack') { for (let k = 0; k < x.extra_hits; k++) fire('on_hit', t, c); lastProc.set(x, t); }
-      if (x.op === 'proc') { fromCards += formula(x.damage, c, o.level, targetHp) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all', t); lastProc.set(x, t); }
+      if (x.op === 'proc') {
+        const dealt = formula(x.damage, c, o.level, targetHp) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all', t);
+        fromCards += dealt;
+        if (ON_ATTACK.has(trigger)) fromAttackProcs += dealt; // life steal heals from on-hit damage too (Typhoon's bolt, Blade of the Ruined King)
+        lastProc.set(x, t);
+      }
       if (x.op === 'refund') { reduce(x.scope, x.amount, x.unit, t); lastProc.set(x, t); }
       if (x.op === 'dot') { const d = dots.find((y) => y.op === x); if (d) { d.until = t + (x.duration ?? FIGHT.seconds); d.stacks = Math.min(x.stacks_max ?? 1, d.stacks + 1); } else dots.push({ op: x, until: t + (x.duration ?? FIGHT.seconds), stacks: 1, fromAbility: false }); }
       if (x.op === 'timed') {
@@ -493,8 +500,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     fromCards,
     fromAllies,
     abilityHealing: abilityHealing * (1 + healPower + chainHeal + ops.reduce((m, x) => (x.op === 'add' && x.stat === 'heal_shield_power' ? m + scaled(x.value, o.level) : x.op === 'mana_amp' && x.scope === 'heal_shield' && Number.isFinite(fullMana) ? m + (x.per100 * fullMana) / 100 : m), 0)),
-    healParts: { ops: healed, omnivamp: s.omnivamp * (fromAbilities + fromAttacks + fromCards), lifeSteal: s.lifeSteal * fromAttacks },
-    healedHp: Math.max(0, healed + s.omnivamp * (fromAbilities + fromAttacks + fromCards) + s.lifeSteal * fromAttacks) * ((o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / s.hp),
+    healParts: { ops: healed, omnivamp: s.omnivamp * (fromAbilities + fromAttacks + fromCards), lifeSteal: s.lifeSteal * (fromAttacks + fromAttackProcs) },
+    healedHp: Math.max(0, healed + s.omnivamp * (fromAbilities + fromAttacks + fromCards) + s.lifeSteal * (fromAttacks + fromAttackProcs)) * ((o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / s.hp),
     effectiveHp: (o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / reduction,
     attacks,
     peakMoveSpeed: Math.round(peakMs),
