@@ -47,6 +47,8 @@ const cases = [
   ['17 Karthus with Ethereal Weapon and BEES: a mana item first, Lich Bane in the first three', [['Karthus', [ETHEREAL_WEAPON, BEES]]], ([a]) => manaItem(a[0]) && has(a, 'Lich Bane')],
   // The owner (2026-11-06, «لا، خطأ»): enchanters don't start Liandry's Torment (they took it once burns spread over two enemies).
   ["18 Sona and Rakan: not Liandry's Torment first", ['Sona', 'Rakan'], (b) => b.every((a) => !has([a[0]], "Liandry's Torment"))],
+  // The owner (2026-11-06, «لا، خطأ»): Sona doesn't start Heartsteel.
+  ['19 Sona: no Heartsteel first', ['Sona'], ([a]) => !has([a[0]], 'Heartsteel')],
 ];
 const lines = [`owner cases${w && itemMath.BURST ? `, burst window ${itemMath.BURST.window} s` : ''}`];
 let passed = 0;

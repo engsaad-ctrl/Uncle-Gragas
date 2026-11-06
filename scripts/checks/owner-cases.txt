@@ -1,6 +1,6 @@
-2026-11-06T02:07:53.841Z on 0aaa920 (with uncommitted changes)
+2026-11-06T02:27:30.674Z on 8f6de8e (with uncommitted changes)
 owner cases
-passed 15 of 18
+passed 16 of 19
 PASS 1 Lux: first item not Riftmaker: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap (Luden's first: no)
 PASS 2 Veigar: first item not Riftmaker, Rabadon's in the first three: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap
 PASS 3 Ahri: no Riftmaker nor Dusk and Dawn: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
@@ -16,6 +16,7 @@ PASS 12 Soraka: no Dusk and Dawn: Ardent Censer, Sorcerer's Shoes, Moonstone Ren
 PASS 13 Master Yi: Bloodthirster or Blade of the Ruined King: Blade of The Ruined King, Berserker's Greaves, Yun Tal Wildarrows
 FAIL 14 Vayne with Typhoon: Blade of the Ruined King and Bloodthirster: Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
 FAIL 17 Karthus with Ethereal Weapon and BEES: a mana item first, Lich Bane in the first three: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap
-PASS 18 Sona and Rakan: not Liandry's Torment first: none Heartsteel, Sorcerer's Shoes, Ardent Censer | with Jeweled Gauntlet Ardent Censer, Sorcerer's Shoes, Warmog's Armor
+PASS 18 Sona and Rakan: not Liandry's Torment first: none Ardent Censer, Sorcerer's Shoes, Warmog's Armor | with Jeweled Gauntlet Ardent Censer, Sorcerer's Shoes, Warmog's Armor
+PASS 19 Sona: no Heartsteel first: Ardent Censer, Sorcerer's Shoes, Warmog's Armor
 PASS 15 Miss Fortune with Vulnerability: the magic build offered: ap, ad, tank
 PASS 16 Galio: magic, magic with health and tank offered: ap, aphp, tank
