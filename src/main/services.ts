@@ -5,6 +5,7 @@ import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { championRecord, compareBuilds } from '../ai/calculator.js';
 import { cardGain, fight, needHolds, questItems, STACKS_AT_15 } from '../ai/cardMath.js';
+import { RETIRED_AUGMENTS } from '../ai/retiredAugments.js';
 import { CARD_NUMBERS, ITEM_NUMBERS, PASSIVE_NUMBERS } from '../ai/cardMathData.js';
 import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
@@ -606,7 +607,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const place = { ...teamPlace({ championId, bin, shop, kit: base.kit, passive: base.passive, enemy: facts2.enemy, allies: facts2.allies }), enemyDps: enemyDpsAt(base.level) };
     return all.augments.flatMap((a) => {
       const card = numbersOf(a.id);
-      if (!card?.ops.length || augmentIds.includes(a.id)) return [];
+      if (!card?.ops.length || augmentIds.includes(a.id) || a.ids.some((id) => RETIRED_AUGMENTS.has(id))) return []; // out of Mayhem: nobody picks it (src/ai/retiredAugments.ts)
       const holds = needHolds(card.need, facts);
       if (holds === 'no') return [];
       const g = cardGain({ ...base, enemy: facts2.enemy }, card);
