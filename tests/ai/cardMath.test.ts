@@ -87,6 +87,12 @@ it('converts bonus AD into AP before a zero multiplier gives the AD up (ADAPt)',
   expect(st.ap).toBeCloseTo(60 * 1.67 * 1.15);
   expect(st.ad).toBeCloseTo(run().stats.ad); // no bonus AD left
 });
+it('gives nothing for a card that works after an ultimate cast once the ultimate is locked (Back To Basics with Ultimate Awakening)', () => {
+  const lock = card('lock', [{ op: 'lock', key: 'R' }]);
+  const awake: CardNumbers = { ...card('awake', [{ op: 'add', stat: 'haste', value: 225 }]), needs: 'The 300 basic haste only for 15s after an ultimate cast, 20s cooldown.' };
+  expect(run([lock, awake]).stats.haste).toBe(run([lock]).stats.haste);
+  expect(run([awake]).stats.haste).toBe(run().stats.haste + 225); // without the lock it counts
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often

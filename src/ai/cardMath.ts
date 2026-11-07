@@ -197,7 +197,10 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // shortcut: the reward is added on top of the quest items, not in their place, and frees no slot; model the swap if a quest build looks a slot short.
   const questDone = (c: CardNumbers) => { const need = questItems(c.id); return need.length > 0 && need.every((id) => held.some((h) => h % 10000 === id)); };
   const noQuest = (x: CardOp) => !x.after_quest;
-  const ops = [...(o.passive ?? []).filter(noQuest), ...o.cards.flatMap((c) => c.ops.filter((x) => noQuest(x) || questDone(c))).filter(applies), ...held.flatMap((id) => o.itemOps?.[id % 10000] ?? []).filter(applies).filter(noQuest), ...fromFile.filter(noQuest)];
+  // With the ultimate locked (Back To Basics) there is no ultimate cast: a card that works only after one (Ultimate Awakening's haste) gives nothing (knowledge/fight-rules.md, lock).
+  const ultLocked = [...(o.passive ?? []), ...o.cards.flatMap((c) => c.ops)].some((x) => x.op === 'lock' && x.key === 'R');
+  const needsUlt = (c: CardNumbers) => ultLocked && /ultimate cast|after (?:an|your) ultimate|cast(?:ing)? (?:an|your) ultimate/i.test(String(c.needs ?? ''));
+  const ops = [...(o.passive ?? []).filter(noQuest), ...o.cards.filter((c) => !needsUlt(c)).flatMap((c) => c.ops.filter((x) => noQuest(x) || questDone(c))).filter(applies), ...held.flatMap((id) => o.itemOps?.[id % 10000] ?? []).filter(applies).filter(noQuest), ...fromFile.filter(noQuest)];
   const notModelled = o.cards.flatMap((c) => (c.not_modelled ? [`${c.name}: ${c.not_modelled}`] : []));
   // Stacks held by this level, read from 23 screen windows with Tank Engine (health order: Heartsteel, then the multiplier, which one reading of Mundo forces): 0.6 a level when deaths take most of them, 2.2 a level of takedowns when they don't. Other stacks are a guess.
   // Stacks from every instance of ability damage grow fast with the game (Phenomenal Evil); fitted to screens.
