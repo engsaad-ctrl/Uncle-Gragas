@@ -239,7 +239,16 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   };
   multiply(s, 'ap', itemAmp('APAmp', 'ap'));
   multiply(s, 'hp', itemAmp('HPAmp', 'hp'));
-  for (const x of ops) if (x.op === 'mult') { if (x.stat === 'hp' && x.scope === 'bonus') { s.hp += s.bonusHp * (x.factor - 1); s.bonusHp *= x.factor; } else multiply(s, x.stat, x.factor); }
+  // Seconds of fighting an op waits for: "N seconds in champion combat" (Riftmaker, Liandry's) or "enemy champion nearby for N seconds" (Heartsteel's charge).
+  const combatSeconds = (x: CardOp) => { const m = /(\d+(?:\.\d+)?) seconds? (?:in|of) champion combat|nearby for (\d+(?:\.\d+)?) seconds?/i.exec(String((x as { needs?: string }).needs ?? '')); return m ? +(m[1] ?? m[2]!) : 0; };
+  // A bonus-only multiplier on resists raises bonus armor or magic resist only; one that waits seconds of combat (Jak'Sho 5 s) counts for the share of the fight after them.
+  // shortcut: the resists are averaged over the fight, not raised at 5 s (effective health reads one value a fight); model resists over time if a test needs the timing.
+  const bonusResist = { armor: 'bonusArmor', mr: 'bonusMr' } as const;
+  for (const x of ops) if (x.op === 'mult') {
+    if (x.stat === 'hp' && x.scope === 'bonus') { s.hp += s.bonusHp * (x.factor - 1); s.bonusHp *= x.factor; }
+    else if ((x.stat === 'armor' || x.stat === 'mr') && x.scope === 'bonus') { const gain = s[bonusResist[x.stat]] * (x.factor - 1) * Math.max(0, 1 - combatSeconds(x) / FIGHT.seconds); s[x.stat] += gain; s[bonusResist[x.stat]] += gain; }
+    else multiply(s, x.stat, x.factor);
+  }
   for (const x of ops) if (x.op === 'per_stack' && x.mode === 'mult') multiply(s, x.stat, 1 + (x.value >= 1 ? x.value - 1 : x.value) * stacksOf(x)); // readers wrote +5% a stack as 1.05 or 0.05
   const baseRates = record as unknown as { attackSpeedModifiable?: { baseValue?: number }; attackSpeedRatioModifiable?: { baseValue?: number } };
   const as0 = baseRates.attackSpeedModifiable?.baseValue ?? 0.625;
@@ -247,8 +256,6 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // An amp for magic damage reaches a champion's abilities unless the kit deals only physical.
   // An amp on one chosen ability counts for one of the three basic ones.
   // An amp that needs some seconds in champion combat (Riftmaker 4, Liandry's 3) starts then, so a burst window of 3 s mostly misses it.
-  // Seconds of fighting an op waits for: "N seconds in champion combat" (Riftmaker, Liandry's) or "enemy champion nearby for N seconds" (Heartsteel's charge).
-  const combatSeconds = (x: CardOp) => { const m = /(\d+(?:\.\d+)?) seconds? in champion combat|nearby for (\d+(?:\.\d+)?) seconds?/i.exec(String((x as { needs?: string }).needs ?? '')); return m ? +(m[1] ?? m[2]!) : 0; };
   // withAll false: the all-scope amps are already in another factor of the same damage (an ability takes amp('abilities') and then its own slot's).
   const amp = (scope: string, t = Infinity, withAll = true) => { const fs = ops.flatMap((x) => (x.op !== 'damage_amp' || t < combatSeconds(x) ? [] : (withAll && x.scope === 'all') || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical') ? [x.factor] : x.scope === 'one_ability' && scope === 'abilities' ? [1 + (x.factor - 1) / 3] : [])); const byMana = ops.reduce((m, x) => (x.op === 'mana_amp' && ((withAll && x.scope === 'all') || x.scope === scope) && Number.isFinite(fullMana) ? m * (1 + (x.per100 * fullMana) / 100) : m), 1); return byMana * (o.ampStack === 'add' ? 1 + fs.reduce((m, f) => m + f - 1, 0) : fs.reduce((m, f) => m * f, 1)); };
   const cdFactor = (scope: string) => ops.reduce((m, x) => (x.op === 'cooldown' && (x.scope === 'all' || x.scope === scope) ? m * x.factor : m), 1);

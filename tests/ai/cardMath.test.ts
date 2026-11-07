@@ -65,6 +65,13 @@ it('counts a magic-only shield for the magic share of the enemy damage (Kaenic R
   expect(against(1)).toBe(0); // all physical: it blocks nothing
   expect(against(0)).toBeCloseTo(600); // all magic: two kills, 300 each
 });
+it('raises bonus resists only, and only for the fight after its combat seconds (Jak Sho, knowledge/fight-rules.md)', () => {
+  const plus = card('resists', [{ op: 'add', stat: 'armor', value: 100 }, { op: 'add', stat: 'mr', value: 100 }]);
+  const jak = (needs?: string) => card('jak', [{ op: 'mult', stat: 'armor', factor: 1.2, scope: 'bonus', needs }, { op: 'mult', stat: 'mr', factor: 1.2, scope: 'bonus', needs }] as unknown as CardOp[]);
+  const base = run([plus]).stats;
+  expect(run([plus, jak()]).stats.armor - base.armor).toBeCloseTo(0.2 * (base.armor - run().stats.armor)); // the bonus part, not base armor
+  expect(run([plus, jak('5 seconds of champion combat')]).stats.mr - base.mr).toBeCloseTo(0.2 * (base.mr - run().stats.mr) * (10 / 15)); // 10 of the 15 s
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often
