@@ -34,6 +34,8 @@ export type CardOp =
   | { op: 'crit_dot'; extra: number; after_quest?: boolean }
   | { op: 'heal_damage'; ratio: number; after_quest?: boolean }
   | { op: 'abilities_on_hit'; after_quest?: boolean }
+  /** He becomes melee (Draw Your Sword): attack range 200, melee uptime and the mode's melee resists, no ranged-only items. */
+  | { op: 'melee'; after_quest?: boolean }
   | { op: 'on_hit_repeat'; extra_hits: number; trigger: string; after_quest?: boolean }
   /** Each attack also fires bolts at other enemies near the target (Runaan's Hurricane): this many for a ranged or melee champion, each a share of his AD that crits and applies on-hit. */
   | { op: 'bolts'; ranged: number; melee: number; ad: number; after_quest?: boolean }
@@ -158,7 +160,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const owned = held.flatMap((id) => o.shop[id] ?? []);
   const s = buildStats(record, owned, o.level);
   // The mode's own stats: melee also gets 15 armor and magic resist (Singed, Nasus on screen); the wiki's ranged resists don't show on screen.
-  const melee = ((record as unknown as { attackRangeModifiable?: { baseValue?: number } }).attackRangeModifiable?.baseValue ?? 0) < 300;
+  // A card that makes him melee (Draw Your Sword) does it for the whole fight (knowledge/fight-rules.md, melee).
+  const becomesMelee = [...(o.passive ?? []), ...o.cards.flatMap((c) => c.ops)].some((x) => x.op === 'melee');
+  const melee = becomesMelee || ((record as unknown as { attackRangeModifiable?: { baseValue?: number } }).attackRangeModifiable?.baseValue ?? 0) < 300;
   s.hp += 20 + (((melee ? MODE_HEALTH_AT_18.melee : MODE_HEALTH_AT_18.ranged) - 20) * (o.level - 1)) / 17;
   if (melee) { s.armor += MELEE_RESISTS; s.bonusArmor += MELEE_RESISTS; s.mr += MELEE_RESISTS; s.bonusMr += MELEE_RESISTS; }
   // An item whose own numbers already multiply this stat (Rabadon's 1.3, Warmog's 1.12 on bonus health) isn't multiplied again from its file.
@@ -194,7 +198,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // A stat that comes only near death (Overlord's Bloodmail: 12% AD at or below 30% health) isn't held through the fight.
   // Range in a condition (knowledge/fight-rules.md, conditions): "beyond N range" holds when one of his basic abilities reaches past N (Skilled Sniper: not for
   // Vladimir, whose longest is 600); "target within N range" when he fights at N or closer (Sunfire Aegis's 300: melee only).
-  const attackRange = (record as unknown as { attackRangeModifiable?: { baseValue?: number } }).attackRangeModifiable?.baseValue ?? 0;
+  const attackRange = becomesMelee ? 200 : (record as unknown as { attackRangeModifiable?: { baseValue?: number } }).attackRangeModifiable?.baseValue ?? 0;
   const reach = Math.max(0, ...(record.spells ?? []).slice(0, 3).map((path) => { const sp = (o.bin as Bin)[path]?.mSpell as { mCastRangeGrowthMax?: number[]; castRangeDisplayOverride?: number[]; castRange?: number[] } | undefined; return sp?.mCastRangeGrowthMax?.[1] ?? sp?.castRangeDisplayOverride?.[1] ?? sp?.castRange?.[1] ?? 0; }));
   const inRange = (n: string) => { const beyond = /beyond (\d+) range/i.exec(n), within = /within (\d+)(?: range|$|[;,)])/i.exec(n); return (!beyond || reach > +beyond[1]!) && (!within || attackRange <= +within[1]!); };
   const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return inRange(n) && !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!) && !((x.op === 'mult' || x.op === 'add') && /below \d+% remaining health/i.test(n)); };

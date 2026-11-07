@@ -118,6 +118,11 @@ it('keeps a card whose item is not held yet, as unknown, not no (Upgrade Infinit
   expect(needHolds(need, { owned: [], ranged: true, traits: [] })).toBe('unknown');
   expect(needHolds(need, { owned: ['Infinity Edge'], ranged: true, traits: [] })).toBe('yes');
 });
+it('fights melee once a card makes him melee (Draw Your Sword)', () => {
+  const sword = card('sword', [{ op: 'melee' }]);
+  const ranged = run(), melee = run([sword]);
+  expect(melee.stats.armor - ranged.stats.armor).toBe(15); // the mode's melee resists
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often

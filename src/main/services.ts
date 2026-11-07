@@ -690,7 +690,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const healthCard = cards.some((c) => c.ops.some((x) => (x.op === 'mult' || (x.op === 'per_stack' && x.mode === 'mult')) && x.stat === 'hp'));
       const fighter = !style && !healthCard && !!kit?.traits.includes('frontline') && !kit.traits.includes('peel') && !kit.scales.some((x) => x === 'armor' || x === 'mr');
       // Runaan's Hurricane is sold to ranged champions only: none of 75,278 melee players held it but Kayle and Gnar, who fight at range (2026-11-05).
-      const melee = ((championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined)?.attackRangeModifiable?.baseValue ?? 0) < 300;
+      // A held card that makes him melee (Draw Your Sword) rules out ranged-only items too.
+      const melee = cards.some((c) => c.ops.some((x) => x.op === 'melee')) || ((championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined)?.attackRangeModifiable?.baseValue ?? 0) < 300;
       // A magic champion who doesn't fight with attacks gets no attack-speed or on-hit item, nor Dusk and Dawn, unless a card makes his abilities apply on-hit
       // (the owner's no-attack-items rule, checked in scripts/checks/strict.mjs; Ethereal Weapon is the exception, 2026-11-06). Ardent Censer serves the ally he heals.
       const noAttacks = kit?.damage === 'magic' && !fightKit.attacks && style !== 'tank' && !cards.some((c) => c.ops.some((x) => x.op === 'abilities_on_hit'));
