@@ -567,7 +567,8 @@ export function needHolds(need: CardNeed | undefined, o: { owned: string[]; rang
   if (!need) return 'yes';
   switch (need.class) {
     case 'always': case 'window': case 'chosen_ability': case 'summoner': return 'yes';
-    case 'item': return (need.items ?? []).some((n) => o.owned.includes(n)) ? 'yes' : 'no';
+    // Not held yet is not a no: he can buy the item, and the build brings what a held card asks for (Upgrade Infinity Edge, Zwag's picks: 7 left out).
+    case 'item': return (need.items ?? []).some((n) => o.owned.includes(n)) ? 'yes' : 'unknown';
     case 'melee': return o.ranged ? 'no' : 'yes';
     case 'ranged': return o.ranged ? 'yes' : 'no';
     case 'ability_kind': return o.traits.includes(need.ability_kind ?? '') ? 'yes' : 'unknown';

@@ -10,3 +10,8 @@ describe('augment numbers from their texts (knowledge/fight-rules.md, augments)'
     expect(card('Dive Bomber').ops).toEqual([]);
   });
 });
+describe('augment conditions', () => {
+  it('holds Glass Cannon for ranged champions too, each of its amps marked melee or ranged', () => {
+    expect(card('Glass Cannon').need?.class).toBe('always');
+  });
+});

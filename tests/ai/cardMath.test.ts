@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { FIGHT, cardGain, fight, type CardNumbers, type CardOp } from '../../src/ai/cardMath.js';
+import { FIGHT, cardGain, fight, needHolds, type CardNumbers, type CardOp } from '../../src/ai/cardMath.js';
 // These tests count attacks exactly; the uptime has its own test.
 beforeAll(() => { FIGHT.attackUptime.melee = 1; FIGHT.attackUptime.ranged = 1; });
 afterAll(() => { FIGHT.attackUptime.melee = 0.8; FIGHT.attackUptime.ranged = 0.7; });
@@ -112,6 +112,11 @@ it('converts attack speed into crit damage before giving most of it up (Big Shot
   const crit = card('crit', [{ op: 'add', stat: 'crit', value: 1 }]);
   const hit = (cards: CardNumbers[]) => fight({ bin, shop: {}, kit, items: [], cards: [crit, ...cards], level: 1 }).fromAttacks / fight({ bin, shop: {}, kit, items: [], cards: [crit, ...cards], level: 1 }).attacks;
   expect(hit([as, shot]) / hit([as])).toBeCloseTo((1.75 + 0.5) / 1.75); // all of the bonus turned into crit damage, not a quarter of it
+});
+it('keeps a card whose item is not held yet, as unknown, not no (Upgrade Infinity Edge)', () => {
+  const need = { class: 'item', items: ['Infinity Edge'] };
+  expect(needHolds(need, { owned: [], ranged: true, traits: [] })).toBe('unknown');
+  expect(needHolds(need, { owned: ['Infinity Edge'], ranged: true, traits: [] })).toBe('yes');
 });
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
