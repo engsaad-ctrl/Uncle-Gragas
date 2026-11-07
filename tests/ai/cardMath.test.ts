@@ -54,6 +54,11 @@ it('waits the seconds near an enemy a proc names before it fires (Heartsteel, kn
   expect(run([proc()]).fromCards).toBeCloseTo(900);
   expect(run([proc('enemy champion nearby for 3 seconds (6 ticks of 0.5)')]).fromCards).toBeCloseTo(700);
 });
+it('ends the burns on a target when it dies, so their stacks build again on the next (knowledge/fight-rules.md)', () => {
+  // A stack of 10 a second on each attack (every 5/3 s), lasting the fight: 750 on one target; kills at 5 and 10 s start it again: 3 x 100.
+  const brand = card('brand', [{ op: 'dot', per_second: { flat: 10 }, duration: 99, type: 'true', stacks_max: 99, trigger: 'attack' }]);
+  expect(run([brand]).fromCards).toBeCloseTo(300, -2);
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often

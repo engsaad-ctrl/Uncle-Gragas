@@ -406,7 +406,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     peakMs = Math.max(peakMs, c.moveSpeed);
     peakAs = Math.max(peakAs, c.attackSpeed);
     const taken = takenBy(c);
-    while (kills.length && t >= kills[0]!) { kills.shift(); fromAbilities += executeShare * targetHp; fire('takedown', t, c); fire('kill', t, c); }
+    // At each kill he turns to a new target: burns his items and cards left on the dead one end, so their stacks build again (knowledge/fight-rules.md, target switching).
+    // The kill times stand for it: stored games show a champion death every 9.9 s of game time, about every 5 s of fighting if half the game is fighting.
+    while (kills.length && t >= kills[0]!) { kills.shift(); fromAbilities += executeShare * targetHp; for (let i = dots.length - 1; i >= 0; i--) if (!dots[i]!.fromAbility) dots.splice(i, 1); fire('takedown', t, c); fire('kill', t, c); }
     // A mage or support who doesn't fight with attacks makes none (the owner: Ahri, Soraka); a physical non-attacker attacks between casts only, an assumption.
     if (t >= nextAttack) {
       attacks++;
