@@ -43,6 +43,11 @@ it('applies an all-damage amp once to an ability, not once for abilities and aga
   expect(cast([card('all', [{ op: 'damage_amp', scope: 'all', factor: 1.2 }])])).toBe(120);
   expect(cast([card('basic', [{ op: 'damage_amp', scope: 'basic', factor: 1.2 }]), card('abilities', [{ op: 'damage_amp', scope: 'abilities', factor: 1.5 }])])).toBe(180); // different scopes still multiply
 });
+it('starts a burn again at one stack once it has ended (knowledge/fight-rules.md)', () => {
+  // Kills at 5 s and 10 s; a 2 s burn of 100 true damage a second: it ends at 7 s, so the second kill starts it at one stack, not two.
+  const burn = card('burn', [{ op: 'dot', per_second: { flat: 100 }, duration: 2, type: 'true', stacks_max: 99, trigger: 'kill' }]);
+  expect(run([burn]).fromCards).toBeCloseTo(400, -2); // within 50 (steps of 0.05 s); with two stacks it was about 600
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often

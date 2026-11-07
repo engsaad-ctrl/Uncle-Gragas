@@ -381,7 +381,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         lastProc.set(x, t);
       }
       if (x.op === 'refund') { reduce(x.scope, x.amount, x.unit, t); lastProc.set(x, t); }
-      if (x.op === 'dot') { const d = dots.find((y) => y.op === x); if (d) { d.until = t + (x.duration ?? FIGHT.seconds); d.stacks = Math.min(x.stacks_max ?? 1, d.stacks + 1); } else dots.push({ op: x, until: t + (x.duration ?? FIGHT.seconds), stacks: 1, fromAbility: false }); }
+      // A burn applied again while it lasts adds a stack and refreshes; one that has ended starts again at one stack (knowledge/fight-rules.md).
+      if (x.op === 'dot') { const d = dots.find((y) => y.op === x); if (d) { d.stacks = t > d.until ? 1 : Math.min(x.stacks_max ?? 1, d.stacks + 1); d.until = t + (x.duration ?? FIGHT.seconds); } else dots.push({ op: x, until: t + (x.duration ?? FIGHT.seconds), stacks: 1, fromAbility: false }); }
       if (x.op === 'timed') {
         const st = stateOf.get(x);
         const live = st && t <= st.until;
