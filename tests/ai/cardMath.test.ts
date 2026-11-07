@@ -104,6 +104,15 @@ it('reads range in a condition: beyond N by his abilities, within N by his attac
   expect(at(bin, 'magic damage only, target within 700')).toBeGreaterThan(0);
   expect(at(bin, 'next Attack after an Ability, within 10 seconds')).toBe(at(bin, '')); // seconds, not range
 });
+it('converts attack speed into crit damage before giving most of it up (Big Shot)', () => {
+  const as = card('as', [{ op: 'add', stat: 'attack_speed', value: 1 }]);
+  const shot = card('shot', [{ op: 'convert', from: 'attack_speed', to: 'crit_damage', ratio: 0.5 }, { op: 'mult', stat: 'attack_speed', factor: 0.25 }]);
+  const before = fight({ bin, shop: {}, kit, items: [], cards: [as], level: 1 }), after = fight({ bin, shop: {}, kit, items: [], cards: [as, shot], level: 1 });
+  expect(after.stats.attackSpeed).toBeLessThan(before.stats.attackSpeed); // a quarter of the bonus kept
+  const crit = card('crit', [{ op: 'add', stat: 'crit', value: 1 }]);
+  const hit = (cards: CardNumbers[]) => fight({ bin, shop: {}, kit, items: [], cards: [crit, ...cards], level: 1 }).fromAttacks / fight({ bin, shop: {}, kit, items: [], cards: [crit, ...cards], level: 1 }).attacks;
+  expect(hit([as, shot]) / hit([as])).toBeCloseTo((1.75 + 0.5) / 1.75); // all of the bonus turned into crit damage, not a quarter of it
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often
