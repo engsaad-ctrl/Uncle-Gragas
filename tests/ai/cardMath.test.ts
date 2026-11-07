@@ -59,6 +59,12 @@ it('ends the burns on a target when it dies, so their stacks build again on the 
   const brand = card('brand', [{ op: 'dot', per_second: { flat: 10 }, duration: 99, type: 'true', stacks_max: 99, trigger: 'attack' }]);
   expect(run([brand]).fromCards).toBeCloseTo(300, -2);
 });
+it('counts a magic-only shield for the magic share of the enemy damage (Kaenic Rookern, knowledge/fight-rules.md)', () => {
+  const shield = card('shield', [{ op: 'shield', amount: { flat: 300 }, trigger: 'kill', needs: 'blocks magic damage only' } as CardOp]);
+  const against = (physicalShare: number) => fight({ bin, shop: {}, kit, items: [], cards: [shield], level: 1, enemy: { armor: 50, mr: 50, physicalShare } }).healParts!.ops;
+  expect(against(1)).toBe(0); // all physical: it blocks nothing
+  expect(against(0)).toBeCloseTo(600); // all magic: two kills, 300 each
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often

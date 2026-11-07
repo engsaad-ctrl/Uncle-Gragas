@@ -373,7 +373,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       const icd = x.trigger === 'spell_hit' ? (('internal_cooldown' in x ? x.internal_cooldown : 0) || FIGHT.seconds) : 'internal_cooldown' in x ? (x.internal_cooldown ?? 0) : 0;
       if (icd && t - (lastProc.get(x) ?? -Infinity) < icd) continue;
       if (t < combatSeconds(x)) continue; // it waits its seconds of fighting before the first time (knowledge/fight-rules.md, conditions)
-      if (x.op === 'heal' || x.op === 'shield') { healed += formula(x.amount, c, o.level, targetHp); lastProc.set(x, t); }
+      // A shield that blocks one kind of damage (Kaenic Rookern: magic only) counts for the share of the enemy's damage of that kind (knowledge/fight-rules.md, shields).
+      if (x.op === 'heal' || x.op === 'shield') { const only = x.op === 'shield' ? /blocks (magic|physical) damage only/i.exec(String((x as { needs?: string }).needs ?? ''))?.[1]?.toLowerCase() : undefined; const physicalShare = o.enemy?.physicalShare ?? 0.5; healed += formula(x.amount, c, o.level, targetHp) * (only === 'magic' ? 1 - physicalShare : only === 'physical' ? physicalShare : 1); lastProc.set(x, t); }
       // An extra on-hit on the attack after an ability (Dusk and Dawn), not on every attack.
       if (x.op === 'on_hit_repeat' && trigger === 'next_attack') { for (let k = 0; k < x.extra_hits; k++) fire('on_hit', t, c); lastProc.set(x, t); }
       if (x.op === 'proc') {
