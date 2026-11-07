@@ -6,6 +6,8 @@ import { CHAMPION_KITS } from '../ai/championKits.js';
 import { championRecord, compareBuilds } from '../ai/calculator.js';
 import { cardGain, fight, needHolds, questItems, STACKS_AT_15 } from '../ai/cardMath.js';
 import { RETIRED_AUGMENTS } from '../ai/retiredAugments.js';
+import { AUGMENT_TAGS } from '../ai/augmentTags.js';
+import { tagWeight } from '../ai/tagWeight.js';
 import { CARD_NUMBERS, ITEM_NUMBERS, PASSIVE_NUMBERS } from '../ai/cardMathData.js';
 import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
@@ -611,7 +613,10 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const holds = needHolds(card.need, facts);
       if (holds === 'no') return [];
       const g = cardGain({ ...base, enemy: facts2.enemy }, card);
-      return [{ id: a.id, damage: g.damage, health: g.effectiveHp, value: fightValue(g.after, place) / Math.max(fightValue(g.before, place), 1e-9) - 1, certain: holds === 'yes' && card.status === 'computed' && card.ops.every((x) => x.op === 'add' || x.op === 'mult'), missing: card.not_modelled ?? null }];
+      // Its tags (src/ai/augmentTags.ts) weigh its value (src/ai/tagWeight.ts); a card with a condition the fight doesn't check is never certain.
+      const tags = a.ids.map((id) => AUGMENT_TAGS[id]).find(Boolean);
+      const { weight, unread } = tagWeight(tags, card.ops);
+      return [{ id: a.id, damage: g.damage, health: g.effectiveHp, value: weight * (fightValue(g.after, place) / Math.max(fightValue(g.before, place), 1e-9) - 1), certain: !unread && tags?.sure !== false && holds === 'yes' && card.status === 'computed' && card.ops.every((x) => x.op === 'add' || x.op === 'mult'), missing: card.not_modelled ?? null }];
     });
   }
 
