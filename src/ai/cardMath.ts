@@ -248,7 +248,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // An amp on one chosen ability counts for one of the three basic ones.
   // An amp that needs some seconds in champion combat (Riftmaker 4, Liandry's 3) starts then, so a burst window of 3 s mostly misses it.
   const combatSeconds = (x: CardOp) => +(/(\d+(?:\.\d+)?) seconds? in champion combat/i.exec(String((x as { needs?: string }).needs ?? ''))?.[1] ?? 0);
-  const amp = (scope: string, t = Infinity) => { const fs = ops.flatMap((x) => (x.op !== 'damage_amp' || t < combatSeconds(x) ? [] : x.scope === 'all' || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical') ? [x.factor] : x.scope === 'one_ability' && scope === 'abilities' ? [1 + (x.factor - 1) / 3] : [])); const byMana = ops.reduce((m, x) => (x.op === 'mana_amp' && (x.scope === 'all' || x.scope === scope) && Number.isFinite(fullMana) ? m * (1 + (x.per100 * fullMana) / 100) : m), 1); return byMana * (o.ampStack === 'add' ? 1 + fs.reduce((m, f) => m + f - 1, 0) : fs.reduce((m, f) => m * f, 1)); };
+  // withAll false: the all-scope amps are already in another factor of the same damage (an ability takes amp('abilities') and then its own slot's).
+  const amp = (scope: string, t = Infinity, withAll = true) => { const fs = ops.flatMap((x) => (x.op !== 'damage_amp' || t < combatSeconds(x) ? [] : (withAll && x.scope === 'all') || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical') ? [x.factor] : x.scope === 'one_ability' && scope === 'abilities' ? [1 + (x.factor - 1) / 3] : [])); const byMana = ops.reduce((m, x) => (x.op === 'mana_amp' && ((withAll && x.scope === 'all') || x.scope === scope) && Number.isFinite(fullMana) ? m * (1 + (x.per100 * fullMana) / 100) : m), 1); return byMana * (o.ampStack === 'add' ? 1 + fs.reduce((m, f) => m + f - 1, 0) : fs.reduce((m, f) => m * f, 1)); };
   const cdFactor = (scope: string) => ops.reduce((m, x) => (x.op === 'cooldown' && (x.scope === 'all' || x.scope === scope) ? m * x.factor : m), 1);
   const locked = new Set(ops.flatMap((x) => (x.op === 'lock' ? [x.key] : [])));
   const critExtra = ops.reduce((m, x) => (x.op === 'crit_abilities' ? m + x.extra : m), 0);
@@ -437,7 +438,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const one = each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
         // A cast that deals damage over time (Miss Fortune's E: TotalDamagePerSecond for 2 s) is dealt at once here, so a card that crits damage over time crits it here; a toggle's goes through the dots.
         const overTime = sl.overTime && !sl.toggle ? 1 + c.crit * dotCrit : 1;
-        const hit = one * amp('abilities', t) * amp(scope, t) * overTime * (1 + c.crit * (critExtra + (sl.crits ? c.critDamage - 1 : 0))); // shortcut: a crit raises the whole hit, not only its AD part
+        const hit = one * amp('abilities', t) * amp(scope, t, false) * overTime * (1 + c.crit * (critExtra + (sl.crits ? c.critDamage - 1 : 0))); // shortcut: a crit raises the whole hit, not only its AD part
         perCast[sl.key] = Math.round(hit);
         casts[sl.key] = (casts[sl.key] ?? 0) + 1;
         if (one > 0) abilityInstances += sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1;

@@ -37,6 +37,12 @@ it('starts an amp that needs seconds in combat only then', () => {
   expect(run([amp]).fromAttacks / run().fromAttacks).toBeCloseTo(15 / 9);
 });
 
+it('applies an all-damage amp once to an ability, not once for abilities and again for its slot (knowledge/fight-rules.md)', () => {
+  const q = { rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [20, 20, 20, 20, 20], DataValues: [{ name: 'BaseDamage', values: [100, 100, 100, 100, 100, 100] }], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamage' }] } } } } };
+  const cast = (cards: CardNumbers[]) => fight({ bin: q, shop: {}, kit, items: [], cards, level: 1 }).perCast.Q!;
+  expect(cast([card('all', [{ op: 'damage_amp', scope: 'all', factor: 1.2 }])])).toBe(120);
+  expect(cast([card('basic', [{ op: 'damage_amp', scope: 'basic', factor: 1.2 }]), card('abilities', [{ op: 'damage_amp', scope: 'abilities', factor: 1.5 }])])).toBe(180); // different scopes still multiply
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often
