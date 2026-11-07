@@ -250,7 +250,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const multiplyAll = (early: boolean) => {
     if (beforeConverts('ap') === early) multiply(s, 'ap', itemAmp('APAmp', 'ap'));
     if (beforeConverts('hp') === early) multiply(s, 'hp', itemAmp('HPAmp', 'hp'));
-    for (const x of ops) if (x.op === 'mult' && beforeConverts(x.stat) === early) {
+    // A multiplier of 0 gives the source up (ADAPt: bonus AD into AP, then none left), so it comes after the conversion that reads it.
+    for (const x of ops) if (x.op === 'mult' && (beforeConverts(x.stat) && x.factor !== 0) === early) {
       if (x.stat === 'hp' && x.scope === 'bonus') { s.hp += s.bonusHp * (x.factor - 1); s.bonusHp *= x.factor; }
       else if ((x.stat === 'armor' || x.stat === 'mr') && x.scope === 'bonus') { const gain = s[bonusResist[x.stat]] * (x.factor - 1) * Math.max(0, 1 - combatSeconds(x) / FIGHT.seconds); s[x.stat] += gain; s[bonusResist[x.stat]] += gain; }
       else multiply(s, x.stat, x.factor);

@@ -80,6 +80,13 @@ it('turns bonus health into a stat after the health multipliers, reading bonus h
   const withEngine = run([health, engine]).stats;
   expect(run([health, engine, mail]).stats.ad - withEngine.ad).toBeCloseTo(0.1 * (withEngine.hp - run().stats.hp)); // the doubled health counts
 });
+it('converts bonus AD into AP before a zero multiplier gives the AD up (ADAPt)', () => {
+  const ad = card('ad', [{ op: 'add', stat: 'ad', value: 60 }]);
+  const adapt = card('adapt', [{ op: 'convert', from: 'bonus_ad', to: 'ap', ratio: 1.67 }, { op: 'mult', stat: 'bonus_ad', factor: 0 }, { op: 'mult', stat: 'ap', factor: 1.15 }]);
+  const st = run([ad, adapt]).stats;
+  expect(st.ap).toBeCloseTo(60 * 1.67 * 1.15);
+  expect(st.ad).toBeCloseTo(run().stats.ad); // no bonus AD left
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often
