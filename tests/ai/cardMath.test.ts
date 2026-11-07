@@ -142,6 +142,11 @@ it('casts a short-cooldown spell with a rising cost as often as it can, not once
   const r = { rec: { ...bin.rec, spells: ['', '', '', path] }, [path]: { __type: 'SpellObject', mSpell: { cooldownTime: [1, 1, 1, 1], mana: [40, 40, 40], DataValues: [{ name: 'Damage', values: [100, 100, 100, 100] }, { name: 'BaseCost', values: [40, 40, 40, 40] }, { name: 'ManaCostDuration', values: [8, 8, 8, 8] }], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'Damage' }] } } } } };
   expect(fight({ bin: r, shop: {}, kit, items: [], cards: [], level: 16 }).casts.R).toBeGreaterThan(5);
 });
+it('raises the heals and shields cards give by heal and shield power', () => {
+  const shield = card('shield', [{ op: 'shield', amount: { flat: 300 }, trigger: 'kill' }]);
+  const power = card('power', [{ op: 'add', stat: 'heal_shield_power', value: 0.2 }]);
+  expect(run([shield, power]).healParts!.ops).toBeCloseTo(1.2 * run([shield]).healParts!.ops);
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often
