@@ -20,7 +20,7 @@ const read = (p) => JSON.parse(readFileSync(p, 'utf8').replace(/^﻿/, ''));
 const champs = read(`${dir}/cdragon/default/champion-summary.json`);
 const idOf = (name) => (champs.data ?? champs).find((c) => c.name === name).id;
 const services = createServices({ cacheDir: dir, fetchImpl: fetch });
-const JEWELED_GAUNTLET = 1048, TYPHOON = 1087, VULNERABILITY = 1092, ETHEREAL_WEAPON = 1029, BEES = 3086;
+const JEWELED_GAUNTLET = 1048, TYPHOON = 1087, VULNERABILITY = 1092, ETHEREAL_WEAPON = 1029, BEES = 3086, BACK_TO_BASICS = 1004, WARLOCK_JUICEBOX = 2132, MAGIC_MISSILE = 1133, SKILLED_SNIPER = 1113, PHENOMENAL_EVIL = 1390, DOUBLE_TAP = 2010, ZEALOT = 2009, MYSTIC_PUNCH = 1058, ADAPT = 1205, MINIONMANCER = 1104, HEAVY_CROWN = 3132, CRITICAL_RHYTHM = 1328, DEFT = 1022, UPGRADE_IE = 1336, CRITICAL_MISSILE = 1356, JUICED = 2016;
 const manaItem = (it) => (shop[it.id]?.DataValues?.find((d) => d.name === 'FlatMPPoolMod')?.values?.[0] ?? 0) > 0;
 const crit = (it) => (shop[it.id]?.DataValues?.find((d) => d.name === 'FlatCritChanceMod')?.values?.[0] ?? 0) > 0;
 const three = async (name, augments = []) => (await services.mathBuild(idOf(name), augments)).slice(0, 3).map((s) => s.item);
@@ -51,6 +51,23 @@ const cases = [
   ['19 Sona: no Heartsteel first', ['Sona'], ([a]) => !has([a[0]], 'Heartsteel')],
   // The owner (2026-11-06, «لا، خطأ»): Pyke doesn't take Heartsteel.
   ['20 Pyke: no Heartsteel', ['Pyke'], ([a]) => !has(a, 'Heartsteel')],
+  // The owner (2026-11-07, «اقرب الى الصحه»): Vladimir with Back To Basics, Liandry's, Sorcerer's, Warmog's, Void Staff, Shadowflame. Soft: two of them in the first three.
+  ["21 Vladimir with Back To Basics: two of Liandry's, Sorcerer's, Warmog's, Void Staff, Shadowflame in the first three", [['Vladimir', [BACK_TO_BASICS]]], ([a]) => ["Liandry's Torment", "Sorcerer's Shoes", "Warmog's Armor", 'Void Staff', 'Shadowflame'].filter((n) => has(a, n)).length >= 2],
+  // The owner's yes (2026-11-07) to MoreZwag's Vladimir (video 8ThkVX_53as, a win): Warlock Juicebox scales omnivamp with AP, so AP first (Riftmaker, Rabadon's). Soft, not to tune for.
+  ["22 Vladimir with Warlock Juicebox: Riftmaker or Rabadon's in the first three", [['Vladimir', [WARLOCK_JUICEBOX]]], ([a]) => has(a, 'Riftmaker') || has(a, "Rabadon's Deathcap")],
+  // The owner (2026-11-07, «بلد صحيح وقوي لميس فورشن وهو افضل بناء ap لها»), MoreZwag: Blackfire Torch, The Collector, Liandry's, Stormsurge, anti-heal, Void Staff. Soft: an AP burn item in the first three.
+  ["23 Miss Fortune with Vulnerability, Magic Missile, Jeweled Gauntlet, Skilled Sniper: Blackfire Torch or Liandry's in the first three", [['Miss Fortune', [VULNERABILITY, MAGIC_MISSILE, JEWELED_GAUNTLET, SKILLED_SNIPER]]], ([a]) => has(a, 'Blackfire Torch') || has(a, "Liandry's Torment")],
+  // The owner (2026-11-07, «بلد قوي»), MoreZwag's Kayle (PE6LuRRlSWY): Dusk and Dawn, boots, Blade of The Ruined King, Guinsoo's, Terminus. Soft: an on-hit item in the first three.
+  ["24 Kayle with Phenomenal Evil, Double Tap, Zealot, Mystic Punch: Blade of The Ruined King or Guinsoo's in the first three", [['Kayle', [PHENOMENAL_EVIL, DOUBLE_TAP, ZEALOT, MYSTIC_PUNCH]]], ([a]) => has(a, 'Blade of The Ruined King') || has(a, "Guinsoo's Rageblade")],
+  // The owner (2026-11-07, «بلد قوي», then «احسنت هذا التفكير السليم»), MoreZwag's Heimerdinger (7i0Gltpo8hA): he meant to sell Blade of The Ruined King (no effect on turret autos)
+  // and planned crit (Infinity Edge, The Collector) with ADAPt and Jeweled Gauntlet. Soft: a crit item, Shadowflame, Lich Bane or Liandry's in the first three; BotRK not required.
+  ["25 Heimerdinger with Jeweled Gauntlet, ADAPt, Ethereal Weapon, Minionmancer: crit, Shadowflame, Lich Bane or Liandry's in the first three", [['Heimerdinger', [JEWELED_GAUNTLET, ADAPT, ETHEREAL_WEAPON, MINIONMANCER]]], ([a]) => a.some(crit) || ['Shadowflame', 'Lich Bane', "Liandry's Torment"].some((n) => has(a, n))],
+  // The owner (2026-11-07, «بناء قوي»), MoreZwag's Varus (4FAFTMMATzI): Hubris, Lord Dominik's, Infinity Edge, The Collector, built around Q, not attacks. Soft: no attack-speed item in the first three.
+  ["26 Varus with Heavy Is The Crown, Back To Basics, Jeweled Gauntlet: Hubris, Lord Dominik's, Infinity Edge or The Collector first", [['Varus', [HEAVY_CROWN, BACK_TO_BASICS, JEWELED_GAUNTLET]]], ([a]) => ['Hubris', "Lord Dominik's Regards", 'Infinity Edge', 'The Collector'].includes(a[0].enName)],
+  // The owner (2026-11-07, «بلد قوي»), MoreZwag's Twitch (I7xPMtSGfdU): The Collector, boots, Runaan's, Infinity Edge, Lord Dominik's, then BotRK. Soft: a crit item in the first three.
+  ["27 Twitch with Critical Rhythm, Deft, Upgrade Infinity Edge, Critical Missile: a crit item in the first three", [['Twitch', [CRITICAL_RHYTHM, DEFT, UPGRADE_IE, CRITICAL_MISSILE]]], ([a]) => a.some(crit)],
+  // The owner (2026-11-07, «بناء صحيح»), MoreZwag's Jinx (FS5bTu2lUWo): The Collector, Yun Tal, Runaan's, Guinsoo's, Manamune, Terminus, BotRK; Juiced's on-hit grows with mana. Soft: an on-hit or crit item first.
+  ["28 Jinx with Double Tap, Juiced, Critical Missile: an on-hit or crit item first", [['Jinx', [DOUBLE_TAP, JUICED, CRITICAL_MISSILE]]], ([a]) => crit(a[0]) || ['Blade of The Ruined King', "Guinsoo's Rageblade", 'Terminus', 'Manamune'].includes(a[0].enName)],
 ];
 const lines = [`owner cases${w && itemMath.BURST ? `, burst window ${itemMath.BURST.window} s` : ''}`];
 let passed = 0;
