@@ -123,6 +123,14 @@ it('fights melee once a card makes him melee (Draw Your Sword)', () => {
   const ranged = run(), melee = run([sword]);
   expect(melee.stats.armor - ranged.stats.armor).toBe(15); // the mode's melee resists
 });
+it('reads a share of the target bonus health on the bonus part of the target (Sett R)', async () => {
+  const { SPELL_HITS } = await import('../../src/ai/cardMathData.js');
+  expect(SPELL_HITS['Characters/Sett/Spells/SettRAbility/SettR']?.targetBonusHealth).toBe(true);
+  const path = 'Characters/Sett/Spells/SettRAbility/SettR';
+  const r = { rec: { ...bin.rec, spells: ['', '', '', path] }, [path]: { __type: 'SpellObject', mSpell: { cooldownTime: [99, 99, 99, 99], DataValues: [{ name: 'MaxHealthDamage', values: [0.5, 0.5, 0.5, 0.5] }], mSpellCalculations: { MaxHealthDamageCalc: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'MaxHealthDamage' }] } } } } };
+  const cast = fight({ bin: r, shop: {}, kit, items: [], cards: [], level: 6 }).perCast.R!;
+  expect(cast).toBeCloseTo(0.5 * FIGHT.target.hp * (1 - 2415 / 3500), 0);
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often

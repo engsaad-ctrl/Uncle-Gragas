@@ -108,6 +108,8 @@ export interface FightResult {
 type Bin = Record<string, { __type?: string; mSpell?: SpellData & { cooldownTime?: number[]; Cooldown?: number; mClientData?: { mTooltipData?: { mLists?: { LevelUp?: { levelCount?: number } } } } } } | undefined>;
 const scaled = (a: Amount, level: number) => (typeof a === 'number' ? a : a.min + ((a.max - a.min) * (Math.min(level, 18) - 1)) / 17);
 const CAST_SECONDS = 0.75;
+/** The share of the fight target's health that is bonus health: 1 - 2,415 / 3,500 (the mean health of 172 champions at level 15 with no items, itemMath TYPICAL_HP). A share of the target's bonus health (Sett's R) reads this part. */
+const TARGET_BONUS_SHARE = 1 - 2415 / 3500;
 const NO_COOLDOWN_IN_FILE = 10; // shortcut: Morgana Q, Milio Q and a few have none in any record; a typical basic ability
 /** The mode's extra base health, 20 at level 1 to this at 18 (Kimi, from the wiki); see the screen check. */
 const MODE_HEALTH_AT_18 = { melee: 600, ranged: 400 };
@@ -475,7 +477,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const healing = Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
         if (!kitHeals) abilityHealing += healing; // read per ability as his own healing instead (knowledge/champion-heal-*.jsonl)
         if (healing > 0) for (const b of allyBuffs) b.until = t + b.seconds;
-        const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * targetHp) + fromPassive.reduce((t, v) => t + v.value, 0);
+        const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * targetHp * (reading?.targetBonusHealth ? TARGET_BONUS_SHARE : 1)) + fromPassive.reduce((t, v) => t + v.value, 0);
         const one = each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
         // A cast that deals damage over time (Miss Fortune's E: TotalDamagePerSecond for 2 s) is dealt at once here, so a card that crits damage over time crits it here; a toggle's goes through the dots.
         const overTime = sl.overTime && !sl.toggle ? 1 + c.crit * dotCrit : 1;
