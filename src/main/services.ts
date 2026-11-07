@@ -629,10 +629,12 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     const fightKit = fightKitOf(championId);
     const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
-    const damage = (stat?: string) => fight({ bin, shop, kit: fightKit, passive, items: [], level: 13, cards: stat ? [{ id: 0, name: stat, status: 'computed', ops: [{ op: 'add', stat, value: 100 }] }] : [] }).damage;
-    const base = damage(), ap = damage('ap') - base, ad = damage('ad') - base;
     const all = augmentIds.length ? await augments() : undefined;
-    const magicCard = cardsOf(all?.augments ?? [], augmentIds).some((c) => c.ops.some((x) => x.op === 'crit_dot' || (x.op === 'convert' && (x.from === 'ap' || x.to === 'ap')) || ((x.op === 'add' || x.op === 'mult' || x.op === 'per_stack') && x.stat === 'ap')));
+    // With the held cards: a card that adds magic damage to his casts or attacks (Infernal Conduit, Marksmage) makes AP grow his damage (BodyThoseFools' AP Nasus, 2026-11-07).
+    const held = cardsOf(all?.augments ?? [], augmentIds);
+    const damage = (stat?: string) => fight({ bin, shop, kit: fightKit, passive, items: [], level: 13, cards: [...held, ...(stat ? [{ id: 0, name: stat, status: 'computed', ops: [{ op: 'add' as const, stat, value: 100 }] }] : [])] }).damage;
+    const base = damage(), ap = damage('ap') - base, ad = damage('ad') - base;
+    const magicCard = held.some((c) => c.ops.some((x) => x.op === 'crit_dot' || (x.op === 'convert' && (x.from === 'ap' || x.to === 'ap')) || ((x.op === 'add' || x.op === 'mult' || x.op === 'per_stack') && x.stat === 'ap')));
     const magic = (ap >= 0.5 * Math.max(ap, ad) && ap > 0) || magicCard;
     // A magic frontline champion also builds magic with health (the owner: Galio has three builds).
     return [...(magic ? ['ap' as const] : []), ...(magic && kit?.traits.includes('frontline') ? ['aphp' as const] : []), ...(ad >= 0.5 * Math.max(ap, ad) && ad > 0 ? ['ad' as const] : []), 'tank'];

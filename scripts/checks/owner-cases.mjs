@@ -86,6 +86,13 @@ const galioStyles = await services.buildStyles(idOf('Galio'), []);
 const galioOk = ['ap', 'aphp', 'tank'].every((s) => galioStyles.includes(s));
 passed += galioOk;
 lines.push(`${galioOk ? 'PASS' : 'FAIL'} 16 Galio: magic, magic with health and tank offered: ${galioStyles.join(', ')}`);
-lines.splice(1, 0, `passed ${passed} of ${cases.length + 2}`);
+// The owner's yes (2026-11-07) to BodyThoseFools' AP Nasus (ao3YXjau3FQ): with Infinite Recursion, Marksmage, Infernal Conduit and Overloaded the magic build must be offered. Soft.
+const nasusStyles = await services.buildStyles(idOf('Nasus'), [1388, 1129, 1045, 2123]);
+// The owner then judged this build right (2026-11-07, «بناءك صحيح»): Blackfire Torch, Liandry's, Sorcerer's Shoes, Riftmaker, Rylai's, Void Staff. Soft: Blackfire or Liandry's in the magic build's first three.
+const nasusAp = nasusStyles.includes('ap') ? (await services.mathBuild(idOf('Nasus'), [1388, 1129, 1045, 2123], [], undefined, 'ap')).slice(0, 3).map((x) => x.item) : [];
+const nasusOk = nasusAp.length > 0 && (has(nasusAp, 'Blackfire Torch') || has(nasusAp, "Liandry's Torment"));
+passed += nasusOk;
+lines.push(`${nasusOk ? 'PASS' : 'FAIL'} 29 Nasus with Infinite Recursion, Marksmage, Infernal Conduit, Overloaded: the magic build offered, Blackfire Torch or Liandry's in its first three: ${nasusStyles.join(', ')} | ap: ${names(nasusAp).join(', ')}`);
+lines.splice(1, 0, `passed ${passed} of ${cases.length + 3}`);
 writeResult(import.meta.url, lines);
 process.exit(0);
