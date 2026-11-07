@@ -131,6 +131,12 @@ it('reads a share of the target bonus health on the bonus part of the target (Se
   const cast = fight({ bin: r, shop: {}, kit, items: [], cards: [], level: 6 }).perCast.R!;
   expect(cast).toBeCloseTo(0.5 * FIGHT.target.hp * (1 - 2415 / 3500), 0);
 });
+it('lets a mage whose passive works on attacks attack between casts (Diana, Tahm Kench)', () => {
+  const mage = { damage: 'magic' as const, attacks: false };
+  const onHit: CardOp[] = [{ op: 'proc', trigger: 'on_hit', damage: { flat: 10 }, type: 'magic' }];
+  expect(fight({ bin, shop: {}, kit: mage, items: [], cards: [], level: 1 }).attacks).toBe(0);
+  expect(fight({ bin, shop: {}, kit: mage, items: [], cards: [], level: 1, passive: onHit }).attacks).toBe(3); // a quarter as often, like a physical non-attacker
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often

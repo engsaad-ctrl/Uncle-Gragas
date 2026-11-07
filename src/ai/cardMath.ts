@@ -369,7 +369,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const dots: { op: Extract<CardOp, { op: 'dot' }>; until: number; stacks: number; fromAbility: boolean }[] = [];
   const lastProc = new Map<CardOp, number>();
   const kitHeals = ops.some((x) => (x.op === 'heal' || x.op === 'shield') && x.kit);
-  let abilityInstances = 0, armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = o.kit.attacks || o.kit.damage !== 'magic' ? 0 : Infinity, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
+  // A mage whose own passive works on his attacks (Diana's third hit, Tahm Kench's, Orianna's, Lux's mark) attacks between casts as a physical non-attacker does (knowledge/fight-rules.md, kits).
+  const passiveOnAttack = (o.passive ?? []).some((x) => 'trigger' in x && ON_ATTACK.has(x.trigger ?? ''));
+  let abilityInstances = 0, armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = o.kit.attacks || o.kit.damage !== 'magic' || passiveOnAttack ? 0 : Infinity, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
   const casts: Record<string, number> = {}, perCast: Record<string, number> = {};
   const kills = [...FIGHT.killTimes];
   const damageBySecond: number[] = [];
@@ -450,7 +452,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     // A mage or support who doesn't fight with attacks makes none (the owner: Ahri, Soraka); a physical non-attacker attacks between casts only, an assumption.
     if (t >= nextAttack) {
       attacks++;
-      nextAttack = t + 1 / (c.attackSpeed * (o.kit.attacks ? 1 : o.kit.damage === 'magic' ? 0 : 0.25) * (melee ? FIGHT.attackUptime.melee : FIGHT.attackUptime.ranged));
+      nextAttack = t + 1 / (c.attackSpeed * (o.kit.attacks ? 1 : o.kit.damage === 'magic' && !passiveOnAttack ? 0 : 0.25) * (melee ? FIGHT.attackUptime.melee : FIGHT.attackUptime.ranged));
       fromAttacks += c.ad * (1 + c.crit * (c.critDamage - 1)) * amp('attacks', t) * taken.physical * (1 + boltAd);
       repeatCarry += onHitRepeat(c) + boltHits;
       fire('on_hit', t, c);
