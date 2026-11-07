@@ -308,7 +308,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // Without it, haste only spent mana sooner: Karthus with Nashor's dealt 4,325, 4,113, then 832 in the third fight.
   const manaFloor = Number.isFinite(fullMana) ? startMana - (startMana + (FIGHT.manaFights - 1) * manaRegen * FIGHT.gapSeconds) / FIGHT.manaFights : -Infinity;
 
-  interface Slot { path: string; key: string; spell: NonNullable<NonNullable<Bin[string]>['mSpell']>; rank: number; ranks: number; cooldown: number; cost: number; perSecond: boolean; overTime: boolean; toggle: boolean; ready: number; on: boolean; recast: boolean; crits: boolean; last?: number; dealt?: number }
+  interface Slot { rising?: { step: number; window: number; cap: number; casts: number[] }; path: string; key: string; spell: NonNullable<NonNullable<Bin[string]>['mSpell']>; rank: number; ranks: number; cooldown: number; cost: number; perSecond: boolean; overTime: boolean; toggle: boolean; ready: number; on: boolean; recast: boolean; crits: boolean; last?: number; dealt?: number }
   const passiveSpells = stacks === undefined ? [] : Object.values(bin).flatMap((v) => (v?.mSpell && Object.keys((v.mSpell as { mSpellCalculations?: object }).mSpellCalculations ?? {}).some((n) => /^Passive_[QWER]DamageIncrease$/.test(n)) ? [v.mSpell] : []));
   // An execute that comes with enough stacks (Smolder's Q at 225: below 6.5% of maximum health): the rest of a dying target's health, once a kill.
   // An item that executes below a share of health (The Collector: 5%, its file's ExecuteThreshold) does the same at each kill.
@@ -358,7 +358,10 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     // shortcut: a stated cooldown of a second or less is a toggle (Jinx's Q, Karthus's E); upgrade with a per-champion list if a real spell has one.
     // An ability whose calculation reads crit damage (stat 9) crits like an attack: Yasuo and Yone's Q, Garen's E, Talon's Q, and 40 more.
     const crits = JSON.stringify((spell as { mSpellCalculations?: unknown }).mSpellCalculations ?? {}).includes('"mStat":9');
-    slots.push({ crits, path, key, spell, rank, ranks, cooldown: stated || 1, cost: (spell.mana?.[rank - 1] ?? sibling?.mana?.[rank - 1] ?? 0) * manaCost, perSecond: names.some((n) => /dps/i.test(n)), overTime: names.some((n) => /dps|persecond/i.test(n)), toggle: stated > 0 && stated <= 1, ready: o.cooldowns?.[key] ?? 0, on: false, recast: key === 'R' && ops.some((x) => x.op === 'recast' && x.key === 'R') });
+    // A cost that rises with each cast inside a window (Kog'Maw's R: +40 a shot for 8 s, up to 400) makes a spell cast as often as mana allows, not a toggle (knowledge/fight-rules.md, casts).
+    const dv = (n: string) => spell.DataValues?.find((d) => d.name === n)?.values?.[rank];
+    const rising = dv('BaseCost') && dv('ManaCostDuration') ? { step: dv('BaseCost')! * manaCost, window: dv('ManaCostDuration')!, cap: (dv('ManaCostCap') ?? Infinity) * manaCost, casts: [] as number[] } : undefined;
+    slots.push({ rising, crits, path, key, spell, rank, ranks, cooldown: stated || 1, cost: (spell.mana?.[rank - 1] ?? sibling?.mana?.[rank - 1] ?? 0) * manaCost, perSecond: names.some((n) => /dps/i.test(n)), overTime: names.some((n) => /dps|persecond/i.test(n)), toggle: !rising && stated > 0 && stated <= 1, ready: o.cooldowns?.[key] ?? 0, on: false, recast: key === 'R' && ops.some((x) => x.op === 'recast' && x.key === 'R') });
   });
   // A toggle is switched on first: a cheaper cooldown elsewhere kept Karthus's E off until 8.6 s with Lich Bane (the owner's case 17).
   slots.sort((a, b) => Number(b.toggle) - Number(a.toggle));
@@ -465,7 +468,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (t >= nextCast) {
       const haste = (scope: string) => c.haste + ops.reduce((n, x) => (x.op === 'add' && x.stat === `${scope}_haste` ? n + scaled(x.value, o.level) : n), 0);
       for (const sl of slots) {
-        if (t < sl.ready || sl.on || mana < sl.cost || (sl.key !== 'R' && mana < startMana && mana - sl.cost < manaFloor)) continue;
+        const cost = sl.rising ? Math.min(sl.rising.cap, sl.cost + sl.rising.step * sl.rising.casts.filter((x) => t - x < sl.rising!.window).length) : sl.cost;
+        if (t < sl.ready || sl.on || mana < cost || (sl.key !== 'R' && mana < startMana && mana - cost < manaFloor)) continue;
         const scope = sl.key === 'R' ? 'ult' : 'basic';
         const read = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef, stacks });
         // A passive that adds damage to this ability per stack (Smolder: Passive_QDamageIncrease) adds it to the cast.
@@ -488,7 +492,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         casts[sl.key] = (casts[sl.key] ?? 0) + 1;
         if (one > 0) abilityInstances += sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1;
         const abilityTaken = o.kit.damage === 'physical' ? taken.physical : o.kit.damage === 'magic' ? taken.magic : (taken.physical + taken.magic) / 2;
-        mana -= sl.cost;
+        mana -= cost;
+        sl.rising?.casts.push(t);
         if (sl.toggle) {
           sl.on = true;
           if (sl.perSecond) dots.push({ op: { op: 'dot', per_second: { flat: hit }, duration: FIGHT.seconds, type: o.kit.damage === 'physical' ? 'physical' : 'magic' }, until: FIGHT.seconds, stacks: 1, fromAbility: true });
