@@ -34,7 +34,8 @@ describe('the fight', () => {
 it('starts an amp that needs seconds in combat only then', () => {
   const amp = card('amp', [{ op: 'damage_amp', scope: 'all', factor: 2, needs: '4 seconds in champion combat' } as CardOp]);
   // Attacks at 0, 1.67 and 3.33 s come before it, the other six after.
-  expect(run([amp]).fromAttacks / run().fromAttacks).toBeCloseTo(15 / 9);
+  // The data holds the amp averaged over the fight (make-card-data.cjs); once its 4 s have passed the fight applies the full amp, 1 + 1 x 15 / 11.
+  expect(run([amp]).fromAttacks / run().fromAttacks).toBeCloseTo((3 + 6 * (1 + 15 / 11)) / 9);
 });
 
 it('applies an all-damage amp once to an ability, not once for abilities and again for its slot (knowledge/fight-rules.md)', () => {
@@ -65,12 +66,12 @@ it('counts a magic-only shield for the magic share of the enemy damage (Kaenic R
   expect(against(1)).toBe(0); // all physical: it blocks nothing
   expect(against(0)).toBeCloseTo(600); // all magic: two kills, 300 each
 });
-it('raises bonus resists only, and only for the fight after its combat seconds (Jak Sho, knowledge/fight-rules.md)', () => {
+it('raises bonus resists only, by the factor the data averaged over the fight (Jak Sho, knowledge/fight-rules.md)', () => {
   const plus = card('resists', [{ op: 'add', stat: 'armor', value: 100 }, { op: 'add', stat: 'mr', value: 100 }]);
   const jak = (needs?: string) => card('jak', [{ op: 'mult', stat: 'armor', factor: 1.2, scope: 'bonus', needs }, { op: 'mult', stat: 'mr', factor: 1.2, scope: 'bonus', needs }] as unknown as CardOp[]);
   const base = run([plus]).stats;
   expect(run([plus, jak()]).stats.armor - base.armor).toBeCloseTo(0.2 * (base.armor - run().stats.armor)); // the bonus part, not base armor
-  expect(run([plus, jak('5 seconds of champion combat')]).stats.mr - base.mr).toBeCloseTo(0.2 * (base.mr - run().stats.mr) * (10 / 15)); // 10 of the 15 s
+  expect(run([plus, jak('5 seconds of champion combat')]).stats.mr - base.mr).toBeCloseTo(0.2 * (base.mr - run().stats.mr)); // the data's 1.2 is already the 30% averaged over the fight
 });
 it('turns bonus health into a stat after the health multipliers, reading bonus health when the text says bonus (knowledge/fight-rules.md, convert)', () => {
   const health = card('hp', [{ op: 'add', stat: 'hp', value: 2000 }]);
