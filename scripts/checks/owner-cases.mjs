@@ -20,7 +20,7 @@ const read = (p) => JSON.parse(readFileSync(p, 'utf8').replace(/^﻿/, ''));
 const champs = read(`${dir}/cdragon/default/champion-summary.json`);
 const idOf = (name) => (champs.data ?? champs).find((c) => c.name === name).id;
 const services = createServices({ cacheDir: dir, fetchImpl: fetch });
-const JEWELED_GAUNTLET = 1048, TYPHOON = 1087, VULNERABILITY = 1092, ETHEREAL_WEAPON = 1029, BEES = 3086, BACK_TO_BASICS = 1004, WARLOCK_JUICEBOX = 2132, MAGIC_MISSILE = 1133, SKILLED_SNIPER = 1113, PHENOMENAL_EVIL = 1390, DOUBLE_TAP = 2010, ZEALOT = 2009, MYSTIC_PUNCH = 1058, ADAPT = 1205, MINIONMANCER = 1104, HEAVY_CROWN = 3132, CRITICAL_RHYTHM = 1328, DEFT = 1022, UPGRADE_IE = 1336, CRITICAL_MISSILE = 1356, JUICED = 2016, TANK_ENGINE = 1353, PRESSURE_COOKER = 2102, GOLIATH = 1041, SOUL_EATER = 1375;
+const JEWELED_GAUNTLET = 1048, TYPHOON = 1087, VULNERABILITY = 1092, ETHEREAL_WEAPON = 1029, BEES = 3086, BACK_TO_BASICS = 1004, WARLOCK_JUICEBOX = 2132, MAGIC_MISSILE = 1133, SKILLED_SNIPER = 1113, PHENOMENAL_EVIL = 1390, DOUBLE_TAP = 2010, ZEALOT = 2009, MYSTIC_PUNCH = 1058, ADAPT = 1205, MINIONMANCER = 1104, HEAVY_CROWN = 3132, CRITICAL_RHYTHM = 1328, DEFT = 1022, UPGRADE_IE = 1336, CRITICAL_MISSILE = 1356, JUICED = 2016, TANK_ENGINE = 1353, PRESSURE_COOKER = 2102, GOLIATH = 1041, SOUL_EATER = 1375, BIG_SHOT = 3018, DRAW_YOUR_SWORD = 1134;
 const manaItem = (it) => (shop[it.id]?.DataValues?.find((d) => d.name === 'FlatMPPoolMod')?.values?.[0] ?? 0) > 0;
 const crit = (it) => (shop[it.id]?.DataValues?.find((d) => d.name === 'FlatCritChanceMod')?.values?.[0] ?? 0) > 0;
 const three = async (name, augments = []) => (await services.mathBuild(idOf(name), augments)).slice(0, 3).map((s) => s.item);
@@ -70,6 +70,8 @@ const cases = [
   ["28 Jinx with Double Tap, Juiced, Critical Missile: an on-hit or crit item first", [['Jinx', [DOUBLE_TAP, JUICED, CRITICAL_MISSILE]]], ([a]) => crit(a[0]) || ['Blade of The Ruined King', "Guinsoo's Rageblade", 'Terminus', 'Manamune'].includes(a[0].enName)],
   // The owner (2026-11-07, «بناء قوي»), BodyThoseFools' Cho'Gath (Z6K2hZjtRXs): Heartsteel, Warmog's, Unending Despair, Steelcaps, Riftmaker, Sunfire, Rabadon's. Soft: Heartsteel and a health item in the first three.
   ["30 Cho'Gath with Tank Engine, Pressure Cooker, Goliath, Soul Eater: Heartsteel and Warmog's or Unending Despair in the first three", [["Cho'Gath", [TANK_ENGINE, PRESSURE_COOKER, GOLIATH, SOUL_EATER]]], ([a]) => has(a, 'Heartsteel') && (has(a, "Warmog's Armor") || has(a, 'Unending Despair'))],
+  // The owner (2026-11-07): «ممكن يجي بق شوت مع درو يور سورد وايتمات سرعه او دمج»; BodyThoseFools' Caitlyn (n0hr89for64). Soft: crit or attack-speed items lead, no tank item first.
+  ["31 Caitlyn with Big Shot and Draw Your Sword: a crit or attack-speed item in the first three", [['Caitlyn', [BIG_SHOT, DRAW_YOUR_SWORD]]], ([a]) => a.some((i) => crit(i) || (shop[i.id]?.DataValues?.find((d) => d.name === 'PercentAttackSpeedMod')?.values?.[0] ?? 0) > 0)],
 ];
 const lines = [`owner cases${w && itemMath.BURST ? `, burst window ${itemMath.BURST.window} s` : ''}`];
 let passed = 0;
