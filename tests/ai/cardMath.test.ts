@@ -72,6 +72,14 @@ it('raises bonus resists only, and only for the fight after its combat seconds (
   expect(run([plus, jak()]).stats.armor - base.armor).toBeCloseTo(0.2 * (base.armor - run().stats.armor)); // the bonus part, not base armor
   expect(run([plus, jak('5 seconds of champion combat')]).stats.mr - base.mr).toBeCloseTo(0.2 * (base.mr - run().stats.mr) * (10 / 15)); // 10 of the 15 s
 });
+it('turns bonus health into a stat after the health multipliers, reading bonus health when the text says bonus (knowledge/fight-rules.md, convert)', () => {
+  const health = card('hp', [{ op: 'add', stat: 'hp', value: 2000 }]);
+  const rift = card('rift', [{ op: 'convert', from: 'hp', to: 'ap', ratio: 0.02, scope: 'bonus' }]);
+  expect(run([health, rift]).stats.ap - run([health]).stats.ap).toBeCloseTo(40); // 2% of 2,000 bonus health, not of 3,000 total
+  const engine = card('engine', [{ op: 'mult', stat: 'hp', factor: 2 }]), mail = card('mail', [{ op: 'convert', from: 'bonus_hp', to: 'ad', ratio: 0.1 }]);
+  const withEngine = run([health, engine]).stats;
+  expect(run([health, engine, mail]).stats.ad - withEngine.ad).toBeCloseTo(0.1 * (withEngine.hp - run().stats.hp)); // the doubled health counts
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often

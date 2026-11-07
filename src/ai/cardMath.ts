@@ -226,7 +226,6 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     const keep = dv('DamageToMaxHealthRatio');
     if (keep) for (let i = 0; i < Math.round(FIGHT.growthProcsPerLevel * o.level); i++) add(s, 'hp', keep * (dv('BaseDamage') + dv('HPRatio') * s.hp));
   }
-  for (const x of ops) if (x.op === 'convert' && x.from !== 'move_speed') { const from = statValue(s, x.from); if (!Number.isNaN(from)) add(s, x.to, from * x.ratio); if (x.replace && x.from === 'bonus_hp') { s.hp -= s.bonusHp; s.bonusHp = 0; } }
   const multiply = (t: BuildStats, stat: string, factor: number) => {
     if (stat === 'ap') t.ap *= factor;
     if (stat === 'ad') { t.bonusAd += t.ad * (factor - 1); t.ad *= factor; }
@@ -237,19 +236,32 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (stat === 'attack_speed') t.bonusAttackSpeed *= factor;
     if (stat === 'move_speed') t.moveSpeed *= factor;
   };
-  multiply(s, 'ap', itemAmp('APAmp', 'ap'));
-  multiply(s, 'hp', itemAmp('HPAmp', 'hp'));
   // Seconds of fighting an op waits for: "N seconds in champion combat" (Riftmaker, Liandry's) or "enemy champion nearby for N seconds" (Heartsteel's charge).
   const combatSeconds = (x: CardOp) => { const m = /(\d+(?:\.\d+)?) seconds? (?:in|of) champion combat|nearby for (\d+(?:\.\d+)?) seconds?/i.exec(String((x as { needs?: string }).needs ?? '')); return m ? +(m[1] ?? m[2]!) : 0; };
   // A bonus-only multiplier on resists raises bonus armor or magic resist only; one that waits seconds of combat (Jak'Sho 5 s) counts for the share of the fight after them.
   // shortcut: the resists are averaged over the fight, not raised at 5 s (effective health reads one value a fight); model resists over time if a test needs the timing.
   const bonusResist = { armor: 'bonusArmor', mr: 'bonusMr' } as const;
-  for (const x of ops) if (x.op === 'mult') {
-    if (x.stat === 'hp' && x.scope === 'bonus') { s.hp += s.bonusHp * (x.factor - 1); s.bonusHp *= x.factor; }
-    else if ((x.stat === 'armor' || x.stat === 'mr') && x.scope === 'bonus') { const gain = s[bonusResist[x.stat]] * (x.factor - 1) * Math.max(0, 1 - combatSeconds(x) / FIGHT.seconds); s[x.stat] += gain; s[bonusResist[x.stat]] += gain; }
-    else multiply(s, x.stat, x.factor);
-  }
-  for (const x of ops) if (x.op === 'per_stack' && x.mode === 'mult') multiply(s, x.stat, 1 + (x.value >= 1 ? x.value - 1 : x.value) * stacksOf(x)); // readers wrote +5% a stack as 1.05 or 0.05
+  // Order (knowledge/fight-rules.md, convert): multipliers on a stat a conversion reads come first (Tank Engine's health before Overlord's Bloodmail turns it into AD),
+  // then the conversions, then the multipliers on everything else (Rabadon's on the AP Riftmaker gives). A stat both read and added keeps the later place.
+  const family = (stat: string) => stat.replace(/^bonus_/, '');
+  const convertReads = new Set(ops.flatMap((x) => (x.op === 'convert' && x.from !== 'move_speed' ? [family(x.from)] : [])));
+  const convertAdds = new Set(ops.flatMap((x) => (x.op === 'convert' ? [family(x.to)] : [])));
+  const beforeConverts = (stat: string) => convertReads.has(family(stat)) && !convertAdds.has(family(stat));
+  const multiplyAll = (early: boolean) => {
+    if (beforeConverts('ap') === early) multiply(s, 'ap', itemAmp('APAmp', 'ap'));
+    if (beforeConverts('hp') === early) multiply(s, 'hp', itemAmp('HPAmp', 'hp'));
+    for (const x of ops) if (x.op === 'mult' && beforeConverts(x.stat) === early) {
+      if (x.stat === 'hp' && x.scope === 'bonus') { s.hp += s.bonusHp * (x.factor - 1); s.bonusHp *= x.factor; }
+      else if ((x.stat === 'armor' || x.stat === 'mr') && x.scope === 'bonus') { const gain = s[bonusResist[x.stat]] * (x.factor - 1) * Math.max(0, 1 - combatSeconds(x) / FIGHT.seconds); s[x.stat] += gain; s[bonusResist[x.stat]] += gain; }
+      else multiply(s, x.stat, x.factor);
+    }
+    for (const x of ops) if (x.op === 'per_stack' && x.mode === 'mult' && beforeConverts(x.stat) === early) multiply(s, x.stat, 1 + (x.value >= 1 ? x.value - 1 : x.value) * stacksOf(x)); // readers wrote +5% a stack as 1.05 or 0.05
+  };
+  multiplyAll(true);
+  // A conversion with scope 'bonus' reads the bonus part of its source (Riftmaker: 2% of bonus health; Vladimir: bonus health).
+  const bonusOf: Record<string, keyof BuildStats> = { hp: 'bonusHp', armor: 'bonusArmor', mr: 'bonusMr', ad: 'bonusAd' };
+  for (const x of ops) if (x.op === 'convert' && x.from !== 'move_speed') { const key = x.scope === 'bonus' ? bonusOf[x.from] : undefined; const from = key ? (s[key] as number) : statValue(s, x.from); if (!Number.isNaN(from)) add(s, x.to, from * x.ratio); if (x.replace && x.from === 'bonus_hp') { s.hp -= s.bonusHp; s.bonusHp = 0; } }
+  multiplyAll(false);
   const baseRates = record as unknown as { attackSpeedModifiable?: { baseValue?: number }; attackSpeedRatioModifiable?: { baseValue?: number } };
   const as0 = baseRates.attackSpeedModifiable?.baseValue ?? 0.625;
   const asRatio = baseRates.attackSpeedRatioModifiable?.baseValue || as0;
