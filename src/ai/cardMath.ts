@@ -247,7 +247,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // An amp for magic damage reaches a champion's abilities unless the kit deals only physical.
   // An amp on one chosen ability counts for one of the three basic ones.
   // An amp that needs some seconds in champion combat (Riftmaker 4, Liandry's 3) starts then, so a burst window of 3 s mostly misses it.
-  const combatSeconds = (x: CardOp) => +(/(\d+(?:\.\d+)?) seconds? in champion combat/i.exec(String((x as { needs?: string }).needs ?? ''))?.[1] ?? 0);
+  // Seconds of fighting an op waits for: "N seconds in champion combat" (Riftmaker, Liandry's) or "enemy champion nearby for N seconds" (Heartsteel's charge).
+  const combatSeconds = (x: CardOp) => { const m = /(\d+(?:\.\d+)?) seconds? in champion combat|nearby for (\d+(?:\.\d+)?) seconds?/i.exec(String((x as { needs?: string }).needs ?? '')); return m ? +(m[1] ?? m[2]!) : 0; };
   // withAll false: the all-scope amps are already in another factor of the same damage (an ability takes amp('abilities') and then its own slot's).
   const amp = (scope: string, t = Infinity, withAll = true) => { const fs = ops.flatMap((x) => (x.op !== 'damage_amp' || t < combatSeconds(x) ? [] : (withAll && x.scope === 'all') || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical') ? [x.factor] : x.scope === 'one_ability' && scope === 'abilities' ? [1 + (x.factor - 1) / 3] : [])); const byMana = ops.reduce((m, x) => (x.op === 'mana_amp' && ((withAll && x.scope === 'all') || x.scope === scope) && Number.isFinite(fullMana) ? m * (1 + (x.per100 * fullMana) / 100) : m), 1); return byMana * (o.ampStack === 'add' ? 1 + fs.reduce((m, f) => m + f - 1, 0) : fs.reduce((m, f) => m * f, 1)); };
   const cdFactor = (scope: string) => ops.reduce((m, x) => (x.op === 'cooldown' && (x.scope === 'all' || x.scope === scope) ? m * x.factor : m), 1);
@@ -371,6 +372,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       // A card's summoner spell or chosen spell comes once in a fight, whatever the abilities do.
       const icd = x.trigger === 'spell_hit' ? (('internal_cooldown' in x ? x.internal_cooldown : 0) || FIGHT.seconds) : 'internal_cooldown' in x ? (x.internal_cooldown ?? 0) : 0;
       if (icd && t - (lastProc.get(x) ?? -Infinity) < icd) continue;
+      if (t < combatSeconds(x)) continue; // it waits its seconds of fighting before the first time (knowledge/fight-rules.md, conditions)
       if (x.op === 'heal' || x.op === 'shield') { healed += formula(x.amount, c, o.level, targetHp); lastProc.set(x, t); }
       // An extra on-hit on the attack after an ability (Dusk and Dawn), not on every attack.
       if (x.op === 'on_hit_repeat' && trigger === 'next_attack') { for (let k = 0; k < x.extra_hits; k++) fire('on_hit', t, c); lastProc.set(x, t); }

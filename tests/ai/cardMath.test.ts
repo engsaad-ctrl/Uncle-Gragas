@@ -48,6 +48,12 @@ it('starts a burn again at one stack once it has ended (knowledge/fight-rules.md
   const burn = card('burn', [{ op: 'dot', per_second: { flat: 100 }, duration: 2, type: 'true', stacks_max: 99, trigger: 'kill' }]);
   expect(run([burn]).fromCards).toBeCloseTo(400, -2); // within 50 (steps of 0.05 s); with two stacks it was about 600
 });
+it('waits the seconds near an enemy a proc names before it fires (Heartsteel, knowledge/fight-rules.md)', () => {
+  const proc = (needs?: string) => card('proc', [{ op: 'proc', trigger: 'attack', damage: { flat: 100 }, type: 'true', needs } as CardOp]);
+  // Nine attacks in 15 s (every 1.67 s); the first two come before 3 s.
+  expect(run([proc()]).fromCards).toBeCloseTo(900);
+  expect(run([proc('enemy champion nearby for 3 seconds (6 ticks of 0.5)')]).fromCards).toBeCloseTo(700);
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often
