@@ -97,6 +97,16 @@ const nasusAp = nasusStyles.includes('ap') ? (await services.mathBuild(idOf('Nas
 const nasusOk = nasusAp.length > 0 && (has(nasusAp, 'Blackfire Torch') || has(nasusAp, "Liandry's Torment"));
 passed += nasusOk;
 lines.push(`${nasusOk ? 'PASS' : 'FAIL'} 29 Nasus with Infinite Recursion, Marksmage, Infernal Conduit, Overloaded: the magic build offered, Blackfire Torch or Liandry's in its first three: ${nasusStyles.join(', ')} | ap: ${names(nasusAp).join(', ')}`);
-lines.splice(1, 0, `passed ${passed} of ${cases.length + 3}`);
+// The owner (2026-11-07, «دسك اند داون تقريبا اهم ايتم لانه يدبل الضربه»): AP on-hit Kog'Maw, Nashor's Tooth, Dusk and Dawn, Berserker's, Guinsoo's, Rabadon's, Void Staff. Soft: in the magic build's first four, Nashor's and Dusk and Dawn.
+const kogAp = (await services.mathBuild(idOf("Kog'Maw"), [], [], undefined, 'ap')).slice(0, 4).map((x) => x.item);
+const kogOk = has(kogAp, "Nashor's Tooth") && has(kogAp, 'Dusk and Dawn');
+passed += kogOk;
+lines.push(`${kogOk ? 'PASS' : 'FAIL'} 32 Kog'Maw, magic build: Nashor's Tooth and Dusk and Dawn in the first four: ${names(kogAp).join(', ')}`);
+// The owner (2026-11-07, «لماذا لا تاخذ ماللقننت»): ult-focused Kog'Maw, Malignance, Sorcerer's, Archangel's, Rabadon's, Shadowflame, Void Staff. Soft: with Phenomenal Evil, Magic Missile and Big Brain, Malignance in the magic build's first three.
+const kogR = (await services.mathBuild(idOf("Kog'Maw"), [PHENOMENAL_EVIL, MAGIC_MISSILE, 1180], [], undefined, 'ap')).slice(0, 3).map((x) => x.item);
+const kogROk = has(kogR, 'Malignance');
+passed += kogROk;
+lines.push(`${kogROk ? 'PASS' : 'FAIL'} 33 Kog'Maw with Phenomenal Evil, Magic Missile, Big Brain, magic build: Malignance in the first three: ${names(kogR).join(', ')}`);
+lines.splice(1, 0, `passed ${passed} of ${cases.length + 5}`);
 writeResult(import.meta.url, lines);
 process.exit(0);
