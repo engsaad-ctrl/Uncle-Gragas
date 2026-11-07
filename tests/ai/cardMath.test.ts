@@ -93,6 +93,16 @@ it('gives nothing for a card that works after an ultimate cast once the ultimate
   expect(run([lock, awake]).stats.haste).toBe(run([lock]).stats.haste);
   expect(run([awake]).stats.haste).toBe(run().stats.haste + 225); // without the lock it counts
 });
+it('reads range in a condition: beyond N by his abilities, within N by his attack range (knowledge/fight-rules.md)', () => {
+  const proc = (needs: string) => card('proc', [{ op: 'proc', trigger: 'attack', damage: { flat: 100 }, type: 'true', needs } as CardOp]);
+  const q = { rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: { castRange: [700, 700, 700, 700, 700, 700] } } };
+  const at = (b: Record<string, unknown>, needs: string) => fight({ bin: b, shop: {}, kit, items: [], cards: [proc(needs)], level: 1 }).fromCards;
+  expect(at(bin, 'ranged; beyond 600 range')).toBe(0); // no ability reaches past 600
+  expect(at(q, 'ranged; beyond 600 range')).toBeGreaterThan(0); // his Q reaches 700
+  expect(at(bin, 'target within 300 range')).toBe(0); // he attacks from 500
+  expect(at(bin, 'magic damage only, target within 700')).toBeGreaterThan(0);
+  expect(at(bin, 'next Attack after an Ability, within 10 seconds')).toBe(at(bin, '')); // seconds, not range
+});
 it('gives a mage who does not attack no attacks between casts', () => {
   expect(fight({ bin, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(0);
   expect(fight({ bin, shop: {}, kit: { ...kit, attacks: false }, items: [], cards: [], level: 1 }).attacks).toBe(3); // physical: a quarter as often

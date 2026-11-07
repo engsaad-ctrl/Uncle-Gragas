@@ -192,7 +192,12 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   });
   // An item's effect marked for the other attack type doesn't count, nor a button's buff; a button's damage is pressed when ready.
   // A stat that comes only near death (Overlord's Bloodmail: 12% AD at or below 30% health) isn't held through the fight.
-  const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!) && !((x.op === 'mult' || x.op === 'add') && /below \d+% remaining health/i.test(n)); };
+  // Range in a condition (knowledge/fight-rules.md, conditions): "beyond N range" holds when one of his basic abilities reaches past N (Skilled Sniper: not for
+  // Vladimir, whose longest is 600); "target within N range" when he fights at N or closer (Sunfire Aegis's 300: melee only).
+  const attackRange = (record as unknown as { attackRangeModifiable?: { baseValue?: number } }).attackRangeModifiable?.baseValue ?? 0;
+  const reach = Math.max(0, ...(record.spells ?? []).slice(0, 3).map((path) => { const sp = (o.bin as Bin)[path]?.mSpell as { mCastRangeGrowthMax?: number[]; castRangeDisplayOverride?: number[]; castRange?: number[] } | undefined; return sp?.mCastRangeGrowthMax?.[1] ?? sp?.castRangeDisplayOverride?.[1] ?? sp?.castRange?.[1] ?? 0; }));
+  const inRange = (n: string) => { const beyond = /beyond (\d+) range/i.exec(n), within = /within (\d+)(?: range|$|[;,)])/i.exec(n); return (!beyond || reach > +beyond[1]!) && (!within || attackRange <= +within[1]!); };
+  const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return inRange(n) && !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!) && !((x.op === 'mult' || x.op === 'add') && /below \d+% remaining health/i.test(n)); };
   // A quest card's reward counts once its quest items are all held (Ultra Hydra: the three Hydras; Wooglet's Witchcap: Rabadon's and Zhonya's). Quests counted in takedowns or hits never complete here.
   // shortcut: the reward is added on top of the quest items, not in their place, and frees no slot; model the swap if a quest build looks a slot short.
   const questDone = (c: CardNumbers) => { const need = questItems(c.id); return need.length > 0 && need.every((id) => held.some((h) => h % 10000 === id)); };
