@@ -93,6 +93,11 @@ describe('a real team', () => {
     expect(e.armor).toBeCloseTo(60);
     expect(enemyTeam([], {})).toBeUndefined();
   });
+  it('counts an enemy\'s items for his resists only when he holds them in the running match', () => {
+    const shop = { 1: { DataValues: [{ name: 'FlatArmorMod', values: [100] }] } } as never;
+    const armor = (live: boolean) => enemyTeam([{ ...physical, items: [1], live }], shop)!.armor;
+    expect(armor(true) - armor(false)).toBeCloseTo(100); // guessed builds keep resists item-free (the owner, 2026-11-04)
+  });
   it('takes a share of health from the real enemies\' health', () => {
     const share: CardOp = { op: 'proc', trigger: 'attack', internal_cooldown: 100, damage: { target_max_hp: 0.1 }, type: 'true' };
     expect(run([share]).fromCards).toBeCloseTo(0.1 * FIGHT.target.hp);

@@ -159,6 +159,42 @@ it('lets an ability crit when its calculation reads crit damage', () => {
   expect(cast(9) / cast(2)).toBeCloseTo(1 + 0.5 * 0.75, 2); // half the casts crit, for 175%
 });
 
+it('raises a stat by a level share plus a share of other stats, after all items (Jhin\'s passive)', () => {
+  const byLevel = Array<number>(18).fill(0.1);
+  const ad = (crit: number) => run([card('crit', [{ op: 'add', stat: 'crit', value: crit }])], [{ op: 'mult_from', stat: 'ad', byLevel, per: [{ stat: 'crit', ratio: 0.35 }] }]).stats.ad;
+  const plain = run().stats.ad;
+  expect(ad(0) / plain).toBeCloseTo(1.1); // the level share alone
+  expect(ad(1) / plain).toBeCloseTo(1.45); // + 0.35 x 100% crit
+});
+
+it('turns bonus move speed into AD by a share that grows with level (Hecarim)', () => {
+  const ms = card('ms', [{ op: 'add', stat: 'move_speed', value: 100 }]);
+  const passive: CardOp[] = [{ op: 'convert', from: 'bonus_move_speed', to: 'bonus_ad', ratio: { min: 0.12, max: 0.24 } }];
+  // The AD comes moment by moment in the fight (move speed changes there), so it shows in damage, not in the item stats.
+  const dealt = (cards: CardNumbers[], withPassive: boolean) => fight({ bin, shop: {}, kit, items: [], cards, level: 18, passive: withPassive ? passive : [] }).damage;
+  expect(dealt([ms], true)).toBeGreaterThan(dealt([ms], false)); // 24 AD from 100 bonus move speed
+  expect(dealt([], true)).toBeCloseTo(dealt([], false)); // no bonus move speed, nothing
+});
+
+it('counts an anti-heal item as the share of the enemies\' healing it takes away', () => {
+  const shop = { 1: { DataValues: [{ name: 'GrievousAmount', values: [0.4] }] } } as never;
+  const enemy = { armor: 0, mr: 0, physicalShare: 1, healPerSecond: 100 };
+  const dealt = (items: number[], e = enemy) => fight({ bin, shop, kit, items, cards: [], level: 1, enemy: e }).damage;
+  expect(dealt([1]) - dealt([])).toBeCloseTo(0.4 * 100 * FIGHT.seconds); // 40% of 100 a second over the fight
+  expect(dealt([1], { ...enemy, healPerSecond: 0 }) - dealt([], { ...enemy, healPerSecond: 0 })).toBeCloseTo(0); // nothing to cut against enemies who don't heal
+});
+
+it('reads a spell\'s crit version as what a crit adds, not as its damage (Nasus Q: stacks uncritted)', () => {
+  // TotalDamage = 100 + 300 stacks; CritDamage = 1.75 x 100 + 300 stacks, as Nasus's Q file reads.
+  const q = { rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [20, 20, 20, 20, 20], DataValues: [{ name: 'BaseDamage', values: [100, 100, 100, 100, 100, 100] }, { name: 'Stacks', values: [300, 300, 300, 300, 300, 300] }], mSpellCalculations: {
+    TotalDamage: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamage' }, { __type: 'NamedDataValueCalculationPart', mDataValue: 'Stacks' }] },
+    CritDamage: { mFormulaParts: [{ __type: 'ProductOfSubPartsCalculationPart', mPart1: { __type: 'StatByCoefficientCalculationPart', mStat: 9, mCoefficient: 1 }, mPart2: { __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamage' } }, { __type: 'NamedDataValueCalculationPart', mDataValue: 'Stacks' }] },
+  } } } };
+  const cast = (crit: number) => fight({ bin: q, shop: {}, kit, items: [], cards: [card('crit', [{ op: 'add', stat: 'crit', value: crit }])], level: 1 }).perCast.Q!;
+  expect(cast(0)).toBeCloseTo(400, 0); // no crit: the base, not the crit version
+  expect(Math.abs(cast(0.5) - (400 + 0.5 * 75))).toBeLessThanOrEqual(0.5); // perCast is rounded; a crit adds 75 (175% of the 100), the 300 stacks stay
+});
+
 it('grows an item that keeps health from each proc, by level', () => {
   const shop = { 1: { DataValues: [{ name: 'DamageToMaxHealthRatio', values: [0.05] }, { name: 'BaseDamage', values: [100] }, { name: 'HPRatio', values: [0] }] } } as never;
   const hp = (level: number, items: number[]) => fight({ bin, shop, kit, items, cards: [], level }).stats.hp;
@@ -186,7 +222,7 @@ it('counts what an item gives the ally he heals, only for a kit that heals allie
 it('crits a cast that deals damage over time with a card that crits damage over time', () => {
   const burn = { rec: { ...bin.rec, spells: ['', '', 'x/e'] }, 'x/e': { __type: 'SpellObject', mSpell: { cooldownTime: [99, 99, 99, 99, 99, 99], DataValues: [{ name: 'BaseDamagePerSecond', values: [100, 100, 100, 100, 100, 100] }], mSpellCalculations: { TotalDamagePerSecond: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamagePerSecond' }] } } } } };
   const e = (cards: CardNumbers[]) => fight({ bin: burn, shop: {}, kit, items: [], cards, level: 1 }).perCast.E;
-  expect(e([card('vulnerability', [{ op: 'crit_dot', extra: 1.45 }, { op: 'add', stat: 'crit', value: 0.25 }])])! / e([])!).toBeCloseTo(1 + 0.25 * 1.45);
+  expect(e([card('vulnerability', [{ op: 'crit_dot', extra: 0.45 }, { op: 'add', stat: 'crit', value: 0.25 }])])! / e([])!).toBeCloseTo(1 + 0.25 * 0.45);
 });
 
 it('gives Jinx\'s minigun its attack speed stacks instead of casting Q', () => {
@@ -248,4 +284,12 @@ describe('what happens over time', () => {
   it('never fires a takedown card without its trigger', () => {
     expect(run([card('p', [{ op: 'proc', trigger: 'ult_cast', damage: { flat: 100 }, type: 'true' }])]).fromCards).toBe(0);
   });
+});
+
+it('reads a bonus that grows with crit chance and crit damage without critting (Caitlyn\'s headshot)', () => {
+  const crit = (chance: number, dmg = 0) => card('crit', [{ op: 'add', stat: 'crit', value: chance }, { op: 'add', stat: 'crit_damage', value: dmg }]);
+  const passive: CardOp[] = [{ op: 'proc', trigger: 'attack', internal_cooldown: null, damage: { ad_crit: 0.16 }, type: 'true' }];
+  const procs = (c: CardNumbers) => fight({ bin, shop: {}, kit, items: [], cards: [c], level: 1, passive }).fromCards;
+  expect(procs(crit(0))).toBeCloseTo(0); // no crit chance, nothing
+  expect(procs(crit(1, 0.4))).toBeCloseTo(procs(crit(1)) * (1.15 / 0.75), 1); // crit damage 215% against 175%
 });

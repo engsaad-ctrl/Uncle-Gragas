@@ -1,22 +1,43 @@
-2026-11-06T16:37:21.338Z on f4ff4d1 (with uncommitted changes)
+2026-11-08T17:02:04.316Z on 3b4649c (with uncommitted changes)
 owner cases
-passed 17 of 19
-PASS 1 Lux: first item not Riftmaker: Luden's Echo, Sorcerer's Shoes, Stormsurge (Luden's first: no)
+passed 28 of 40
+PASS 1 Lux: first item not Riftmaker: Blackfire Torch, Sorcerer's Shoes, Stormsurge (Luden's first: no)
 PASS 2 Veigar: first item not Riftmaker, Rabadon's in the first three: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap
 PASS 3 Ahri: no Riftmaker nor Dusk and Dawn: Luden's Echo, Sorcerer's Shoes, Stormsurge
 PASS 4 Zed: no Warmog's nor Sorcerer's Shoes: Hubris, Plated Steelcaps, Profane Hydra
 PASS 5 Jinx: a crit item in the first three: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
 PASS 6 Yasuo: first item not Bloodthirster: Hubris, Berserker's Greaves, Blade of The Ruined King
 PASS 7 Ezreal: no Lord Dominik's without augments, a crit item with Jeweled Gauntlet: none Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane | with Jeweled Gauntlet Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-PASS 9 Sett: boots not Berserker's Greaves: Jak'Sho, The Protean, Plated Steelcaps, Spear of Shojin
-PASS 10 Garen: boots not Sorcerer's Shoes: Jak'Sho, The Protean, Plated Steelcaps, Titanic Hydra
-PASS 11 Dr. Mundo: boots not Berserker's Greaves: Jak'Sho, The Protean, Plated Steelcaps, Titanic Hydra
+PASS 9 Sett: boots not Berserker's Greaves: Heartsteel, Plated Steelcaps, Death's Dance
+PASS 10 Garen: boots not Sorcerer's Shoes: Heartsteel, Plated Steelcaps, Death's Dance
+PASS 11 Dr. Mundo: boots not Berserker's Greaves: Heartsteel, Plated Steelcaps, Death's Dance
 PASS 12 Soraka: no Dusk and Dawn: Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water
 PASS 13 Master Yi: Bloodthirster or Blade of the Ruined King: Blade of The Ruined King, Gluttonous Greaves, Kraken Slayer
 FAIL 14 Vayne with Typhoon: Blade of the Ruined King and Bloodthirster: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-FAIL 17 Karthus with Ethereal Weapon and BEES: a mana item first, Lich Bane in the first three: Blackfire Torch, Sorcerer's Shoes, Riftmaker
-PASS 18 Sona and Rakan: not Liandry's Torment first: none Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water | with Jeweled Gauntlet Ardent Censer, Sorcerer's Shoes, Riftmaker
-PASS 19 Sona: no Heartsteel first: Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water
-PASS 20 Pyke: no Heartsteel: Hubris, Plated Steelcaps, Lord Dominik's Regards
+PASS 17 Karthus with Ethereal Weapon and BEES: a mana item first, Lich Bane in the first three: Blackfire Torch, Gluttonous Greaves, Lich Bane
+PASS 18 Sona and Rakan: not Liandry's Torment first: none Redemption, Ionian Boots of Lucidity, Ardent Censer | with Jeweled Gauntlet Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water
+PASS 19 Sona: no Heartsteel first: Redemption, Ionian Boots of Lucidity, Ardent Censer
+PASS 20 Pyke: no Heartsteel: Hubris, Plated Steelcaps, Profane Hydra
+PASS 21 Vladimir with Back To Basics: two of Liandry's, Sorcerer's, Warmog's, Void Staff, Shadowflame in the first three: Liandry's Torment, Sorcerer's Shoes, Warmog's Armor
+FAIL 22 Vladimir with Warlock Juicebox: Riftmaker or Rabadon's in the first three: Liandry's Torment, Sorcerer's Shoes, Abyssal Mask
+FAIL 23 Miss Fortune with Vulnerability, Magic Missile, Jeweled Gauntlet, Skilled Sniper: Blackfire Torch or Liandry's in the first three: Infinity Edge, Berserker's Greaves, Lord Dominik's Regards
+FAIL 24 Kayle with Phenomenal Evil, Double Tap, Zealot, Mystic Punch: Blade of The Ruined King or Guinsoo's in the first three: Dusk and Dawn, Sorcerer's Shoes, Blackfire Torch
+PASS 25 Heimerdinger with Jeweled Gauntlet, ADAPt, Ethereal Weapon, Minionmancer: crit, Shadowflame, Lich Bane or Liandry's in the first three: Blackfire Torch, Sorcerer's Shoes, Lich Bane
+FAIL 26 Varus with Heavy Is The Crown, Back To Basics, Jeweled Gauntlet: Hubris, Lord Dominik's, Infinity Edge or The Collector first: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+PASS 27 Twitch with Critical Rhythm, Deft, Upgrade Infinity Edge, Critical Missile: a crit item in the first three: Infinity Edge, Berserker's Greaves, Runaan's Hurricane
+PASS 28 Jinx with Double Tap, Juiced, Critical Missile: an on-hit or crit item first: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+PASS 31 Caitlyn with Big Shot and Draw Your Sword: a crit or attack-speed item in the first three: The Collector, Berserker's Greaves, Lord Dominik's Regards
+FAIL 35 Swain with Jeweled Gauntlet, Critical Missile, Magic Missile, Infernal Soul: full AP, Rite of Ruin or Rabadon's in the first three: Blackfire Torch, Sorcerer's Shoes, Shadowflame
+PASS 37 Brand with From Beginning To End, ADAPt, Witchful Thinking, Magic Missile: Blackfire Torch first: Blackfire Torch, Sorcerer's Shoes, Stormsurge
+PASS 39 Zilean: a mana item first: Blackfire Torch, Sorcerer's Shoes, Liandry's Torment
+FAIL 40 Twisted Fate with Scopiest Weapons, With Haste, ADAPt, Back To Basics: Lich Bane in the first three, no Gunblade: Essence Reaver, Sorcerer's Shoes, Spear of Shojin
+PASS 34 Sivir with Skilled Sniper, Magic Missile, Upgrade Collector, Stats on Stats!: Essence Reaver in the first three: The Collector, Gluttonous Greaves, Essence Reaver
 PASS 15 Miss Fortune with Vulnerability: the magic build offered: ap, ad, tank
-PASS 16 Galio: magic, magic with health and tank offered: ap, aphp, tank
+PASS 16 Galio: magic, magic with health and tank offered: ap, aphp, ad, tank
+FAIL 8 Katarina: AP, AD and tank offered, and Goliath changes her build: ap, ad, tank | none Hextech Gunblade, Sorcerer's Shoes, Stormsurge | with Goliath Hextech Gunblade, Sorcerer's Shoes, Stormsurge (Heartsteel with Goliath: no)
+FAIL 29 Nasus with Infinite Recursion, Marksmage, Infernal Conduit, Overloaded: the magic build offered, Blackfire Torch or Liandry's in its first three: ad, tank | ap: 
+FAIL 32 Kog'Maw, magic build: Nashor's Tooth and Dusk and Dawn in the first four: Wit's End, Berserker's Greaves, Runaan's Hurricane, Guinsoo's Rageblade
+FAIL 33 Kog'Maw with Phenomenal Evil, Magic Missile, Big Brain, magic build: Malignance in the first three: Liandry's Torment, Berserker's Greaves, Blackfire Torch
+PASS 36 Teemo with Dual Wield, Firebrand, Lightning Strikes, Scopier Weapons: four of Nashor's, Berserker's, Statikk, BotRK, Terminus: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane, Guinsoo's Rageblade, Terminus, Statikk Shiv
+FAIL 38 Yone with Upgrade Infinity Edge, Mystic Punch, Hellbent, Get Excited!: four of IE, Bloodthirster, Death's Dance, Wit's End, Phantom Dancer: Infinity Edge, Gluttonous Greaves, Yun Tal Wildarrows, Lord Dominik's Regards, Blade of The Ruined King, Guinsoo's Rageblade
+PASS 30 Cho'Gath with Tank Engine, Pressure Cooker, Goliath, Soul Eater: Heartsteel and Warmog's or Unending Despair in the build: Heartsteel, Plated Steelcaps, Jak'Sho, The Protean, Unending Despair, Warmog's Armor, Kaenic Rookern

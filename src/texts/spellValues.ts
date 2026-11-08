@@ -160,6 +160,8 @@ interface Ctx {
   /** Another spell of the same character, by its name or path (ExternalNamedDataValue). */
   other: (spell: string) => Ctx | undefined;
   depth: number;
+  /** With a build's stats known (calculationsAt), a value as one number, or null when a part stays unknown. */
+  resolve?: (v: Value) => number | null;
 }
 
 /** Field by its name, or by its hash when the game files leave it unnamed. */
@@ -255,6 +257,8 @@ function evalPart(p: Part | undefined, c: Ctx): Value | null {
       const a = evalPart(p.mPart1 as Part, c);
       const b = evalPart(p.mPart2 as Part, c);
       if (!a || !b) return null;
+      // Two parts with stats (Nasus's crit: crit damage x (bonus + AD)) multiply as numbers once the build's stats are known.
+      if (!isPlain(a) && !isPlain(b) && c.resolve) { const x = c.resolve(a), y = c.resolve(b); if (x !== null && y !== null) return plain(fill(c.ranks, x * y)); }
       return isPlain(a) ? times(b, a) : times(a, b);
     }
     default:
@@ -305,9 +309,7 @@ export function calculationsAt(
   // shortcut: straight line between level 1 and 18; breakpoint formulas step, so mid levels are approximate.
   const t = (Math.min(Math.max(o.level, 1), 18) - 1) / 17;
   const at = (min: number, max: number) => min + (max - min) * t;
-  return Object.entries(spell?.mSpellCalculations ?? {}).flatMap(([name, calc]) => {
-    const v = evalCalc(calc, c);
-    if (!v) return [];
+  const resolveAll = (v: Value) => {
     let value = at(v.min[i], v.max[i]);
     let partial = v.other;
     for (const s of v.scalings) {
@@ -315,7 +317,13 @@ export function calculationsAt(
       if (Number.isNaN(stat)) partial = true;
       else value += at(s.coef[i], (s.coefMax ?? s.coef)[i]) * stat;
     }
-    return [{ name, value, partial }];
+    return { value, partial };
+  };
+  c.resolve = (v) => { const r = resolveAll(v); return r.partial ? null : r.value; };
+  return Object.entries(spell?.mSpellCalculations ?? {}).flatMap(([name, calc]) => {
+    const v = evalCalc(calc, c);
+    if (!v) return [];
+    return [{ name, ...resolveAll(v) }];
   });
 }
 

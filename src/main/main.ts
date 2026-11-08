@@ -12,6 +12,7 @@ import { loadProfile, parsePuuid, toRanked, type RankedQueue } from '../lcu/prof
 import { teamsInGame, type GamePlayer } from '../lcu/teams.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import { enemiesInGame } from '../lcu/state.js';
+import { liveItems } from '../lcu/liveGame.js';
 import type { Position } from '../stats/opgg.js';
 import { errorLog } from './errorLog.js';
 import { gameWindowRect } from './gameWindow.js';
@@ -205,16 +206,24 @@ handle('mayhem:open', (_e, id: unknown) => reply(() => services.openAugments(Num
 // Champ select sends his champion, the bench and his allies: up to 15 (the owner, 2026-11-06: no ranking showed with a full bench).
 handle('mayhem:strengths', (_e, ids: unknown) => reply(() => services.championStrengths(parseIds(ids, 20))));
 // In a loaded game both teams are known: items and cards answer them.
-const teamsNow = () => {
+// Once the match runs, the enemies' real items from the game's own API (src/lcu/liveGame.ts), read at most every 20 s.
+let live: { at: number; items: Record<string, number[]> | null } = { at: 0, items: null };
+const teamsNow = async () => {
   const t = teamsInGame(watcher.session, lastPick?.championId);
   const ids = (list: GamePlayer[]) => list.map((p) => p.championId).filter((id) => id > 0 && id !== lastPick?.championId);
-  return t ? { allies: ids(t.mine), enemies: ids(t.enemy) } : undefined;
+  if (!t) return undefined;
+  const enemies = ids(t.enemy);
+  if (Date.now() - live.at > 20_000) live = { at: Date.now(), items: await liveItems() };
+  const byAlias = live.items;
+  const champs = byAlias ? await services.champions().catch(() => []) : [];
+  const enemyItems = Object.fromEntries(enemies.flatMap((id) => { const alias = champs.find((c) => c.id === id)?.alias; const held = alias ? byAlias?.[alias] : undefined; return held?.length ? [[id, held]] : []; }));
+  return { allies: ids(t.mine), enemies, ...(Object.keys(enemyItems).length ? { enemyItems } : {}) };
 };
 handle('build:stackBase', (_e, championId: unknown) => reply(() => services.stackBase(parseIds([championId])[0]!)));
 handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown, style: unknown, stacks: unknown) =>
-  reply(() => {
+  reply(async () => {
     const [id] = parseIds([championId]);
-    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
+    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], await teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
   }),
 );
 handle('build:styles', (_e, championId: unknown, augmentIds: unknown) =>
@@ -224,9 +233,9 @@ handle('build:styles', (_e, championId: unknown, augmentIds: unknown) =>
   }),
 );
 handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemIds: unknown) =>
-  reply(() => {
+  reply(async () => {
     const [id] = parseIds([championId]);
-    return services.cardValues(id, parseIds(augmentIds), Array.isArray(itemIds) ? parseIds(itemIds) : [], teamsNow());
+    return services.cardValues(id, parseIds(augmentIds), Array.isArray(itemIds) ? parseIds(itemIds) : [], await teamsNow());
   }),
 );
 handle('build:experimental', (_e, championId: unknown, augmentIds: unknown) =>

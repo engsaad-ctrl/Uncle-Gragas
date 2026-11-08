@@ -1,56 +1,9 @@
-2026-11-05T19:56:19.805Z on a72ab18 (with uncommitted changes)
+2026-11-08T10:33:25.161Z on 3b4649c (with uncommitted changes)
 first items, champions 173, failed 0
-against C:\Users\FoxOS_User\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 53 of 172, any of the first three 78: MORE THAN 30, stop for the owner
-  Olaf: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Xin Zhao: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Urgot: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Overlord's Bloodmail
-  Sion: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Sivir: Trinity Force, Plated Steelcaps, Lord Dominik's Regards -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Teemo: Dusk and Dawn, Berserker's Greaves, Guinsoo's Rageblade -> Wit's End, Berserker's Greaves, Runaan's Hurricane
-  Nunu & Willump: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Sorcerer's Shoes, Riftmaker
-  Ashe: Umbral Glaive, Berserker's Greaves, Manamune -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Singed: Heartsteel, Plated Steelcaps, Warmog's Armor -> Jak'Sho, The Protean, Plated Steelcaps, Riftmaker
-  Twitch: Kraken Slayer, Berserker's Greaves, Bloodthirster -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Cho'Gath: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Sorcerer's Shoes, Riftmaker
-  Amumu: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Sorcerer's Shoes, Riftmaker
-  Dr. Mundo: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Corki: Bloodthirster, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
-  Trundle: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Swain: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Riftmaker
-  Caitlyn: Lord Dominik's Regards, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Renekton: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Jarvan IV: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Vayne: Trinity Force, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Rumble: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Rabadon's Deathcap, Sorcerer's Shoes, Riftmaker
-  Nasus: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Udyr: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Gragas: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Riftmaker
-  Ezreal: Trinity Force, Berserker's Greaves, Umbral Glaive -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Mordekaiser: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Sorcerer's Shoes, Dusk and Dawn
-  Yorick: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Garen: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Shyvana: Heartsteel, Plated Steelcaps, Warmog's Armor -> Jak'Sho, The Protean, Plated Steelcaps, Titanic Hydra
-  Graves: Trinity Force, Berserker's Greaves, Lord Dominik's Regards -> Lord Dominik's Regards, Berserker's Greaves, Runaan's Hurricane
-  Volibear: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Spear of Shojin
-  Sejuani: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Sorcerer's Shoes, Riftmaker
-  Draven: Trinity Force, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Darius: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Quinn: Umbral Glaive, Ionian Boots of Lucidity, Blade of The Ruined King -> Kraken Slayer, Plated Steelcaps, Lord Dominik's Regards
-  Kai'Sa: Profane Hydra, Sorcerer's Shoes, Umbral Glaive -> Infinity Edge, Sorcerer's Shoes, Runaan's Hurricane
-  Gnar: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Zac: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Riftmaker
-  Kindred: Bloodthirster, Berserker's Greaves, Lord Dominik's Regards -> Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
-  Zeri: Lord Dominik's Regards, Gluttonous Greaves, Essence Reaver -> Atma's Reckoning, Gluttonous Greaves, Spear of Shojin
-  Jinx: Umbral Glaive, Berserker's Greaves, Lord Dominik's Regards -> Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
-  Briar: Heartsteel, Berserker's Greaves, Warmog's Armor -> Blade of The Ruined King, Berserker's Greaves, Experimental Hexplate
-  Senna: Bloodthirster, Berserker's Greaves, Lord Dominik's Regards -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Lucian: Trinity Force, Berserker's Greaves, Bloodthirster -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Kled: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Aatrox: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Samira: Profane Hydra, Plated Steelcaps, Lord Dominik's Regards -> Kraken Slayer, Plated Steelcaps, Lord Dominik's Regards
-  Illaoi: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Berserker's Greaves, Titanic Hydra
-  Kalista: Bloodthirster, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Sylas: Dusk and Dawn, Gluttonous Greaves, Riftmaker -> Riftmaker, Sorcerer's Shoes, Rabadon's Deathcap
-  Sett: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
-  Milio: Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water -> Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap
-  Zaahen: Heartsteel, Plated Steelcaps, Warmog's Armor -> Warmog's Armor, Plated Steelcaps, Titanic Hydra
+against C:/Users/dell/AppData/Local/Temp/claude/ea25d38a10ccfe87/10641184-942c-433f-83c9-640001650c8e/scratchpad/first-items-before-draw.json: first item changed 6 of 173, any of the first three 11
+  Twisted Fate: Hextech Gunblade, Sorcerer's Shoes, Stormsurge -> Luden's Echo, Sorcerer's Shoes, Lich Bane
+  Cho'Gath: Rod of Ages, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Bloodletter's Curse
+  Swain: Rod of Ages, Plated Steelcaps, Jak'Sho, The Protean -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment
+  Shyvana: Jak'Sho, The Protean, Plated Steelcaps, Titanic Hydra -> Heartsteel, Plated Steelcaps, Death's Dance
+  Sejuani: Rod of Ages, Plated Steelcaps, Jak'Sho, The Protean -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment
+  Zac: Heartsteel, Plated Steelcaps, Liandry's Torment -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment

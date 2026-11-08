@@ -12,9 +12,12 @@ import type { GameItem } from '../texts/gameData.js';
 export interface PoolItem { id: number; gold: number; boots: boolean; damage?: 'ap' | 'ad' | 'none' | string }
 export interface MathStep { id: number; damage: number; health: number; reason: 'owned' | 'required' | 'mana' | 'stacks' | 'boots' | 'math' }
 /** A champion's place in a team's fight: his share of the enemy's damage with no items, how fast it grows as he buys health from `health0`, that damage per second, and what a point absorbed for the team is worth in points of damage. */
-export interface TeamPlace { carriesHealth?: boolean; healWorth?: number; share: number; rise: number; health0: number; maxRatio?: number; enemyDps: number; absorbedWorth: number; window?: number }
+export interface TeamPlace { /** More of the enemy damage than his share says (frontline, FRONT_DRAW). */ draw?: number; carriesHealth?: boolean; healWorth?: number; share: number; rise: number; health0: number; maxRatio?: number; enemyDps: number; absorbedWorth: number; window?: number }
 /** A burst champion's damage comes in a few seconds from his abilities and ultimate, then he leaves: the owner's rule (Ahri, Zed). Assumption: the window, tried at 2 to 5 s and chosen on the owner's cases (knowledge/burst-value-plan.md). */
 export const BURST = { window: 3 };
+/** A frontline champion draws more of the enemy's damage than the stored share gives the model: with the engine's own builds he outlived the rest 1.16 to 0.84 fights,
+ * while in 22,528 EU and 13,600 NA Mayhem games both die as often (0.63 and 0.61 deaths a minute). The ratio scales his draw (the owner: «عمر المقاتلين», 2026-11-08). */
+export const FRONT_DRAW = { value: 1.38 };
 /** Fights in a row with no trip back: by the third a champion with no mana item has settled at what his mana allows (Lux at 15: 6300, 5349, 3302, 3302), which two fights' first seconds hid. */
 export const FIGHTS = { inARow: 3 };
 const isBurst = (traits: string[] = []) => traits.includes('burst') && !traits.includes('sustained') && !traits.includes('frontline');
@@ -63,11 +66,17 @@ export const ALLY_HEAL_WORTH = { value: 1 / ABSORBED_WORTH };
 /** The enemies' resists at a late level with no items, the size the fixed target was, and the kind of damage their kits deal. */
 /** The mean health of 172 champions at level 15 with no items (measured 2026-11-04); a team's health scales FIGHT.target.hp by its own against this. */
 const TYPICAL_HP = 2415;
-export function enemyTeam(list: { bin: Record<string, unknown>; kit: Kit }[], shop: Record<number, GameItem>): EnemyTeam | undefined {
+/** items: an enemy's own build, for his healing; live: they are what he holds in the running match, so they count for his resists too. Guessed builds leave resists item-free (the owner reverted that, 2026-11-04). */
+export function enemyTeam(list: { bin: Record<string, unknown>; kit: Kit; passive?: CardOp[]; items?: number[]; live?: boolean }[], shop: Record<number, GameItem>, itemOps?: Record<number, CardOp[]>): EnemyTeam | undefined {
   if (!list.length) return undefined;
-  const stats = list.map((e) => fight({ bin: e.bin, shop, kit: e.kit, cards: [], items: [], level: FULL_BUILD_LEVEL }).stats);
+  const fights = list.map((e) => fight({ bin: e.bin, shop, kit: e.kit, passive: e.passive, cards: [], items: [], level: FULL_BUILD_LEVEL }));
+  // The owner, 2026-11-08 («نعم، مع أغراضه»): enemies heal with the items they buy (life steal, omnivamp, heal items), which anti-heal cuts.
+  const healFights = list.map((e, i) => (e.items?.length ? fight({ bin: e.bin, shop, kit: e.kit, passive: e.passive, itemOps, cards: [], items: e.items, level: FULL_BUILD_LEVEL }) : fights[i]!));
+  // In a running match his real items count for his resists too (the owner, 2026-11-08: «نعم، في المباراة الحية»); guessed builds don't, as the owner reverted that on 2026-11-04.
+  const stats = list.map((e, i) => (e.live ? healFights[i]! : fights[i]!).stats);
   const mean = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
-  return { armor: mean(stats.map((s) => s.armor)), mr: mean(stats.map((s) => s.mr)), physicalShare: mean(list.map((e) => (e.kit.damage === 'physical' ? 1 : e.kit.damage === 'magic' ? 0 : 0.5))), hp: (FIGHT.target.hp * mean(stats.map((s) => s.hp))) / TYPICAL_HP };
+  const healing = (r: (typeof fights)[number]) => (r.healParts ? r.healParts.ops - (r.healParts.shields ?? 0) + r.healParts.omnivamp + r.healParts.lifeSteal : 0) + r.abilityHealing; // shields are not healing: anti-heal does not cut them (Malphite read 933 a second with them)
+  return { armor: mean(stats.map((s) => s.armor)), mr: mean(stats.map((s) => s.mr)), physicalShare: mean(list.map((e) => (e.kit.damage === 'physical' ? 1 : e.kit.damage === 'magic' ? 0 : 0.5))), hp: (FIGHT.target.hp * mean(stats.map((s) => s.hp))) / TYPICAL_HP, healPerSecond: mean(healFights.map(healing)) / FIGHT.seconds };
 }
 /** A way to build one champion: by his kit (none), or one the owner names: magic items only, physical only, or standing in front (Katarina has all three). 'aphp': magic with health, valued as a frontline champion's (the owner: Galio has three, all magic, magic with health, all tank). */
 export type BuildStyle = 'ap' | 'ad' | 'tank' | 'aphp';
@@ -80,7 +89,7 @@ export const teamPlace = (o: { championId: number; bin: Record<string, unknown>;
   const kitTraits = CHAMPION_KITS.find((k) => k.id === o.championId)?.traits;
   // A tank build is valued as a frontline champion's: the whole fight, health carried to the next, damage taken in others' place; a magic or physical build as a damage dealer's over the whole fight (Sett's fighter build, Katarina's health and magic build), his kit's own build keeping a burst window.
   const traits = o.style === 'tank' || o.style === 'aphp' ? [...(kitTraits ?? []).filter((t) => t !== 'burst'), 'frontline'] : o.style ? kitTraits?.filter((t) => t !== 'frontline' && t !== 'burst') : kitTraits;
-  return { ...(isBurst(traits) ? { window: BURST.window } : {}), ...(traits?.includes('frontline') ? { carriesHealth: true } : {}), maxRatio: traits?.includes('frontline') ? MAX_HEALTH_RATIO : MAX_HEALTH_RATIO_NOT_FRONT, share: 1 / (1 + ((1 - alone) / alone) * others), rise: melee ? SHARE_RISE.melee : SHARE_RISE.ranged, health0: fight({ bin: o.bin, shop: o.shop, kit: o.kit, passive: o.passive, enemy: o.enemy, cards: [], items: [], level: FULL_BUILD_LEVEL }).effectiveHp, enemyDps: ENEMY_DPS, ...(o.kit.buffsAllies && !traits?.includes('frontline') ? { healWorth: ALLY_HEAL_WORTH.value } : {}), absorbedWorth: traits?.includes('frontline') ? ABSORBED_WORTH : ABSORBED_WORTH_BACK.value };
+  return { ...(isBurst(traits) ? { window: BURST.window } : {}), ...(traits?.includes('frontline') ? { carriesHealth: true, draw: FRONT_DRAW.value } : {}), maxRatio: traits?.includes('frontline') ? MAX_HEALTH_RATIO : MAX_HEALTH_RATIO_NOT_FRONT, share: 1 / (1 + ((1 - alone) / alone) * others), rise: melee ? SHARE_RISE.melee : SHARE_RISE.ranged, health0: fight({ bin: o.bin, shop: o.shop, kit: o.kit, passive: o.passive, enemy: o.enemy, cards: [], items: [], level: FULL_BUILD_LEVEL }).effectiveHp, enemyDps: ENEMY_DPS, ...(o.kit.buffsAllies && !traits?.includes('frontline') ? { healWorth: ALLY_HEAL_WORTH.value } : {}), absorbedWorth: traits?.includes('frontline') ? ABSORBED_WORTH : ABSORBED_WORTH_BACK.value };
 };
 const shareAt = (p: TeamPlace, health: number) => 1 / (1 + ((1 - p.share) / p.share) * Math.min(p.maxRatio ?? MAX_HEALTH_RATIO, Math.max(1, health / p.health0)) ** -p.rise);
 const dealtBy = (r: FightResult, seconds: number) => { const whole = Math.floor(seconds), from = whole ? (r.damageBySecond[whole - 1] ?? r.damage) : 0, to = r.damageBySecond[whole] ?? r.damage; return from + (to - from) * (seconds - whole); };
@@ -94,7 +103,7 @@ const dealtBy = (r: FightResult, seconds: number) => { const whole = Math.floor(
  * Stacks come from his level, not from the fight, so they carry as they are.
  */
 export const fightValue = (r: FightResult, p: TeamPlace) => {
-  const seconds = p.window ?? FIGHT.seconds, lasting = shareAt(p, r.effectiveHp) * p.enemyDps * seconds;
+  const seconds = p.window ?? FIGHT.seconds, lasting = shareAt(p, r.effectiveHp) * p.enemyDps * seconds * (p.draw ?? 1);
   const one = (x: FightResult, health: number) => { const stays = health + HEALING_WORTH * (x.healedHp ?? 0), alive = Math.min(1, stays / lasting); return { left: Math.min(x.effectiveHp, Math.max(0, stays - lasting)), value: dealtBy(x, alive * seconds) + p.absorbedWorth * Math.min(stays, lasting) + ABSORBED_WORTH * (p.healWorth ?? ABILITY_HEALING_WORTH) * (x.abilityHealing ?? 0) * alive }; }; // healing allies keeps its own worth: the lower absorbed worth of a champion behind the front is for damage he takes, not for heals he gives (Soraka)
   let value = 0, x = r, health = r.effectiveHp;
   for (let n = 0; n < FIGHTS.inARow && health > 0; n++) {
@@ -144,9 +153,14 @@ export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number
   // The owner's rule: a mage starts with a mana item (Luden's, Blackfire Torch), as his mana runs out fast without one; which one, by the full build.
   const mana = (id: number) => (o.shop[id]?.DataValues?.find((d) => d.name === 'FlatMPPoolMod')?.values?.[0] ?? 0) > 0;
   // A mage's mana item carries damage: Winter's Approach and Frozen Heart are tank items (the owner on Zilean).
-  const manaItem = o.manaFirst && !set.some(mana) ? o.pool.filter((i) => !i.boots && i.damage !== 'none' && mana(i.id) && allowed(i, set)).map((i) => ({ id: i.id, v: fightValue(run([...set, i.id], FULL_BUILD_LEVEL), o.place) })).sort((a, b) => b.v - a.v)[0]?.id : undefined;
+  const search = (start: number[]) => searchSet({ start, candidates: o.pool.filter((i) => !i.boots).map((i) => i.id), slots: start.some(isBoots) ? SLOTS : SLOTS - 1, width: BEAM_WIDTH, swaps: true, value: (ids) => fightValue(run(ids, FULL_BUILD_LEVEL), o.place), fits: (id, held) => allowed(o.pool.find((p) => p.id === id)!, held) });
+  // Which mana item, by the whole build it leads: alone Luden's burst beat Blackfire Torch, whose AP per burning enemy pays with the rest (the owner on Brand, 2026-11-08).
+  // shortcut: the three best alone get a full search each; the rest are dropped.
+  const manaTries = o.manaFirst && !set.some(mana) ? o.pool.filter((i) => !i.boots && i.damage !== 'none' && mana(i.id) && allowed(i, set)).map((i) => ({ id: i.id, v: fightValue(run([...set, i.id], FULL_BUILD_LEVEL), o.place) })).sort((a, b) => b.v - a.v).slice(0, 3).map((x) => x.id) : [];
+  const builds = manaTries.length ? manaTries.map((m) => { const ids = search([...set, m]); return { m, ids, v: fightValue(run(ids, FULL_BUILD_LEVEL), o.place) }; }).sort((a, b) => b.v - a.v) : [];
+  const manaItem = builds[0]?.m;
   if (manaItem !== undefined) set.push(manaItem);
-  const chosen = searchSet({ start: set, candidates: o.pool.filter((i) => !i.boots).map((i) => i.id), slots: set.some(isBoots) ? SLOTS : SLOTS - 1, width: BEAM_WIDTH, swaps: true, value: (ids) => fightValue(run(ids, FULL_BUILD_LEVEL), o.place), fits: (id, held) => allowed(o.pool.find((p) => p.id === id)!, held) });
+  const chosen = builds[0]?.ids ?? search(set);
   set.splice(0, set.length, ...chosen);
   // Boots last: which pair is best depends on what the other items left short, though they're bought second.
   if (!set.some(isBoots) && set.length < SLOTS) {

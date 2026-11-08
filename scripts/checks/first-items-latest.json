@@ -1,76 +1,76 @@
 {
  "1": [
-  "Rod of Ages",
+  "Luden's Echo",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Blackfire Torch"
  ],
  "2": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "3": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "4": [
   "Luden's Echo",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Lich Bane"
  ],
  "5": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "6": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
   "Overlord's Bloodmail"
  ],
  "7": [
   "Luden's Echo",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "8": [
-  "Warmog's Armor",
+  "Liandry's Torment",
   "Sorcerer's Shoes",
-  "Riftmaker"
+  "Abyssal Mask"
  ],
  "9": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Shadowflame"
  ],
  "10": [
   "Dusk and Dawn",
-  "Sorcerer's Shoes",
+  "Berserker's Greaves",
   "Guinsoo's Rageblade"
  ],
  "11": [
   "Blade of The Ruined King",
-  "Berserker's Greaves",
-  "Yun Tal Wildarrows"
+  "Gluttonous Greaves",
+  "Kraken Slayer"
  ],
  "12": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "13": [
-  "Archangel's Staff",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Warmog's Armor"
+  "Liandry's Torment"
  ],
  "14": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "15": [
-  "Blade of The Ruined King",
+  "Infinity Edge",
   "Berserker's Greaves",
   "Runaan's Hurricane"
  ],
@@ -85,7 +85,7 @@
   "Runaan's Hurricane"
  ],
  "18": [
-  "Lord Dominik's Regards",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
   "Runaan's Hurricane"
  ],
@@ -95,17 +95,17 @@
   "Yun Tal Wildarrows"
  ],
  "20": [
-  "Warmog's Armor",
-  "Sorcerer's Shoes",
-  "Riftmaker"
+  "Heartsteel",
+  "Plated Steelcaps",
+  "Rod of Ages"
  ],
  "21": [
-  "Lord Dominik's Regards",
-  "Plated Steelcaps",
-  "Infinity Edge"
+  "Infinity Edge",
+  "Berserker's Greaves",
+  "Lord Dominik's Regards"
  ],
  "22": [
-  "Blade of The Ruined King",
+  "Kraken Slayer",
   "Berserker's Greaves",
   "Runaan's Hurricane"
  ],
@@ -117,22 +117,22 @@
  "24": [
   "Blade of The Ruined King",
   "Gluttonous Greaves",
-  "Trinity Force"
+  "Guinsoo's Rageblade"
  ],
  "25": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Liandry's Torment"
  ],
  "26": [
-  "Rod of Ages",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Liandry's Torment"
  ],
  "27": [
   "Jak'Sho, The Protean",
   "Plated Steelcaps",
-  "Riftmaker"
+  "Liandry's Torment"
  ],
  "28": [
   "Luden's Echo",
@@ -145,49 +145,49 @@
   "Runaan's Hurricane"
  ],
  "30": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Liandry's Torment"
+  "Bloodletter's Curse"
  ],
  "31": [
-  "Warmog's Armor",
-  "Sorcerer's Shoes",
-  "Riftmaker"
+  "Heartsteel",
+  "Plated Steelcaps",
+  "Bloodletter's Curse"
  ],
  "32": [
-  "Warmog's Armor",
-  "Sorcerer's Shoes",
-  "Riftmaker"
+  "Rod of Ages",
+  "Plated Steelcaps",
+  "Jak'Sho, The Protean"
  ],
  "33": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "34": [
-  "Rod of Ages",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
   "Liandry's Torment"
  ],
  "35": [
   "Blade of The Ruined King",
   "Sorcerer's Shoes",
-  "Lord Dominik's Regards"
+  "Yun Tal Wildarrows"
  ],
  "36": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "37": [
-  "Ardent Censer",
-  "Sorcerer's Shoes",
-  "Staff of Flowing Water"
+  "Redemption",
+  "Ionian Boots of Lucidity",
+  "Ardent Censer"
  ],
  "38": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "39": [
   "Blade of The Ruined King",
@@ -205,34 +205,34 @@
   "Lord Dominik's Regards"
  ],
  "42": [
-  "Blade of The Ruined King",
+  "Essence Reaver",
   "Gluttonous Greaves",
-  "Runaan's Hurricane"
+  "Umbral Glaive"
  ],
  "43": [
-  "Malignance",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Riftmaker"
+  "Bloodletter's Curse"
  ],
  "44": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "45": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
   "Rabadon's Deathcap"
  ],
  "48": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "50": [
-  "Warmog's Armor",
+  "Jak'Sho, The Protean",
   "Plated Steelcaps",
-  "Riftmaker"
+  "Liandry's Torment"
  ],
  "51": [
   "Blade of The Ruined King",
@@ -242,57 +242,57 @@
  "53": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "54": [
   "Heartsteel",
-  "Sorcerer's Shoes",
+  "Plated Steelcaps",
   "Sunfire Aegis"
  ],
  "55": [
-  "Rabadon's Deathcap",
+  "Hextech Gunblade",
   "Sorcerer's Shoes",
-  "Shadowflame"
+  "Stormsurge"
  ],
  "56": [
-  "Kraken Slayer",
+  "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "57": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "58": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "59": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "60": [
-  "Stormsurge",
+  "Hextech Gunblade",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "61": [
-  "Blackfire Torch",
+  "Archangel's Staff",
   "Sorcerer's Shoes",
-  "Riftmaker"
+  "Blackfire Torch"
  ],
  "62": [
   "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "63": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "64": [
   "Hubris",
@@ -301,33 +301,33 @@
  ],
  "67": [
   "Blade of The Ruined King",
-  "Berserker's Greaves",
+  "Gluttonous Greaves",
   "Runaan's Hurricane"
  ],
  "68": [
-  "Rabadon's Deathcap",
+  "Heartsteel",
   "Sorcerer's Shoes",
-  "Riftmaker"
+  "Liandry's Torment"
  ],
  "69": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Riftmaker"
+  "Liandry's Torment"
  ],
  "72": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "74": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Shadowflame"
  ],
  "75": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "76": [
   "Malignance",
@@ -335,24 +335,24 @@
   "Rabadon's Deathcap"
  ],
  "77": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "78": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "79": [
-  "Warmog's Armor",
+  "Jak'Sho, The Protean",
   "Plated Steelcaps",
-  "Riftmaker"
+  "Liandry's Torment"
  ],
  "80": [
   "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "81": [
   "Blade of The Ruined King",
@@ -360,14 +360,14 @@
   "Runaan's Hurricane"
  ],
  "82": [
-  "Warmog's Armor",
-  "Sorcerer's Shoes",
+  "Heartsteel",
+  "Plated Steelcaps",
   "Dusk and Dawn"
  ],
  "83": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "84": [
   "Hextech Gunblade",
@@ -375,34 +375,34 @@
   "Stormsurge"
  ],
  "85": [
-  "Rabadon's Deathcap",
+  "Stormsurge",
   "Sorcerer's Shoes",
-  "Stormsurge"
+  "Void Staff"
  ],
  "86": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "89": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "90": [
-  "Blackfire Torch",
+  "Luden's Echo",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Liandry's Torment"
  ],
  "91": [
   "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "92": [
   "Hubris",
   "Plated Steelcaps",
-  "Umbral Glaive"
+  "Profane Hydra"
  ],
  "96": [
   "Blade of The Ruined King",
@@ -415,24 +415,24 @@
   "Warmog's Armor"
  ],
  "99": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "101": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Malignance"
+  "Stormsurge"
  ],
  "102": [
-  "Jak'Sho, The Protean",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "103": [
   "Luden's Echo",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "104": [
   "Lord Dominik's Regards",
@@ -442,17 +442,17 @@
  "105": [
   "Luden's Echo",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "106": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Spear of Shojin"
+  "Death's Dance"
  ],
  "107": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "110": [
   "Blade of The Ruined King",
@@ -462,27 +462,27 @@
  "111": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "112": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Abyssal Mask"
+  "Liandry's Torment"
  ],
  "113": [
-  "Warmog's Armor",
-  "Sorcerer's Shoes",
-  "Riftmaker"
+  "Jak'Sho, The Protean",
+  "Plated Steelcaps",
+  "Liandry's Torment"
  ],
  "114": [
   "Blade of The Ruined King",
-  "Berserker's Greaves",
+  "Gluttonous Greaves",
   "Guinsoo's Rageblade"
  ],
  "115": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "117": [
   "Ardent Censer",
@@ -495,8 +495,8 @@
   "Runaan's Hurricane"
  ],
  "120": [
-  "Warmog's Armor",
-  "Berserker's Greaves",
+  "Heartsteel",
+  "Sorcerer's Shoes",
   "Sunfire Aegis"
  ],
  "121": [
@@ -505,39 +505,39 @@
   "Profane Hydra"
  ],
  "122": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "126": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "127": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "131": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "133": [
   "Kraken Slayer",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "134": [
   "Luden's Echo",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "136": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Liandry's Torment"
  ],
  "141": [
   "Hubris",
@@ -550,9 +550,9 @@
   "Stormsurge"
  ],
  "143": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Liandry's Torment"
  ],
  "145": [
   "Infinity Edge",
@@ -562,57 +562,57 @@
  "147": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Riftmaker"
+  "Liandry's Torment"
  ],
  "150": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "154": [
-  "Warmog's Armor",
+  "Jak'Sho, The Protean",
   "Plated Steelcaps",
-  "Riftmaker"
+  "Liandry's Torment"
  ],
  "157": [
-  "Blade of The Ruined King",
+  "Hubris",
   "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Blade of The Ruined King"
  ],
  "161": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "163": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "164": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
   "Profane Hydra"
  ],
  "166": [
-  "Profane Hydra",
+  "Umbral Glaive",
   "Plated Steelcaps",
   "Runaan's Hurricane"
  ],
  "200": [
-  "Warmog's Armor",
+  "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Blade of The Ruined King"
+  "Kraken Slayer"
  ],
  "201": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "202": [
-  "Umbral Glaive",
-  "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Yun Tal Wildarrows",
+  "Berserker's Greaves",
+  "Runaan's Hurricane"
  ],
  "203": [
   "Blade of The Ruined King",
@@ -620,29 +620,29 @@
   "Runaan's Hurricane"
  ],
  "221": [
-  "Atma's Reckoning",
+  "Axiom Arc",
   "Gluttonous Greaves",
-  "Spear of Shojin"
+  "Lord Dominik's Regards"
  ],
  "222": [
   "Blade of The Ruined King",
-  "Gluttonous Greaves",
+  "Berserker's Greaves",
   "Runaan's Hurricane"
  ],
  "223": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Blackfire Torch"
  ],
  "233": [
   "Blade of The Ruined King",
-  "Berserker's Greaves",
-  "Experimental Hexplate"
+  "Gluttonous Greaves",
+  "Yun Tal Wildarrows"
  ],
  "234": [
-  "Lord Dominik's Regards",
+  "Hubris",
   "Gluttonous Greaves",
-  "Infinity Edge"
+  "Lord Dominik's Regards"
  ],
  "235": [
   "Blade of The Ruined King",
@@ -650,7 +650,7 @@
   "Runaan's Hurricane"
  ],
  "236": [
-  "Blade of The Ruined King",
+  "Lord Dominik's Regards",
   "Berserker's Greaves",
   "Runaan's Hurricane"
  ],
@@ -660,14 +660,14 @@
   "Profane Hydra"
  ],
  "240": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
   "Titanic Hydra"
  ],
  "245": [
   "Luden's Echo",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "246": [
   "Hubris",
@@ -675,14 +675,14 @@
   "Profane Hydra"
  ],
  "254": [
-  "Profane Hydra",
-  "Plated Steelcaps",
+  "Hubris",
+  "Berserker's Greaves",
   "Lord Dominik's Regards"
  ],
  "266": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "267": [
   "Ardent Censer",
@@ -690,9 +690,9 @@
   "Staff of Flowing Water"
  ],
  "268": [
-  "Riftmaker",
+  "Luden's Echo",
   "Sorcerer's Shoes",
-  "Blackfire Torch"
+  "Dusk and Dawn"
  ],
  "350": [
   "Ardent Censer",
@@ -707,22 +707,22 @@
  "412": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "420": [
-  "Warmog's Armor",
-  "Berserker's Greaves",
-  "Titanic Hydra"
+  "Heartsteel",
+  "Plated Steelcaps",
+  "Death's Dance"
  ],
  "421": [
-  "Umbral Glaive",
+  "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "427": [
-  "Staff of Flowing Water",
+  "Ardent Censer",
   "Sorcerer's Shoes",
-  "Riftmaker"
+  "Staff of Flowing Water"
  ],
  "429": [
   "Blade of The Ruined King",
@@ -730,14 +730,14 @@
   "Runaan's Hurricane"
  ],
  "432": [
-  "Luden's Echo",
+  "Rod of Ages",
   "Plated Steelcaps",
-  "Ardent Censer"
+  "Luden's Echo"
  ],
  "497": [
   "Ardent Censer",
   "Sorcerer's Shoes",
-  "Warmog's Armor"
+  "Staff of Flowing Water"
  ],
  "498": [
   "Blade of The Ruined King",
@@ -747,17 +747,17 @@
  "516": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "517": [
-  "Riftmaker",
+  "Nashor's Tooth",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Blackfire Torch"
  ],
  "518": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "523": [
   "Blade of The Ruined King",
@@ -767,32 +767,32 @@
  "526": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "555": [
-  "Heartsteel",
-  "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Hubris",
+  "Plated Steelcaps",
+  "Profane Hydra"
  ],
  "711": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "777": [
   "Blade of The Ruined King",
   "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Kraken Slayer"
  ],
  "799": [
   "Heartsteel",
-  "Gluttonous Greaves",
-  "Hubris"
+  "Plated Steelcaps",
+  "Death's Dance"
  ],
  "800": [
   "Luden's Echo",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "804": [
   "Blade of The Ruined King",
@@ -800,24 +800,24 @@
   "Runaan's Hurricane"
  ],
  "805": [
-  "Rabadon's Deathcap",
+  "Nashor's Tooth",
   "Sorcerer's Shoes",
   "Shadowflame"
  ],
  "875": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "876": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Riftmaker"
+  "Bloodletter's Curse"
  ],
  "887": [
-  "Dusk and Dawn",
-  "Sorcerer's Shoes",
-  "Riftmaker"
+  "Wit's End",
+  "Berserker's Greaves",
+  "Guinsoo's Rageblade"
  ],
  "888": [
   "Ardent Censer",
@@ -825,39 +825,39 @@
   "Staff of Flowing Water"
  ],
  "893": [
-  "Luden's Echo",
+  "Blackfire Torch",
   "Sorcerer's Shoes",
   "Stormsurge"
  ],
  "895": [
-  "Blade of The Ruined King",
-  "Berserker's Greaves",
-  "Lord Dominik's Regards"
+  "Hubris",
+  "Gluttonous Greaves",
+  "The Collector"
  ],
  "897": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Warmog's Armor"
+  "Jak'Sho, The Protean"
  ],
  "901": [
   "Blade of The Ruined King",
-  "Berserker's Greaves",
+  "Gluttonous Greaves",
   "Runaan's Hurricane"
  ],
  "902": [
-  "Luden's Echo",
-  "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Ardent Censer",
+  "Ionian Boots of Lucidity",
+  "Staff of Flowing Water"
  ],
  "904": [
-  "Warmog's Armor",
+  "Heartsteel",
   "Plated Steelcaps",
-  "Titanic Hydra"
+  "Death's Dance"
  ],
  "910": [
   "Blackfire Torch",
   "Sorcerer's Shoes",
-  "Rabadon's Deathcap"
+  "Stormsurge"
  ],
  "950": [
   "Hubris",

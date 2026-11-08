@@ -13,15 +13,18 @@ import { AUGMENT_MECHANICS } from './mechanicsData.js';
 export const questItems = (cardId: number): number[] => (AUGMENT_MECHANICS.find((m) => m.id === cardId)?.needs ?? []).filter((n): n is number => typeof n === 'number');
 
 type Amount = number | { min: number; max: number };
-export interface DamageFormula { flat?: Amount; mana?: number; ap?: number; ad?: number; bonus_ad?: number; hp?: number; bonus_hp?: number; armor?: number; mr?: number; bonus_armor?: number; bonus_mr?: number; target_max_hp?: number; target_missing_hp?: number; target_current_hp?: number; /** AP times bonus health: a ratio on AP that grows with bonus health (Tahm Kench's passive, 1.25% AP per 100 bonus health). */ ap_per_bonus_hp?: number }
+export interface DamageFormula { flat?: Amount; mana?: number; ap?: number; ad?: number; bonus_ad?: number; hp?: number; bonus_hp?: number; armor?: number; mr?: number; bonus_armor?: number; bonus_mr?: number; target_max_hp?: number; target_missing_hp?: number; target_current_hp?: number; /** AP times bonus health: a ratio on AP that grows with bonus health (Tahm Kench's passive, 1.25% AP per 100 bonus health). */ ap_per_bonus_hp?: number; /** AD times crit chance times crit damage above 100%: a bonus that grows with crit without critting (Caitlyn's headshot, 0.8 of it). */ ad_crit?: number; /** Per 100% crit chance (Essence Reaver's mana: 25). */ crit?: number }
 export type CardOp =
   | { op: 'add'; stat: string; value: Amount; after_quest?: boolean }
   | { op: 'mult'; stat: string; factor: number; scope?: string; after_quest?: boolean }
+  /** A stat raised by a share that grows with his level and with other stats, after all items (Jhin's passive: AD +4-44% by level, +0.35 x crit chance, +0.30 x bonus attack speed). byLevel: levels 1 to 18. */
+  | { op: 'mult_from'; stat: string; byLevel: number[]; per: { stat: string; ratio: number }[]; after_quest?: boolean }
   | { op: 'damage_amp'; scope: string; factor: number; after_quest?: boolean }
   | { op: 'mana_amp'; scope: string; per100: number; after_quest?: boolean }
   | { op: 'mana_cost'; factor: number; after_quest?: boolean }
   /** replace: the source is given up, not kept (Pyke turns bonus health into AD and gains none). */
-  | { op: 'convert'; from: string; to: string; ratio: number; replace?: boolean; scope?: string; after_quest?: boolean }
+  /** ratio may grow with his level (Hecarim: 12-24% of bonus move speed as AD). from 'bonus_move_speed': above his base move speed, read each moment. */
+  | { op: 'convert'; from: string; to: string; ratio: Amount; replace?: boolean; scope?: string; after_quest?: boolean }
   | { op: 'per_stack'; stat: string; value: number; mode: 'add' | 'mult'; per: string; cap?: number | null; lost_on_death?: number | null; after_quest?: boolean }
   | { op: 'lock'; key: string; after_quest?: boolean }
   | { op: 'cooldown'; scope: string; factor: number; after_quest?: boolean }
@@ -30,6 +33,8 @@ export type CardOp =
   | { op: 'proc'; trigger: string; internal_cooldown?: number | null; damage: DamageFormula; type: string; after_quest?: boolean }
   | { op: 'dot'; per_second: DamageFormula; duration: number; type: string; stacks_max?: number | null; trigger?: string; after_quest?: boolean }
   | { op: 'heal' | 'shield'; amount: DamageFormula; trigger: string; internal_cooldown?: number | null; after_quest?: boolean; /** His kit's own healing, read per ability: then the abilities' generic healing isn't counted again. */ kit?: boolean }
+  /** Mana back on a trigger (Essence Reaver's spellblade: 62.5% base AD + 25 per 100% crit, its text): more casts for a champion whose abilities spend mana (the owner, 2026-11-08: «الابلتي تستهل مانا»). */
+  | { op: 'mana_restore'; trigger: string; amount: DamageFormula; internal_cooldown?: number | null; after_quest?: boolean }
   | { op: 'crit_abilities'; extra: number; after_quest?: boolean }
   | { op: 'crit_dot'; extra: number; after_quest?: boolean }
   | { op: 'heal_damage'; ratio: number; after_quest?: boolean }
@@ -74,7 +79,8 @@ export const ALLY = { dps: 600, attacksPerSecond: 1.2, ap: 300, attackShare: 0.5
 export interface Kit { damage: 'magic' | 'physical' | 'mixed'; attacks: boolean; buffsAllies?: boolean; aoe?: boolean }
 /** The real enemies when they're known: what their resists do to his damage, and how much of their damage his armor answers rather than his magic resist. */
 /** hp: the health a share of the target's health is taken from, when the enemies are known (FIGHT.target.hp otherwise). */
-export interface EnemyTeam { armor: number; mr: number; physicalShare: number; hp?: number }
+/** healPerSecond: the enemies' mean healing a second in their own fight with no items (their kits' heals, vamp, heals on allies), what anti-heal items cut. */
+export interface EnemyTeam { armor: number; mr: number; physicalShare: number; hp?: number; healPerSecond?: number }
 export interface FightResult {
   damage: number;
   /** Damage dealt by the end of each second, so a burst counts even if he dies soon after. */
@@ -87,8 +93,8 @@ export interface FightResult {
   effectiveHp: number;
   /** Healing and shields he gives himself in the fight, as effective health: vamp, and what cards and items say. */
   healedHp: number;
-  /** healedHp by source, before resists: heals and shields cards and items name, omnivamp, life steal (to measure each against real games). */
-  healParts?: { ops: number; omnivamp: number; lifeSteal: number };
+  /** healedHp by source, before resists: heals and shields cards and items name (shields: the shield part of ops), omnivamp, life steal (to measure each against real games). */
+  healParts?: { ops: number; shields?: number; omnivamp: number; lifeSteal: number };
   /** Healing and shields his abilities give, on whoever they reach, with heal power: the files don't say whom. */
   abilityHealing: number;
   attacks: number;
@@ -127,9 +133,11 @@ const NOT_ANY_DAMAGE = /monster|minion|shield|heal|cap|tooltiponly/i;
 const HEALTH_SHARE_NAME = /(percent|max|total).*(health|hp)|(health|hp).*(percent|damage)|percent.*damage/i;
 const NOT_HEALTH_SHARE = /heal$|healing|shield|cost|decay|monster|minion|cap|missing|tooltip$/i;
 const NOT_DAMAGE = /monster|minion|shield|heal|bonus|floor|secondary/i;
+/** A spell's damage when it crits (CritDamage, TotalDamageCrit, CriticalDamage), not its base (TotalDamageNoCrit, ActiveDamageThatCanCrit, PreCritDamage). */
+const CRIT_VARIANT = (name: string) => /crit/i.test(name) && !/nocrit|cancrit|precrit/i.test(name);
 
 function formula(d: DamageFormula, s: BuildStats, level: number, t = FIGHT.target.hp): number {
-  return (d.flat === undefined ? 0 : scaled(d.flat, level)) + (d.mana ?? 0) * (s.mana ?? 0) + (d.ap ?? 0) * s.ap + (d.ad ?? 0) * s.ad + (d.bonus_ad ?? 0) * s.bonusAd + (d.hp ?? 0) * s.hp + (d.bonus_hp ?? 0) * s.bonusHp + (d.armor ?? 0) * s.armor + (d.mr ?? 0) * s.mr + (d.bonus_armor ?? 0) * s.bonusArmor + (d.bonus_mr ?? 0) * s.bonusMr + (d.target_max_hp ?? 0) * t + (d.target_missing_hp ?? 0) * (t / 2) + (d.target_current_hp ?? 0) * (t / 2) + (d.ap_per_bonus_hp ?? 0) * s.ap * s.bonusHp;
+  return (d.flat === undefined ? 0 : scaled(d.flat, level)) + (d.mana ?? 0) * (s.mana ?? 0) + (d.ap ?? 0) * s.ap + (d.ad ?? 0) * s.ad + (d.bonus_ad ?? 0) * s.bonusAd + (d.hp ?? 0) * s.hp + (d.bonus_hp ?? 0) * s.bonusHp + (d.armor ?? 0) * s.armor + (d.mr ?? 0) * s.mr + (d.bonus_armor ?? 0) * s.bonusArmor + (d.bonus_mr ?? 0) * s.bonusMr + (d.target_max_hp ?? 0) * t + (d.target_missing_hp ?? 0) * (t / 2) + (d.target_current_hp ?? 0) * (t / 2) + (d.ap_per_bonus_hp ?? 0) * s.ap * s.bonusHp + (d.ad_crit ?? 0) * s.ad * s.crit * Math.max(0, s.critDamage - 1) + (d.crit ?? 0) * s.crit;
 }
 
 const STAT_ADD: Record<string, (s: BuildStats, v: number) => void> = {
@@ -249,6 +257,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (stat === 'mr') t.mr *= factor;
     if (stat === 'attack_speed') t.bonusAttackSpeed *= factor;
     if (stat === 'move_speed') t.moveSpeed *= factor;
+    if (stat === 'crit_damage') t.critDamage *= factor; // Jhin's crits deal 25% less (CritReductionPercent)
   };
   // Seconds of fighting an op waits for: "N seconds in champion combat" (Riftmaker, Liandry's) or "enemy champion nearby for N seconds" (Heartsteel's charge).
   const combatSeconds = (x: CardOp) => { const m = /(\d+(?:\.\d+)?) seconds? (?:in|of) champion combat|nearby for (\d+(?:\.\d+)?) seconds?/i.exec(String((x as { needs?: string }).needs ?? '')); return m ? +(m[1] ?? m[2]!) : 0; };
@@ -258,7 +267,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // Order (knowledge/fight-rules.md, convert): multipliers on a stat a conversion reads come first (Tank Engine's health before Overlord's Bloodmail turns it into AD),
   // then the conversions, then the multipliers on everything else (Rabadon's on the AP Riftmaker gives). A stat both read and added keeps the later place.
   const family = (stat: string) => stat.replace(/^bonus_/, '');
-  const convertReads = new Set(ops.flatMap((x) => (x.op === 'convert' && x.from !== 'move_speed' ? [family(x.from)] : [])));
+  const convertReads = new Set(ops.flatMap((x) => (x.op === 'convert' && !/move_speed/.test(x.from) ? [family(x.from)] : [])));
   const convertAdds = new Set(ops.flatMap((x) => (x.op === 'convert' ? [family(x.to)] : [])));
   const beforeConverts = (stat: string) => convertReads.has(family(stat)) && !convertAdds.has(family(stat));
   const multiplyAll = (early: boolean) => {
@@ -268,15 +277,17 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     for (const x of ops) if (x.op === 'mult' && (beforeConverts(x.stat) && x.factor > 1) === early) {
       if (x.stat === 'hp' && x.scope === 'bonus') { s.hp += s.bonusHp * (x.factor - 1); s.bonusHp *= x.factor; }
       else if ((x.stat === 'armor' || x.stat === 'mr') && x.scope === 'bonus') { const gain = s[bonusResist[x.stat]] * (x.factor - 1); s[x.stat] += gain; s[bonusResist[x.stat]] += gain; }
-      else multiply(s, x.stat, x.factor);
+      // A multiplier per burning enemy (Blackfire Torch: 4% AP each) counts every enemy an area kit burns (the owner, 2026-11-08: Brand «يدمج اكثر من شخص بنفس الوقت فيضيف AP»).
+      else multiply(s, x.stat, o.kit.aoe && /enemy burning/i.test(String((x as { needs?: string }).needs ?? '')) ? 1 + (x.factor - 1) * FIGHT.areaTargets : x.factor);
     }
     for (const x of ops) if (x.op === 'per_stack' && x.mode === 'mult' && beforeConverts(x.stat) === early) multiply(s, x.stat, 1 + (x.value >= 1 ? x.value - 1 : x.value) * stacksOf(x)); // readers wrote +5% a stack as 1.05 or 0.05
   };
   multiplyAll(true);
   // A conversion with scope 'bonus' reads the bonus part of its source (Riftmaker: 2% of bonus health; Vladimir: bonus health).
   const bonusOf: Record<string, keyof BuildStats> = { hp: 'bonusHp', armor: 'bonusArmor', mr: 'bonusMr', ad: 'bonusAd' };
-  for (const x of ops) if (x.op === 'convert' && x.from !== 'move_speed') { const key = x.scope === 'bonus' ? bonusOf[x.from] : undefined; const from = key ? (s[key] as number) : statValue(s, x.from); if (!Number.isNaN(from)) add(s, x.to, from * x.ratio); if (x.replace && x.from === 'bonus_hp') { s.hp -= s.bonusHp; s.bonusHp = 0; } }
+  for (const x of ops) if (x.op === 'convert' && !/move_speed/.test(x.from)) { const key = x.scope === 'bonus' ? bonusOf[x.from] : undefined; const from = key ? (s[key] as number) : statValue(s, x.from); if (!Number.isNaN(from)) add(s, x.to, from * scaled(x.ratio, o.level)); if (x.replace && x.from === 'bonus_hp') { s.hp -= s.bonusHp; s.bonusHp = 0; } }
   multiplyAll(false);
+  for (const x of ops) if (x.op === 'mult_from') multiply(s, x.stat, 1 + (x.byLevel[Math.min(Math.max(o.level, 1), 18) - 1] ?? 0) + x.per.reduce((m, p) => m + p.ratio * (statValue(s, p.stat) || 0), 0));
   const baseRates = record as unknown as { attackSpeedModifiable?: { baseValue?: number }; attackSpeedRatioModifiable?: { baseValue?: number } };
   const as0 = baseRates.attackSpeedModifiable?.baseValue ?? 0.625;
   const asRatio = baseRates.attackSpeedRatioModifiable?.baseValue || as0;
@@ -390,7 +401,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       else add(c, x.stat, v);
     }
     const ms = softSpeed((c.moveSpeed + flatMs) * (1 + pctMs));
-    for (const x of ops) if (x.op === 'convert' && x.from === 'move_speed') add(c, x.to, ms * x.ratio);
+    const baseMs = Number((record as { baseMoveSpeedModifiable?: { baseValue?: number } }).baseMoveSpeedModifiable?.baseValue) || ms;
+    for (const x of ops) if (x.op === 'convert' && /move_speed/.test(x.from)) add(c, x.to, (x.from === 'bonus_move_speed' ? Math.max(0, ms - baseMs) : ms) * scaled(x.ratio, o.level));
     c.attackSpeed = Math.min(ATTACK_SPEED_CAP, as0 + asRatio * c.bonusAttackSpeed);
     c.moveSpeed = ms;
     return c;
@@ -408,7 +420,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   };
   // Heal and shield power (items' PercentHealingAmountMod, cards' heal_shield_power) raises the heals and shields items and cards give too, not only his abilities' (knowledge/fight-rules.md, heal).
   const healShieldPower = healPower + ops.reduce((m, x) => (x.op === 'add' && x.stat === 'heal_shield_power' ? m + scaled(x.value, o.level) : m), 0);
-  let healed = 0, fromAllies = 0, fromAttackProcs = 0;
+  let healed = 0, shielded = 0, fromAllies = 0, fromAttackProcs = 0;
   const fire = (trigger: string, t: number, c: BuildStats) => {
     const taken = takenBy(c);
     for (const x of ops) {
@@ -418,7 +430,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (icd && t - (lastProc.get(x) ?? -Infinity) < icd) continue;
       if (t < combatSeconds(x)) continue; // it waits its seconds of fighting before the first time (knowledge/fight-rules.md, conditions)
       // A shield that blocks one kind of damage (Kaenic Rookern: magic only) counts for the share of the enemy's damage of that kind (knowledge/fight-rules.md, shields).
-      if (x.op === 'heal' || x.op === 'shield') { const only = x.op === 'shield' ? /blocks (magic|physical) damage only/i.exec(String((x as { needs?: string }).needs ?? ''))?.[1]?.toLowerCase() : undefined; const physicalShare = o.enemy?.physicalShare ?? 0.5; healed += formula(x.amount, c, o.level, targetHp) * (only === 'magic' ? 1 - physicalShare : only === 'physical' ? physicalShare : 1) * (1 + healShieldPower); lastProc.set(x, t); }
+      if (x.op === 'heal' || x.op === 'shield') { const only = x.op === 'shield' ? /blocks (magic|physical) damage only/i.exec(String((x as { needs?: string }).needs ?? ''))?.[1]?.toLowerCase() : undefined; const physicalShare = o.enemy?.physicalShare ?? 0.5; const amount = formula(x.amount, c, o.level, targetHp) * (only === 'magic' ? 1 - physicalShare : only === 'physical' ? physicalShare : 1) * (1 + healShieldPower); healed += amount; if (x.op === 'shield') shielded += amount; lastProc.set(x, t); }
       // An extra on-hit on the attack after an ability (Dusk and Dawn), not on every attack.
       if (x.op === 'on_hit_repeat' && trigger === 'next_attack') { for (let k = 0; k < x.extra_hits; k++) fire('on_hit', t, c); lastProc.set(x, t); }
       if (x.op === 'proc') {
@@ -428,6 +440,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         lastProc.set(x, t);
       }
       if (x.op === 'refund') { reduce(x.scope, x.amount, x.unit, t); lastProc.set(x, t); }
+      if (x.op === 'mana_restore' && Number.isFinite(fullMana)) { mana = Math.min(fullMana, mana + formula(x.amount, c, o.level, targetHp)); lastProc.set(x, t); }
       // A burn applied again while it lasts adds a stack and refreshes; one that has ended starts again at one stack (knowledge/fight-rules.md).
       if (x.op === 'dot') { const d = dots.find((y) => y.op === x); if (d) { d.stacks = t > d.until ? 1 : Math.min(x.stacks_max ?? 1, d.stacks + 1); d.until = t + (x.duration ?? FIGHT.seconds); } else dots.push({ op: x, until: t + (x.duration ?? FIGHT.seconds), stacks: 1, fromAbility: false }); }
       if (x.op === 'timed') {
@@ -476,11 +489,13 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const read = calculationsAt(sl.spell, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef, stacks });
         // A passive that adds damage to this ability per stack (Smolder: Passive_QDamageIncrease) adds it to the cast.
         const fromPassive = stacks === undefined ? [] : passiveSpells.flatMap((p) => calculationsAt(p, { ranks: sl.ranks, rank: sl.rank, level: o.level, statOf: statReader(c), spellRef, stacks }).filter((v) => v.name === `Passive_${sl.key}DamageIncrease`));
-        const named = read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_DAMAGE.test(v.name));
+        // A spell's crit version (Nasus's CritDamage, Yasuo's TotalDamageCrit) is the hit when it crits, not its damage: read as damage it crit every cast, then crit again.
+        const named = read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_DAMAGE.test(v.name) && !CRIT_VARIANT(v.name));
         // A spell whose only damage is named as bonus or secondary still deals it; a share of the target's health counts on the target.
         const reading = SPELL_HITS[sl.path];
         const chosen = reading?.calc ? read.filter((v) => v.name === reading.calc) : [];
-        const values = chosen.length ? chosen : named.length ? named : read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_ANY_DAMAGE.test(v.name));
+        const values = chosen.length ? chosen : named.length ? named : read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_ANY_DAMAGE.test(v.name) && !CRIT_VARIANT(v.name));
+        const critHit = Math.max(0, ...read.filter((v) => CRIT_VARIANT(v.name) && DAMAGE_NAME.test(v.name) && !NOT_ANY_DAMAGE.test(v.name) && !/mod|mult|scaling|current/i.test(v.name)).map((v) => v.value));
         const healthShare = Math.max(0, ...read.filter((v) => HEALTH_SHARE_NAME.test(v.name) && !NOT_HEALTH_SHARE.test(v.name)).map((v) => (v.value <= 1 ? v.value : v.value <= 100 ? v.value / 100 : 0)));
         const healing = Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
         if (!kitHeals) abilityHealing += healing; // read per ability as his own healing instead (knowledge/champion-heal-*.jsonl)
@@ -489,7 +504,10 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const one = each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
         // A cast that deals damage over time (Miss Fortune's E: TotalDamagePerSecond for 2 s) is dealt at once here, so a card that crits damage over time crits it here; a toggle's goes through the dots.
         const overTime = sl.overTime && !sl.toggle ? 1 + c.crit * dotCrit : 1;
-        const hit = one * amp('abilities', t) * amp(scope, t, false) * overTime * (1 + c.crit * (critExtra + (sl.crits ? c.critDamage - 1 : 0))); // shortcut: a crit raises the whole hit, not only its AD part
+        // The game's own crit version says what a crit adds (Nasus: crit damage on his AD part, his stacks uncritted); without one, a crit raises the whole hit.
+        const base = values.length ? Math.max(...values.map((v) => v.value)) : 0;
+        const critGain = !sl.crits ? 0 : critHit > base && each > 0 ? (critHit - base) / each : c.critDamage - 1;
+        const hit = one * amp('abilities', t) * amp(scope, t, false) * overTime * (1 + c.crit * (critExtra + critGain)); // shortcut without a crit version: a crit raises the whole hit, not only its AD part
         perCast[sl.key] = Math.round(hit);
         casts[sl.key] = (casts[sl.key] ?? 0) + 1;
         if (one > 0) abilityInstances += sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1;
@@ -545,6 +563,14 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (damageBySecond.length) damageBySecond[damageBySecond.length - 1]! += part;
   }
   fromCards += healed * ops.reduce((m, x) => (x.op === 'heal_damage' ? m + x.ratio : m), 0) * takenBy(s).magic;
+  // An anti-heal item (GrievousAmount 40%: Mortal Reminder, Morellonomicon, Thornmail, Chempunk) takes that share of the enemies' healing away: health they don't win back, counted as damage
+  // (the owner, 2026-11-08: the engine reads the enemy). shortcut: the enemies' healing includes their shields and heals on allies, and counts whether or not he hits the healer; upgrade with a per-enemy fight.
+  const grievous = Math.max(0, ...o.items.map((id) => o.shop[id]?.DataValues?.find((d) => d.name === 'GrievousAmount')?.values?.[0] ?? 0));
+  if (grievous > 0 && o.enemy?.healPerSecond) {
+    const cut = grievous * o.enemy.healPerSecond;
+    fromCards += cut * FIGHT.seconds;
+    damageBySecond.forEach((_, i) => { damageBySecond[i]! += cut * (i + 1); });
+  }
   for (const sl of slots) perCast[sl.key] ??= 0;
   const physical = s.hp * (1 + Math.max(0, s.armor) / 100), magic = s.hp * (1 + Math.max(0, s.mr) / 100);
   const reduction = ops.reduce((m, x) => (x.op === 'add' && x.stat === 'damage_reduction' ? m * (1 - scaled(x.value, o.level)) : m), 1);
@@ -561,7 +587,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     fromCards,
     fromAllies,
     abilityHealing: abilityHealing * (1 + healPower + chainHeal + ops.reduce((m, x) => (x.op === 'add' && x.stat === 'heal_shield_power' ? m + scaled(x.value, o.level) : x.op === 'mana_amp' && x.scope === 'heal_shield' && Number.isFinite(fullMana) ? m + (x.per100 * fullMana) / 100 : m), 0)),
-    healParts: { ops: healed, omnivamp: s.omnivamp * (fromAbilities + fromAttacks + fromCards), lifeSteal: s.lifeSteal * (fromAttacks + fromAttackProcs) },
+    healParts: { ops: healed, shields: shielded, omnivamp: s.omnivamp * (fromAbilities + fromAttacks + fromCards), lifeSteal: s.lifeSteal * (fromAttacks + fromAttackProcs) },
     healedHp: Math.max(0, healed + s.omnivamp * (fromAbilities + fromAttacks + fromCards) + s.lifeSteal * (fromAttacks + fromAttackProcs)) * ((o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / s.hp),
     effectiveHp: (o.enemy ? 1 / (o.enemy.physicalShare / physical + (1 - o.enemy.physicalShare) / magic) : (physical + magic) / 2) / reduction,
     attacks,

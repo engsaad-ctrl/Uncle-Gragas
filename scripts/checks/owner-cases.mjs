@@ -36,7 +36,6 @@ const cases = [
   ['5 Jinx: a crit item in the first three', ['Jinx'], ([a]) => a.some(crit)],
   ['6 Yasuo: first item not Bloodthirster', ['Yasuo'], ([a]) => a[0].enName !== 'Bloodthirster'],
   ['7 Ezreal: no Lord Dominik\'s without augments, a crit item with Jeweled Gauntlet', ['Ezreal', ['Ezreal', [JEWELED_GAUNTLET]]], ([a, b]) => !has(a, "Lord Dominik's Regards") && b.some(crit)],
-  // Case 8 (Katarina: Heartsteel in the first three) dropped by the owner 2026-11-06: Heartsteel lowers her build's value 18-25% and her stored games win 46.6% with it (322) against 49.7% without (1,055).
   ['9 Sett: boots not Berserker\'s Greaves', ['Sett'], ([a]) => boots(a) !== "Berserker's Greaves"],
   ['10 Garen: boots not Sorcerer\'s Shoes', ['Garen'], ([a]) => boots(a) !== "Sorcerer's Shoes"],
   ['11 Dr. Mundo: boots not Berserker\'s Greaves', ['Dr. Mundo'], ([a]) => boots(a) !== "Berserker's Greaves"],
@@ -69,9 +68,20 @@ const cases = [
   // The owner (2026-11-07, «بناء صحيح»), MoreZwag's Jinx (FS5bTu2lUWo): The Collector, Yun Tal, Runaan's, Guinsoo's, Manamune, Terminus, BotRK; Juiced's on-hit grows with mana. Soft: an on-hit or crit item first.
   ["28 Jinx with Double Tap, Juiced, Critical Missile: an on-hit or crit item first", [['Jinx', [DOUBLE_TAP, JUICED, CRITICAL_MISSILE]]], ([a]) => crit(a[0]) || ['Blade of The Ruined King', "Guinsoo's Rageblade", 'Terminus', 'Manamune'].includes(a[0].enName)],
   // The owner (2026-11-07, «بناء قوي»), BodyThoseFools' Cho'Gath (Z6K2hZjtRXs): Heartsteel, Warmog's, Unending Despair, Steelcaps, Riftmaker, Sunfire, Rabadon's. Soft: Heartsteel and a health item in the first three.
-  ["30 Cho'Gath with Tank Engine, Pressure Cooker, Goliath, Soul Eater: Heartsteel and Warmog's or Unending Despair in the first three", [["Cho'Gath", [TANK_ENGINE, PRESSURE_COOKER, GOLIATH, SOUL_EATER]]], ([a]) => has(a, 'Heartsteel') && (has(a, "Warmog's Armor") || has(a, 'Unending Despair'))],
   // The owner (2026-11-07): «ممكن يجي بق شوت مع درو يور سورد وايتمات سرعه او دمج»; BodyThoseFools' Caitlyn (n0hr89for64). Soft: crit or attack-speed items lead, no tank item first.
   ["31 Caitlyn with Big Shot and Draw Your Sword: a crit or attack-speed item in the first three", [['Caitlyn', [BIG_SHOT, DRAW_YOUR_SWORD]]], ([a]) => a.some((i) => crit(i) || (shop[i.id]?.DataValues?.find((d) => d.name === 'PercentAttackSpeedMod')?.values?.[0] ?? 0) > 0)],
+  // The owner (2026-11-08, «ايوه الريفر افضل لان الابلتي تستهل مانا»), MoreZwag's Sivir (JDI4J_PL1vc, game 35): Essence Reaver first, then The Collector, a Q poke build. Soft: Essence Reaver in the first three.
+  // The owner (2026-11-08, «نعم صحيح ... Rite of Ruin يعطي كريت جديد لانه ابلتي بور، Critical Missile كريت اضافي»), MoreZwag's Swain (xPiGhbCx3Kw, game 93): Zhonya's, Blackfire, Rite of Ruin, Rabadon's, Liandry's, Void, no boots.
+  // With Jeweled Gauntlet AP turns into crit for his abilities. Soft: no item without AP in the first three, and Rite of Ruin or Rabadon's among them.
+  ['35 Swain with Jeweled Gauntlet, Critical Missile, Magic Missile, Infernal Soul: full AP, Rite of Ruin or Rabadon\'s in the first three', [['Swain', [JEWELED_GAUNTLET, CRITICAL_MISSILE, MAGIC_MISSILE, 1046]]], ([a]) => a.every((i) => i.group === 'boots' || (shop[i.id]?.DataValues?.find((d) => d.name === 'FlatMagicDamageMod')?.values?.[0] ?? 0) > 0) && (has(a, 'Rite of Ruin') || has(a, "Rabadon's Deathcap"))],
+  // The owner (2026-11-08, «لازم ايتم مانا في البدايه»), MoreZwag's Brand (xPiGhbCx3Kw, game 87): Blackfire, Liandry's, Sorcerer's, Shadowflame, Rabadon's, Void. A mage starts with a mana item even when a card (ADAPt) switches damage.
+  // Then: «Blackfire افضل على براند لانه يدمج اكثر من شخص بنفس الوقت فيضيف AP» (4% AP for each burning enemy).
+  ['37 Brand with From Beginning To End, ADAPt, Witchful Thinking, Magic Missile: Blackfire Torch first', [['Brand', [1038, ADAPT, 97, MAGIC_MISSILE]]], ([a]) => a[0].enName === 'Blackfire Torch'],
+  // The owner (2026-11-04, «نعم، صحيح»): Zilean Rod of Ages, Sorcerer's, Rabadon's; then (2026-11-08) «Zilean يبدا بلودن عادي» and «لست متاكد من اول ايتم له». Soft: a mana item first.
+  ['39 Zilean: a mana item first', ['Zilean'], ([a]) => manaItem(a[0])],
+  // The owner (2026-11-08): Twisted Fate fights long in Mayhem («غالبا قتال طويل»), so Lich Bane's repeated procs beat Hextech Gunblade's AP with ADAPt; MoreZwag's TF (fXf5gcWuApk, game 95). Soft: Lich Bane, no Gunblade, in the first three.
+  ['40 Twisted Fate with Scopiest Weapons, With Haste, ADAPt, Back To Basics: Lich Bane in the first three, no Gunblade', [['Twisted Fate', [1115, 1098, ADAPT, BACK_TO_BASICS]]], ([a]) => has(a, 'Lich Bane') && !has(a, 'Hextech Gunblade')],
+  ['34 Sivir with Skilled Sniper, Magic Missile, Upgrade Collector, Stats on Stats!: Essence Reaver in the first three', [['Sivir', [SKILLED_SNIPER, MAGIC_MISSILE, 1320, 1403]]], ([a]) => has(a, 'Essence Reaver')],
 ];
 const lines = [`owner cases${w && itemMath.BURST ? `, burst window ${itemMath.BURST.window} s` : ''}`];
 let passed = 0;
@@ -90,6 +100,13 @@ const galioStyles = await services.buildStyles(idOf('Galio'), []);
 const galioOk = ['ap', 'aphp', 'tank'].every((s) => galioStyles.includes(s));
 passed += galioOk;
 lines.push(`${galioOk ? 'PASS' : 'FAIL'} 16 Galio: magic, magic with health and tank offered: ${galioStyles.join(', ')}`);
+// Case 8, the owner 2026-11-08: «كاترينا لها اكثر من بيلد لا يحتكر على بلد معين ، على حسب التعزيز يكون البلد» (he never dropped her case; d2fe799 had removed it).
+// Her builds AP, AD and tank are offered, and a health augment (Goliath) changes her build. Heartsteel under Goliath is printed, not judged: his health build was Heartsteel, Sorcerer's, Riftmaker, Warmog's.
+const kataStyles = await services.buildStyles(idOf('Katarina'), []);
+const [kataPlain, kataHealth] = await Promise.all([three('Katarina'), three('Katarina', [GOLIATH])]);
+const kataOk = ['ap', 'ad', 'tank'].every((s) => kataStyles.includes(s)) && names(kataPlain).join() !== names(kataHealth).join();
+passed += kataOk;
+lines.push(`${kataOk ? 'PASS' : 'FAIL'} 8 Katarina: AP, AD and tank offered, and Goliath changes her build: ${kataStyles.join(', ')} | none ${names(kataPlain).join(', ')} | with Goliath ${names(kataHealth).join(', ')} (Heartsteel with Goliath: ${has(kataHealth, 'Heartsteel') ? 'yes' : 'no'})`);
 // The owner's yes (2026-11-07) to BodyThoseFools' AP Nasus (ao3YXjau3FQ): with Infinite Recursion, Marksmage, Infernal Conduit and Overloaded the magic build must be offered. Soft.
 const nasusStyles = await services.buildStyles(idOf('Nasus'), [1388, 1129, 1045, 2123]);
 // The owner then judged this build right (2026-11-07, «بناءك صحيح»): Blackfire Torch, Liandry's, Sorcerer's Shoes, Riftmaker, Rylai's, Void Staff. Soft: Blackfire or Liandry's in the magic build's first three.
@@ -107,6 +124,25 @@ const kogR = (await services.mathBuild(idOf("Kog'Maw"), [PHENOMENAL_EVIL, MAGIC_
 const kogROk = has(kogR, 'Malignance');
 passed += kogROk;
 lines.push(`${kogROk ? 'PASS' : 'FAIL'} 33 Kog'Maw with Phenomenal Evil, Magic Missile, Big Brain, magic build: Malignance in the first three: ${names(kogR).join(', ')}`);
-lines.splice(1, 0, `passed ${passed} of ${cases.length + 5}`);
+// The owner (2026-11-08, «ناشور توث بيرزيركر ستاتيك شفت بورك ترمنينس هذي صح»), MoreZwag's Teemo (Y2bT4JXQuu8, game 1) with Dual Wield, Firebrand, Lightning Strikes, Scopier Weapons.
+// Soft: at least four of the five in his whole build.
+const teemoSet = ["Nashor's Tooth", "Berserker's Greaves", 'Statikk Shiv', 'Blade of The Ruined King', 'Terminus'];
+const teemo = (await services.mathBuild(idOf('Teemo'), [1225, 1036, 1052, 1071])).map((x) => x.item);
+const teemoOk = teemoSet.filter((n) => has(teemo, n)).length >= 4;
+passed += teemoOk;
+lines.push(`${teemoOk ? 'PASS' : 'FAIL'} 36 Teemo with Dual Wield, Firebrand, Lightning Strikes, Scopier Weapons: four of Nashor's, Berserker's, Statikk, BotRK, Terminus: ${names(teemo).join(', ')}`);
+// The owner (2026-11-08, «Infinity Edge, Bloodthirster, Death's Dance, Wit's End, Phantom Dancer افضل للبطايق اللي اخذها»), MoreZwag's Yone (yMokerCSbZc, game 40). Soft: four of the five in the whole build.
+const yoneSet = ["Infinity Edge", "Bloodthirster", "Death's Dance", "Wit's End", "Phantom Dancer"];
+const yone = (await services.mathBuild(idOf("Yone"), [UPGRADE_IE, MYSTIC_PUNCH, 2107, 1322])).map((x) => x.item);
+const yoneOk = yoneSet.filter((n) => has(yone, n)).length >= 4;
+passed += yoneOk;
+lines.push(`${yoneOk ? "PASS" : "FAIL"} 38 Yone with Upgrade Infinity Edge, Mystic Punch, Hellbent, Get Excited!: four of IE, Bloodthirster, Death's Dance, Wit's End, Phantom Dancer: ${names(yone).join(", ")}`);
+// Case 30, the owner (2026-11-07, «بناء قوي»), BodyThoseFools' Cho'Gath: Heartsteel, Warmog's, Unending Despair, Steelcaps, Riftmaker, Sunfire, Rabadon's.
+// 2026-11-08 the frontline draw (FRONT_DRAW) moved Jak'Sho before Warmog's; he kept it («نعم، أبقِه» to that question), so the check reads the whole build: Heartsteel and Warmog's or Unending Despair in it.
+const cho = (await services.mathBuild(idOf("Cho'Gath"), [TANK_ENGINE, PRESSURE_COOKER, GOLIATH, SOUL_EATER])).map((x) => x.item);
+const choOk = has(cho, 'Heartsteel') && (has(cho, "Warmog's Armor") || has(cho, 'Unending Despair'));
+passed += choOk;
+lines.push(`${choOk ? 'PASS' : 'FAIL'} 30 Cho'Gath with Tank Engine, Pressure Cooker, Goliath, Soul Eater: Heartsteel and Warmog's or Unending Despair in the build: ${names(cho).join(', ')}`);
+lines.splice(1, 0, `passed ${passed} of ${cases.length + 9}`);
 writeResult(import.meta.url, lines);
 process.exit(0);
