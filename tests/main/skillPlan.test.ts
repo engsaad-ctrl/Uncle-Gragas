@@ -53,3 +53,12 @@ describe('skill order from the build page', () => {
     fixture.site = true;
   });
 });
+
+it('asks the page again later when it could not be read, instead of keeping the even spread for the whole session', async () => {
+  const s = services();
+  const note = async (level: number) => { const b = await s.mathBuild(103, [], [], undefined, undefined, undefined, { level }); return ('missing' in b[0]! ? b[0].missing : []).join(' '); };
+  fixture.site = false;
+  expect(await note(11)).toContain('توزيع قانوني متساوٍ');
+  fixture.site = true;
+  expect(await note(12)).toContain('ترتيب صفحة البناء'); // another level, so not the cached build
+});

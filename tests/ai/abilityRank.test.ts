@@ -122,3 +122,11 @@ describe('skill order from the build page', () => {
     expect(skillPlanOf(['?'], ['?'])).toBeUndefined();
   });
 });
+
+describe('review fixes (2026-11-09 night)', () => {
+  it('takes an ordinary ultimate when it opens even if the page sequence never lists R', () => {
+    const a = allocateAbilityRanks({}, { Q: 5, W: 5, E: 5, R: 3 }, 11, { sequence: ['Q', 'W', 'E', 'Q', 'Q', 'Q', 'Q', 'E', 'E', 'E', 'E'] });
+    expect([a.Q.rank, a.W.rank, a.E.rank, a.R.rank]).toEqual([4, 1, 4, 2]); // R at 6 and 11 instead of the page's Q and E there
+    expect(a.Q.rank + a.W.rank + a.E.rank + a.R.rank).toBe(11);
+  });
+});

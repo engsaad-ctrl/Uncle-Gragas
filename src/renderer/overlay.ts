@@ -175,7 +175,8 @@ async function refreshProgress(update = true, fresh = false) {
     const r = await requestProgress(champion, fresh);
     if (data?.champion?.id !== champion || generation !== loadId || isError(r)) return false;
     const previous = JSON.stringify([data.live?.level, data.live?.items, pickedGame]);
-    if (pickedGame !== undefined && pickedGame !== r.game) { resetRun(); restoredFor = champion; }
+    // A new match clears the run; the build panel must drop the last match's augments and skills too (refreshEngine skips an empty run).
+    if (pickedGame !== undefined && pickedGame !== r.game) { resetRun(); restoredFor = champion; buildView = undefined; if (data.build) renderBuild(data.build); }
     pickedGame = r.game;
     data.game = r.game;
     data.live = r.level === undefined ? undefined : { level: r.level, items: r.items ?? [], game: r.game };

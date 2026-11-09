@@ -630,6 +630,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         } catch { return undefined; }
       })();
       skillPlans.set(championId, plan);
+      void plan.then((p) => { if (!p) skillPlans.delete(championId); }); // unread (offline, no page): ask again next time
     }
     return plan;
   };

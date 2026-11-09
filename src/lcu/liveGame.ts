@@ -17,7 +17,8 @@ export function ranksFromLive(abilities: unknown): LiveRanks | undefined {
   if (!a) return undefined;
   const out: LiveRanks = {};
   for (const k of ['Q', 'W', 'E', 'R'] as const) { const v = obj(a[k])?.abilityLevel; if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 6) out[k] = v; }
-  return Object.keys(out).length ? out : undefined;
+  // All four or none: a skill left out would be read as rank 0 and the rest allocated around it.
+  return Object.keys(out).length === 4 ? out : undefined;
 }
 
 /** A failed LCU poll is not a new match. Keep the epoch across disconnects and temporary live-API failures. */

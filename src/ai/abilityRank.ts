@@ -68,9 +68,10 @@ export function allocateAbilityRanks(record: AbilityRankRecord, tooltipRanks: Pa
   if (from) for (const k of KEYS) { const v = from.ranks[k]; if (typeof v === 'number' && Number.isInteger(v) && v >= 0) out[k] = { rank: Math.min(v, out[k].ranks), ranks: out[k].ranks, read: from.level === L }; }
   for (let at = from ? from.level + 1 : 1; at <= L; at++) {
     if (ult) while (out.R.rank < levels.R.length && levels.R[out.R.rank] === 1 && at === 1) out.R.rank++; // free at level 1
+    // An ordinary ultimate is taken when it opens, even when a page's sequence leaves R out (players take it at once).
+    if (ult && out.R.rank < levels.R.length && levels.R[out.R.rank]! <= at) { out.R.rank++; continue; }
     const planned = o.sequence?.[at - 1];
     if (planned && out[planned].rank < levels[planned].length && levels[planned][out[planned].rank]! <= at) { out[planned].rank++; continue; }
-    if (ult && out.R.rank < levels.R.length && levels.R[out.R.rank]! <= at) { out.R.rank++; continue; }
     const open = basics.filter((k) => out[k].rank < levels[k].length && levels[k][out[k].rank]! <= at);
     if (!open.length) continue; // a point with nowhere to go is kept unspent
     const first = open.find((k) => out[k].rank === 0);

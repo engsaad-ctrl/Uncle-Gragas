@@ -70,8 +70,14 @@ describe('live skill ranks', () => {
   it('reads Q W E R ranks of the active player only, with no identity, and drops odd values', () => {
     const list = [{ rawChampionName: 'game_character_displayname_Gragas', riotId: 'mine#ONE', level: 9, team: 'ORDER', items: [] }];
     const abilities = { Passive: { displayName: 'x' }, Q: { abilityLevel: 5, displayName: 'Barrel Roll', id: 'GragasQ' }, W: { abilityLevel: 1 }, E: { abilityLevel: 2.5 }, R: { abilityLevel: 1 } };
-    expect(activeFromLive({ riotId: 'mine#ONE', level: 9, abilities }, list)).toEqual({ alias: 'Gragas', level: 9, team: 'ORDER', items: [], ranks: { Q: 5, W: 1, R: 1 } });
+    expect(activeFromLive({ riotId: 'mine#ONE', level: 9, abilities: { ...abilities, E: { abilityLevel: 2 } } }, list)).toEqual({ alias: 'Gragas', level: 9, team: 'ORDER', items: [], ranks: { Q: 5, W: 1, E: 2, R: 1 } });
+    expect(activeFromLive({ riotId: 'mine#ONE', level: 9, abilities }, list)).toEqual({ alias: 'Gragas', level: 9, team: 'ORDER', items: [] }); // E 2.5: no ranks
     expect(ranksFromLive({ Q: { abilityLevel: 7 } })).toBeUndefined();
     expect(ranksFromLive(null)).toBeUndefined();
   });
+});
+
+it('reads no ranks at all when one of Q W E R is missing or odd, rather than taking it as rank 0', () => {
+  expect(ranksFromLive({ Q: { abilityLevel: 5 }, W: { abilityLevel: 1 }, E: { abilityLevel: 2.5 }, R: { abilityLevel: 1 } })).toBeUndefined();
+  expect(ranksFromLive({ Q: { abilityLevel: 1 }, W: { abilityLevel: 0 }, E: { abilityLevel: 0 }, R: { abilityLevel: 0 } })).toEqual({ Q: 1, W: 0, E: 0, R: 0 });
 });
