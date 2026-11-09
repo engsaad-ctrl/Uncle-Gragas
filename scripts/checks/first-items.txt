@@ -1,6 +1,6 @@
-2026-11-09T05:59:22.987Z on 9bee7c9 (with uncommitted changes)
+2026-11-09T09:43:37.890Z on eddd398 (with uncommitted changes)
 first items, champions 173, failed 0
-against C:\Users\dell\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 79 of 172, any of the first three 150: MORE THAN 30, stop for the owner
+against C:\Users\dell\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 78 of 172, any of the first three 153: MORE THAN 30, stop for the owner
   Annie: Rod of Ages, Sorcerer's Shoes, Rabadon's Deathcap -> Luden's Echo, Sorcerer's Shoes, Blackfire Torch
   Vladimir: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Liandry's Torment, Sorcerer's Shoes, Abyssal Mask
   Fiddlesticks: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Shadowflame
@@ -8,7 +8,7 @@ against C:\Users\dell\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.j
   Sivir: Trinity Force, Plated Steelcaps, Lord Dominik's Regards -> Infinity Edge, Berserker's Greaves, Runaan's Hurricane
   Teemo: Dusk and Dawn, Berserker's Greaves, Guinsoo's Rageblade -> Wit's End, Berserker's Greaves, Runaan's Hurricane
   Tristana: Lord Dominik's Regards, Berserker's Greaves, Yun Tal Wildarrows -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
-  Miss Fortune: Lord Dominik's Regards, Plated Steelcaps, Infinity Edge -> Infinity Edge, Berserker's Greaves, Lord Dominik's Regards
+  Miss Fortune: Lord Dominik's Regards, Plated Steelcaps, Infinity Edge -> Hubris, Berserker's Greaves, Lord Dominik's Regards
   Ashe: Umbral Glaive, Berserker's Greaves, Manamune -> Kraken Slayer, Berserker's Greaves, Runaan's Hurricane
   Morgana: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Liandry's Torment
   Zilean: Rod of Ages, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Liandry's Torment
@@ -33,7 +33,7 @@ against C:\Users\dell\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.j
   Rumble: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Heartsteel, Sorcerer's Shoes, Liandry's Torment
   Heimerdinger: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Shadowflame
   Gragas: Heartsteel, Plated Steelcaps, Warmog's Armor -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment
-  Ezreal: Trinity Force, Berserker's Greaves, Umbral Glaive -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+  Ezreal: Trinity Force, Berserker's Greaves, Umbral Glaive -> Hubris, Berserker's Greaves, Blade of The Ruined King
   Kennen: Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge -> Stormsurge, Sorcerer's Shoes, Void Staff
   Malzahar: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap -> Luden's Echo, Sorcerer's Shoes, Liandry's Torment
   Lux: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
@@ -63,7 +63,6 @@ against C:\Users\dell\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.j
   Viego: Lord Dominik's Regards, Berserker's Greaves, Infinity Edge -> Hubris, Gluttonous Greaves, Lord Dominik's Regards
   Senna: Bloodthirster, Berserker's Greaves, Lord Dominik's Regards -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
   Lucian: Trinity Force, Berserker's Greaves, Bloodthirster -> Lord Dominik's Regards, Berserker's Greaves, Runaan's Hurricane
-  Zed: Hubris, Plated Steelcaps, Profane Hydra -> Blade of The Ruined King, Plated Steelcaps, Kraken Slayer
   Vi: Profane Hydra, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Berserker's Greaves, Lord Dominik's Regards
   Azir: Riftmaker, Sorcerer's Shoes, Blackfire Torch -> Luden's Echo, Sorcerer's Shoes, Dusk and Dawn
   Samira: Profane Hydra, Plated Steelcaps, Lord Dominik's Regards -> Kraken Slayer, Plated Steelcaps, Lord Dominik's Regards
@@ -75,8 +74,8 @@ against C:\Users\dell\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.j
   Neeko: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
   Pyke: Heartsteel, Berserker's Greaves, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Profane Hydra
   Vex: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
-  Ambessa: Heartsteel, Sorcerer's Shoes, Sunfire Aegis -> Hubris, Berserker's Greaves, Blade of The Ruined King
   Locke: Rabadon's Deathcap, Sorcerer's Shoes, Lich Bane -> Nashor's Tooth, Sorcerer's Shoes, Shadowflame
   Gwen: Dusk and Dawn, Berserker's Greaves, Guinsoo's Rageblade -> Wit's End, Berserker's Greaves, Guinsoo's Rageblade
   Aurora: Luden's Echo, Sorcerer's Shoes, Stormsurge -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
   Nilah: Blade of The Ruined King, Berserker's Greaves, Bloodthirster -> Hubris, Gluttonous Greaves, The Collector
+  Smolder: Blade of The Ruined King, Berserker's Greaves, Trinity Force -> Hubris, Gluttonous Greaves, Lord Dominik's Regards

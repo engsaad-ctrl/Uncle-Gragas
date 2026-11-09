@@ -101,10 +101,10 @@ const galioOk = ['ap', 'aphp', 'tank'].every((s) => galioStyles.includes(s));
 passed += galioOk;
 lines.push(`${galioOk ? 'PASS' : 'FAIL'} 16 Galio: magic, magic with health and tank offered: ${galioStyles.join(', ')}`);
 // Case 8, the owner 2026-11-08: «كاترينا لها اكثر من بيلد لا يحتكر على بلد معين ، على حسب التعزيز يكون البلد» (he never dropped her case; d2fe799 had removed it).
-// Her builds AP, AD and tank are offered, and a health augment (Goliath) changes her build. Heartsteel under Goliath is printed, not judged: his health build was Heartsteel, Sorcerer's, Riftmaker, Warmog's.
+// Her builds AP, AD and tank are offered, and a health augment (Goliath) changes her build to one with Heartsteel: his health build was Heartsteel, Sorcerer's, Riftmaker, Warmog's (required since 2026-11-09, rule 23, «Yes, all»).
 const kataStyles = await services.buildStyles(idOf('Katarina'), []);
 const [kataPlain, kataHealth] = await Promise.all([three('Katarina'), three('Katarina', [GOLIATH])]);
-const kataOk = ['ap', 'ad', 'tank'].every((s) => kataStyles.includes(s)) && names(kataPlain).join() !== names(kataHealth).join();
+const kataOk = ['ap', 'ad', 'tank'].every((s) => kataStyles.includes(s)) && names(kataPlain).join() !== names(kataHealth).join() && has(kataHealth, 'Heartsteel');
 passed += kataOk;
 lines.push(`${kataOk ? 'PASS' : 'FAIL'} 8 Katarina: AP, AD and tank offered, and Goliath changes her build: ${kataStyles.join(', ')} | none ${names(kataPlain).join(', ')} | with Goliath ${names(kataHealth).join(', ')} (Heartsteel with Goliath: ${has(kataHealth, 'Heartsteel') ? 'yes' : 'no'})`);
 // The owner's yes (2026-11-07) to BodyThoseFools' AP Nasus (ao3YXjau3FQ): with Infinite Recursion, Marksmage, Infernal Conduit and Overloaded the magic build must be offered. Soft.

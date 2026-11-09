@@ -100,7 +100,7 @@
   "Rod of Ages"
  ],
  "21": [
-  "Infinity Edge",
+  "Hubris",
   "Berserker's Greaves",
   "Lord Dominik's Regards"
  ],
@@ -111,7 +111,7 @@
  ],
  "23": [
   "Blade of The Ruined King",
-  "Gluttonous Greaves",
+  "Plated Steelcaps",
   "Experimental Hexplate"
  ],
  "24": [
@@ -247,7 +247,7 @@
  "54": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Sunfire Aegis"
+  "Protoplasm Harness"
  ],
  "55": [
   "Hextech Gunblade",
@@ -287,7 +287,7 @@
  "62": [
   "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "63": [
   "Blackfire Torch",
@@ -311,8 +311,8 @@
  ],
  "69": [
   "Blackfire Torch",
-  "Sorcerer's Shoes",
-  "Liandry's Torment"
+  "Liandry's Torment",
+  "Cryptbloom"
  ],
  "72": [
   "Heartsteel",
@@ -352,12 +352,12 @@
  "80": [
   "Hubris",
   "Plated Steelcaps",
-  "Lord Dominik's Regards"
+  "Profane Hydra"
  ],
  "81": [
-  "Blade of The Ruined King",
+  "Hubris",
   "Berserker's Greaves",
-  "Runaan's Hurricane"
+  "Blade of The Ruined King"
  ],
  "82": [
   "Heartsteel",
@@ -466,7 +466,7 @@
  ],
  "112": [
   "Blackfire Torch",
-  "Sorcerer's Shoes",
+  "Plated Steelcaps",
   "Liandry's Torment"
  ],
  "113": [
@@ -501,7 +501,7 @@
  ],
  "121": [
   "Hubris",
-  "Sorcerer's Shoes",
+  "Plated Steelcaps",
   "Profane Hydra"
  ],
  "122": [
@@ -655,9 +655,9 @@
   "Runaan's Hurricane"
  ],
  "238": [
-  "Blade of The Ruined King",
+  "Hubris",
   "Plated Steelcaps",
-  "Kraken Slayer"
+  "Profane Hydra"
  ],
  "240": [
   "Heartsteel",
@@ -785,9 +785,9 @@
   "Kraken Slayer"
  ],
  "799": [
-  "Hubris",
-  "Berserker's Greaves",
-  "Blade of The Ruined King"
+  "Heartsteel",
+  "Plated Steelcaps",
+  "Death's Dance"
  ],
  "800": [
   "Luden's Echo",
@@ -840,9 +840,9 @@
   "Jak'Sho, The Protean"
  ],
  "901": [
-  "Blade of The Ruined King",
+  "Hubris",
   "Gluttonous Greaves",
-  "Runaan's Hurricane"
+  "Lord Dominik's Regards"
  ],
  "902": [
   "Ardent Censer",

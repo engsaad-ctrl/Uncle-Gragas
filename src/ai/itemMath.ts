@@ -138,10 +138,12 @@ export function searchSet(o: { start: number[]; candidates: number[]; slots: num
   return best;
 }
 
-export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number }): MathStep[] {
+export function mathBuild(o: { /** He can't buy boots (Cassiopeia): six other items. */ noBoots?: boolean; /** A card that needs one item of a kind (Upgrade Sheen: any Spellblade item): one of each group, which one by the whole build. */ requiredAnyOf?: number[][]; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number }): MathStep[] {
   // The game's own limits on what can be held together, and those its file doesn't name.
   const clashes = (id: number, held: number[]) => ONE_OF.some((g) => g.includes(id % 10000) && held.some((x) => x !== id && g.includes(x % 10000))) || (o.shop[id]?.limits ?? []).some((g) => held.some((x) => x !== id && o.shop[x]?.limits?.includes(g)));
-  const run = (list: number[], level: number) => fight({ bin: o.bin, shop: o.shop, kit: o.kit, cards: o.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level, stacks: o.stacks });
+  // His share of the enemy's damage, so effects on falling below a share of his health come when it gets there (cardMath lowHealthAt).
+  const incomingDps = o.place.share * o.place.enemyDps * (o.place.draw ?? 1);
+  const run = (list: number[], level: number) => fight({ bin: o.bin, shop: o.shop, kit: o.kit, cards: o.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level, stacks: o.stacks, incomingDps });
   const allowed = (i: PoolItem, held: number[]) => !held.includes(i.id) && !clashes(i.id, held) && !!o.shop[i.id] && !o.offKind?.(i, held);
   const gain = (held: number[], id: number, level: number) => { const v = fightValue(run(held, level), o.place); return v > 0 ? fightValue(run([...held, id], level), o.place) / v - 1 : 0; };
 
@@ -153,9 +155,16 @@ export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number
   // The owner's rule: a mage starts with a mana item (Luden's, Blackfire Torch), as his mana runs out fast without one; which one, by the full build.
   const mana = (id: number) => (o.shop[id]?.DataValues?.find((d) => d.name === 'FlatMPPoolMod')?.values?.[0] ?? 0) > 0;
   // A mage's mana item carries damage: Winter's Approach and Frozen Heart are tank items (the owner on Zilean).
-  const search = (start: number[]) => searchSet({ start, candidates: o.pool.filter((i) => !i.boots).map((i) => i.id), slots: start.some(isBoots) ? SLOTS : SLOTS - 1, width: BEAM_WIDTH, swaps: true, value: (ids) => fightValue(run(ids, FULL_BUILD_LEVEL), o.place), fits: (id, held) => allowed(o.pool.find((p) => p.id === id)!, held) });
+  const search = (start: number[]) => searchSet({ start, candidates: o.pool.filter((i) => !i.boots).map((i) => i.id), slots: start.some(isBoots) || o.noBoots ? SLOTS : SLOTS - 1, width: BEAM_WIDTH, swaps: true, value: (ids) => fightValue(run(ids, FULL_BUILD_LEVEL), o.place), fits: (id, held) => allowed(o.pool.find((p) => p.id === id)!, held) });
   // Which mana item, by the whole build it leads: alone Luden's burst beat Blackfire Torch, whose AP per burning enemy pays with the rest (the owner on Brand, 2026-11-08).
   // shortcut: the three best alone get a full search each; the rest are dropped.
+  // One item of each group a card needs, chosen by the whole build it leads to, as the mana item is; the shop's own limits still hold, the build's kind rules don't (a card's need comes first).
+  const fromGroups: number[] = [];
+  for (const group of o.requiredAnyOf ?? []) {
+    if (set.some((id) => group.includes(id)) || set.length >= SLOTS) continue;
+    const tries = group.filter((id) => !set.includes(id) && !clashes(id, set) && o.shop[id]).map((id) => { const ids = search([...set, id]); return { id, v: fightValue(run(ids, FULL_BUILD_LEVEL), o.place) }; }).sort((a, b) => b.v - a.v);
+    if (tries[0]) { set.push(tries[0].id); fromGroups.push(tries[0].id); }
+  }
   const manaTries = o.manaFirst && !set.some(mana) ? o.pool.filter((i) => !i.boots && i.damage !== 'none' && mana(i.id) && allowed(i, set)).map((i) => ({ id: i.id, v: fightValue(run([...set, i.id], FULL_BUILD_LEVEL), o.place) })).sort((a, b) => b.v - a.v).slice(0, 3).map((x) => x.id) : [];
   const builds = manaTries.length ? manaTries.map((m) => { const ids = search([...set, m]); return { m, ids, v: fightValue(run(ids, FULL_BUILD_LEVEL), o.place) }; }).sort((a, b) => b.v - a.v) : [];
   const manaItem = builds[0]?.m;
@@ -163,16 +172,15 @@ export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number
   const chosen = builds[0]?.ids ?? search(set);
   set.splice(0, set.length, ...chosen);
   // Boots last: which pair is best depends on what the other items left short, though they're bought second.
-  if (!set.some(isBoots) && set.length < SLOTS) {
+  if (!o.noBoots && !set.some(isBoots) && set.length < SLOTS) {
     const best = o.pool.filter((i) => i.boots && allowed(i, set)).map((i) => ({ i, g: gain(set, i.id, FULL_BUILD_LEVEL) })).sort((a, b) => b.g - a.g)[0];
     if (best) set.push(best.i.id);
   }
 
   // The order: owned, what a card asks for, then most per gold; boots second.
-  // The owner: Heartsteel is the first item; other stacking items (Hubris, Rod of Ages) first too, except for a marksman, whose first item is his crit.
+  // The owner's rule 35: Heartsteel and other stacking items (Hubris, Rod of Ages) first, marksmen too (2026-11-09, «Yes, all»: his rule names no exception); a mage's mana item still comes right after Heartsteel (rule 34).
   const heartsteel = (id: number) => (o.shop[id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0;
-  const marksman = o.kit.attacks && ((championRecord(o.bin) as unknown as { attackRangeModifiable?: { baseValue?: number } })?.attackRangeModifiable?.baseValue ?? 0) >= 300;
-  const grows = (id: number) => heartsteel(id) || (!marksman && (o.itemOps?.[id % 10000] ?? []).some((x) => x.op === 'per_stack' && x.per !== 'attack'));
+  const grows = (id: number) => heartsteel(id) || (o.itemOps?.[id % 10000] ?? []).some((x) => x.op === 'per_stack' && x.per !== 'attack');
   const steps: MathStep[] = o.owned.map((id) => ({ id, damage: 0, health: 0, reason: 'owned' }));
   const held = [...o.owned];
   const buy = (id: number, reason: MathStep['reason']) => {
@@ -181,8 +189,8 @@ export function mathBuild(o: { bin: Record<string, unknown>; shop: Record<number
     steps.push({ id, damage: a.damage ? b.damage / a.damage - 1 : 0, health: a.effectiveHp ? b.effectiveHp / a.effectiveHp - 1 : 0, reason });
     held.push(id);
   };
-  for (const id of o.required) if (set.includes(id) && !held.includes(id)) buy(id, 'required');
   for (const id of set) if (heartsteel(id) && !held.includes(id)) buy(id, 'stacks');
+  for (const id of [...o.required, ...fromGroups]) if (set.includes(id) && !held.includes(id)) buy(id, 'required');
   if (manaItem !== undefined && !held.includes(manaItem)) buy(manaItem, 'mana');
   while (held.length < set.length) {
     const boots = set.find((id) => isBoots(id) && !held.includes(id));

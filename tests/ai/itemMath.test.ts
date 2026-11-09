@@ -108,17 +108,28 @@ describe('next items by arithmetic', () => {
     const b = mathBuild({ ...base, owned: [3] });
     expect(b[0]).toMatchObject({ id: 3, reason: 'owned' });
   });
-  it('buys an item that grows with stacks first, though it adds less now, but not for a marksman', () => {
+  it('buys an item that grows with stacks first, though it adds less now, a marksman too (rule 35)', () => {
     const itemOps = { 2: [{ op: 'per_stack' as const, stat: 'ad', value: 1, mode: 'add' as const, per: 'takedown', cap: 20, lost_on_death: null }] };
     const b = mathBuild({ ...base, kit: { damage: 'physical' as const, attacks: false }, itemOps });
     expect(b[0]).toMatchObject({ id: 2, reason: 'stacks' });
     expect(b[1]).toMatchObject({ reason: 'boots' });
-    expect(mathBuild({ ...base, itemOps })[0]!.id).not.toBe(2);
+    expect(mathBuild({ ...base, itemOps })[0]).toMatchObject({ id: 2, reason: 'stacks' });
   });
   it('puts Heartsteel first, before a mage\'s mana item', () => {
     const grown = { ...shop, 2: item({ FlatPhysicalDamageMod: 20, DamageToMaxHealthRatio: 0.1 }), 5: item({ FlatMPPoolMod: 600, FlatMagicDamageMod: 1 }) };
     const b = mathBuild({ ...base, shop: grown, pool: [...pool, { id: 5, gold: 3000, boots: false }], manaFirst: true });
     expect(b.slice(0, 2)).toMatchObject([{ id: 2, reason: 'stacks' }, { id: 5, reason: 'mana' }]);
+  });
+  it('gives no boots to a champion who cannot buy them (Cassiopeia), and a full slot instead', () => {
+    const b = mathBuild({ ...base, noBoots: true });
+    expect(b.some((x) => x.id === 4 || x.reason === 'boots')).toBe(false);
+    expect(b.length).toBeGreaterThan(mathBuild(base).filter((x) => x.reason !== 'boots').length - 1);
+  });
+  it('brings one item of a group a held card needs (Upgrade Sheen: any Spellblade item), the one the build values most', () => {
+    const b = mathBuild({ ...base, requiredAnyOf: [[1, 3]] });
+    const got = b.filter((x) => x.reason === 'required').map((x) => x.id);
+    expect(got).toHaveLength(1);
+    expect([1, 3]).toContain(got[0]);
   });
   it('brings an item a held card needs', () => {
     expect(mathBuild({ ...base, required: [2] })[0]).toMatchObject({ id: 2, reason: 'required' });

@@ -293,3 +293,47 @@ it('reads a bonus that grows with crit chance and crit damage without critting (
   expect(procs(crit(0))).toBeCloseTo(0); // no crit chance, nothing
   expect(procs(crit(1, 0.4))).toBeCloseTo(procs(crit(1)) * (1.15 / 0.75), 1); // crit damage 215% against 175%
 });
+
+it("cuts incoming attacks only for the enemy's physical share (Plated Steelcaps), and holds it on Steelcaps's id", async () => {
+  const { ITEM_NUMBERS } = await import('../../src/ai/cardMathData.js');
+  const itemOps = Object.fromEntries(ITEM_NUMBERS.map((x) => [x.id, x.ops]));
+  expect(itemOps[3047]?.some((x) => x.op === 'add' && x.stat === 'damage_reduction')).toBe(true);
+  expect(itemOps[3174]).toBeUndefined(); // Shushei's Mana Jug held it by mistake
+  const hp = (items: number[], physicalShare: number) => fight({ bin, shop: { 3047: {} } as never, kit, items, cards: [], level: 1, itemOps, enemy: { armor: 50, mr: 50, physicalShare } }).effectiveHp;
+  for (const p of [0, 0.5, 1]) expect(hp([3047], p) / hp([], p)).toBeCloseTo(1 / (1 - 0.1 * p));
+});
+
+it('raises the heals, shields and vamp he receives by Spirit Visage, not what he gives', () => {
+  const shop = { 3065: { DataValues: [{ name: 'HealingIncrease', values: [0.25] }, { name: 'ShieldIncrease', values: [0.25] }] } } as never;
+  const cards = [card('self', [
+    { op: 'heal', amount: { flat: 100 }, trigger: 'kill' } as CardOp,
+    { op: 'shield', amount: { flat: 200 }, trigger: 'kill' } as CardOp,
+    { op: 'add', stat: 'omnivamp', value: 0.1 },
+    { op: 'add', stat: 'life_steal', value: 0.1 },
+  ])];
+  const at = (items: number[]) => fight({ bin, shop, kit, items, cards, level: 1 });
+  const a = at([]), v = at([3065]);
+  for (const k of ['ops', 'shields', 'omnivamp', 'lifeSteal'] as const) expect(v.healParts![k]).toBeCloseTo(1.25 * a.healParts![k]!);
+  expect(v.healedHp).toBeCloseTo(1.25 * a.healedHp);
+  expect(v.abilityHealing).toBe(a.abilityHealing);
+});
+
+it("attacks at a kit's own pace when it names one (a melee fighter busy with his abilities)", () => {
+  expect(fight({ bin, shop: {}, kit: { ...kit, attackPace: 0.25 }, items: [], cards: [], level: 1 }).attacks).toBe(3); // every 6.67 s instead of every 1.67 s
+  expect(run().attacks).toBe(9);
+});
+
+it("takes a share of the cast ability's cooldown off the others (Archmage: 30%, another ability at random)", () => {
+  const spell = (n: number) => ({ __type: 'SpellObject', mSpell: { cooldownTime: [10, 10, 10, 10, 10, 10], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: n }] } } } });
+  const b = { ...bin, rec: { ...bin.rec, spells: ['x/q', 'x/w'] }, 'x/q': spell(100), 'x/w': spell(100) };
+  const archmage = card('Archmage', [{ op: 'refund', scope: 'other_ability', amount: 0.3, unit: 'cast_share', trigger: 'ability_cast' }]);
+  const casts = (cards: CardNumbers[]) => Object.values(fight({ bin: b, shop: {}, kit, items: [], cards, level: 1 }).casts).reduce((n, x) => n + x, 0);
+  expect(casts([archmage])).toBeGreaterThan(casts([]));
+});
+
+it("waits for the enemies' damage to take his health below an effect's mark (Sterak's: on falling below 30% Health)", () => {
+  const shield = card('low', [{ op: 'shield', amount: { flat: 500 }, trigger: 'periodic', internal_cooldown: 90, needs: 'on falling below 30% Health' } as CardOp]);
+  const at = (incomingDps: number) => fight({ bin, shop: {}, kit, items: [], cards: [shield], level: 1, incomingDps }).healParts!.ops;
+  expect(at(10)).toBe(0); // 1,500 effective health lasts far past the 15 s fight at 10 a second
+  expect(at(1000)).toBeGreaterThan(0); // falls below 30% in about a second
+});

@@ -4,7 +4,7 @@ import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { championRecord, compareBuilds } from '../ai/calculator.js';
-import { cardGain, fight, needHolds, questItems, STACKS_AT_15 } from '../ai/cardMath.js';
+import { ATTACK_PACE, cardGain, fight, needHolds, questItems, STACKS_AT_15 } from '../ai/cardMath.js';
 import { RETIRED_AUGMENTS } from '../ai/retiredAugments.js';
 import { AUGMENT_TAGS } from '../ai/augmentTags.js';
 import { tagWeight } from '../ai/tagWeight.js';
@@ -43,6 +43,8 @@ import { buildRuneTexts, type RawPerk } from '../texts/runes.js';
 
 const MODES: PageMode[] = ['ranked', 'flex', 'aram', 'mayhem', 'arena', 'urf', 'nexus'];
 const NO_BUILD: PageMode[] = ['arena', 'urf', 'nexus']; // see BuildMode in stats/opgg.ts
+/** Cassiopeia can't buy boots (her passive): the engine gave her Sorcerer's Shoes (Codex round 16, 2026-11-09). */
+const CASSIOPEIA = 69;
 /** English names compared without case or punctuation. The site writes "Quest: Steel Your Heart"; the game's Mayhem copy is just "Steel Your Heart". */
 const nameKey = (s: string) => s.toLowerCase().replace(/^quest:/, '').replace(/[^a-z0-9]/g, '');
 /** The stats part of a build when OP.GG's could not be had. */
@@ -156,7 +158,7 @@ const PLAIN_BOOTS_GOLD = 300; // the first pair, on the way to a real one
 interface Teams { allies: number[]; enemies: number[]; enemyItems?: Record<number, number[]> }
 const MAGE_SUPPORTS = new Set([99, 1, 61, 147, 25, 43, 26]);
 // aoe: not for an enchanter, whose damage isn't what he's for (the owner, 2026-11-06: Sona and Rakan don't start Liandry's Torment).
-const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), aoe: !!k?.traits.includes('aoe') && !(k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')) && !MAGE_SUPPORTS.has(id)), attacks: k?.relies.includes('attacks') ?? false, buffsAllies: !!k && k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')) }; };
+const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), aoe: !!k?.traits.includes('aoe') && !(k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')) && !MAGE_SUPPORTS.has(id)), attacks: k?.relies.includes('attacks') ?? false, buffsAllies: !!k && k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')), attackPace: ATTACK_PACE[id] }; };
 
 export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch; call?: CallTool }) {
   const { cacheDir, fetchImpl } = opts;
@@ -214,20 +216,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     }
   }
 
-  /** arammayhem.com's ranking matched to the game's augments; OP.GG's when the site fails or none of its names match. */
-  async function mayhemRanking(id: number, alias: string): Promise<Fetched<MayhemAugmentStat[]> | null> {
-    const fromSite = await sitePage(alias, { cacheDir, fetchImpl }).then(
-      async (r) => {
-        const byName = new Map((await augments()).augments.filter((a) => a.modes.includes('mayhem')).map((a) => [nameKey(a.enName), a]));
-        const data = r.data.augments.flatMap((s) => {
-          const a = byName.get(nameKey(s.name));
-          return a ? [{ id: a.id, tier: 0, tierLabel: s.tier, performance: 0, popularity: s.appearance }] : [];
-        });
-        return data.length ? { ...r, data } : null;
-      },
-      () => null,
-    );
-    return fromSite ?? stats.mayhemAugments(id).catch(() => null);
+  /** OP.GG's augment ranking. arammayhem.com serves items only: its augments match AramHex, so they aren't used (the owner's rule 50, 2026-11-05; applied 2026-11-09). */
+  async function mayhemRanking(id: number, _alias: string): Promise<Fetched<MayhemAugmentStat[]> | null> {
+    return stats.mayhemAugments(id).catch(() => null);
   }
 
   /**
@@ -455,6 +446,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const ad = [...gives].some((s) => AD_STATS.has(s));
     return gives.has('ap') && !ad ? 'ap' : ad && !gives.has('ap') ? 'ad' : 'none';
   }
+  /** An item with both AD and AP (Hextech Gunblade, Guinsoo's): itemDamage calls it 'none', but it isn't a tank item (the owner's rule 16, full tank; 2026-11-09). */
+  const hybrid = (id: number) => { const gives = new Set(ITEM_MECHANICS.find((m) => m.id === id)?.gives.map((g) => g.stat) ?? []); return gives.has('ap') && [...gives].some((x) => AD_STATS.has(x)); };
   /** An augment that turns AD into AP or the reverse (ADAPt), or AP into attack stats (Zealot: AP gives crit and attack speed, so AP on-hit items fit an attacker; the owner's Varus case). */
   // Jeweled Gauntlet's AP-to-crit is for abilities: it rewards AP, so it keeps a mage on magic (the owner's Akali case, 2026-11-05).
   const switchesDamage = (ids: number[]) =>
@@ -618,7 +611,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       if (!card?.ops.length || augmentIds.includes(a.id) || a.ids.some((id) => RETIRED_AUGMENTS.has(id))) return []; // out of Mayhem: nobody picks it (src/ai/retiredAugments.ts)
       const holds = needHolds(card.need, facts);
       if (holds === 'no') return [];
-      const g = cardGain({ ...base, enemy: facts2.enemy }, card);
+      const g = cardGain({ ...base, enemy: facts2.enemy, incomingDps: place.share * place.enemyDps * (place.draw ?? 1) }, card);
       // Its tags (src/ai/augmentTags.ts) weigh its value (src/ai/tagWeight.ts); a card with a condition the fight doesn't check is never certain.
       const tags = a.ids.map((id) => AUGMENT_TAGS[id]).find(Boolean);
       const { weight, unread } = tagWeight(tags, card.ops);
@@ -675,6 +668,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       if (!style && kit?.damage === 'magic' && kit.traits.includes('frontline') && cards.some((c) => c.ops.some((x) => x.op === 'crit_abilities' || (x.op === 'convert' && x.from === 'ap')))) style = 'ap';
       // An augment named "Upgrade X" works only through item X (Upgrade Collector, Hubris, Ravenous Hydra, Sundered Sky, Zhonya's): it asks for that item, whether or not its card names it.
       const upgraded = all.augments.filter((a) => augmentIds.some((x) => a.ids.includes(x))).flatMap((a) => { const name = /^Upgrade (.+)$/.exec(a.enName)?.[1]; const item = name ? sold.find((i) => i.enName === name || i.enName === `The ${name}` || i.enName.startsWith(`${name} `)) : undefined; return item ? [item.id] : []; });
+      // Upgrade Sheen upgrades every Spellblade item, and Sheen itself isn't sold: it asks for one Spellblade item (an item whose effect fires on the next attack after an ability), which one by the build (the owner's Nasus tree, 2026-11-09).
+      const spellblade = sold.filter((i) => (ITEM_NUMBERS.find((x) => x.id === i.id % 10000)?.ops ?? []).some((x) => 'trigger' in x && x.trigger === 'next_attack')).map((i) => i.id);
+      const requiredAnyOf = all.augments.some((a) => augmentIds.some((x) => a.ids.includes(x)) && a.enName === 'Upgrade Sheen') && spellblade.length ? [spellblade] : [];
       // A quest card that asks for items (Ultra Hydra, Wooglet's Witchcap) gets them, since its reward counts only once they're all held.
       const quests = cards.filter((c) => c.ops.some((x) => x.after_quest)).flatMap((c) => questItems(c.id)).flatMap((id) => sold.find((i) => i.id % 10000 === id)?.id ?? []);
       const required = [...new Set([...cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []), ...upgraded, ...quests])];
@@ -693,7 +689,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const noMana = (resource?.arType ?? 0) !== 0 || !(resource?.['{726ee5cd}']?.baseValue ?? 0) || resource?.arIsShown === false; // Viego: a hidden pool of 10,000, not mana
       // The owner: a mana item first for mages only; tanks, enchanters and attackers (Kayle, Gwen, Teemo) keep their own first item.
       // Mages who also shield or heal allies count as mages, by the owner's word: Lux, Annie, Orianna, Seraphine, Morgana, Karma, Zilean.
-      const mage = !noMana && !fightKit.attacks && (!fightKit.buffsAllies || MAGE_SUPPORTS.has(championId)) && !kit?.traits.includes('frontline');
+      // A card that makes him attack (Marksmage) doesn't make a mage stop being one: he still starts with a mana item (rule 34, «بلا شرط»; 2026-11-09).
+      const mage = !noMana && !fightKitOf(championId).attacks && (!fightKit.buffsAllies || MAGE_SUPPORTS.has(championId)) && !kit?.traits.includes('frontline');
       // Magic with health holds one item with neither AP nor attack damage besides boots; the rest is magic (two give Jak'Sho and Steelcaps, three Heartsteel and full tank).
       const pureTank = (i?: { id: number; group?: string; boots?: boolean }) => !!i && !i.boots && i.group !== 'boots' && itemDamage(i.id) !== 'ap';
       // The owner (2026-11-05, Gragas full tank): a frontline champion who doesn't guard allies and whose kit scales with no armor or magic resist
@@ -713,7 +710,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const keepsNoHealth = (PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? []).some((x) => x.op === 'convert' && x.from === 'bonus_hp' && x.replace);
       const rangedOnly = (id: number) => id % 10000 === RUNAANS; // Statikk Shiv also carries a bolts op now, and melee champions build it
       const tankOnly = (i?: { id: number; group?: string; boots?: boolean }) => !!i && !i.boots && i.group !== 'boots' && itemDamage(i.id) === 'none';
-      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies, style }), offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks });
+      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies, style }), offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' || hybrid(i.id) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style && !switched : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required, noBoots: championId === CASSIOPEIA, requiredAnyOf, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks });
       const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
       return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, why: s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean) }] : []; });
     })();
