@@ -1,0 +1,293 @@
+{
+ "meaning": "Fixed fight cases for the arithmetic engine. Every input is stated here or in the pinned 16.22 files; enemies are stated numbers, not read from a match. Results are model quantities (damage, effective health, healing) in one 15 s fight, not win chances or recommendations.",
+ "patch": "16.22",
+ "cases": [
+  {
+   "name": "ahri-bees-echo",
+   "champion": {
+    "id": 103,
+    "alias": "ahri"
+   },
+   "level": 11,
+   "items": [
+    6655,
+    3020,
+    3089
+   ],
+   "augments": [
+    {
+     "id": 2062,
+     "acquiredLevel": 3,
+     "abilityKey": "W"
+    },
+    {
+     "id": 3086,
+     "acquiredLevel": 7
+    }
+   ],
+   "enemy": {
+    "armor": 90,
+    "mr": 70,
+    "physicalShare": 0.5,
+    "hp": 3200,
+    "healPerSecond": 40
+   },
+   "variants": [
+    {
+     "label": "BEES before the file reader (the fixed copy in the generated data at d2124b3)",
+     "replace": {
+      "id": 3086,
+      "ops": [
+       {
+        "op": "proc",
+        "trigger": "ability_hit",
+        "internal_cooldown": 12.5,
+        "damage": {
+         "flat": {
+          "min": 75,
+          "max": 200
+         },
+         "bonus_ad": 1.5,
+         "ap": 0.7
+        },
+        "type": "magic"
+       }
+      ]
+     }
+    },
+    {
+     "label": "BEES and Echo Cast read from the 16.21 file",
+     "patch": "16.21"
+    },
+    {
+     "label": "Echo Cast before the file reader (the generated data at d2124b3: one ability of three doubled, no target, no delay)",
+     "replace": {
+      "id": 2062,
+      "ops": [
+       {
+        "op": "damage_amp",
+        "scope": "one_ability",
+        "factor": 2
+       }
+      ]
+     }
+    },
+    {
+     "label": "Echo Cast copy also sets off ability-hit effects (not established in game; sensitivity)",
+     "replace": {
+      "id": 2062,
+      "ops": [
+       {
+        "op": "echo",
+        "delay": 0.25,
+        "ratio": 1,
+        "events": true
+       }
+      ]
+     }
+    },
+    {
+     "label": "Echo Cast with no target skill given",
+     "abilityKey": null
+    },
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "noDamageTypes": true
+    }
+   ]
+  },
+  {
+   "name": "karthus-ethereal-bees-burn",
+   "champion": {
+    "id": 30,
+    "alias": "karthus"
+   },
+   "level": 16,
+   "items": [
+    6653,
+    3089,
+    3100,
+    3020,
+    3165
+   ],
+   "augments": [
+    {
+     "id": 1029,
+     "acquiredLevel": 3
+    },
+    {
+     "id": 3086,
+     "acquiredLevel": 7
+    },
+    {
+     "id": 1045,
+     "acquiredLevel": 11
+    }
+   ],
+   "enemy": {
+    "armor": 110,
+    "mr": 80,
+    "physicalShare": 0.6,
+    "hp": 3800,
+    "healPerSecond": 60
+   },
+   "variants": [
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "noDamageTypes": true
+    }
+   ]
+  },
+  {
+   "name": "nasus-bread-q",
+   "champion": {
+    "id": 75,
+    "alias": "nasus"
+   },
+   "level": 13,
+   "stacks": 300,
+   "items": [
+    3078,
+    3047,
+    3065
+   ],
+   "augments": [
+    {
+     "id": 1103,
+     "acquiredLevel": 3,
+     "abilityKey": "Q"
+    }
+   ],
+   "enemy": {
+    "armor": 100,
+    "mr": 70,
+    "physicalShare": 0.5,
+    "hp": 3500
+   },
+   "variants": [
+    {
+     "label": "Bread And Butter with no target skill given",
+     "abilityKey": null
+    },
+    {
+     "label": "Skills maxed Q, then E, then W (a stated order, as the build page gives one; not read from a site here)",
+     "skillPlan": {
+      "order": [
+       "Q",
+       "E",
+       "W"
+      ]
+     }
+    },
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "noDamageTypes": true
+    }
+   ]
+  },
+  {
+   "name": "gragas-tank-engine",
+   "champion": {
+    "id": 79,
+    "alias": "gragas"
+   },
+   "level": 9,
+   "items": [
+    3084,
+    3068,
+    3075
+   ],
+   "augments": [
+    {
+     "id": 1353,
+     "acquiredLevel": 3
+    },
+    {
+     "id": 1019,
+     "acquiredLevel": 7
+    }
+   ],
+   "enemy": {
+    "armor": 70,
+    "mr": 50,
+    "physicalShare": 0.7,
+    "hp": 2900,
+    "healPerSecond": 30
+   },
+   "incomingDps": 600,
+   "variants": [
+    {
+     "label": "Dashing before the file reader (the generated data at d2124b3: 175/3 haste on every basic skill)",
+     "replace": {
+      "id": 1019,
+      "ops": [
+       {
+        "op": "add",
+        "stat": "basic_haste",
+        "value": 58.33
+       }
+      ]
+     }
+    },
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "noDamageTypes": true
+    }
+   ]
+  },
+  {
+   "name": "udyr-onhit-bees",
+   "champion": {
+    "id": 77,
+    "alias": "udyr"
+   },
+   "level": 15,
+   "items": [
+    6672,
+    3153,
+    3006,
+    3115
+   ],
+   "augments": [
+    {
+     "id": 3086,
+     "acquiredLevel": 7
+    }
+   ],
+   "enemy": {
+    "armor": 100,
+    "mr": 80,
+    "physicalShare": 0.5,
+    "hp": 3600
+   },
+   "variants": [
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "noDamageTypes": true
+    }
+   ]
+  },
+  {
+   "name": "jayce-level-5-no-items",
+   "champion": {
+    "id": 126,
+    "alias": "jayce"
+   },
+   "level": 5,
+   "items": [],
+   "augments": [],
+   "enemy": {
+    "armor": 60,
+    "mr": 45,
+    "physicalShare": 0.5,
+    "hp": 1800
+   },
+   "variants": [
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "noDamageTypes": true
+    }
+   ]
+  }
+ ]
+}

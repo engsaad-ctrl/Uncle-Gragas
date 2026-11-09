@@ -1,0 +1,349 @@
+{
+ "meaning": "BEES!!! records cut from the public Kiwi mode file of each patch (Riot game assets mirrored by CommunityDragon). Only the AugmentData entry, its root spell values and its additional spells movement are kept.",
+ "patches": {
+  "16.21": {
+   "url": "https://raw.communitydragon.org/16.21/game/maps/modespecificdata/kiwi.bin.json",
+   "sha256": "e3e3913fdf4465391f3588e84f654dad01436d57a250f24559897de2fda43d83",
+   "contentVersion": "16.21.8342754+branch.releases-16-21.content.release",
+   "bin": {
+    "Maps/ModeSpecificData/Augments/BEES": {
+     "AugmentNameId": "BEES",
+     "NameTra": "Kiwi_Augment_BEES_Name",
+     "DescriptionTra": "Kiwi_Augment_BEES_Description",
+     "AugmentTooltipTra": "Kiwi_Augment_BEES_Tooltip",
+     "RootSpell": "Maps/ModeSpecificData/Augments/BEES/Augment_BEES",
+     "AdditionalSpells": [
+      "{712d85d3}",
+      "{7b8a6311}",
+      "{855b440f}",
+      "{e63e53e5}"
+     ],
+     "AugmentLargeIconPath": "{a6608343a68ebf86}",
+     "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/bees_small.tex",
+     "AugmentDisplayTags": [
+      5,
+      1
+     ],
+     "rarity": 1,
+     "AugmentPlatformId": 3086,
+     "ResourceResolver": "{02ea5439}",
+     "__type": "AugmentData"
+    },
+    "Maps/ModeSpecificData/Augments/BEES/Augment_BEES": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES",
+     "mSpell": {
+      "DataValues": [
+       {
+        "name": "Damage_Duration",
+        "values": [
+         2,
+         2,
+         2,
+         2,
+         2,
+         2,
+         2
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "AoE_Radius",
+        "values": [
+         425,
+         425,
+         425,
+         425,
+         425,
+         425,
+         425
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "TicksPerSecond",
+        "values": [
+         2,
+         2,
+         2,
+         2,
+         2,
+         2,
+         2
+        ],
+        "__type": "SpellDataValue"
+       }
+      ],
+      "mSpellCalculations": {
+       "Calc_Slow": {
+        "mSimpleTooltipCalculationDisplay": 5,
+        "mExpandedTooltipCalculationDisplay": 5,
+        "mFormulaParts": [
+         {
+          "mNumber": 0.20000000298023224,
+          "__type": "NumberCalculationPart"
+         }
+        ],
+        "mDisplayAsPercent": true,
+        "__type": "GameCalculation"
+       },
+       "Calc_Damage": {
+        "mFormulaParts": [
+         {
+          "mStartValue": 75,
+          "mEndValue": 200,
+          "__type": "ByCharLevelInterpolationCalculationPart"
+         },
+         {
+          "mStat": 2,
+          "mStatFormula": 2,
+          "mCoefficient": 1.5,
+          "__type": "StatByCoefficientCalculationPart"
+         },
+         {
+          "mCoefficient": 0.699999988079071,
+          "__type": "StatByCoefficientCalculationPart"
+         }
+        ],
+        "__type": "GameCalculation"
+       },
+       "{4b11fb1c}": {
+        "mFormulaParts": [
+         {
+          "mStartValue": 15,
+          "mEndValue": 10,
+          "__type": "ByCharLevelInterpolationCalculationPart"
+         }
+        ],
+        "__type": "GameCalculation"
+       },
+       "{a21a0bfc}": {
+        "mSimpleTooltipCalculationDisplay": 5,
+        "mExpandedTooltipCalculationDisplay": 5,
+        "mFormulaParts": [
+         {
+          "mNumber": 0.4000000059604645,
+          "__type": "NumberCalculationPart"
+         }
+        ],
+        "mDisplayAsPercent": true,
+        "__type": "GameCalculation"
+       }
+      }
+     }
+    },
+    "{712d85d3}": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES_Hive_Missile",
+     "mSpell": {
+      "mMissileSpec": {
+       "movementComponent": {
+        "mTracksTarget": false,
+        "mStartBoneName": "C_Buffbone_Glb_Center_Loc",
+        "mTargetBoneName": "C_Buffbone_Glb_Center_Loc",
+        "mTravelTime": 0.75,
+        "__type": "FixedTimeMovement"
+       }
+      }
+     }
+    },
+    "{7b8a6311}": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES_Bee_Missile",
+     "mSpell": {
+      "mMissileSpec": {
+       "movementComponent": {
+        "mStartBoneName": "C_Buffbone_Glb_Center_Loc",
+        "mTargetBoneName": "C_Buffbone_Glb_Center_Loc",
+        "mSpeed": 1800,
+        "__type": "FixedSpeedMovement"
+       }
+      }
+     }
+    },
+    "{855b440f}": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES_Cooldown",
+     "mSpell": {}
+    },
+    "{e63e53e5}": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES_Ready",
+     "mSpell": {}
+    }
+   }
+  },
+  "16.22": {
+   "url": "https://raw.communitydragon.org/16.22/game/maps/modespecificdata/kiwi.bin.json",
+   "sha256": "d6422cef83eedad4da8f782d1eb1351482558a70265970f7db0d59cc05d67eb5",
+   "contentVersion": "16.22.8348910+branch.releases-16-22.content.release",
+   "bin": {
+    "Maps/ModeSpecificData/Augments/BEES": {
+     "AugmentNameId": "BEES",
+     "NameTra": "Kiwi_Augment_BEES_Name",
+     "DescriptionTra": "Kiwi_Augment_BEES_Description",
+     "AugmentTooltipTra": "Kiwi_Augment_BEES_Tooltip",
+     "RootSpell": "Maps/ModeSpecificData/Augments/BEES/Augment_BEES",
+     "AdditionalSpells": [
+      "{712d85d3}",
+      "{7b8a6311}",
+      "{855b440f}",
+      "{e63e53e5}"
+     ],
+     "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/bees_large.tex",
+     "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/bees_small.tex",
+     "AugmentDisplayTags": [
+      5,
+      1
+     ],
+     "rarity": 1,
+     "AugmentPlatformId": 3086,
+     "ResourceResolver": "{02ea5439}",
+     "__type": "AugmentData"
+    },
+    "Maps/ModeSpecificData/Augments/BEES/Augment_BEES": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES",
+     "mSpell": {
+      "DataValues": [
+       {
+        "name": "Damage_Duration",
+        "values": [
+         2,
+         2,
+         2,
+         2,
+         2,
+         2,
+         2
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "AoE_Radius",
+        "values": [
+         425,
+         425,
+         425,
+         425,
+         425,
+         425,
+         425
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "TicksPerSecond",
+        "values": [
+         2,
+         2,
+         2,
+         2,
+         2,
+         2,
+         2
+        ],
+        "__type": "SpellDataValue"
+       }
+      ],
+      "mSpellCalculations": {
+       "Calc_Slow": {
+        "mSimpleTooltipCalculationDisplay": 5,
+        "mExpandedTooltipCalculationDisplay": 5,
+        "mFormulaParts": [
+         {
+          "mNumber": 0.20000000298023224,
+          "__type": "NumberCalculationPart"
+         }
+        ],
+        "mDisplayAsPercent": true,
+        "__type": "GameCalculation"
+       },
+       "Calc_Damage": {
+        "mFormulaParts": [
+         {
+          "mStartValue": 75,
+          "mEndValue": 140,
+          "__type": "ByCharLevelInterpolationCalculationPart"
+         },
+         {
+          "mStat": 2,
+          "mStatFormula": 2,
+          "mCoefficient": 1.5,
+          "__type": "StatByCoefficientCalculationPart"
+         },
+         {
+          "mCoefficient": 0.699999988079071,
+          "__type": "StatByCoefficientCalculationPart"
+         }
+        ],
+        "__type": "GameCalculation"
+       },
+       "{4b11fb1c}": {
+        "mFormulaParts": [
+         {
+          "mStartValue": 15,
+          "mEndValue": 10,
+          "__type": "ByCharLevelInterpolationCalculationPart"
+         }
+        ],
+        "__type": "GameCalculation"
+       },
+       "{a21a0bfc}": {
+        "mSimpleTooltipCalculationDisplay": 5,
+        "mExpandedTooltipCalculationDisplay": 5,
+        "mFormulaParts": [
+         {
+          "mNumber": 0.4000000059604645,
+          "__type": "NumberCalculationPart"
+         }
+        ],
+        "mDisplayAsPercent": true,
+        "__type": "GameCalculation"
+       }
+      }
+     }
+    },
+    "{712d85d3}": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES_Hive_Missile",
+     "mSpell": {
+      "mMissileSpec": {
+       "movementComponent": {
+        "mTracksTarget": false,
+        "mStartBoneName": "C_Buffbone_Glb_Center_Loc",
+        "mTargetBoneName": "C_Buffbone_Glb_Center_Loc",
+        "mTravelTime": 1.100000023841858,
+        "__type": "FixedTimeMovement"
+       }
+      }
+     }
+    },
+    "{7b8a6311}": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES_Bee_Missile",
+     "mSpell": {
+      "mMissileSpec": {
+       "movementComponent": {
+        "mStartBoneName": "C_Buffbone_Glb_Center_Loc",
+        "mTargetBoneName": "C_Buffbone_Glb_Center_Loc",
+        "mSpeed": 1800,
+        "__type": "FixedSpeedMovement"
+       }
+      }
+     }
+    },
+    "{855b440f}": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES_Cooldown",
+     "mSpell": {}
+    },
+    "{e63e53e5}": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_BEES_Ready",
+     "mSpell": {}
+    }
+   }
+  }
+ }
+}

@@ -5,9 +5,10 @@
 import { z } from 'zod';
 import type { GameItem } from '../texts/gameData.js';
 import { calculationsAt, type SpellData, type StatOf } from '../texts/spellValues.js';
+import type { AbilityRankRecord } from './abilityRank.js';
 
 type Mod = { baseValue?: number } | undefined;
-interface CharacterRecord {
+interface CharacterRecord extends AbilityRankRecord {
   __type: 'CharacterRecord';
   spells?: string[];
   baseHPModifiable?: Mod;

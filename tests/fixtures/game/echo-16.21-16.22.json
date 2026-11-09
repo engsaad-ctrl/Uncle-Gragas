@@ -1,0 +1,237 @@
+{
+ "meaning": "Echo Cast (Ability_SelfAOE_DoubleCast, 2062) records cut from the public Kiwi mode file of each patch (Riot game assets mirrored by CommunityDragon): the AugmentData entry, its root spell values and its additional spell movement.",
+ "patches": {
+  "16.21": {
+   "url": "https://raw.communitydragon.org/16.21/game/maps/modespecificdata/kiwi.bin.json",
+   "sha256": "e3e3913fdf4465391f3588e84f654dad01436d57a250f24559897de2fda43d83",
+   "contentVersion": "16.21.8342754+branch.releases-16-21.content.release",
+   "bin": {
+    "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast": {
+     "AugmentNameId": "Ability_SelfAOE_DoubleCast",
+     "NameTra": "Kiwi_Ability_SelfAOE_DoubleCast_Name",
+     "DescriptionTra": "Kiwi_Ability_SelfAOE_DoubleCast_Summary",
+     "AugmentTooltipTra": "Kiwi_Ability_SelfAoe_DoubleCast_Tooltip",
+     "RootSpell": "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Augment_Ability_SelfAOE_DoubelCast",
+     "AdditionalSpells": [
+      "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Augment_Ability_SelfAOE_DoubelCast_CloneMissile"
+     ],
+     "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/genericabilityaugmenticon_prismatic.tex",
+     "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/genericabilityaugmenticon_prismatic.tex",
+     "AugmentDisplayTags": [
+      1
+     ],
+     "rarity": 2,
+     "AugmentPlatformId": 2062,
+     "ResourceResolver": "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Resources",
+     "IsAbilityAugment": true,
+     "__type": "AugmentData"
+    },
+    "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Augment_Ability_SelfAOE_DoubelCast": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_Ability_SelfAOE_DoubelCast",
+     "mSpell": {
+      "DataValues": [
+       {
+        "name": "DelayTime",
+        "values": [
+         0.25,
+         0.25,
+         0.25,
+         0.25,
+         0.25,
+         0.25,
+         0.25
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "CloneMissileSpeed",
+        "values": [
+         1000,
+         1000,
+         1000,
+         1000,
+         1000,
+         1000,
+         1000
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "CloneMoveToDistance",
+        "values": [
+         500,
+         500,
+         500,
+         500,
+         500,
+         500,
+         500
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "CloneDamageRatio",
+        "values": [
+         1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "CloneDuration",
+        "values": [
+         4,
+         4,
+         4,
+         4,
+         4,
+         4,
+         4
+        ],
+        "__type": "SpellDataValue"
+       }
+      ]
+     }
+    },
+    "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Augment_Ability_SelfAOE_DoubelCast_CloneMissile": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_Ability_SelfAOE_DoubelCast_CloneMissile",
+     "mSpell": {
+      "mMissileSpec": {
+       "movementComponent": {
+        "mVisualsTrackHiddenTargets": true,
+        "mTargetHeightAugment": 60,
+        "mOffsetInitialTargetHeight": 60,
+        "mStartDelay": 0.15000000596046448,
+        "mSpeed": 1000,
+        "__type": "FixedSpeedMovement"
+       }
+      }
+     }
+    }
+   }
+  },
+  "16.22": {
+   "url": "https://raw.communitydragon.org/16.22/game/maps/modespecificdata/kiwi.bin.json",
+   "sha256": "d6422cef83eedad4da8f782d1eb1351482558a70265970f7db0d59cc05d67eb5",
+   "contentVersion": "16.22.8348910+branch.releases-16-22.content.release",
+   "bin": {
+    "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast": {
+     "AugmentNameId": "Ability_SelfAOE_DoubleCast",
+     "NameTra": "Kiwi_Ability_SelfAOE_DoubleCast_Name",
+     "DescriptionTra": "Kiwi_Ability_SelfAOE_DoubleCast_Summary",
+     "AugmentTooltipTra": "Kiwi_Ability_SelfAoe_DoubleCast_Tooltip",
+     "RootSpell": "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Augment_Ability_SelfAOE_DoubelCast",
+     "AdditionalSpells": [
+      "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Augment_Ability_SelfAOE_DoubelCast_CloneMissile"
+     ],
+     "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/genericabilityaugmenticon_prismatic.tex",
+     "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/genericabilityaugmenticon_prismatic.tex",
+     "AugmentDisplayTags": [
+      1
+     ],
+     "rarity": 2,
+     "AugmentPlatformId": 2062,
+     "ResourceResolver": "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Resources",
+     "IsAbilityAugment": true,
+     "__type": "AugmentData"
+    },
+    "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Augment_Ability_SelfAOE_DoubelCast": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_Ability_SelfAOE_DoubelCast",
+     "mSpell": {
+      "DataValues": [
+       {
+        "name": "DelayTime",
+        "values": [
+         0.25,
+         0.25,
+         0.25,
+         0.25,
+         0.25,
+         0.25,
+         0.25
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "CloneMissileSpeed",
+        "values": [
+         1000,
+         1000,
+         1000,
+         1000,
+         1000,
+         1000,
+         1000
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "CloneMoveToDistance",
+        "values": [
+         500,
+         500,
+         500,
+         500,
+         500,
+         500,
+         500
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "CloneDamageRatio",
+        "values": [
+         1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1
+        ],
+        "__type": "SpellDataValue"
+       },
+       {
+        "name": "CloneDuration",
+        "values": [
+         4,
+         4,
+         4,
+         4,
+         4,
+         4,
+         4
+        ],
+        "__type": "SpellDataValue"
+       }
+      ]
+     }
+    },
+    "Maps/ModeSpecificData/Augments/Ability_SelfAOE_DoubleCast/Augment_Ability_SelfAOE_DoubelCast_CloneMissile": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_Ability_SelfAOE_DoubelCast_CloneMissile",
+     "mSpell": {
+      "mMissileSpec": {
+       "movementComponent": {
+        "mVisualsTrackHiddenTargets": true,
+        "mTargetHeightAugment": 60,
+        "mOffsetInitialTargetHeight": 60,
+        "mStartDelay": 0.15000000596046448,
+        "mSpeed": 1000,
+        "__type": "FixedSpeedMovement"
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

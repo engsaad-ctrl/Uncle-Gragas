@@ -1,22 +1,27 @@
 // The over-the-game window: the picked champion's build (spells, runes, skills, items) and augments, with a quick search.
 
 import type { Advice } from '../ai/advisor.js';
-import { itemsHeld, walkedPath, type BuildPath } from '../app/buildPath.js';
+import { walkedPath, type BuildPath } from '../app/buildPath.js';
 import { rankOffer, walkItems } from '../app/walk.js';
 import { cardFit, conflictsWith, itemPart, openLines, placesOf, type ChampionDamage } from '../ai/lines.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
+import { augmentStage, type AugmentProgress } from '../ai/augmentProgress.js';
+import { dominantOffer } from '../app/offerComparison.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
 import { FIT_POINTS, fitOf, gradesFor, healthChain, nextToPicked, outsidePoints, playedOnly, trialScoring } from './fit.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
-import type { AugmentEffect, ExperimentalBuild, GameTeams, OverlayData } from '../main/services.js';
+import type { AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, OverlayData } from '../main/services.js';
 import { adviceNodes, AI_HINT, AI_LOADING, EXPERIMENTAL_TITLE, experimentalHint, WHY_AR } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
 import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, stackInput, withTooltip, type Describable } from './dom.js';
 import { filterAugments } from './search.js';
 import { applyRandomTheme } from './theme.js';
+import { progressRequests } from './progressRequests.js';
+import { calculationNotes } from './calculationNotes.js';
+import { needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 
 applyRandomTheme(); // colours only: the overlay hides the background art
 const search = byId<HTMLInputElement>('ov-search');
@@ -36,6 +41,12 @@ let open: number | undefined;
 /** The Mayhem augments the player marked this game (up to 6), for the adapted build; cleared for a new champion. */
 const picked = new Set<number>();
 let pickedFor: number | undefined;
+let pickedGame: number | undefined;
+let manualLevel: number | undefined;
+const acquiredLevels: Record<number, number> = {};
+const abilityTargets: Record<number, TargetAbility> = {};
+const progress = (): AugmentProgress => ({ level: data?.live?.level ?? manualLevel, acquiredLevels: { ...acquiredLevels }, abilityTargets: { ...abilityTargets } });
+const liveFinished = (items: number[], finished: Set<number>) => [...new Set(items.map((id) => finished.has(id) ? id : id % 10000).filter((id) => finished.has(id)))];
 let restoredFor: number | undefined;
 const MAX_PICKS = 6;
 const FIT_GAMES = 150;
@@ -63,29 +74,39 @@ const championDamage = (): ChampionDamage | undefined => {
  * suggested (src/ai/lines.ts).
  */
 const heldParts = () => {
-  return [...(data?.augments ?? []).filter((a) => picked.has(a.id)).flatMap((a) => mechOf(a)?.id ?? []), ...itemsHeld(path, owned).map(itemPart)];
+  return [...(data?.augments ?? []).filter((a) => picked.has(a.id)).flatMap((a) => mechOf(a)?.id ?? []), ...(data?.live?.items ?? owned).map(itemPart)];
 };
 /** What each card adds to this champion's fight, by arithmetic (src/ai/cardMath.ts); a card missing here can't be computed. */
-let cardMath = new Map<number, { damage: number; health: number; value: number; certain: boolean; missing: string | null }>();
+let cardMath = new Map<number, AugmentValue>();
 let cardMathFor = '';
+let cardMathLoading = false;
 async function refreshCardMath() {
   const champion = data?.champion;
-  const held = itemsHeld(path, owned);
-  const key = `${champion?.id}|${[...picked].join()}|${held.join()}`;
+  const held = data?.live?.items ?? owned;
+  const key = `${loadId}|${data?.game}|${champion?.id}|${[...picked].join()}|${held.join()}|${JSON.stringify(progress())}|${[...offer].join()}|${buildStyle ?? ''}|${stacks ?? ''}`;
   if (key === cardMathFor || !champion || data?.mode !== 'mayhem') return;
   cardMathFor = key;
-  const r = await window.lolh.cardValues(champion.id, [...picked], held);
+  // A new level, inventory or style invalidates every old rank and conditional plan immediately.
+  cardMath.clear();
+  cardMathLoading = true;
+  render();
+  if (tab === 'walk') renderWalk();
+  const r = await window.lolh.cardValues(champion.id, [...picked], held, progress(), [...offer], buildStyle, stacks);
   if (cardMathFor !== key) return;
+  cardMathLoading = false;
   cardMath = new Map(isError(r) ? [] : r.map((x) => [x.id, x]));
   render();
   if (tab === 'walk') renderWalk();
 }
 const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
 const mathValue = (id: number) => cardMath.get(id)?.value;
-const mathWords = (id: number) => { const m = cardMath.get(id); return m ? `ضرر ${signed(m.damage)}، تحمّل ${signed(m.health)}${m.certain ? '' : ' (تقديرية)'}` : 'لا يُحسب'; };
-/** Each card's place among its rarity by what it adds; only cards offered in one round can be compared, and these share a rarity. */
+const mathWords = (id: number) => { const m = cardMath.get(id); return m ? `الآن: ضرر ${signed(m.damage)}، تحمّل ${signed(m.health)} · متوسط أثر القتال للمستويات ${m.level}–${m.untilLevel}: ${signed(m.value)}${m.estimatedLevel ? ' · مستوى افتراضي' : ''}${m.estimatedHistory ? ' · توقيت الاختيارات السابقة مقدّر' : ''}${m.certain ? '' : ' (تقديري)'}${m.missing ? ` · ${m.missing}` : ''}` : cardMathLoading ? 'جاري حساب الحالة الحالية…' : 'لا يُحسب'; };
+/** A card whose condition the fight doesn't settle: its value is what it gives if it holds (src/ai/tagWeight.ts). */
+const isOpen = (id: number) => (cardMath.get(id)?.open.length ?? 0) > 0;
+/** Each card's place among its rarity by what it adds; only cards offered in one round can be compared, and these share a rarity.
+ * Cards with an open condition are placed among themselves, apart from settled ones (the owner, 2026-11-09). */
 const mathPlaces = (pool: OverlayData['augments']) =>
-  new Map((Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).flatMap((rarity) => [...placesOf(new Map(pool.filter((a) => a.rarity === rarity && cardMath.has(a.id)).map((a) => [a.id, mathValue(a.id)!])))]));
+  new Map((Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).flatMap((rarity) => [false, true].flatMap((open) => [...placesOf(new Map(pool.filter((a) => a.rarity === rarity && cardMath.has(a.id) && isOpen(a.id) === open).map((a) => [a.id, mathValue(a.id)!])))])));
 const percentOf = (a: OverlayData['augments'][number], places: Map<number, number>) => {
   if (picked.has(a.id)) return undefined;
   const place = places.get(a.id);
@@ -103,7 +124,7 @@ const linkInArabic = (l: Link) => {
 let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
-let engine: { key: string; items: { item: ItemEntry; why: string[]; offPath?: boolean }[]; dropped?: ItemEntry[]; experimental?: ExperimentalBuild | null; error?: string } | undefined;
+let engine: { key: string; items: { item: ItemEntry; why: string[]; offPath?: boolean; missing?: string[] }[]; dropped?: ItemEntry[]; experimental?: ExperimentalBuild | null; error?: string } | undefined;
 let engineAsked = '';
 /** The items the player is walking, kept from augment to augment (src/app/buildPath.ts). */
 let path: BuildPath | undefined;
@@ -112,7 +133,7 @@ async function refreshEngine() {
   const champion = data?.champion;
   if (!champion || (!picked.size && !owned.length) || engineAsked === key) return;
   engineAsked = key;
-  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked], trialScoring(), [...owned], buildStyle, stacks), window.lolh.experimentalBuild(champion.id, [...picked])]);
+  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked], trialScoring(), [...owned], buildStyle, stacks, progress()), window.lolh.experimentalBuild(champion.id, [...picked])]);
   if (engineKey() !== key) return;
   if (isError(r)) engine = { key, items: [], error: r.error };
   else {
@@ -138,15 +159,62 @@ async function refreshFit() {
   render();
 }
 
-function toggleMark(id: number) {
-  if (picked.has(id)) picked.delete(id);
-  else if (picked.size < MAX_PICKS) picked.add(id);
+function resetRun() {
+  picked.clear(); offer.clear(); owned.length = 0; path = undefined; buildStyle = undefined; stacks = undefined; manualLevel = undefined;
+  for (const id of Object.keys(acquiredLevels)) delete acquiredLevels[Number(id)];
+  for (const id of Object.keys(abilityTargets)) delete abilityTargets[Number(id)];
+  cardMathFor = ''; cardMath.clear(); cardMathLoading = false; engineAsked = ''; engine = undefined;
+}
+
+const requestProgress = progressRequests((champion, fresh) => window.lolh.gameProgress(champion, fresh));
+async function refreshProgress(update = true, fresh = false) {
+  const champion = data?.champion?.id;
+  if (!champion || data?.mode !== 'mayhem') return false;
+  const generation = loadId;
+  try {
+    const r = await requestProgress(champion, fresh);
+    if (data?.champion?.id !== champion || generation !== loadId || isError(r)) return false;
+    const previous = JSON.stringify([data.live?.level, data.live?.items, pickedGame]);
+    if (pickedGame !== undefined && pickedGame !== r.game) { resetRun(); restoredFor = champion; }
+    pickedGame = r.game;
+    data.game = r.game;
+    data.live = r.level === undefined ? undefined : { level: r.level, items: r.items ?? [], game: r.game };
+    if (data.live) {
+      // A previous manual level must not return after a later live reading and contradict recorded choices.
+      manualLevel = undefined;
+      const finished = new Set([...data.items, ...data.boots].map((i) => i.id));
+      owned.splice(0, owned.length, ...liveFinished(data.live.items, finished));
+    }
+    const changed = previous !== JSON.stringify([data.live?.level, data.live?.items, pickedGame]);
+    if (changed && update) ownedChanged();
+    return r.level !== undefined;
+  } catch { return false; }
+}
+
+let marking = false;
+async function toggleMark(id: number) {
+  if (marking) return;
+  marking = true;
+  const champion = data?.champion?.id;
+  const generation = loadId, game = data?.game;
+  let fresh = false;
+  try { fresh = await refreshProgress(false, true); }
+  finally { marking = false; }
+  if (data?.champion?.id !== champion || generation !== loadId || (game !== undefined && game !== data?.game)) return;
+  if (picked.has(id)) { picked.delete(id); delete acquiredLevels[id]; delete abilityTargets[id]; }
+  else if (picked.size < MAX_PICKS) {
+    // Without a live/manual level leave history unknown; the calculator labels the unlock-level fallback as estimated.
+    const level = fresh ? data?.live?.level : data?.live ? undefined : manualLevel;
+    if (level !== undefined) acquiredLevels[id] = level;
+    picked.add(id);
+  }
   buildView = undefined; // the marks changed: back to the build that follows them
   render();
   if (data?.build) renderBuild(data.build);
   void refreshEngine(); // the walk tab needs it even when the champion's page failed to load, as on a weak connection
   void refreshCardMath();
   void refreshFit();
+  if (tab === 'walk') renderWalk();
 }
 
 function render() {
@@ -210,7 +278,7 @@ function render() {
       const clashes = picked.has(a.id) ? [] : conflictsWith(heldParts(), mechOf(a)?.id);
       const why = [
         ...clashes.map((c) => `تعارض: ${c}.`),
-        ...(compat === undefined ? [] : [`التوافق بالحساب ${compat}%: ${mathWords(a.id)}. لا يقيس الفوز.`]),
+        ...(compat === undefined ? [] : [`ترتيب نسبي بين ${isOpen(a.id) ? 'المشروطة من ' : ''}نفس الندرة ${compat}%: ${mathWords(a.id)}. ليس احتمال فوز أو نسبة توافق مثبتة.${isOpen(a.id) ? ` مشروطة: ${cardMath.get(a.id)!.open.join('، ')}؛ القيمة إن تحقق الشرط.` : ''}`]),
         ...(onLine ? [lineText(onLine)] : []),
         ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
         ...(openWin.has(a.id) ? [`فوزه مع هذا البطل في السيرفر الصيني: ${(100 * openWin.get(a.id)!.win).toFixed(1)}% من ${openWin.get(a.id)!.games.toLocaleString('en')} مباراة.`] : []),
@@ -225,7 +293,7 @@ function render() {
       grade.title = why.join('\n');
       // The letter comes last, against the row's end, so the letters of all rows line up.
       if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
-      if (compat !== undefined) tags.append(el('span', 'ov-mech', `${clashes.length ? '⚠ ' : ''}${compat}%`));
+      if (compat !== undefined) tags.append(el('span', 'ov-mech', `${clashes.length ? '⚠ ' : ''}${compat}%${isOpen(a.id) ? ' مشروط' : ''}`));
       tags.append(grade);
       r.append(tags);
       const on = picked.has(a.id);
@@ -285,7 +353,7 @@ const ic = (x: Describable) => withTooltip(icon(x.iconUrl, 'ic'), x);
 
 /** The cards the player typed in for this round. */
 const offer = new Set<number>();
-/** The items he says he bought; while there are any, they stand in for the path's suggestions. */
+/** Actual finished inventory, read live or entered manually; suggestions never count as purchases. */
 const owned: number[] = [];
 let shopItems: ItemEntry[] | undefined;
 const pill = (text: string, onClick: () => void, cls = 'pill') => {
@@ -306,6 +374,21 @@ const ownedChanged = () => {
 function renderWalk() {
   if (!data) return;
   if (data.mode !== 'mayhem') return void walkBox.replaceChildren(el('p', 'missing', 'هذا التبويب لـMayhem فقط.'));
+  const previousCard = document.getElementById('ov-walk-card') as HTMLInputElement | null;
+  const previousItem = document.getElementById('ov-walk-item') as HTMLInputElement | null;
+  const focused = document.activeElement?.id;
+  const stage = augmentStage([...picked], progress());
+  const levelInput = el('input', '') as HTMLInputElement;
+  levelInput.type = 'number'; levelInput.min = '3'; levelInput.max = '18'; levelInput.step = '1';
+  levelInput.value = String(stage.level); levelInput.disabled = !!data.live;
+  const levelLabel = el('label', 'hint', data.live ? 'مستواك من اللعبة: ' : 'مستواك الحالي (عدّله عند تأخر الاختيار): ');
+  levelLabel.append(levelInput);
+  levelInput.addEventListener('change', () => {
+    const level = levelInput.valueAsNumber;
+    if (!Number.isInteger(level) || level < 3 || level > 18 || Object.values(acquiredLevels).some((at) => at > level)) { levelInput.value = String(stage.level); return; }
+    manualLevel = level;
+    ownedChanged();
+  });
   if (!shopItems) {
     void window.lolh.listItems('mayhem').then((r) => {
       shopItems = isError(r) ? [] : r.list.filter((i) => i.group === 'legendary' || i.group === 'boots');
@@ -315,12 +398,14 @@ function renderWalk() {
   const pool = playedOnly(data.augments, effects, picked);
   const places = mathPlaces(pool);
   const percent = (a: OverlayData['augments'][number]) => percentOf(a, places);
-  const finder = (placeholder: string, results: (q: string) => HTMLElement[]) => {
+  const finder = (placeholder: string, results: (q: string) => HTMLElement[], query = '') => {
     const input = el('input', '') as HTMLInputElement;
     input.type = 'search';
     input.placeholder = placeholder;
     input.autocomplete = 'off';
+    input.value = query;
     const box = el('div', 'ov-adapted');
+    if (query.trim()) box.replaceChildren(...results(query));
     input.addEventListener('input', () => box.replaceChildren(...(input.value.trim() ? results(input.value) : [])));
     const label = el('label', 'search');
     label.append(input);
@@ -328,21 +413,35 @@ function renderWalk() {
   };
 
   // The cards on offer.
-  const cards = rankOffer(data.augments.filter((a) => offer.has(a.id)), percent);
-  const rows = el('div', 'ov-adapted');
+  const cards = rankOffer(data.augments.filter((a) => offer.has(a.id)), percent, (a) => isOpen(a.id));
+  const stageComparable = cards.every((a) => cardMath.get(a.id)?.certain === true);
+  const winner = dominantOffer(cards.map((a) => cardMath.get(a.id) ?? { id: a.id, value: NaN }));
+  const rows = el('div', 'ov-adapted ov-offers');
   for (const a of cards) {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
     const p = percent(a);
-    txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? 'غير مقاسة: أثرها في حركة أو إيقاف أو هدف آخر، أو شرطها لا ينطبق. هذا لا يعني أنها ضعيفة' : [`${p}%: ${mathWords(a.id)}${a === cards[0] && cards.length > 1 ? ' · الأعلى هنا' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
-    r.append(ic(a), txt, pill('اخترته', () => { offer.clear(); toggleMark(a.id); renderWalk(); }), pill('✕', () => { offer.delete(a.id); renderWalk(); }, 'pill ghost'));
+    txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? cardMathLoading ? 'جاري حساب الحالة الحالية…' : 'غير مقاسة: أثرها في حركة أو إيقاف أو هدف آخر، أو شرطها لا ينطبق. هذا لا يعني أنها ضعيفة' : [`ترتيب نسبي ${p}%: ${mathWords(a.id)}${a.id === winner ? ' · يتقدم في متوسط المرحلة والخطة المكتملة حسب الأجزاء المحسوبة' : stageComparable && a === cards[0] && cards.length > 1 ? ' · الأعلى في المرحلة الحالية' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
+    const m = cardMath.get(a.id);
+    if (m?.open.length) txt.append(el('small', '', `مشروطة، تُرتَّب بعد المحسومة: ${m.open.join('، ')}. القيمة إن تحقق الشرط، واحتماله غير مقاس.`));
+    if (m?.plan) {
+      const names = m.plan.items.map((id) => [...data!.items, ...data!.boots].find((i) => i.id === id)?.enName ?? String(id));
+      txt.append(el('small', '', `عند اكتمال البناء في سيناريو مستوى ${m.plan.level}: ضرر ${signed(m.plan.damage)}، تحمّل ${signed(m.plan.health)} · أثر القتال ${signed(m.plan.value)}`), el('small', 'en', names.join(' › ')));
+      if (m.plan.missing.length) txt.append(el('small', '', `غير محسوب في الخطة: ${m.plan.missing.join(' · ')}`));
+    } else if (m?.planError) txt.append(el('small', 'missing', m.planError));
+    const targetField = abilityTargetField(a);
+    if (targetField) txt.append(targetField);
+    r.append(ic(a), txt, pill('اخترته', () => {
+      for (const id of offer) if (id !== a.id && !picked.has(id)) delete abilityTargets[id];
+      offer.clear(); void toggleMark(a.id); renderWalk();
+    }), pill('✕', () => { offer.delete(a.id); delete abilityTargets[a.id]; void refreshCardMath(); renderWalk(); }, 'pill ghost'));
     rows.append(r);
   }
   const findCard = finder('اكتب اسم البطاقة المعروضة…', (q) =>
     filterAugments(pool, q, 'all', 'all').filter((a) => !offer.has(a.id) && !picked.has(a.id)).slice(0, 6).map((a) => {
-      const b = pill(shownName(a), () => { offer.add(a.id); renderWalk(); byId<HTMLInputElement>('ov-walk-card').focus(); });
+      const b = pill(shownName(a), () => { if (offer.size >= 3) return; offer.add(a.id); byId<HTMLInputElement>('ov-walk-card').value = ''; void refreshCardMath(); renderWalk(); byId<HTMLInputElement>('ov-walk-card').focus(); });
       return b;
-    }));
+    }), previousCard?.value);
   findCard.input.id = 'ov-walk-card';
 
   // What he bought, and what's next.
@@ -359,12 +458,14 @@ function renderWalk() {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
     txt.append(el('b', '', shownName(item)), el('small', '', offPath.includes(id) ? 'لم يكن المحرك ليختاره الآن' : 'في مسارك'));
-    r.append(ic(item), txt, pill('✕', () => { owned.splice(owned.indexOf(id), 1); ownedChanged(); }, 'pill ghost'));
+    r.append(ic(item), txt);
+    if (!data.live) r.append(pill('✕', () => { owned.splice(owned.indexOf(id), 1); ownedChanged(); }, 'pill ghost'));
     ownedRow.append(r);
   }
   const findItem = finder('اكتب اسم الغرض الذي اشتريته…', (q) =>
     (shopItems ?? []).filter((i) => !owned.includes(i.id) && `${i.name} ${shownName(i)}`.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6).map((i) =>
-      pill(shownName(i), () => { owned.push(i.id); ownedChanged(); })));
+      pill(shownName(i), () => { owned.push(i.id); byId<HTMLInputElement>('ov-walk-item').value = ''; ownedChanged(); })), previousItem?.value);
+  findItem.input.id = 'ov-walk-item';
   const nextRow = el('div', 'ov-adapted');
   for (const id of next) {
     const item = known.get(id);
@@ -377,11 +478,13 @@ function renderWalk() {
     nextRow.append(r);
   }
   walkBox.replaceChildren(
-    section(`الجولة ${picked.size + 1}: البطاقات المعروضة`, findCard.label, findCard.box, rows, el('p', 'hint', 'النسبة من الحساب فقط: ما تضيفه البطاقة لقتال بطلك مع ما تحمله، مقارنة بغيرها من ندرتها. اقرأها كاتجاه: أثرها في المباريات أقل مما يظهر هنا، ولا تقيس الفوز.')),
-    ...(chosen.length ? [section('ما أخذته', chosenChips(chosen))] : []),
-    section('أغراضك', findItem.label, findItem.box, ownedRow),
-    ...(chosen.length ? [section('الأغراض التالية', advised.length ? nextRow : el('p', 'hint', 'جاري حساب البناء…'))] : []),
+    section(`الاختيار ${picked.size + 1}: البطاقات المعروضة`, levelLabel, el('p', 'hint', `الاختيارات الأساسية عند المستويات 3، 7، 11، 15. التقييم حتى مستوى ${stage.untilLevel}${stage.estimatedLevel ? '؛ المستوى الحالي افتراضي حتى تحدده أو تُقرأ المباراة' : ''}.`), findCard.label, findCard.box, rows, el('p', 'hint', 'الترتيب نسبي بين تعزيزات الندرة نفسها. متوسط المرحلة يستخدم أغراضك الحالية فقط. الخطة المكتملة تعيد البحث عن الأيتمات لكل تعزيز؛ لا تقدّر الذهب أو وقت الشراء أو تكلفة تغيير المسار، ولا تفترض تعزيزات قادمة. عند اختلاف الأفضل بين المرحلة والخطة، توجد مقايضة. الأرقام ليست احتمال فوز.')),
+    ...(chosen.length ? [section('ما أخذته', chosenChips(chosen), ...chosen.flatMap((a) => abilityTargetField(a) ?? []))] : []),
+    section('أغراضك', ...(data.live ? [el('p', 'hint', 'تُقرأ الأغراض من اللعبة.')] : [findItem.label, findItem.box]), ownedRow),
+    ...(chosen.length ? [section('الأغراض التالية', advised.length ? nextRow : el('p', 'hint', 'جاري حساب البناء…'), ...calculationNotes(advised))] : []),
   );
+  if (focused === 'ov-walk-card') findCard.input.focus();
+  if (focused === 'ov-walk-item' && !data.live) findItem.input.focus();
 }
 
 function section(title: string, ...body: (HTMLElement | string)[]) {
@@ -409,32 +512,60 @@ function chosenChips(chosen: OverlayData['augments']): HTMLElement {
   return row;
 }
 
+function abilityTargetField(a: OverlayData['augments'][number]): HTMLElement | null {
+  if (!needsAbilityTarget(a.ids)) return null;
+  const label = el('label', 'hint ov-ability-target');
+  const select = el('select', '') as HTMLSelectElement;
+  const options: [string, string][] = [['', 'غير محددة'], ['Q', 'Q'], ['W', 'W'], ['E', 'E'], ['R', 'R']];
+  for (const [value, text] of options) {
+    const option = el('option', '', text) as HTMLOptionElement;
+    option.value = value;
+    select.append(option);
+  }
+  select.value = abilityTargets[a.id] ?? '';
+  select.addEventListener('change', () => {
+    const key = select.value;
+    if (key === 'Q' || key === 'W' || key === 'E' || key === 'R') abilityTargets[a.id] = key;
+    else delete abilityTargets[a.id];
+    path = undefined;
+    void refreshCardMath();
+    if (data?.build) renderBuild(data.build);
+    void refreshEngine();
+    if (tab === 'walk') renderWalk();
+  });
+  label.append(el('span', '', `المهارة التي يعرضها ${shownName(a)} في اللعبة: `), select);
+  return label;
+}
+
 function adaptedSection(): HTMLElement {
   const chosen = (data?.augments ?? []).filter((a) => picked.has(a.id));
   if (!chosen.length) return section('البناء حسب تعزيزاتك', el('p', 'hint', NO_PICKS));
+  const targetFields = chosen.flatMap((a) => abilityTargetField(a) ?? []);
   // The build without AI (services.engineBuild), fetched when the marks change.
   const rows = el('div', 'ov-adapted');
   if (engine?.key !== engineKey()) {
     void refreshEngine();
-    return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'hint', 'جاري حساب البناء…'));
+    return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...targetFields, el('p', 'hint', 'جاري حساب البناء…'));
   }
-  if (engine.error) return section('البناء حسب تعزيزاتك', chosenChips(chosen), el('p', 'missing', `تعذّر حساب البناء: ${engine.error}`));
+  if (engine.error) return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...targetFields, el('p', 'missing', `تعذّر حساب البناء: ${engine.error}`));
   const bought = path?.bought ?? 0;
   const styleRow = styleSwitch();
   const stackRow = stacksField(() => { path = undefined; if (data?.build) renderBuild(data.build); });
   engine.items.forEach(({ item, why }, place) => {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
-    const step = place < bought ? ['في مسارك'] : place === bought ? ['التالي'] : [];
+    const step = place < bought ? ['تملكه'] : place === bought ? ['التالي'] : [];
     txt.append(el('b', '', shownName(item)), el('small', '', [...step, ...why.map((w) => WHY_AR[w] ?? w)].join(' · ')));
     r.append(ic(item), txt);
     rows.append(r);
   });
   const dropped = engine.dropped ?? [];
+  const explanationHint = el('p', 'hint', 'أثر الغرض هو الفرق عند حذفه من البناء المكتمل. التفاعل يقيس ما يتجاوز جمع الأثرين مع بقاء بقية البناء؛ هذه الأرقام لا تُجمع ولا تمثل احتمال فوز.');
+  const routeHint = el('p', 'hint', 'نثبت أغراضك المملوكة، ونعيد حساب البقية مع كل اختيار أو تحديث للمباراة.');
   const x = engine.experimental;
   // A magic build buys no crit, so the crit line isn't his road there (the owner: Miss Fortune with Vulnerability).
   const lines = openLines(heldParts(), championDamage()).filter((o) => o.held.some((part) => part > 0) && !((buildStyle === 'ap' || buildStyle === 'aphp') && o.line.id === 'crit')).map((o) => el('p', 'hint', `${o.line.name}: ${o.held.length} أجزاء. يفشل إذا: ${o.line.breaks.join('، ')}.`));
-  return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...(styleRow ? [styleRow] : []), ...(stackRow ? [stackRow] : []), el('p', 'hint', 'مسارك: يبقى ما نصحناك به ما دام مناسباً، ونكمل بالغرض التالي.'), ...lines, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
+  return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...targetFields, ...(styleRow ? [styleRow] : []), ...(stackRow ? [stackRow] : []), routeHint, ...lines, explanationHint, ...calculationNotes(engine.items), ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
 }
 
 /** Buttons for his kit's own build and each other style it allows; asks for the styles once per champion and marked cards. */
@@ -451,18 +582,18 @@ function stacksField(redraw: () => void): HTMLElement | null {
     });
   }
   if (stackBase.base === null) return null;
-  return stackInput(stackBase.base, stacks, (n) => { stacks = n; redraw(); });
+  return stackInput(stackBase.base, stacks, (n) => { stacks = n; void refreshCardMath(); redraw(); });
 }
 function styleSwitch(): HTMLElement | null {
   const champion = data?.champion;
   if (!champion) return null;
-  const key = pickedKey();
+  const key = `${loadId}|${data?.game}|${pickedKey()}|${JSON.stringify(abilityTargets)}`;
   if (styles?.champion !== champion.id || styles.key !== key) {
     styles = { champion: champion.id, key, list: styles?.champion === champion.id ? styles.list : [] };
-    void window.lolh.buildStyles(champion.id, [...picked]).then((x) => {
+    void window.lolh.buildStyles(champion.id, [...picked], progress()).then((x) => {
       if (isError(x) || styles?.champion !== champion.id || styles.key !== key) return;
       styles = { champion: champion.id, key, list: x };
-      if (buildStyle && !x.includes(buildStyle)) buildStyle = undefined; // the card that opened it was unmarked
+      if (buildStyle && !x.includes(buildStyle)) { buildStyle = undefined; void refreshCardMath(); } // the card that opened it was unmarked
       if (data?.build) renderBuild(data.build);
     });
   }
@@ -474,6 +605,7 @@ function styleSwitch(): HTMLElement | null {
     b.addEventListener('click', () => {
       buildStyle = v;
       path = undefined; // another way to build: what he walked was for the other one
+      void refreshCardMath();
       if (data?.build) renderBuild(data.build);
       if (tab === 'walk') renderWalk();
     });
@@ -526,7 +658,7 @@ const NO_PICKS = 'من تبويب التعزيزات اضغط «اخترته» �
 let ai: { key: string; state: 'loading' | 'done' | 'error'; advice?: Advice; error?: string } | undefined;
 const pickedKey = () => [...picked].sort((a, b) => a - b).join('-');
 /** What the engine's answer depends on: the marks and what he bought. */
-const engineKey = () => `${pickedKey()}|${owned.join('-')}|${buildStyle ?? ''}|${stacks ?? ''}`;
+const engineKey = () => `${loadId}|${data?.game}|${data?.champion?.id}|${[...picked].join('-')}|${owned.join('-')}|${buildStyle ?? ''}|${stacks ?? ''}|${JSON.stringify(progress())}`;
 /** Which way to build: his kit's own (undefined), or magic, physical, tank (the owner: Katarina has all three). */
 type Style = 'ap' | 'ad' | 'tank' | 'aphp';
 let buildStyle: Style | undefined;
@@ -644,7 +776,19 @@ async function load() {
   engine = undefined;
   engineAsked = '';
   buildView = undefined;
-  if (pickedFor !== reply.champion?.id) (picked.clear(), offer.clear(), (owned.length = 0), (path = undefined), (buildStyle = undefined), (stacks = undefined), (pickedFor = reply.champion?.id)); // a new game's champion
+  const newGame = reply.game !== undefined && pickedGame !== undefined && pickedGame !== reply.game;
+  if (pickedFor !== reply.champion?.id || newGame) {
+    resetRun();
+    pickedFor = reply.champion?.id;
+    if (newGame) restoredFor = reply.champion?.id; // never restore the previous match's picks, even on the same champion
+  }
+  if (reply.game !== undefined) pickedGame = reply.game;
+  if (reply.live) {
+    manualLevel = undefined;
+    const finished = new Set([...reply.items, ...reply.boots].map((i) => i.id));
+    owned.splice(0, owned.length, ...liveFinished(reply.live.items, finished));
+  }
+  cardMathFor = ''; cardMath.clear();
   // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.
   let restored = false;
   if (!picked.size && reply.champion && reply.mode === 'mayhem' && restoredFor !== reply.champion.id) {
@@ -716,6 +860,8 @@ window.lolh.onOverlayShow((t) => {
   void load().then(() => t === 'teams' && showTab('teams'));
 });
 void load();
+// The desktop overlay and phone can remain open across level-ups. Record a fresh level on a pick as well.
+setInterval(() => { if (!document.hidden) void refreshProgress().catch(() => undefined); }, 10_000);
 
 // The loading screen's view: both teams with ranks, how they compare, and the best augments and full build for the
 // player's champion (the build already answers the enemy team's magic damage).

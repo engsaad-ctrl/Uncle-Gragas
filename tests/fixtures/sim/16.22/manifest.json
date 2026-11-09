@@ -1,0 +1,62 @@
+{
+ "meaning": "Riot game files of patch 16.22 as mirrored by CommunityDragon (not a Riot API), copied so the simulation cases read no network and no APPDATA.",
+ "contentVersion": "16.22.8348910+branch.releases-16-22.content.release",
+ "files": [
+  {
+   "path": "champions/ahri.bin.json",
+   "from": "https://raw.communitydragon.org/16.22/game/data/characters/ahri/ahri.bin.json",
+   "sourceSha256": "770a7e5b7bdaf1d1de42b7d33a09912a8e56a3244bb0ab2b5d00d94e8b0013a2",
+   "sha256": "770a7e5b7bdaf1d1de42b7d33a09912a8e56a3244bb0ab2b5d00d94e8b0013a2",
+   "cut": false
+  },
+  {
+   "path": "champions/karthus.bin.json",
+   "from": "https://raw.communitydragon.org/16.22/game/data/characters/karthus/karthus.bin.json",
+   "sourceSha256": "fe99dbafe7d3d151f040377bbfd0501c66d7c24209dd10c8fbd9fcf7823a2a68",
+   "sha256": "fe99dbafe7d3d151f040377bbfd0501c66d7c24209dd10c8fbd9fcf7823a2a68",
+   "cut": false
+  },
+  {
+   "path": "champions/nasus.bin.json",
+   "from": "https://raw.communitydragon.org/16.22/game/data/characters/nasus/nasus.bin.json",
+   "sourceSha256": "3586f2470f698a45157e832aeeda93a8e61602eb5ca5941068b5fb16c53a1b6d",
+   "sha256": "3586f2470f698a45157e832aeeda93a8e61602eb5ca5941068b5fb16c53a1b6d",
+   "cut": false
+  },
+  {
+   "path": "champions/gragas.bin.json",
+   "from": "https://raw.communitydragon.org/16.22/game/data/characters/gragas/gragas.bin.json",
+   "sourceSha256": "06f76efa00968c226dfe63bcef1520dabdd69f02ee1b38c0bade6a3efa465977",
+   "sha256": "06f76efa00968c226dfe63bcef1520dabdd69f02ee1b38c0bade6a3efa465977",
+   "cut": false
+  },
+  {
+   "path": "champions/udyr.bin.json",
+   "from": "https://raw.communitydragon.org/16.22/game/data/characters/udyr/udyr.bin.json",
+   "sourceSha256": "61273d7058cf940d5b7dfff8b8824075e92071cc1904b5da0ba50bc9021f4194",
+   "sha256": "61273d7058cf940d5b7dfff8b8824075e92071cc1904b5da0ba50bc9021f4194",
+   "cut": false
+  },
+  {
+   "path": "champions/jayce.bin.json",
+   "from": "https://raw.communitydragon.org/16.22/game/data/characters/jayce/jayce.bin.json",
+   "sourceSha256": "7f26f095495bcf0ad6658fdd8fc45bed712b0d08d532a665bf6a601685b98c8a",
+   "sha256": "7f26f095495bcf0ad6658fdd8fc45bed712b0d08d532a665bf6a601685b98c8a",
+   "cut": false
+  },
+  {
+   "path": "items.cut.bin.json",
+   "from": "https://raw.communitydragon.org/16.22/game/items.cdtb.bin.json",
+   "sourceSha256": "6972766d3e79c02cd8b20fecc84ca8b7e19bdc19e6f9b608fb4c493646f1665d",
+   "sha256": "1bac8b3a3bb553f292d1dfc17b26de1e9e918b7d0b0028b5a3c9010a32d4d54d",
+   "cut": "ItemData of 3006, 3020, 3031, 3047, 3065, 3068, 3075, 3078, 3084, 3089, 3100, 3115, 3153, 3165, 6653, 6655, 6672, with their item spells and groups"
+  },
+  {
+   "path": "tooltips.cut.json",
+   "from": "https://raw.communitydragon.org/16.22/game/ar_ae/data/menu/en_us/lol.stringtable.json",
+   "sourceSha256": "a986107de77184f781386fef85bc19a033b6806ac042c16c2197151de02d3a2a",
+   "sha256": "7457fa6edc4dc576ce24e388b8efbf2452d4d22c99caa5d17c1447da750f598f",
+   "cut": "the spell tooltips (keyTooltip) of the six champions, from the Arabic table the app reads"
+  }
+ ]
+}

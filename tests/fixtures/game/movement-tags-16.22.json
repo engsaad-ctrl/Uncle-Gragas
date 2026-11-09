@@ -1,0 +1,1678 @@
+{
+ "meaning": "mSpellTags of the four slot spells of 35 champions in patch 16.22 (Riot files mirrored by CommunityDragon), with the slots whose own description moves the champion (dash, leap, blink or teleport; Claude labels from the ability texts, to check the tag rule against). Transforming champions list their starting form only.",
+ "movesByDescription": {
+  "ahri": [
+   "R"
+  ],
+  "gragas": [
+   "E"
+  ],
+  "jayce": [
+   "Q"
+  ],
+  "corki": [
+   "W"
+  ],
+  "ezreal": [
+   "E"
+  ],
+  "fizz": [
+   "Q",
+   "E"
+  ],
+  "galio": [
+   "E",
+   "R"
+  ],
+  "kassadin": [
+   "R"
+  ],
+  "katarina": [
+   "E"
+  ],
+  "kindred": [
+   "Q"
+  ],
+  "leblanc": [
+   "W"
+  ],
+  "leesin": [
+   "Q",
+   "W"
+  ],
+  "lucian": [
+   "E"
+  ],
+  "masteryi": [
+   "Q"
+  ],
+  "pantheon": [
+   "W",
+   "R"
+  ],
+  "shaco": [
+   "Q"
+  ],
+  "shen": [
+   "E",
+   "R"
+  ],
+  "tristana": [
+   "W"
+  ],
+  "vayne": [
+   "Q"
+  ],
+  "yasuo": [
+   "E",
+   "R"
+  ],
+  "zed": [
+   "W",
+   "R"
+  ],
+  "twistedfate": [
+   "R"
+  ],
+  "sion": [
+   "R"
+  ],
+  "nocturne": [
+   "R"
+  ],
+  "nidalee": [],
+  "elise": [],
+  "udyr": [],
+  "karthus": [],
+  "nasus": [],
+  "hwei": [],
+  "karma": [],
+  "aphelios": [],
+  "annie": [],
+  "jinx": [],
+  "lux": []
+ },
+ "champions": {
+  "annie": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/annie/annie.bin.json",
+   "sha256": "1e2df5d07cd47b90d40779562b48ceafbb4e09a9076790f5c9a072d58c77789c",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "AnnieQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "AnnieW",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "AnnieE",
+     "tags": [
+      "PositiveEffect_Boon",
+      "Trait_DamageAbility",
+      "Trait_Shield",
+      "Trait_Target_Directional",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "AnnieR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_Pet",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "corki": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/corki/corki.bin.json",
+   "sha256": "a123d004e5ecb045c4a2e8c125bd6456ff5896a86416b908c9f881c211f08b4d",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "PhosphorusBomb",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_Target_Area",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "CarpetBomb",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "GGun",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_AttackBuff_Duration",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "MissileBarrage",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_DamageAbility",
+      "Trait_Ammo",
+      "Trait_Ranged_StopsFirstHit",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "ezreal": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/ezreal/ezreal.bin.json",
+   "sha256": "73233b5c6b72e2641696d105c33eece8d5d141294925843180ba67b9e8b49962",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "EzrealQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Ranged_StopsFirstHit"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "EzrealW",
+     "tags": [
+      "Trait_Ranged_StopsFirstHit"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "EzrealE",
+     "tags": [
+      "PositiveEffect_Teleport",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "EzrealR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_DamageAbility",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "fizz": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/fizz/fizz.bin.json",
+   "sha256": "eeb46baab65d5f251754d97b95eff531149ac5b0c765455bdf7f8221041c11cc",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "FizzQ",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_DamageAbility",
+      "Trait_Strike",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "FizzW",
+     "tags": [
+      "PositiveEffect_EmpowerAttack",
+      "Trait_AttackReset",
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_AttackBuff_Duration",
+      "Trait_Strike",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "FizzE",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_Untargetable",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "FizzR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "galio": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/galio/galio.bin.json",
+   "sha256": "6d9c46336ebaa6e0e8d69a30f747c5aac4d313e0c42acdebf963997a3e81b3fe",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "GalioQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "GalioW",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_PassiveShield",
+      "Trait_Parry",
+      "Trait_SignatureSpell",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "GalioE",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "GalioR",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_Ultimate",
+      "Trait_ChannelSpell",
+      "PositiveEffect_Boon",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_Shield",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "jinx": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/jinx/jinx.bin.json",
+   "sha256": "21d6ef0823bddeeb7c476bd888a295170dcaaf5f9f9e3c661d1d8f9fe94bb5a8",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "JinxQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_Toggle",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "JinxW",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Ranged_StopsFirstHit"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "JinxE",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_Target_Area",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "JinxR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "kassadin": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/kassadin/kassadin.bin.json",
+   "sha256": "64c5e3dcf148081630d9e7b3b73c28b08f8b40de03563333be13ff6ec3ab9571",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "NullLance",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_Shield",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "NetherBlade",
+     "tags": [
+      "PositiveEffect_EmpowerAttack",
+      "Trait_AttackReset",
+      "Trait_DamageAbility",
+      "Trait_Strike",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "ForcePulse",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Target_Directional",
+      "Trait_Melee_SmallWindup",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "RiftWalk",
+     "tags": [
+      "Trait_Ultimate",
+      "PositiveEffect_Teleport",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "katarina": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/katarina/katarina.bin.json",
+   "sha256": "01bf70a13434f3bda68171c704f057d32c1f042c4f51cee88f43830c65974d68",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "KatarinaQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "KatarinaW",
+     "tags": []
+    },
+    {
+     "key": "E",
+     "name": "KatarinaEWrapper",
+     "tags": [
+      "PositiveEffect_Teleport",
+      "Trait_DamageAbility"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "KatarinaR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ChannelSpell",
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "kindred": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/kindred/kindred.bin.json",
+   "sha256": "9bb04067d6acfa67defc1899a540acf5f0fd7c499e101f9acd51bd83220045ea",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "KindredQ",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_AttackReset",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "KindredW",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_AttackBuff_Duration",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "KindredEWrapper",
+     "tags": [
+      "Trait_DamageAbility"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "KindredR",
+     "tags": [
+      "Trait_Ultimate",
+      "PositiveEffect_Boon",
+      "Trait_ActiveHeal",
+      "Trait_Ranged_Zone",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "leblanc": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/leblanc/leblanc.bin.json",
+   "sha256": "c701b73e304bf408747f7feee6f019b1ba5817498cc9700e36791aade2fca44a",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "LeblancQ",
+     "tags": [
+      "Trait_DamageAbility"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "LeblancW",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_SignatureSpell",
+      "Trait_Melee_SmallWindup",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "LeblancE",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_Ranged_StopsFirstHit",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "LeblancR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_SwapsIntoImmobilizingCCAbility",
+      "Trait_DamageAbility",
+      "Trait_Upgrade"
+     ]
+    }
+   ]
+  },
+  "leesin": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/leesin/leesin.bin.json",
+   "sha256": "da7ef022e0ab112a126d5b586385369824dd90aa786e22f3b56af2ee3da40f3c",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "LeeSinQOne",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_SignatureSpell",
+      "Trait_Ranged_StopsFirstHit"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "LeeSinWOne",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "PositiveEffect_Boon",
+      "Trait_Shield",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_AttackBuff_Duration"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "LeeSinEOne",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_Melee_SmallWindup",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "LeeSinR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_KnockBack",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "lucian": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/lucian/lucian.bin.json",
+   "sha256": "0d87cb65af12309b40ea7a52bd8ff2187d23db5fb62b013e492cbe490bd43c3d",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "LucianQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Target_Directional",
+      "Trait_Melee_SmallWindup",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "LucianW",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "LucianE",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_AttackReset",
+      "Trait_PlayerSelectedDashDirection"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "LucianR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "lux": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/lux/lux.bin.json",
+   "sha256": "3c1a6fa62e95f7d351e6baac86eff8066e37dfbc6f7098cc5d0f1c665f653e12",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "LuxLightBinding",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "LuxPrismaticWave",
+     "tags": [
+      "PositiveEffect_Boon",
+      "Trait_Shield",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "LuxLightStrikeKugel",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "LuxR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_DamageAbility",
+      "Trait_Ranged_Piercing",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "masteryi": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/masteryi/masteryi.bin.json",
+   "sha256": "f52da4f59623528bd05db8bc54aa973df6f4dd6d3b6cb4d02604ad71dace467b",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "AlphaStrike",
+     "tags": [
+      "PositiveEffect_Teleport",
+      "Trait_ChannelSpell",
+      "Trait_DamageAbility",
+      "Trait_Untargetable",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "Meditate",
+     "tags": [
+      "Trait_ChannelSpell",
+      "Trait_AttackReset",
+      "Trait_ActiveHeal",
+      "Trait_Parry"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "WujuStyle",
+     "tags": [
+      "Trait_DamageAbility",
+      "PositiveEffect_EmpowerAttack",
+      "Trait_AttackBuff_Duration",
+      "Trait_Melee_SmallWindup"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "Highlander",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_AttackBuff_Duration"
+     ]
+    }
+   ]
+  },
+  "nocturne": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/nocturne/nocturne.bin.json",
+   "sha256": "4931d4bf7c2643cbb62ef93abdc7042b6f0e2974653b20251d4067b0c05c371c",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "NocturneDuskbringer",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Ranged_Piercing",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "NocturneShroudofDarkness",
+     "tags": [
+      "Trait_CCImmune"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "NocturneUnspeakableHorror",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "NocturneParanoia",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ChannelSpell",
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell"
+     ]
+    }
+   ]
+  },
+  "pantheon": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/pantheon/pantheon.bin.json",
+   "sha256": "15f4a4cff4881df85369908793f90925bbc51b29a71e7c96fdf936b4e50a0ec0",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "PantheonQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_ChannelSpell",
+      "Trait_SignatureSpell",
+      "Trait_Target_Directional",
+      "Trait_Melee_SmallWindup",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "PantheonW",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_Strike"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "PantheonE",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_DoT",
+      "Trait_Parry",
+      "Trait_Immune",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "PantheonR",
+     "tags": [
+      "Trait_Ultimate",
+      "PositiveEffect_Teleport",
+      "Trait_DamageAbility",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "shaco": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/shaco/shaco.bin.json",
+   "sha256": "fe8b9980bc721f1afcb7a744d59f52b00259d95595971dfb0c17f1ab0a401a15",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "Deceive",
+     "tags": [
+      "PositiveEffect_Teleport",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_Invisibility"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "JackInTheBox",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_Trap",
+      "Trait_Target_Area",
+      "Trait_Ranged_Zone",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "TwoShivPoison",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "HallucinateFull",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ChannelSpell",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_ProjectileDestruction",
+      "Trait_Pet",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "shen": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/shen/shen.bin.json",
+   "sha256": "1a13ed0af823ad7e2c86874d4fede09f3af7efdb3be95cca2fa4b3f8f4b9fece",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "ShenQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "ShenW",
+     "tags": [
+      "PositiveEffect_Boon"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "ShenE",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "ShenR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ChannelSpell",
+      "PositiveEffect_Teleport",
+      "PositiveEffect_Boon",
+      "Trait_Shield",
+      "Trait_CreateClone"
+     ]
+    }
+   ]
+  },
+  "sion": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/sion/sion.bin.json",
+   "sha256": "7c77a7a25b86e6ac0c6ed2168fac8c2e9324953546a634bcc361981421d4aad7",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "SionQ",
+     "tags": [
+      "Trait_ChannelSpell",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Melee_BigWindup",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "SionW",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_Shield",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "SionE",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "SionR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ChannelSpell",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "tristana": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/tristana/tristana.bin.json",
+   "sha256": "3f66602ea0a4b0d003be604f5890aa5dd1f56ee5bed6c00840388fcb4dfa9a81",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "TristanaQ",
+     "tags": [
+      "Trait_AttackBuff_Duration"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "TristanaW",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "TristanaE",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "TristanaR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_KnockBack"
+     ]
+    }
+   ]
+  },
+  "twistedfate": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/twistedfate/twistedfate.bin.json",
+   "sha256": "1e076fe750a9f219fd2a5ca911f05c9f86af6f6bdb027253cdbf21fc99b923e9",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "WildCards",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Ranged_Piercing",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "PickACard",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "PositiveEffect_EmpowerAttack",
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_Strike",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "CardmasterStack",
+     "tags": [
+      "Trait_DamageAbility",
+      "PositiveEffect_EmpowerAttack",
+      "Trait_PassiveSlot"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "Destiny",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_RecastOrReplaceSpell"
+     ]
+    }
+   ]
+  },
+  "vayne": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/vayne/vayne.bin.json",
+   "sha256": "564bc80e7c15ef2e8f135a7b3487bd1b8f6d6942ffd2f82f72cf755ff4e8f3f6",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "VayneTumble",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_AttackReset",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_Invisibility",
+      "Trait_Strike",
+      "Trait_SignatureSpell",
+      "PositiveEffect_EmpowerAttack"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "VayneSilveredBolts",
+     "tags": [
+      "Trait_PassiveSlot"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "VayneCondemn",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_KnockBack",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "VayneInquisition",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_AttackBuff_Duration"
+     ]
+    }
+   ]
+  },
+  "yasuo": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/yasuo/yasuo.bin.json",
+   "sha256": "c99cb55deabd001105b9159ff826978542fcc9a578215287d3de61939b9b91fb",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "YasuoQ1Wrapper",
+     "tags": [
+      "Trait_ImmobilizingCCAbility",
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_Strike",
+      "Trait_Target_Directional",
+      "Trait_AoE",
+      "Trait_NotBenefitFromHaste"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "YasuoW",
+     "tags": [
+      "Trait_ProjectileDestruction"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "YasuoE",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_DamageAbility",
+      "Trait_Low_Damage",
+      "Trait_NotBenefitFromHaste"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "YasuoR",
+     "tags": [
+      "Trait_Ultimate",
+      "PositiveEffect_MoveBlock",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "zed": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/zed/zed.bin.json",
+   "sha256": "be0aa960ec320704046d6b7ecdc216c030809c4ec936a52185ccdadd4b24cc35",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "ZedQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Ranged_Piercing",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "ZedW",
+     "tags": [
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_RecastOrReplaceSpell"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "ZedE",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "ZedR",
+     "tags": [
+      "Trait_Ultimate",
+      "PositiveEffect_Teleport",
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_Untargetable",
+      "Trait_ProjectileDestruction",
+      "Trait_Strike"
+     ]
+    }
+   ]
+  },
+  "ahri": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/ahri/ahri.bin.json",
+   "sha256": "770a7e5b7bdaf1d1de42b7d33a09912a8e56a3244bb0ab2b5d00d94e8b0013a2",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "AhriQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Target_Directional",
+      "Trait_Melee_SmallWindup",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "AhriW",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "AhriE",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_SignatureSpell",
+      "Trait_DamageAbility",
+      "Trait_Ranged_StopsFirstHit"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "AhriR",
+     "tags": [
+      "Trait_Ultimate",
+      "PositiveEffect_MoveBlock",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_Ammo",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "aphelios": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/aphelios/aphelios.bin.json",
+   "sha256": "419ec5caa6ec0ba9198f500d4c8fe7c3cce3bbfb3145d3d925f9adddf5451a84",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "ApheliosQ_ClientTooltipWrapper",
+     "tags": [
+      "Trait_SwapsIntoImmobilizingCCAbility"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "ApheliosW",
+     "tags": [
+      "Trait_Toggle"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "ApheliosE_ClientTooltipWrapper",
+     "tags": []
+    },
+    {
+     "key": "R",
+     "name": "ApheliosR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_DamageAbility"
+     ]
+    }
+   ]
+  },
+  "elise": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/elise/elise.bin.json",
+   "sha256": "549b8b34df8951d5fb7dc4a1db1436d1f9439df8e2376f1d765d7b85e5e601b6",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "EliseHumanQ",
+     "tags": [
+      "Trait_DamageAbility"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "EliseHumanW",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "EliseHumanE",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_Ranged_StopsFirstHit",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "EliseR",
+     "tags": [
+      "Trait_Transformation",
+      "Trait_Ultimate",
+      "Trait_RecastOrReplaceSpell"
+     ]
+    }
+   ]
+  },
+  "gragas": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/gragas/gragas.bin.json",
+   "sha256": "06f76efa00968c226dfe63bcef1520dabdd69f02ee1b38c0bade6a3efa465977",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "GragasQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_SignatureSpell",
+      "Trait_Target_Area",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "GragasW",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_Parry",
+      "Trait_Strike",
+      "Trait_Low_Damage",
+      "Trait_AoE",
+      "PositiveEffect_EmpowerAttack"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "GragasE",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_PlayerSelectedDashDirection",
+      "Trait_DamageAbility",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "GragasR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_KnockBack",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "hwei": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/hwei/hwei.bin.json",
+   "sha256": "f12b7f7fb3abcac2ee2974ae33edd6331566e304dfc68581e891f262945e0d60",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "HweiQ",
+     "tags": []
+    },
+    {
+     "key": "W",
+     "name": "HweiW",
+     "tags": []
+    },
+    {
+     "key": "E",
+     "name": "HweiE",
+     "tags": []
+    },
+    {
+     "key": "R",
+     "name": "HweiR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_DoT"
+     ]
+    }
+   ]
+  },
+  "jayce": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/jayce/jayce.bin.json",
+   "sha256": "7f26f095495bcf0ad6658fdd8fc45bed712b0d08d532a665bf6a601685b98c8a",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "JayceToTheSkies",
+     "tags": [
+      "PositiveEffect_MoveBlock",
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "JayceStaticField",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "JayceThunderingBlow",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_KnockBack"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "JayceStanceHtG",
+     "tags": [
+      "Trait_Transformation",
+      "Trait_Ultimate",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_Melee_SmallWindup"
+     ]
+    }
+   ]
+  },
+  "karma": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/karma/karma.bin.json",
+   "sha256": "fc02295c7e5d8b417c6266806f0e729ebe799167bf8f836d03ccc6129ff35256",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "KarmaQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Ranged_StopsFirstHit",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "KarmaSpiritBind",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_DamageAbility",
+      "Trait_ActiveHeal",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "KarmaSolKimShield",
+     "tags": [
+      "PositiveEffect_Boon",
+      "Trait_Shield",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "KarmaMantra",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_Transformation",
+      "Trait_Upgrade"
+     ]
+    }
+   ]
+  },
+  "karthus": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/karthus/karthus.bin.json",
+   "sha256": "fe99dbafe7d3d151f040377bbfd0501c66d7c24209dd10c8fbd9fcf7823a2a68",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "KarthusLayWasteA1",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Target_Area",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "KarthusWallOfPain",
+     "tags": [
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "KarthusDefile",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_RecastOrReplaceSpell",
+      "Trait_DoT",
+      "Trait_Toggle",
+      "Trait_Low_Damage",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "KarthusFallenOne",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_ChannelSpell",
+      "Trait_DamageAbility",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "nasus": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/nasus/nasus.bin.json",
+   "sha256": "3586f2470f698a45157e832aeeda93a8e61602eb5ca5941068b5fb16c53a1b6d",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "NasusQ",
+     "tags": [
+      "PositiveEffect_EmpowerAttack",
+      "Trait_AttackReset",
+      "Trait_DamageAbility",
+      "Trait_Strike",
+      "Trait_SignatureSpell"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "NasusW",
+     "tags": []
+    },
+    {
+     "key": "E",
+     "name": "NasusE",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_Target_Area",
+      "Trait_Ranged_Zone",
+      "Trait_AoE"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "NasusR",
+     "tags": [
+      "Trait_Ultimate",
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_AttackBuff_Duration",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  },
+  "nidalee": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/nidalee/nidalee.bin.json",
+   "sha256": "46f1c5b0a1905ebd9eda82b96c45234a6d78b23d03c3afa3b3ccb1d9d57bddaa",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "JavelinToss",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_SignatureSpell",
+      "Trait_Ranged_StopsFirstHit"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "Bushwhack",
+     "tags": [
+      "Trait_Trap",
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_AttackBuff_Duration",
+      "Trait_Target_Area",
+      "Trait_Low_Damage"
+     ]
+    },
+    {
+     "key": "E",
+     "name": "PrimalSurge",
+     "tags": [
+      "PositiveEffect_Boon",
+      "Trait_ActiveHeal"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "AspectOfTheCougar",
+     "tags": [
+      "Trait_Transformation",
+      "Trait_Ultimate",
+      "Trait_RecastOrReplaceSpell"
+     ]
+    }
+   ]
+  },
+  "udyr": {
+   "url": "https://raw.communitydragon.org/16.22/game/data/characters/udyr/udyr.bin.json",
+   "sha256": "61273d7058cf940d5b7dfff8b8824075e92071cc1904b5da0ba50bc9021f4194",
+   "spells": [
+    {
+     "key": "Q",
+     "name": "UdyrQ",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_AoE",
+      "Trait_RecastOrReplaceSpell"
+     ]
+    },
+    {
+     "key": "W",
+     "name": "UdyrW",
+     "tags": [
+      "Trait_ActiveHeal",
+      "Trait_Shield",
+      ""
+     ]
+    },
+    {
+     "key": "E",
+     "name": "UdyrE",
+     "tags": [
+      "Trait_ImmobilizingCCSpell",
+      "Trait_RecastOrReplaceSpell"
+     ]
+    },
+    {
+     "key": "R",
+     "name": "UdyrR",
+     "tags": [
+      "Trait_DamageAbility",
+      "Trait_DoT",
+      "Trait_SignatureSpell",
+      "Trait_Ranged_Zone",
+      "Trait_AoE"
+     ]
+    }
+   ]
+  }
+ }
+}

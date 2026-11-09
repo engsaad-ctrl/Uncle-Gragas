@@ -28,6 +28,7 @@ if (!window.lolh) {
     stackBase: fail('build:stackBase'),
     buildStyles: fail('build:styles'),
     cardValues: fail('build:cardvalues'),
+    gameProgress: fail('game:progress'),
     experimentalBuild: fail('build:experimental'),
     hideOverlay: async () => undefined,
     setOverlayLarge: async () => undefined,

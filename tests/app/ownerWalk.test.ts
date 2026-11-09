@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { compatibility, itemPart, lineItems, pathShare } from '../../src/ai/lines.js';
 import { buildFor, type EngineInput } from '../../src/app/buildEngine.js';
-import { followPath, itemsHeld, walkedPath } from '../../src/app/buildPath.js';
+import { walkedPath } from '../../src/app/buildPath.js';
 
 // The owner's own walk, kept as fixed checks. Round 1: A, B, C; A is best for the champion; he takes C. He buys the first item suggested.
 // Round 2: D, E, Ain; D is best overall and fits A; Ain fits champion + C; he wants Ain above D and takes it. Round 3: T fits A and D,
@@ -106,25 +106,25 @@ describe('items follow every card taken', () => {
 });
 
 describe('the path as a record', () => {
-  it('keeps the first item through the next card, when he has said nothing', () => {
-    const first = followPath(undefined, [C], [10, 20, 30]);
-    const second = walkedPath(first, [C, Ain], [], [20, 10, 30]);
+  it('keeps the first item through the next card when he actually bought it', () => {
+    const first = walkedPath(undefined, [C], [], [10, 20, 30]);
+    const second = walkedPath(first, [C, Ain], [10], [20, 10, 30]);
     expect(second.items.slice(0, 1)).toEqual([10]);
     expect(second.bought).toBe(1);
   });
-  it('takes what he says he bought as fact over anything inferred', () => {
-    const inferred = followPath(followPath(undefined, [C], [10, 20, 30]), [C, Ain], [10, 20, 30]);
-    const said = walkedPath(inferred, [C, Ain], [99], [99, 20, 30]);
+  it('takes what he says he bought as fact over an earlier recommendation', () => {
+    const earlier = walkedPath(undefined, [C, Ain], [], [10, 20, 30]);
+    const said = walkedPath(earlier, [C, Ain], [99], [99, 20, 30]);
     expect(said.bought).toBe(1);
-    expect(itemsHeld(said, [99])).toEqual([99]);
+    expect(said.items[0]).toBe(99);
   });
-  it('holds the first suggestion as bought only until he says otherwise', () => {
-    const first = followPath(undefined, [C], [10, 20]);
-    expect(itemsHeld(first, [])).toEqual([10]);
-    expect(itemsHeld(first, [20])).toEqual([20]);
+  it('keeps suggestions separate from purchases', () => {
+    const first = walkedPath(undefined, [C], [], [10, 20]);
+    expect(first.bought).toBe(0);
+    expect(walkedPath(first, [C], [20], [20, 10]).bought).toBe(1);
   });
   it('leaves no trace of a card he removes', () => {
-    const three = followPath(followPath(followPath(undefined, [C], [10, 20]), [C, Ain], [10, 20]), [C, Ain, M], [10, 20]);
+    const three = walkedPath(undefined, [C, Ain, M], [], [10, 20]);
     const back = walkedPath(three, [C, Ain], [], [30, 40]);
     expect(back.marks).toEqual([C, Ain]);
     expect(back.items).toEqual([30, 40]);

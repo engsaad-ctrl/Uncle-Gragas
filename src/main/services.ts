@@ -4,11 +4,17 @@ import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { championRecord, compareBuilds } from '../ai/calculator.js';
-import { ATTACK_PACE, cardGain, fight, needHolds, questItems, STACKS_AT_15 } from '../ai/cardMath.js';
+import { ATTACK_PACE, fight, needHolds, questItems, spellTraits, STACKS_AT_15 } from '../ai/cardMath.js';
 import { RETIRED_AUGMENTS } from '../ai/retiredAugments.js';
 import { AUGMENT_TAGS } from '../ai/augmentTags.js';
 import { tagWeight } from '../ai/tagWeight.js';
 import { CARD_NUMBERS, ITEM_NUMBERS, PASSIVE_NUMBERS } from '../ai/cardMathData.js';
+import { cardFromFiles } from '../ai/augmentFiles.js';
+import { augmentStage, type AugmentProgress } from '../ai/augmentProgress.js';
+import { skillPlanOf, type KnownRanks, type SkillPlan } from '../ai/abilityRank.js';
+import { compareAugmentPlan, kitWithCards, type AugmentPlan } from '../ai/augmentChoice.js';
+import { explainBuild } from '../ai/buildExplanation.js';
+import { itemExplanationWords } from '../app/buildExplanation.js';
 import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
@@ -30,8 +36,9 @@ import { augmentLift, augmentLink, heroEdge, liftPoints, openStats } from '../st
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
-import type { AugmentText } from '../texts/augments.js';
+import type { AugmentGameData, AugmentText } from '../texts/augments.js';
 import { loadAugments, type AugmentsResult } from '../texts/augmentsLoader.js';
+import { withDamageTypes } from '../texts/damageTypes.js';
 import { loadCdragonJson, type Locale } from '../texts/cdragon.js';
 import {
   buildChampionDetail, buildChampionList, buildSpellTexts, buildStyleTrees,
@@ -55,6 +62,9 @@ const NO_ARAM_BUILD: ChampionBuild = {
 const POSITIONS: Position[] = ['top', 'jungle', 'mid', 'adc', 'support'];
 
 export interface OverlayData {
+  game?: number;
+  /** Only level and inventory, read from the live client. No player identity is exposed. */
+  live?: { level: number; items: number[]; game: number };
   champion: ChampionListEntry | null;
   mode: AppMode | null;
   /** True when the first augments carry a performance rating for this champion. */
@@ -66,6 +76,16 @@ export interface OverlayData {
   /** Boots on the map: the AI build can pick other boots than the usual ones. */
   boots: ItemEntry[];
   augments: (AugmentText & { rank?: number; popularity?: number; tierLabel?: string })[];
+}
+
+export interface AugmentValue {
+  id: number; damage: number; health: number; value: number; currentValue: number;
+  certain: boolean; missing: string | null;
+  /** Conditions the fight doesn't settle: its value is what it gives if they hold; ranked apart from settled cards (the owner, 2026-11-09). */
+  open: string[];
+  level: number; untilLevel: number; estimatedLevel: boolean; estimatedHistory: boolean;
+  plan?: AugmentPlan;
+  planError?: string;
 }
 
 /** The app-wide mode chosen in the side menu. */
@@ -158,7 +178,9 @@ const PLAIN_BOOTS_GOLD = 300; // the first pair, on the way to a real one
 interface Teams { allies: number[]; enemies: number[]; enemyItems?: Record<number, number[]> }
 const MAGE_SUPPORTS = new Set([99, 1, 61, 147, 25, 43, 26]);
 // aoe: not for an enchanter, whose damage isn't what he's for (the owner, 2026-11-06: Sona and Rakan don't start Liandry's Torment).
-const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), aoe: !!k?.traits.includes('aoe') && !(k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')) && !MAGE_SUPPORTS.has(id)), attacks: k?.relies.includes('attacks') ?? false, buffsAllies: !!k && k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')), attackPace: ATTACK_PACE[id] }; };
+/** Ranks read from the live game, at the level they were read. */
+const knownRanksOf = (p?: AugmentProgress): KnownRanks | undefined => (p?.abilityRanks && p.level !== undefined ? { level: p.level, ranks: p.abilityRanks } : undefined);
+export const fightKitOf = (id: number) => { const k = CHAMPION_KITS.find((x) => x.id === id); return { damage: k?.damage ?? ('mixed' as const), aoe: !!k?.traits.includes('aoe') && !(k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')) && !MAGE_SUPPORTS.has(id)), attacks: k?.relies.includes('attacks') ?? false, buffsAllies: !!k && k.relies.includes('allies') && (k.relies.includes('healing') || k.relies.includes('shielding')), attackPace: ATTACK_PACE[id] }; };
 
 export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch; call?: CallTool }) {
   const { cacheDir, fetchImpl } = opts;
@@ -175,6 +197,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   );
   const champions = once<ChampionListEntry[]>(async () => buildChampionList(...(await both<RawChampionSummary[]>('champion-summary.json'))));
   const tooltipStrings = once(async () => loadTooltipStrings(game, await gameVersion()));
+  /** The champion bin for the fight, each spell with the damage types its tooltip marks (src/texts/damageTypes.ts); without the tooltips, the bin as it is. */
+  const fightBin = async (v: string | null, alias: string) => { const [bin, strings] = await Promise.all([loadChampionBin(game, v, alias), tooltipStrings().catch(() => ({}))]); return withDamageTypes(bin, strings); };
 
   const baseTexts = once(async () => {
     const [items, perks, styles, spells] = await Promise.all([
@@ -580,63 +604,130 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     if (!teams) return { enemy: undefined, allies: undefined };
     const v = await gameVersion();
     const list = await champions();
-    const binOf = async (id: number) => { const c = list.find((x) => x.id === id); return c ? { bin: await loadChampionBin(game, v, c.alias), kit: fightKitOf(id), passive: PASSIVE_NUMBERS.find((p) => p.id === id)?.ops ?? [] } : []; }; // his passive holds his kit's own healing (Aatrox, Mundo, Warwick)
+    const binOf = async (id: number) => { const c = list.find((x) => x.id === id); return c ? { bin: await fightBin(v, c.alias), kit: fightKitOf(id), passive: PASSIVE_NUMBERS.find((p) => p.id === id)?.ops ?? [] } : []; }; // his passive holds his kit's own healing (Aatrox, Mundo, Warwick)
     // Each enemy with the items he holds in the running match, else the build the engine gives him with no teams (cached), for his healing; a failed build leaves him item-free.
     // The live API may name an ARAM copy of an item: fall back to its base id when the shop lacks it.
     const known = (ids: number[]) => ids.flatMap((x) => (shop[x] ? [x] : shop[x % 10000] ? [x % 10000] : []));
-    const enemyOf = async (id: number) => { const e = await binOf(id); if (Array.isArray(e)) return e; const held = known(teams.enemyItems?.[id] ?? []); const items = held.length ? held : await mathBuild(id, []).then((b) => b.map((x) => x.item.id), () => []); return { ...e, items, live: held.length > 0 }; };
+    const enemyOf = async (id: number) => { const e = await binOf(id); if (Array.isArray(e)) return e; const live = Object.hasOwn(teams.enemyItems ?? {}, id); const held = known(teams.enemyItems?.[id] ?? []); const items = live ? held : await mathBuild(id, []).then((b) => b.map((x) => x.item.id), () => []); return { ...e, items, live }; };
     const [enemies, allies] = await Promise.all([Promise.all(teams.enemies.map(enemyOf)), Promise.all(teams.allies.map(binOf))]);
     return { enemy: enemyTeam(enemies.flat(), shop, ITEM_OPS), allies: allies.flat().map((a) => a.bin) };
   }
 
-  async function cardValues(championId: number, augmentIds: number[], itemIds: number[], teams?: Teams): Promise<{ id: number; damage: number; health: number; value: number; certain: boolean; missing: string | null }[]> {
+  // How he levels his skills when the match gives no ranks: the Mayhem site's most picked order, else OP.GG's ARAM build (the owner, 2026-11-09). None: an even spread.
+  const skillPlans = new Map<number, Promise<SkillPlan | undefined>>();
+  const skillPlanFor = (championId: number): Promise<SkillPlan | undefined> => {
+    let plan = skillPlans.get(championId);
+    if (!plan) {
+      plan = (async () => {
+        try {
+          const alias = (await champions()).find((c) => c.id === championId)?.alias;
+          if (!alias) return undefined;
+          const site = await sitePage(alias, { cacheDir, fetchImpl }).catch(() => null);
+          const fromSite = skillPlanOf(site?.data.build?.skillOrder, site?.data.build?.skillPriority);
+          if (fromSite) return fromSite;
+          const aram = await stats.build(alias, 'aram', 'mid');
+          return skillPlanOf(aram.data.skillOrder, aram.data.skillPriority);
+        } catch { return undefined; }
+      })();
+      skillPlans.set(championId, plan);
+    }
+    return plan;
+  };
+  const rankNote = (progress: AugmentProgress | undefined, plan: SkillPlan | undefined) => knownRanksOf(progress) ? [] : [plan ? 'رتب المهارات حسب ترتيب صفحة البناء الأشهر، لا قراءة من المباراة' : 'رتب المهارات توزيع قانوني متساوٍ للنقاط، لا قراءة من المباراة'];
+
+  async function cardValues(championId: number, augmentIds: number[], itemIds: number[], teams?: Teams, progress?: AugmentProgress, offeredIds: number[] = [], style?: BuildStyle, stacks?: number): Promise<AugmentValue[]> {
+    if (offeredIds.length > 3) throw new Error('bad augment offer');
     const entry = (await champions()).find((c) => c.id === championId);
     if (!entry) throw new Error(`unknown champion ${championId}`);
     const v = await gameVersion();
-    const [all, bin, shop, shopNames] = await Promise.all([augments(), loadChampionBin(game, v, entry.alias), loadGameItems(game, v), items('mayhem')]);
+    const [all, bin, shop, shopNames] = await Promise.all([augments(), fightBin(v, entry.alias), loadGameItems(game, v), items('mayhem')]);
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined;
-    const numbersOf = (id: number) => { const ids = all.augments.find((a) => a.id === id)?.ids ?? [id]; return CARD_NUMBERS.find((c) => ids.includes(c.id)); };
-    const held = augmentIds.flatMap((id) => numbersOf(id) ?? []);
+    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id] } : undefined; };
+    const stage = augmentStage(augmentIds, progress);
+    const held = augmentIds.flatMap((id) => { const card = numbersOf(id); return card ? [{ ...card, acquiredLevel: stage.acquiredLevels[id] }] : []; });
+    const knownItems = itemIds.flatMap((id) => shop[id] ? [id] : shop[id % 10000] ? [id % 10000] : []);
     const base = {
-      bin, shop, level: [3, 7, 11, 15, 17, 18][Math.min(held.length, 5)]!, items: itemIds.filter((id) => shop[id]), cards: held,
-      kit: fightKitOf(championId),
+      bin, shop, level: stage.level, items: knownItems, cards: held, itemOps: ITEM_OPS, stacks, knownRanks: knownRanksOf(progress), skillPlan: await skillPlanFor(championId),
+      kit: kitWithCards(fightKitOf(championId), held),
       passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [],
     };
-    const facts = { owned: itemIds.flatMap((id) => shopNames.list.find((i) => i.id === id)?.enName ?? []), ranged: (record?.attackRangeModifiable?.baseValue ?? 0) >= 300, traits: kit?.traits ?? [] };
+    // His kit's traits, and what his own files and kit say: a moving skill (dash), an immobilizing one, heals or shields on allies (needHolds ability_kind).
+    const facts = { owned: knownItems.flatMap((id) => shopNames.list.find((i) => i.id === id)?.enName ?? []), ranged: (record?.attackRangeModifiable?.baseValue ?? 0) >= 300, traits: [...(kit?.traits ?? []), ...spellTraits(bin), ...(base.kit.buffsAllies ? ['heal_ally', 'shield_ally'] : [])] };
     const facts2 = await teamFacts(teams, shop);
-    const place = { ...teamPlace({ championId, bin, shop, kit: base.kit, passive: base.passive, enemy: facts2.enemy, allies: facts2.allies }), enemyDps: enemyDpsAt(base.level) };
-    return all.augments.flatMap((a) => {
+    const place = { ...teamPlace({ championId, bin, shop, kit: base.kit, passive: base.passive, enemy: facts2.enemy, allies: facts2.allies, style }), enemyDps: enemyDpsAt(base.level) };
+    // Keep inventory fixed until the player actually buys. No future augment is assumed to arrive.
+    const before = stage.levels.map((level) => {
+      const at = { ...place, enemyDps: enemyDpsAt(level) };
+      const input = { ...base, level, enemy: facts2.enemy, incomingDps: at.share * at.enemyDps * (at.draw ?? 1) };
+      const result = fight(input);
+      return { input, result, place: at, value: fightValue(result, at) };
+    });
+    const rows: AugmentValue[] = all.augments.flatMap((a) => {
       const card = numbersOf(a.id);
       if (!card?.ops.length || augmentIds.includes(a.id) || a.ids.some((id) => RETIRED_AUGMENTS.has(id))) return []; // out of Mayhem: nobody picks it (src/ai/retiredAugments.ts)
       const holds = needHolds(card.need, facts);
       if (holds === 'no') return [];
-      const g = cardGain({ ...base, enemy: facts2.enemy, incomingDps: place.share * place.enemyDps * (place.draw ?? 1) }, card);
+      const candidate = { ...card, acquiredLevel: stage.level };
+      const after = before.map((b) => fight({ ...b.input, kit: kitWithCards(base.kit, [candidate]), cards: [...held, candidate] }));
       // Its tags (src/ai/augmentTags.ts) weigh its value (src/ai/tagWeight.ts); a card with a condition the fight doesn't check is never certain.
       const tags = a.ids.map((id) => AUGMENT_TAGS[id]).find(Boolean);
-      const { weight, unread } = tagWeight(tags, card.ops);
-      return [{ id: a.id, damage: g.damage, health: g.effectiveHp, value: weight * (fightValue(g.after, place) / Math.max(fightValue(g.before, place), 1e-9) - 1), certain: !unread && tags?.sure !== false && holds === 'yes' && card.status === 'computed' && card.ops.every((x) => x.op === 'add' || x.op === 'mult'), missing: card.not_modelled ?? null }];
+      const { weight, unread, open } = tagWeight(tags, card.ops, card.need?.class === 'ability_kind' ? holds : undefined);
+      const gains = after.map((r, i) => weight * (fightValue(r, before[i]!.place) / Math.max(before[i]!.value, 1e-9) - 1));
+      const first = before[0]!.result, now = after[0]!;
+      const missing = [...new Set([...first.notModelled, ...now.notModelled]), card.not_modelled, ...open.map((c) => `شرط لا يفحصه القتال: ${c}؛ القيمة إن تحقق، واحتمال تحققه غير مقاس`), ...augmentIds.flatMap((id) => {
+        const heldCard = numbersOf(id);
+        if (!heldCard?.ops.length) return ['تعزيز مختار لا يملك معادلات؛ أثره وروابطه غير محسوبة'];
+        return heldCard.not_modelled ? [`${heldCard.name}: ${heldCard.not_modelled}`] : heldCard.status !== 'computed' ? [`${heldCard.name}: أثره المختار جزئي أو مشروط`] : [];
+      }), ...(card.ops.some((x) => x.op === 'per_stack') || held.some((c) => c.ops.some((x) => x.op === 'per_stack')) ? ['التكديس مقدّر حسب المستويات منذ الاختيار، وليس عددًا مقروءًا من اللعبة؛ زيادته أثناء القتال الحالي غير محسوبة'] : [])].filter(Boolean).join(' · ') || null;
+      return [{ id: a.id, damage: first.damage ? now.damage / first.damage - 1 : 0, health: first.effectiveHp ? now.effectiveHp / first.effectiveHp - 1 : 0, currentValue: gains[0]!, value: gains.reduce((sum, n) => sum + n, 0) / gains.length, open, certain: !stage.estimatedLevel && !stage.estimatedHistory && !missing && !unread && tags?.sure !== false && holds === 'yes' && card.status === 'computed' && card.ops.every((x) => x.op === 'add' || x.op === 'mult'), missing, level: stage.level, untilLevel: stage.untilLevel, estimatedLevel: stage.estimatedLevel, estimatedHistory: stage.estimatedHistory }];
     });
+    if (!offeredIds.length) return rows;
+    // Full searches only for the actual offer (at most three), never for the entire augment catalogue.
+    // Finished items keep their slots. Components are retained in the current fight but their future upgrade cost is unknown.
+    const finished = new Set(shopNames.list.filter((i) => i.group === 'legendary' || i.group === 'boots').map((i) => i.id));
+    const owned = knownItems.filter((id) => finished.has(id));
+    const timing = { ...progress, level: stage.level, acquiredLevels: stage.acquiredLevels };
+    let baselineItems: number[];
+    try { baselineItems = (await mathBuild(championId, augmentIds, owned, teams, style, stacks, timing)).map((r) => r.item.id); }
+    catch { for (const row of rows) if (offeredIds.includes(row.id)) row.planError = 'تعذّر حساب خطة البناء الأساسية'; return rows; }
+    for (const row of rows.filter((r) => offeredIds.includes(r.id))) {
+      try {
+        const card = numbersOf(row.id)!;
+        const candidate = { ...card, acquiredLevel: stage.level };
+        const nextTiming = { ...timing, acquiredLevels: { ...timing.acquiredLevels, [row.id]: stage.level } };
+        const items = (await mathBuild(championId, [...augmentIds, row.id], owned, teams, style, stacks, nextTiming)).map((r) => r.item.id);
+        if (!baselineItems.length || !items.length) { row.planError = 'لا تتوفر أيتمات كافية لحساب خطة البناء'; continue; }
+        const level = Math.max(15, stage.level);
+        const at = { ...place, enemyDps: enemyDpsAt(level) };
+        row.plan = compareAugmentPlan({ base: { ...base, level, enemy: facts2.enemy, incomingDps: at.share * at.enemyDps * (at.draw ?? 1) }, candidate, baselineItems, items, place: at });
+        const a = all.augments.find((a) => a.id === row.id)!;
+        row.plan.value *= tagWeight(a.ids.map((id) => AUGMENT_TAGS[id]).find(Boolean), card.ops, card.need?.class === 'ability_kind' ? needHolds(card.need, facts) : undefined).weight;
+      } catch { row.planError = 'تعذّر حساب خطة هذا التعزيز؛ التقييم الحالي وحده متاح'; }
+    }
+    return rows;
   }
 
   const ITEM_OPS = Object.fromEntries(ITEM_NUMBERS.map((i) => [i.id, i.ops]));
   const builds = new Map<string, Promise<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>();
   /** The next items by arithmetic (src/ai/itemMath.ts). No pick, buy or win rates. */
-  const cardsOf = (list: { id: number; ids?: number[] }[], augmentIds: number[]) => augmentIds.flatMap((id) => { const ids = list.find((a) => a.id === id)?.ids ?? [id]; return CARD_NUMBERS.find((c) => ids.includes(c.id)) ?? []; });
+  // The one lookup every path takes (offer, plan, build, styles, explanation), so an augment read from the patch's file (src/ai/augmentFiles.ts) has one set of numbers.
+  const cardsOf = (list: { id: number; ids?: number[]; game?: AugmentGameData }[], augmentIds: number[]) => augmentIds.flatMap((id) => { const entry = list.find((a) => a.id === id); const ids = entry?.ids ?? [id]; const card = CARD_NUMBERS.find((c) => ids.includes(c.id)); return card ? [cardFromFiles(card, entry?.game)] : []; });
   /** The ways his kit can be built besides its own: magic or physical when his damage grows with that stat at least half as much as with the other (100 of each, no items), and tank for everyone (the owner: Katarina has all three). */
   /** Magic also when a held card works on AP or on damage over time (the owner: Miss Fortune with Vulnerability builds AP and burns). */
-  async function buildStyles(championId: number, augmentIds: number[] = []): Promise<BuildStyle[]> {
+  async function buildStyles(championId: number, augmentIds: number[] = [], progress?: AugmentProgress): Promise<BuildStyle[]> {
     const entry = (await champions()).find((c) => c.id === championId);
     if (!entry) throw new Error(`unknown champion ${championId}`);
     const v = await gameVersion();
-    const [bin, shop] = await Promise.all([loadChampionBin(game, v, entry.alias), loadGameItems(game, v)]);
+    const [bin, shop] = await Promise.all([fightBin(v, entry.alias), loadGameItems(game, v)]);
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     const fightKit = fightKitOf(championId);
     const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
     const all = augmentIds.length ? await augments() : undefined;
     // With the held cards: a card that adds magic damage to his casts or attacks (Infernal Conduit, Marksmage) makes AP grow his damage (BodyThoseFools' AP Nasus, 2026-11-07).
-    const held = cardsOf(all?.augments ?? [], augmentIds);
-    const damage = (stat?: string) => fight({ bin, shop, kit: fightKit, passive, items: [], level: 13, cards: [...held, ...(stat ? [{ id: 0, name: stat, status: 'computed', ops: [{ op: 'add' as const, stat, value: 100 }] }] : [])] }).damage;
+    const held = augmentIds.flatMap((id) => cardsOf(all?.augments ?? [], [id]).map((c) => ({ ...c, abilityKey: progress?.abilityTargets?.[id] })));
+    const skillPlan = await skillPlanFor(championId);
+    const damage = (stat?: string) => fight({ bin, shop, kit: fightKit, passive, items: [], level: 13, skillPlan, cards: [...held, ...(stat ? [{ id: 0, name: stat, status: 'computed', ops: [{ op: 'add' as const, stat, value: 100 }] }] : [])] }).damage;
     const base = damage(), ap = damage('ap') - base, ad = damage('ad') - base;
     const magicCard = held.some((c) => c.ops.some((x) => x.op === 'crit_dot' || (x.op === 'convert' && (x.from === 'ap' || x.to === 'ap')) || ((x.op === 'add' || x.op === 'mult' || x.op === 'per_stack') && x.stat === 'ap')));
     const magic = (ap >= 0.5 * Math.max(ap, ad) && ap > 0) || magicCard;
@@ -649,20 +740,24 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const alias = (await champions()).find((c) => c.id === championId)?.alias;
     return alias ? STACKS_AT_15[alias] ?? null : null;
   }
-  function mathBuild(championId: number, augmentIds: number[], owned: number[] = [], teams?: Teams, style?: BuildStyle, stacks?: number) {
-    const key = `${stacks ?? ''}|${style ?? ''}|${championId}|${[...augmentIds].sort((a, b) => a - b).join()}|${owned.join()}|${teams?.allies.join() ?? ''}|${teams?.enemies.join() ?? ''}|${JSON.stringify(teams?.enemyItems ?? {})}`;
+  function mathBuild(championId: number, augmentIds: number[], owned: number[] = [], teams?: Teams, style?: BuildStyle, stacks?: number, progress?: AugmentProgress) {
+    const key = `${JSON.stringify(progress ?? {})}|${stacks ?? ''}|${style ?? ''}|${championId}|${augmentIds.join()}|${owned.join()}|${teams?.allies.join() ?? ''}|${teams?.enemies.join() ?? ''}|${JSON.stringify(teams?.enemyItems ?? {})}`;
     const known = builds.get(key);
     if (known) return known;
     const work = (async () => {
       const entry = (await champions()).find((c) => c.id === championId);
       if (!entry) throw new Error(`unknown champion ${championId}`);
       const v = await gameVersion();
-      const [all, bin, shop, list] = await Promise.all([augments(), loadChampionBin(game, v, entry.alias), loadGameItems(game, v), items('mayhem')]);
+      const [all, bin, shop, list] = await Promise.all([augments(), fightBin(v, entry.alias), loadGameItems(game, v), items('mayhem')]);
       // An item with no text isn't in the shop: Viktor's core is one champion's, given and never bought.
       // Ids 77xxxx are old items the map list carries (Deathfire Grasp, Zephyr): 0 to 6 buyers each in 63,810 Mayhem players, so not in the shop.
       const sold = list.list.filter((i) => (i.group === 'legendary' || (i.group === 'boots' && i.gold > PLAIN_BOOTS_GOLD)) && i.html && Math.floor(i.id / 10000) !== 77);
+      // Live inventory may contain mode copies and components; only finished shop items occupy fixed build slots.
+      const soldIds = new Set(sold.map((i) => i.id));
+      const ownedItems = [...new Set(owned.map((id) => soldIds.has(id) ? id : id % 10000).filter((id) => soldIds.has(id)))];
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
-      const cards = cardsOf(all.augments, augmentIds);
+      const stage = augmentStage(augmentIds, progress);
+      const cards = progress ? augmentIds.flatMap((id) => cardsOf(all.augments, [id]).map((c) => ({ ...c, acquiredLevel: stage.acquiredLevels[id], abilityKey: progress.abilityTargets?.[id] }))) : cardsOf(all.augments, augmentIds);
       // A frontline mage holding a card that makes his AP pay in crits (Jeweled Gauntlet: abilities crit, AP into crit chance) builds as a damage dealer, all magic:
       // the owner's Swain (2026-11-08, «نعم صحيح»: Zwag's Zhonya's, Blackfire, Rite of Ruin, Rabadon's, Liandry's, Void).
       if (!style && kit?.damage === 'magic' && kit.traits.includes('frontline') && cards.some((c) => c.ops.some((x) => x.op === 'crit_abilities' || (x.op === 'convert' && x.from === 'ap')))) style = 'ap';
@@ -680,10 +775,10 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const onHitCard = cards.some((c) => c.ops.some((x) => x.op === 'on_hit_repeat'));
       const onHitItem = (id: number) => (ITEM_NUMBERS.find((x) => x.id === id % 10000)?.ops ?? []).some((x) => 'trigger' in x && x.trigger === 'on_hit');
       // A held card that adds damage to his attacks (Marksmage) makes a non-attacker fight with attacks too: the owner's Gragas with Marksmage, Lich Bane and Dusk and Dawn (2026-11-05).
-      const attackCard = cards.some((c) => c.ops.some((x) => 'trigger' in x && (x.trigger === 'attack' || x.trigger === 'on_hit')));
-      const fightKit = { ...fightKitOf(championId), ...(attackCard ? { attacks: true } : {}) };
+      const fightKit = kitWithCards(fightKitOf(championId), cards);
       const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
       const facts = await teamFacts(teams, shop);
+      const place = teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies, style });
       // Katarina and Garen carry no arType, read as mana, but a mana pool of 0.
       const resource = (championRecord(bin) as unknown as { primaryAbilityResource?: { arType?: number; arIsShown?: boolean; '{726ee5cd}'?: { baseValue?: number } } })?.primaryAbilityResource;
       const noMana = (resource?.arType ?? 0) !== 0 || !(resource?.['{726ee5cd}']?.baseValue ?? 0) || resource?.arIsShown === false; // Viego: a hidden pool of 10,000, not mana
@@ -710,9 +805,23 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const keepsNoHealth = (PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? []).some((x) => x.op === 'convert' && x.from === 'bonus_hp' && x.replace);
       const rangedOnly = (id: number) => id % 10000 === RUNAANS; // Statikk Shiv also carries a bolts op now, and melee champions build it
       const tankOnly = (i?: { id: number; group?: string; boots?: boolean }) => !!i && !i.boots && i.group !== 'boots' && itemDamage(i.id) === 'none';
-      const steps = itemsByMath({ bin, shop, enemy: facts.enemy, place: teamPlace({ championId, bin, shop, kit: fightKit, passive, enemy: facts.enemy, allies: facts.allies, style }), offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' || hybrid(i.id) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style && !switched : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned, required, noBoots: championId === CASSIOPEIA, requiredAnyOf, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks });
+      const skillPlan = await skillPlanFor(championId);
+      const steps = itemsByMath({ bin, shop, level: progress?.level, knownRanks: knownRanksOf(progress), skillPlan, enemy: facts.enemy, place, offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' || hybrid(i.id) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style && !switched : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned: ownedItems, required, noBoots: championId === CASSIOPEIA, requiredAnyOf, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks });
+      const explanation = explainBuild({ bin, shop, kit: fightKitOf(championId), cards, passive, itemOps: ITEM_OPS, items: steps.map((s) => s.id), level: Math.max(15, stage.level), enemy: facts.enemy, stacks, knownRanks: knownRanksOf(progress), skillPlan, incomingDps: place.share * place.enemyDps * (place.draw ?? 1) });
+      const missing = [...new Set([
+        ...explanation.missing,
+        ...augmentIds.flatMap((id) => {
+          const read = cardsOf(all.augments, [id])[0];
+          return !read?.ops.length ? [`التعزيز ${id}: لا يملك معادلات؛ أثره وروابطه غير محسوبة`] : read.status !== 'computed' ? [`${read.name}: التمثيل جزئي أو مشروط`] : [];
+        }),
+        ...rankNote(progress, skillPlan),
+        ...(stage.estimatedHistory && augmentIds.length ? ['مستويات اقتناء التعزيزات غير المسجلة مقدّرة'] : []),
+        ...(cards.some((c) => c.ops.some((x) => x.op === 'per_stack')) ? ['تكديس التعزيزات مقدّر منذ الاختيار، وزيادته خلال القتال الحالي غير محسوبة'] : []),
+        ...(explanation.total.healingDenied > 0 ? ['وصول مضاد العلاج إلى مصادر الشفاء ومدة تطبيقه مقدّران'] : []),
+      ])];
+      const partName = (kind: 'item' | 'augment', id: number) => kind === 'item' ? sold.find((i) => i.id === id)?.enName ?? String(id) : cards.find((c) => c.id === id)?.name ?? String(id);
       const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
-      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, why: s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean) }] : []; });
+      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, missing, why: [...(s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean)), ...itemExplanationWords(explanation, s.id, partName)] }] : []; });
     })();
     builds.set(key, work);
     work.catch(() => builds.delete(key));

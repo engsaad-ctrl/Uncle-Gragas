@@ -4,6 +4,7 @@
 
 import { ONE_OF } from '../app/buildEngine.js';
 import { FIGHT, fight, type CardNumbers, type CardOp, type EnemyTeam, type FightResult, type Kit } from './cardMath.js';
+import type { KnownRanks, SkillPlan } from './abilityRank.js';
 import { championRecord } from './calculator.js';
 import { DAMAGE_SHARE } from './shareData.js';
 import { CHAMPION_KITS } from './championKits.js';
@@ -75,7 +76,7 @@ export function enemyTeam(list: { bin: Record<string, unknown>; kit: Kit; passiv
   // In a running match his real items count for his resists too (the owner, 2026-11-08: «نعم، في المباراة الحية»); guessed builds don't, as the owner reverted that on 2026-11-04.
   const stats = list.map((e, i) => (e.live ? healFights[i]! : fights[i]!).stats);
   const mean = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
-  const healing = (r: (typeof fights)[number]) => (r.healParts ? r.healParts.ops - (r.healParts.shields ?? 0) + r.healParts.omnivamp + r.healParts.lifeSteal : 0) + r.abilityHealing; // shields are not healing: anti-heal does not cut them (Malphite read 933 a second with them)
+  const healing = (r: (typeof fights)[number]) => (r.healParts ? r.healParts.ops - (r.healParts.shields ?? 0) + r.healParts.omnivamp + r.healParts.lifeSteal : 0) + r.abilityHealingOnly; // shields are not healing: anti-heal does not cut them (Malphite read 933 a second with them)
   return { armor: mean(stats.map((s) => s.armor)), mr: mean(stats.map((s) => s.mr)), physicalShare: mean(list.map((e) => (e.kit.damage === 'physical' ? 1 : e.kit.damage === 'magic' ? 0 : 0.5))), hp: (FIGHT.target.hp * mean(stats.map((s) => s.hp))) / TYPICAL_HP, healPerSecond: mean(healFights.map(healing)) / FIGHT.seconds };
 }
 /** A way to build one champion: by his kit (none), or one the owner names: magic items only, physical only, or standing in front (Katarina has all three). 'aphp': magic with health, valued as a frontline champion's (the owner: Galio has three, all magic, magic with health, all tank). */
@@ -104,7 +105,7 @@ const dealtBy = (r: FightResult, seconds: number) => { const whole = Math.floor(
  */
 export const fightValue = (r: FightResult, p: TeamPlace) => {
   const seconds = p.window ?? FIGHT.seconds, lasting = shareAt(p, r.effectiveHp) * p.enemyDps * seconds * (p.draw ?? 1);
-  const one = (x: FightResult, health: number) => { const stays = health + HEALING_WORTH * (x.healedHp ?? 0), alive = Math.min(1, stays / lasting); return { left: Math.min(x.effectiveHp, Math.max(0, stays - lasting)), value: dealtBy(x, alive * seconds) + p.absorbedWorth * Math.min(stays, lasting) + ABSORBED_WORTH * (p.healWorth ?? ABILITY_HEALING_WORTH) * (x.abilityHealing ?? 0) * alive }; }; // healing allies keeps its own worth: the lower absorbed worth of a champion behind the front is for damage he takes, not for heals he gives (Soraka)
+  const one = (x: FightResult, health: number) => { const stays = health + HEALING_WORTH * (x.healedHp ?? 0), alive = Math.min(1, stays / lasting); return { left: Math.min(x.effectiveHp, Math.max(0, stays - lasting)), value: dealtBy(x, alive * seconds) + (x.healingDenied ?? 0) * alive * seconds / FIGHT.seconds + p.absorbedWorth * Math.min(stays, lasting) + ABSORBED_WORTH * (p.healWorth ?? ABILITY_HEALING_WORTH) * (x.abilityHealing ?? 0) * alive }; }; // healing allies keeps its own worth: the lower absorbed worth of a champion behind the front is for damage he takes, not for heals he gives (Soraka)
   let value = 0, x = r, health = r.effectiveHp;
   for (let n = 0; n < FIGHTS.inARow && health > 0; n++) {
     if (n) x = x.again?.() ?? x;
@@ -124,8 +125,9 @@ export function searchSet(o: { start: number[]; candidates: number[]; slots: num
     const next = new Map<string, number[]>();
     for (const held of beam) for (const id of o.candidates) if (o.fits(id, held)) { const ids = [...held, id]; next.set([...ids].sort((a, b) => a - b).join(), ids); }
     beam = [...next.values()].sort((a, b) => valueOf(b) - valueOf(a)).slice(0, o.width);
-    if (!beam.length || valueOf(beam[0]!) <= valueOf(best)) break;
-    best = beam[0]!;
+    if (!beam.length) break;
+    // A flat or weaker intermediate set can unlock a strong combination at the next depth.
+    if (valueOf(beam[0]!) > valueOf(best)) best = beam[0]!;
   }
   for (let improved = o.swaps; improved;) {
     improved = false;
@@ -138,12 +140,12 @@ export function searchSet(o: { start: number[]; candidates: number[]; slots: num
   return best;
 }
 
-export function mathBuild(o: { /** He can't buy boots (Cassiopeia): six other items. */ noBoots?: boolean; /** A card that needs one item of a kind (Upgrade Sheen: any Spellblade item): one of each group, which one by the whole build. */ requiredAnyOf?: number[][]; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number }): MathStep[] {
+export function mathBuild(o: { /** The live level is a floor: a late purchase never takes the champion back to level 5. */ level?: number; /** He can't buy boots (Cassiopeia): six other items. */ noBoots?: boolean; /** A card that needs one item of a kind (Upgrade Sheen: any Spellblade item): one of each group, which one by the whole build. */ requiredAnyOf?: number[][]; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number; knownRanks?: KnownRanks; skillPlan?: SkillPlan }): MathStep[] {
   // The game's own limits on what can be held together, and those its file doesn't name.
   const clashes = (id: number, held: number[]) => ONE_OF.some((g) => g.includes(id % 10000) && held.some((x) => x !== id && g.includes(x % 10000))) || (o.shop[id]?.limits ?? []).some((g) => held.some((x) => x !== id && o.shop[x]?.limits?.includes(g)));
   // His share of the enemy's damage, so effects on falling below a share of his health come when it gets there (cardMath lowHealthAt).
   const incomingDps = o.place.share * o.place.enemyDps * (o.place.draw ?? 1);
-  const run = (list: number[], level: number) => fight({ bin: o.bin, shop: o.shop, kit: o.kit, cards: o.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level, stacks: o.stacks, incomingDps });
+  const run = (list: number[], level: number) => fight({ bin: o.bin, shop: o.shop, kit: o.kit, cards: o.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level: Math.max(o.level ?? 1, level), stacks: o.stacks, incomingDps, knownRanks: o.knownRanks, skillPlan: o.skillPlan });
   const allowed = (i: PoolItem, held: number[]) => !held.includes(i.id) && !clashes(i.id, held) && !!o.shop[i.id] && !o.offKind?.(i, held);
   const gain = (held: number[], id: number, level: number) => { const v = fightValue(run(held, level), o.place); return v > 0 ? fightValue(run([...held, id], level), o.place) / v - 1 : 0; };
 

@@ -91,8 +91,12 @@ it('converts bonus AD into AP before a zero multiplier gives the AD up (ADAPt)',
 it('gives nothing for a card that works after an ultimate cast once the ultimate is locked (Back To Basics with Ultimate Awakening)', () => {
   const lock = card('lock', [{ op: 'lock', key: 'R' }]);
   const awake: CardNumbers = { ...card('awake', [{ op: 'add', stat: 'haste', value: 225 }]), needs: 'The 300 basic haste only for 15s after an ultimate cast, 20s cooldown.' };
-  expect(run([lock, awake]).stats.haste).toBe(run([lock]).stats.haste);
-  expect(run([awake]).stats.haste).toBe(run().stats.haste + 225); // without the lock it counts
+  const ult = { ...bin, rec: { ...bin.rec, spells: ['', '', '', 'r'] }, r: { __type: 'SpellObject', mSpell: { cooldownTime: [90, 90, 90, 90] } } };
+  const at = (cards: CardNumbers[], level = 6) => fight({ bin: ult, shop: {}, kit, items: [], cards, level });
+  expect(at([lock, awake]).stats.haste).toBe(at([lock]).stats.haste);
+  expect(at([awake]).stats.haste).toBe(at([]).stats.haste + 225);
+  expect(at([awake], 5).stats.haste).toBe(at([], 5).stats.haste);
+  expect(run([awake]).stats.haste).toBe(run().stats.haste); // no R spell in this fixture
 });
 it('reads range in a condition: beyond N by his abilities, within N by his attack range (knowledge/fight-rules.md)', () => {
   const proc = (needs: string) => card('proc', [{ op: 'proc', trigger: 'attack', damage: { flat: 100 }, type: 'true', needs } as CardOp]);
@@ -179,9 +183,9 @@ it('turns bonus move speed into AD by a share that grows with level (Hecarim)', 
 it('counts an anti-heal item as the share of the enemies\' healing it takes away', () => {
   const shop = { 1: { DataValues: [{ name: 'GrievousAmount', values: [0.4] }] } } as never;
   const enemy = { armor: 0, mr: 0, physicalShare: 1, healPerSecond: 100 };
-  const dealt = (items: number[], e = enemy) => fight({ bin, shop, kit, items, cards: [], level: 1, enemy: e }).damage;
-  expect(dealt([1]) - dealt([])).toBeCloseTo(0.4 * 100 * FIGHT.seconds); // 40% of 100 a second over the fight
-  expect(dealt([1], { ...enemy, healPerSecond: 0 }) - dealt([], { ...enemy, healPerSecond: 0 })).toBeCloseTo(0); // nothing to cut against enemies who don't heal
+  const prevented = (items: number[], e = enemy) => fight({ bin, shop, kit, items, cards: [], level: 1, enemy: e }).healingDenied;
+  expect(prevented([1]) - prevented([])).toBeCloseTo(0.4 * 100 * FIGHT.seconds); // 40% of 100 a second over the fight
+  expect(prevented([1], { ...enemy, healPerSecond: 0 })).toBe(0); // nothing to cut against enemies who don't heal
 });
 
 it('reads a spell\'s crit version as what a crit adds, not as its damage (Nasus Q: stacks uncritted)', () => {
@@ -221,7 +225,7 @@ it('counts what an item gives the ally he heals, only for a kit that heals allie
 
 it('crits a cast that deals damage over time with a card that crits damage over time', () => {
   const burn = { rec: { ...bin.rec, spells: ['', '', 'x/e'] }, 'x/e': { __type: 'SpellObject', mSpell: { cooldownTime: [99, 99, 99, 99, 99, 99], DataValues: [{ name: 'BaseDamagePerSecond', values: [100, 100, 100, 100, 100, 100] }], mSpellCalculations: { TotalDamagePerSecond: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamagePerSecond' }] } } } } };
-  const e = (cards: CardNumbers[]) => fight({ bin: burn, shop: {}, kit, items: [], cards, level: 1 }).perCast.E;
+  const e = (cards: CardNumbers[]) => fight({ bin: burn, shop: {}, kit, items: [], cards, level: 3 }).perCast.E; // level 3: one point in each of Q, W, E (legal ranks)
   expect(e([card('vulnerability', [{ op: 'crit_dot', extra: 0.45 }, { op: 'add', stat: 'crit', value: 0.25 }])])! / e([])!).toBeCloseTo(1 + 0.25 * 0.45);
 });
 
@@ -243,7 +247,7 @@ it('counts a quest reward only once all its quest items are held', () => {
 });
 it('starts the next fight with the cooldowns this one left', () => {
   const ult = { rec: { ...bin.rec, spells: ['', '', '', 'x/r'] }, 'x/r': { __type: 'SpellObject', mSpell: { cooldownTime: [90, 90, 90, 90] } } };
-  const next = (cards: CardNumbers[]) => { FIGHT.carryCooldowns = true; try { return fight({ bin: ult, shop: {}, kit, items: [], cards, level: 1 }).again!().casts.R; } finally { FIGHT.carryCooldowns = false; } };
+  const next = (cards: CardNumbers[]) => { FIGHT.carryCooldowns = true; try { return fight({ bin: ult, shop: {}, kit, items: [], cards, level: 6 }).again!().casts.R; } finally { FIGHT.carryCooldowns = false; } };
   expect(next([])).toBeUndefined(); // cast at 0, back at 90: 35 s into the next fight, which starts at 55
   expect(next([card('haste', [{ op: 'add', stat: 'haste', value: 100 }])])).toBe(1); // back at 45, before it starts
 });
@@ -327,7 +331,7 @@ it("takes a share of the cast ability's cooldown off the others (Archmage: 30%, 
   const spell = (n: number) => ({ __type: 'SpellObject', mSpell: { cooldownTime: [10, 10, 10, 10, 10, 10], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: n }] } } } });
   const b = { ...bin, rec: { ...bin.rec, spells: ['x/q', 'x/w'] }, 'x/q': spell(100), 'x/w': spell(100) };
   const archmage = card('Archmage', [{ op: 'refund', scope: 'other_ability', amount: 0.3, unit: 'cast_share', trigger: 'ability_cast' }]);
-  const casts = (cards: CardNumbers[]) => Object.values(fight({ bin: b, shop: {}, kit, items: [], cards, level: 1 }).casts).reduce((n, x) => n + x, 0);
+  const casts = (cards: CardNumbers[]) => Object.values(fight({ bin: b, shop: {}, kit, items: [], cards, level: 3 }).casts).reduce((n, x) => n + x, 0);
   expect(casts([archmage])).toBeGreaterThan(casts([]));
 });
 
@@ -336,4 +340,25 @@ it("waits for the enemies' damage to take his health below an effect's mark (Ste
   const at = (incomingDps: number) => fight({ bin, shop: {}, kit, items: [], cards: [shield], level: 1, incomingDps }).healParts!.ops;
   expect(at(10)).toBe(0); // 1,500 effective health lasts far past the 15 s fight at 10 a second
   expect(at(1000)).toBeGreaterThan(0); // falls below 30% in about a second
+});
+
+describe('effects that wait seconds of champion combat (timing)', () => {
+  // A Q of 1 x his armor every 4 s, at 0, 4, 8 and 12 s; 100 bonus armor; magic kit, no attacks.
+  const armorQ = { rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [4, 4, 4, 4, 4, 4], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ __type: 'StatByCoefficientCalculationPart', mStat: 1, mCoefficient: 1 }] } } } } };
+  const armor = card('armor', [{ op: 'add', stat: 'armor', value: 100 }]);
+  const jakSho = (needs?: string) => card('jak', [{ op: 'mult', stat: 'armor', factor: 1.2, scope: 'bonus', ...(needs ? { needs } : {}) } as CardOp]); // the stored average of +30% after 5 s
+  const at = (cards: CardNumbers[]) => fight({ bin: armorQ, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards, level: 1 });
+  it("gives Jak'Sho's full bonus only after its 5 s, and keeps its average in effective health", () => {
+    const plain = at([armor]), timed = at([armor, jakSho('5 seconds of champion combat')]), flat = at([armor, jakSho()]);
+    expect(timed.fromAbilities / plain.fromAbilities).toBeCloseTo((150 + 150 + 180 + 180) / 600); // bonus 100 before 5 s, 130 after
+    expect(flat.fromAbilities / plain.fromAbilities).toBeCloseTo(170 / 150); // the old reading: 120 bonus all fight
+    expect(timed.effectiveHp).toBeCloseTo(flat.effectiveHp);
+    expect(timed.stats.armor).toBeCloseTo(flat.stats.armor);
+  });
+  it("heals Riftmaker's omnivamp only from the damage dealt after its 4 s", () => {
+    const vamp = card('rift', [{ op: 'add', stat: 'omnivamp', value: 0.1 * 11 / 15, needs: '4 seconds in champion combat' } as CardOp]);
+    const r = fight({ bin, shop: {}, kit, items: [], cards: [vamp], level: 1 });
+    const own = r.fromAbilities + r.fromAttacks + r.fromCards;
+    expect(r.healParts!.omnivamp).toBeCloseTo(0.1 * (own - r.damageBySecond[3]!));
+  });
 });

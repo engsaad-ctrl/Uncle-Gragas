@@ -25,7 +25,18 @@ export interface AugmentText {
   rarity: Rarity;
   modes: Mode[];
   iconUrl: string;
+  /** The patch's own numbers, for an augment the engine reads from its files (src/ai/augmentFiles.ts); same download as the text, so one version. */
+  game?: AugmentGameData;
 }
+
+/** An augment's root spell values and the missiles it sends, as the mode file of the loaded patch has them. */
+export interface AugmentGameData {
+  spell: Pick<SpellData, 'DataValues' | 'mSpellCalculations'>;
+  missiles: { script: string; travelTime?: number; speed?: number }[];
+}
+
+/** Augments (AugmentNameId) whose numbers src/ai/augmentFiles.ts reads from the files instead of a copy in knowledge/. */
+export const FILE_READ_AUGMENTS = new Set(['BEES', 'Ability_SelfAOE_DoubleCast', 'ARAM_Dashing']);
 
 export interface AugmentSources {
   listAr: AugmentListEntry[];
@@ -39,8 +50,11 @@ interface AugmentData {
   AugmentPlatformId?: number;
   DescriptionTra?: string;
   AugmentTooltipTra?: string;
+  AugmentNameId?: string;
   /** The augment's root spell data, attached by the loader (bin[RootSpell].mSpell). */
   __spell?: SpellData;
+  /** Its additional spells' missile movement, attached by the loader for FILE_READ_AUGMENTS only. */
+  __missiles?: AugmentGameData['missiles'];
 }
 
 /**
@@ -108,6 +122,7 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
       // The Arena map file (map30) holds only ids < 1000; the Mayhem files (kiwi*) only ids >= 1000.
       modes: [a.id < 1000 ? 'arena' : 'mayhem'],
       iconUrl: assetUrl(a.augmentSmallIconPath),
+      ...(d?.__missiles && d.__spell ? { game: { spell: { DataValues: d.__spell.DataValues, mSpellCalculations: d.__spell.mSpellCalculations }, missiles: d.__missiles } } : {}),
     });
   }
 

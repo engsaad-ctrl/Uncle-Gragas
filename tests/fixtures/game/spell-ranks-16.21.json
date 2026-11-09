@@ -1,0 +1,1812 @@
+{
+  "version": "16.21.8342754+branch.releases-16-21.content.release",
+  "note": "Extracted public game-asset rank metadata. Missing ordinary requirements use the standard R6/11/16 rule; no player skill allocation is present.",
+  "champions": {
+    "ahri": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/ahri/ahri.bin.json",
+      "sha256": "770a7e5b7bdaf1d1de42b7d33a09912a8e56a3244bb0ab2b5d00d94e8b0013a2",
+      "record": {},
+      "tooltipRanks": [
+        5,
+        5,
+        5,
+        3
+      ]
+    },
+    "gragas": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/gragas/gragas.bin.json",
+      "sha256": "06f76efa00968c226dfe63bcef1520dabdd69f02ee1b38c0bade6a3efa465977",
+      "record": {},
+      "tooltipRanks": [
+        5,
+        5,
+        5,
+        3
+      ]
+    },
+    "nasus": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/nasus/nasus.bin.json",
+      "sha256": "b2bfa516e164b75b85a803e9d66e35a0343f5a6466d8c74129a78b7525e7420a",
+      "record": {},
+      "tooltipRanks": [
+        5,
+        5,
+        5,
+        3
+      ]
+    },
+    "karthus": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/karthus/karthus.bin.json",
+      "sha256": "fe99dbafe7d3d151f040377bbfd0501c66d7c24209dd10c8fbd9fcf7823a2a68",
+      "record": {},
+      "tooltipRanks": [
+        5,
+        5,
+        5,
+        3
+      ]
+    },
+    "jayce": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/jayce/jayce.bin.json",
+      "sha256": "7f26f095495bcf0ad6658fdd8fc45bed712b0d08d532a665bf6a601685b98c8a",
+      "record": {
+        "SpellLevelUpInfoList": {
+          "List": [
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            }
+          ],
+          "__type": "SpellLevelUpList"
+        }
+      },
+      "tooltipRanks": [
+        6,
+        6,
+        6,
+        null
+      ]
+    },
+    "elise": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/elise/elise.bin.json",
+      "sha256": "549b8b34df8951d5fb7dc4a1db1436d1f9439df8e2376f1d765d7b85e5e601b6",
+      "record": {
+        "SpellLevelUpInfoList": {
+          "List": [
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 6,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 16,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            }
+          ],
+          "__type": "SpellLevelUpList"
+        }
+      },
+      "tooltipRanks": [
+        5,
+        5,
+        5,
+        4
+      ]
+    },
+    "nidalee": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/nidalee/nidalee.bin.json",
+      "sha256": "46f1c5b0a1905ebd9eda82b96c45234a6d78b23d03c3afa3b3ccb1d9d57bddaa",
+      "record": {
+        "SpellLevelUpInfoList": {
+          "List": [
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 6,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 16,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            }
+          ],
+          "__type": "SpellLevelUpList"
+        }
+      },
+      "tooltipRanks": [
+        5,
+        5,
+        5,
+        4
+      ]
+    },
+    "karma": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/karma/karma.bin.json",
+      "sha256": "fc02295c7e5d8b417c6266806f0e729ebe799167bf8f836d03ccc6129ff35256",
+      "record": {
+        "SpellLevelUpInfoList": {
+          "List": [
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 6,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 16,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            }
+          ],
+          "__type": "SpellLevelUpList"
+        }
+      },
+      "tooltipRanks": [
+        5,
+        5,
+        5,
+        4
+      ]
+    },
+    "udyr": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/udyr/udyr.bin.json",
+      "sha256": "40860b7f7613ba49f85bf2a9840be757b1cf4338576636f0f6d6205c687d8289",
+      "record": {
+        "SpellLevelUpInfoList": {
+          "List": [
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            }
+          ],
+          "__type": "SpellLevelUpList"
+        }
+      },
+      "tooltipRanks": [
+        6,
+        6,
+        6,
+        6
+      ]
+    },
+    "aphelios": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/aphelios/aphelios.bin.json",
+      "sha256": "a52a56d4a748a03bf8435472493030638437da9c1876d6b611cf2c5904d4ec50",
+      "record": {
+        "SpellLevelUpInfoList": {
+          "List": [
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 6,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 16,
+                      "__type": "CharacterLevelRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            }
+          ],
+          "__type": "SpellLevelUpList"
+        }
+      },
+      "tooltipRanks": [
+        null,
+        5,
+        null,
+        3
+      ]
+    },
+    "hwei": {
+      "source": "https://raw.communitydragon.org/16.21/game/data/characters/hwei/hwei.bin.json",
+      "sha256": "f12b7f7fb3abcac2ee2974ae33edd6331566e304dfc68581e891f262945e0d60",
+      "record": {
+        "SpellLevelUpInfoList": {
+          "List": [
+            {
+              "mRequirements": [
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 3,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 5,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 7,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 9,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            },
+            {
+              "mRequirements": [
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 6,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 11,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                },
+                {
+                  "mRequirements": [
+                    {
+                      "__type": "HasSkillPointRequirement"
+                    },
+                    {
+                      "mLevel": 16,
+                      "__type": "CharacterLevelRequirement"
+                    },
+                    {
+                      "mBuffName": "{a57caffe}",
+                      "__type": "HasBuffRequirement"
+                    }
+                  ],
+                  "__type": "SpellRankUpRequirements"
+                }
+              ],
+              "__type": "SpellLevelUpInfo"
+            }
+          ],
+          "__type": "SpellLevelUpList"
+        }
+      },
+      "tooltipRanks": [
+        5,
+        5,
+        5,
+        3
+      ]
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+ "meaning": "Dashing (ARAM_Dashing, 1019) records cut from the public Kiwi mode file of each patch (Riot game assets mirrored by CommunityDragon): the AugmentData entry and its root spell values.",
+ "patches": {
+  "16.21": {
+   "url": "https://raw.communitydragon.org/16.21/game/maps/modespecificdata/kiwi.bin.json",
+   "sha256": "e3e3913fdf4465391f3588e84f654dad01436d57a250f24559897de2fda43d83",
+   "contentVersion": "16.21.8342754+branch.releases-16-21.content.release",
+   "bin": {
+    "Maps/ModeSpecificData/Augments/ARAM_Dashing": {
+     "AugmentNameId": "ARAM_Dashing",
+     "NameTra": "Kiwi_ARAM_Dashing_Name",
+     "DescriptionTra": "Cherry_Dashing_Tooltip",
+     "AugmentTooltipTra": "Cherry_Dashing_Tooltip",
+     "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_Dashing/Augment_ARAM_Dashing",
+     "mAugmentTags": 32,
+     "mBuildTags": 2,
+     "AugmentLargeIconPath": "assets/ux/cherry/augments/icons/dashing_large.tex",
+     "AugmentSmallIconPath": "assets/ux/cherry/augments/icons/dashing_small.tex",
+     "AugmentDisplayTags": [
+      4
+     ],
+     "rarity": 2,
+     "AugmentPlatformId": 1019,
+     "__type": "AugmentData"
+    },
+    "Maps/ModeSpecificData/Augments/ARAM_Dashing/Augment_ARAM_Dashing": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_ARAM_Dashing",
+     "mSpell": {
+      "DataValues": [
+       {
+        "name": "Haste",
+        "values": [
+         175,
+         175,
+         175,
+         175,
+         175,
+         175,
+         175
+        ],
+        "__type": "SpellDataValue"
+       }
+      ]
+     }
+    }
+   }
+  },
+  "16.22": {
+   "url": "https://raw.communitydragon.org/16.22/game/maps/modespecificdata/kiwi.bin.json",
+   "sha256": "d6422cef83eedad4da8f782d1eb1351482558a70265970f7db0d59cc05d67eb5",
+   "contentVersion": "16.22.8348910+branch.releases-16-22.content.release",
+   "bin": {
+    "Maps/ModeSpecificData/Augments/ARAM_Dashing": {
+     "AugmentNameId": "ARAM_Dashing",
+     "NameTra": "Kiwi_ARAM_Dashing_Name",
+     "DescriptionTra": "Cherry_Dashing_Tooltip",
+     "AugmentTooltipTra": "Cherry_Dashing_Tooltip",
+     "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_Dashing/Augment_ARAM_Dashing",
+     "mAugmentTags": 32,
+     "mBuildTags": 2,
+     "AugmentLargeIconPath": "assets/ux/cherry/augments/icons/dashing_large.tex",
+     "AugmentSmallIconPath": "assets/ux/cherry/augments/icons/dashing_small.tex",
+     "AugmentDisplayTags": [
+      4
+     ],
+     "rarity": 2,
+     "AugmentPlatformId": 1019,
+     "__type": "AugmentData"
+    },
+    "Maps/ModeSpecificData/Augments/ARAM_Dashing/Augment_ARAM_Dashing": {
+     "__type": "SpellObject",
+     "mScriptName": "Augment_ARAM_Dashing",
+     "mSpell": {
+      "DataValues": [
+       {
+        "name": "Haste",
+        "values": [
+         175,
+         175,
+         175,
+         175,
+         175,
+         175,
+         175
+        ],
+        "__type": "SpellDataValue"
+       }
+      ]
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { diskCache, getJson } from '../diskCache.js';
-import { buildAugmentTexts, type AugmentListEntry, type AugmentText } from './augments.js';
+import { buildAugmentTexts, FILE_READ_AUGMENTS, type AugmentListEntry, type AugmentText } from './augments.js';
 import { CDRAGON_BASE } from './cdragon.js';
 
 const RAW = 'https://raw.communitydragon.org/latest';
@@ -23,15 +23,23 @@ export interface AugmentsResult {
 }
 
 // Bump when AugmentText changes shape or what it keeps, so old caches are rebuilt.
-const CACHE_SCHEMA = 13;
+const CACHE_SCHEMA = 16;
 
-/** Keeps only AugmentData entries, each with its root spell's values attached (the rest of the bin is dropped). */
-function augmentDataOnly(bin: Record<string, unknown>) {
+type MissileSpell = { mScriptName?: string; mSpell?: { mMissileSpec?: { movementComponent?: { mTravelTime?: number; mSpeed?: number } } } };
+
+/** Keeps only AugmentData entries, each with its root spell's values attached (the rest of the bin is dropped).
+ * Augments the engine reads from the files (FILE_READ_AUGMENTS) also keep their additional spells' missile movement. */
+export function augmentDataOnly(bin: Record<string, unknown>) {
   return Object.values(bin).flatMap((v) => {
-    const a = v as { __type?: string; RootSpell?: string } | null;
+    const a = v as { __type?: string; RootSpell?: string; AugmentNameId?: string; AdditionalSpells?: string[] } | null;
     if (a?.__type !== 'AugmentData') return [];
     const spell = (a.RootSpell ? (bin[a.RootSpell] as { mSpell?: unknown } | undefined) : undefined)?.mSpell;
-    return [{ ...a, __spell: spell }];
+    if (!FILE_READ_AUGMENTS.has(a.AugmentNameId ?? '')) return [{ ...a, __spell: spell }];
+    const missiles = (a.AdditionalSpells ?? []).flatMap((key) => {
+      const o = bin[key] as MissileSpell | undefined, m = o?.mSpell?.mMissileSpec?.movementComponent;
+      return m ? [{ script: o?.mScriptName ?? key, travelTime: m.mTravelTime, speed: m.mSpeed }] : [];
+    });
+    return [{ ...a, __spell: spell, __missiles: missiles }];
   });
 }
 

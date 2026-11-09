@@ -1,0 +1,2410 @@
+{
+ "patch": "16.22.8348910+branch.releases-16-22.content.release",
+ "report": [
+  {
+   "name": "ahri-bees-echo",
+   "inputs": {
+    "champion": {
+     "id": 103,
+     "alias": "ahri"
+    },
+    "level": 11,
+    "items": [
+     6655,
+     3020,
+     3089
+    ],
+    "augments": [
+     {
+      "id": 2062,
+      "acquiredLevel": 3,
+      "abilityKey": "W"
+     },
+     {
+      "id": 3086,
+      "acquiredLevel": 7
+     }
+    ],
+    "enemy": {
+     "armor": 90,
+     "mr": 70,
+     "physicalShare": 0.5,
+     "hp": 3200,
+     "healPerSecond": 40
+    },
+    "incomingDps": 506,
+    "seconds": 15
+   },
+   "units": {
+    "damage": 3583.54,
+    "fromAbilities": 3100.65,
+    "fromAttacks": 0,
+    "fromCards": 482.89,
+    "fromAllies": 0,
+    "effectiveHp": 2604.86,
+    "healedHp": 649.35,
+    "abilityHealing": 0,
+    "healingDenied": 0,
+    "attacks": 0,
+    "casts": {
+     "R": 1,
+     "Q": 3,
+     "W": 3,
+     "E": 2
+    },
+    "perCast": {
+     "R": 459,
+     "Q": 469,
+     "W": 359,
+     "E": 414
+    },
+    "stats": {
+     "ad": 79.33,
+     "ap": 299,
+     "hp": 1746.13,
+     "armor": 57.85,
+     "mr": 41.41,
+     "attackSpeed": 0.79,
+     "crit": 0,
+     "haste": 10
+    }
+   },
+   "hits": [
+    {
+     "id": 3086,
+     "op": "delayed_dot",
+     "landed": 1.25
+    }
+   ],
+   "augments": [
+    {
+     "id": 2062,
+     "name": "Echo Cast",
+     "delta": {
+      "damage": 454.78,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     }
+    },
+    {
+     "id": 3086,
+     "name": "BEES!!!",
+     "delta": {
+      "damage": 255.17,
+      "fromCards": 255.17,
+      "effectiveHp": 0,
+      "healedHp": 0
+     }
+    }
+   ],
+   "items": [
+    {
+     "id": 6655,
+     "delta": {
+      "damage": 1870.15,
+      "effectiveHp": 0,
+      "selfSustain": 116.36,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 3020,
+       "delta": {
+        "damage": 94.32,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3089,
+       "delta": {
+        "damage": 600.9,
+        "effectiveHp": 0,
+        "selfSustain": 26.85,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 2062,
+       "delta": {
+        "damage": 118.48,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 108.63,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3020,
+     "delta": {
+      "damage": 203.3,
+      "effectiveHp": 0,
+      "selfSustain": 0,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 6655,
+       "delta": {
+        "damage": 94.32,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3089,
+       "delta": {
+        "damage": 76.24,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 2062,
+       "delta": {
+        "damage": 32.1,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 18.01,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3089,
+     "delta": {
+      "damage": 1378.52,
+      "effectiveHp": 0,
+      "selfSustain": 178.12,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 6655,
+       "delta": {
+        "damage": 600.9,
+        "effectiveHp": 0,
+        "selfSustain": 26.85,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3020,
+       "delta": {
+        "damage": 76.24,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 2062,
+       "delta": {
+        "damage": 181.37,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 110.21,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    }
+   ],
+   "notModelled": [
+    "Echo Cast: النسخة ضربة ثانية على الهدف نفسه بعد DelayTime وبنسبة CloneDamageRatio؛ النسخة تتحرك حتى 500 نحو المؤشر، فإصابتها الهدف تتوقف على توجيه اللاعب وغير مثبتة؛ الضرر بقيم لحظة الإلقاء الأصلي؛ بلا مانا ولا تبريد إضافي (غير مثبت)؛ النسخة لا تفعّل تأثيرات إصابة المهارة (BEES، أيتمات الإصابة، on-hit، spellblade) ولا شفاء المهارة: حد أدنى، وتفعيلها في اللعبة غير مثبت؛ المهارات المتواصلة (toggle) لا تُنسخ، ولا الأعداء الآخرون في منطقة النسخة",
+    "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب"
+   ],
+   "variants": [
+    {
+     "label": "BEES before the file reader (the fixed copy in the generated data at d2124b3)",
+     "change": {
+      "damage": 197.78,
+      "fromCards": 197.78,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [
+      {
+       "id": 3086,
+       "op": "proc",
+       "landed": 2
+      }
+     ],
+     "units": {
+      "damage": 3781.32,
+      "fromAbilities": 3100.65,
+      "fromAttacks": 0,
+      "fromCards": 680.67,
+      "fromAllies": 0,
+      "effectiveHp": 2604.86,
+      "healedHp": 649.35,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 0,
+      "casts": {
+       "R": 1,
+       "Q": 3,
+       "W": 3,
+       "E": 2
+      },
+      "perCast": {
+       "R": 459,
+       "Q": 469,
+       "W": 359,
+       "E": 414
+      },
+      "stats": {
+       "ad": 79.33,
+       "ap": 299,
+       "hp": 1746.13,
+       "armor": 57.85,
+       "mr": 41.41,
+       "attackSpeed": 0.79,
+       "crit": 0,
+       "haste": 10
+      }
+     },
+     "notModelled": [
+      "Echo Cast: النسخة ضربة ثانية على الهدف نفسه بعد DelayTime وبنسبة CloneDamageRatio؛ النسخة تتحرك حتى 500 نحو المؤشر، فإصابتها الهدف تتوقف على توجيه اللاعب وغير مثبتة؛ الضرر بقيم لحظة الإلقاء الأصلي؛ بلا مانا ولا تبريد إضافي (غير مثبت)؛ النسخة لا تفعّل تأثيرات إصابة المهارة (BEES، أيتمات الإصابة، on-hit، spellblade) ولا شفاء المهارة: حد أدنى، وتفعيلها في اللعبة غير مثبت؛ المهارات المتواصلة (toggle) لا تُنسخ، ولا الأعداء الآخرون في منطقة النسخة",
+      "BEES!!!: damage is the total over 2s and reaches all nearby enemy champions; 20% slow; bees apply on-hit effects at 40%; internal_cooldown keeps the text order 15 to 10"
+     ]
+    },
+    {
+     "label": "BEES and Echo Cast read from the 16.21 file",
+     "change": {
+      "damage": 27.93,
+      "fromCards": 27.92,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [
+      {
+       "id": 3086,
+       "op": "delayed_dot",
+       "landed": 1.25
+      }
+     ],
+     "units": {
+      "damage": 3611.47,
+      "fromAbilities": 3100.65,
+      "fromAttacks": 0,
+      "fromCards": 510.81,
+      "fromAllies": 0,
+      "effectiveHp": 2604.86,
+      "healedHp": 649.35,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 0,
+      "casts": {
+       "R": 1,
+       "Q": 3,
+       "W": 3,
+       "E": 2
+      },
+      "perCast": {
+       "R": 459,
+       "Q": 469,
+       "W": 359,
+       "E": 414
+      },
+      "stats": {
+       "ad": 79.33,
+       "ap": 299,
+       "hp": 1746.13,
+       "armor": 57.85,
+       "mr": 41.41,
+       "attackSpeed": 0.79,
+       "crit": 0,
+       "haste": 10
+      }
+     },
+     "notModelled": [
+      "Echo Cast: النسخة ضربة ثانية على الهدف نفسه بعد DelayTime وبنسبة CloneDamageRatio؛ النسخة تتحرك حتى 500 نحو المؤشر، فإصابتها الهدف تتوقف على توجيه اللاعب وغير مثبتة؛ الضرر بقيم لحظة الإلقاء الأصلي؛ بلا مانا ولا تبريد إضافي (غير مثبت)؛ النسخة لا تفعّل تأثيرات إصابة المهارة (BEES، أيتمات الإصابة، on-hit، spellblade) ولا شفاء المهارة: حد أدنى، وتفعيلها في اللعبة غير مثبت؛ المهارات المتواصلة (toggle) لا تُنسخ، ولا الأعداء الآخرون في منطقة النسخة",
+      "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب"
+     ]
+    },
+    {
+     "label": "Echo Cast before the file reader (the generated data at d2124b3: one ability of three doubled, no target, no delay)",
+     "change": {
+      "damage": 427.17,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [
+      {
+       "id": 3086,
+       "op": "delayed_dot",
+       "landed": 1.25
+      }
+     ],
+     "units": {
+      "damage": 4010.71,
+      "fromAbilities": 3527.82,
+      "fromAttacks": 0,
+      "fromCards": 482.89,
+      "fromAllies": 0,
+      "effectiveHp": 2604.86,
+      "healedHp": 649.35,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 0,
+      "casts": {
+       "R": 1,
+       "Q": 3,
+       "W": 3,
+       "E": 2
+      },
+      "perCast": {
+       "R": 612,
+       "Q": 625,
+       "W": 479,
+       "E": 552
+      },
+      "stats": {
+       "ad": 79.33,
+       "ap": 299,
+       "hp": 1746.13,
+       "armor": 57.85,
+       "mr": 41.41,
+       "attackSpeed": 0.79,
+       "crit": 0,
+       "haste": 10
+      }
+     },
+     "notModelled": [
+      "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب"
+     ]
+    },
+    {
+     "label": "Echo Cast copy also sets off ability-hit effects (not established in game; sensitivity)",
+     "change": {
+      "damage": 0,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [
+      {
+       "id": 3086,
+       "op": "delayed_dot",
+       "landed": 1.25
+      }
+     ],
+     "units": {
+      "damage": 3583.54,
+      "fromAbilities": 3100.65,
+      "fromAttacks": 0,
+      "fromCards": 482.89,
+      "fromAllies": 0,
+      "effectiveHp": 2604.86,
+      "healedHp": 649.35,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 0,
+      "casts": {
+       "R": 1,
+       "Q": 3,
+       "W": 3,
+       "E": 2
+      },
+      "perCast": {
+       "R": 459,
+       "Q": 469,
+       "W": 359,
+       "E": 414
+      },
+      "stats": {
+       "ad": 79.33,
+       "ap": 299,
+       "hp": 1746.13,
+       "armor": 57.85,
+       "mr": 41.41,
+       "attackSpeed": 0.79,
+       "crit": 0,
+       "haste": 10
+      }
+     },
+     "notModelled": [
+      "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب"
+     ]
+    },
+    {
+     "label": "Echo Cast with no target skill given",
+     "change": {
+      "damage": -454.78,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [
+      {
+       "id": 3086,
+       "op": "delayed_dot",
+       "landed": 1.25
+      }
+     ],
+     "units": {
+      "damage": 3128.76,
+      "fromAbilities": 2645.87,
+      "fromAttacks": 0,
+      "fromCards": 482.89,
+      "fromAllies": 0,
+      "effectiveHp": 2604.86,
+      "healedHp": 649.35,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 0,
+      "casts": {
+       "R": 1,
+       "Q": 3,
+       "W": 3,
+       "E": 2
+      },
+      "perCast": {
+       "R": 459,
+       "Q": 469,
+       "W": 359,
+       "E": 414
+      },
+      "stats": {
+       "ad": 79.33,
+       "ap": 299,
+       "hp": 1746.13,
+       "armor": 57.85,
+       "mr": 41.41,
+       "attackSpeed": 0.79,
+       "crit": 0,
+       "haste": 10
+      }
+     },
+     "notModelled": [
+      "Echo Cast: النسخة ضربة ثانية على الهدف نفسه بعد DelayTime وبنسبة CloneDamageRatio؛ النسخة تتحرك حتى 500 نحو المؤشر، فإصابتها الهدف تتوقف على توجيه اللاعب وغير مثبتة؛ الضرر بقيم لحظة الإلقاء الأصلي؛ بلا مانا ولا تبريد إضافي (غير مثبت)؛ النسخة لا تفعّل تأثيرات إصابة المهارة (BEES، أيتمات الإصابة، on-hit، spellblade) ولا شفاء المهارة: حد أدنى، وتفعيلها في اللعبة غير مثبت؛ المهارات المتواصلة (toggle) لا تُنسخ، ولا الأعداء الآخرون في منطقة النسخة",
+      "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب",
+      "Echo Cast: المهارة المستهدفة غير محددة؛ أثر النسخة غير محسوب"
+     ]
+    },
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "change": {
+      "damage": -258.24,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [
+      {
+       "id": 3086,
+       "op": "delayed_dot",
+       "landed": 1.25
+      }
+     ],
+     "units": {
+      "damage": 3325.3,
+      "fromAbilities": 2842.41,
+      "fromAttacks": 0,
+      "fromCards": 482.89,
+      "fromAllies": 0,
+      "effectiveHp": 2604.86,
+      "healedHp": 649.35,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 0,
+      "casts": {
+       "R": 1,
+       "Q": 3,
+       "W": 3,
+       "E": 2
+      },
+      "perCast": {
+       "R": 459,
+       "Q": 469,
+       "W": 359,
+       "E": 414
+      },
+      "stats": {
+       "ad": 79.33,
+       "ap": 299,
+       "hp": 1746.13,
+       "armor": 57.85,
+       "mr": 41.41,
+       "attackSpeed": 0.79,
+       "crit": 0,
+       "haste": 10
+      }
+     },
+     "notModelled": [
+      "Echo Cast: النسخة ضربة ثانية على الهدف نفسه بعد DelayTime وبنسبة CloneDamageRatio؛ النسخة تتحرك حتى 500 نحو المؤشر، فإصابتها الهدف تتوقف على توجيه اللاعب وغير مثبتة؛ الضرر بقيم لحظة الإلقاء الأصلي؛ بلا مانا ولا تبريد إضافي (غير مثبت)؛ النسخة لا تفعّل تأثيرات إصابة المهارة (BEES، أيتمات الإصابة، on-hit، spellblade) ولا شفاء المهارة: حد أدنى، وتفعيلها في اللعبة غير مثبت؛ المهارات المتواصلة (toggle) لا تُنسخ، ولا الأعداء الآخرون في منطقة النسخة",
+      "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "karthus-ethereal-bees-burn",
+   "inputs": {
+    "champion": {
+     "id": 30,
+     "alias": "karthus"
+    },
+    "level": 16,
+    "items": [
+     6653,
+     3089,
+     3100,
+     3020,
+     3165
+    ],
+    "augments": [
+     {
+      "id": 1029,
+      "acquiredLevel": 3
+     },
+     {
+      "id": 3086,
+      "acquiredLevel": 7
+     },
+     {
+      "id": 1045,
+      "acquiredLevel": 11
+     }
+    ],
+    "enemy": {
+     "armor": 110,
+     "mr": 80,
+     "physicalShare": 0.6,
+     "hp": 3800,
+     "healPerSecond": 60
+    },
+    "incomingDps": 506,
+    "seconds": 15
+   },
+   "units": {
+    "damage": 6797.44,
+    "fromAbilities": 4597.59,
+    "fromAttacks": 0,
+    "fromCards": 2199.85,
+    "fromAllies": 0,
+    "effectiveHp": 5488.9,
+    "healedHp": 0,
+    "abilityHealing": 0,
+    "healingDenied": 360,
+    "attacks": 0,
+    "casts": {
+     "E": 1,
+     "R": 1,
+     "Q": 7
+    },
+    "perCast": {
+     "E": 185,
+     "R": 832,
+     "Q": 598,
+     "W": 0
+    },
+    "stats": {
+     "ad": 93.04,
+     "ap": 474.5,
+     "hp": 3217.54,
+     "armor": 89.03,
+     "mr": 48.82,
+     "attackSpeed": 0.82,
+     "crit": 0,
+     "haste": 25
+    }
+   },
+   "hits": [
+    {
+     "id": 3086,
+     "op": "delayed_dot",
+     "landed": 1.01
+    }
+   ],
+   "augments": [
+    {
+     "id": 1029,
+     "name": "Ethereal Weapon",
+     "delta": {
+      "damage": 873.53,
+      "fromCards": 873.53,
+      "effectiveHp": 0,
+      "healedHp": 0
+     }
+    },
+    {
+     "id": 3086,
+     "name": "BEES!!!",
+     "delta": {
+      "damage": 280.64,
+      "fromCards": 280.63,
+      "effectiveHp": 0,
+      "healedHp": 0
+     }
+    },
+    {
+     "id": 1045,
+     "name": "Infernal Conduit",
+     "delta": {
+      "damage": 697.49,
+      "fromCards": 361.68,
+      "effectiveHp": 0,
+      "healedHp": 0
+     }
+    }
+   ],
+   "items": [
+    {
+     "id": 6653,
+     "delta": {
+      "damage": 1459.78,
+      "effectiveHp": 511.78,
+      "selfSustain": 0,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 3089,
+       "delta": {
+        "damage": 169.19,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3100,
+       "delta": {
+        "damage": 151.88,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3020,
+       "delta": {
+        "damage": 97.32,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3165,
+       "delta": {
+        "damage": 144.92,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1029,
+       "delta": {
+        "damage": 134.82,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 36.65,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1045,
+       "delta": {
+        "damage": 136.78,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3089,
+     "delta": {
+      "damage": 1722.22,
+      "effectiveHp": 0,
+      "selfSustain": 0,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 6653,
+       "delta": {
+        "damage": 169.19,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3100,
+       "delta": {
+        "damage": 506.41,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3020,
+       "delta": {
+        "damage": 114.81,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3165,
+       "delta": {
+        "damage": 255.78,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1029,
+       "delta": {
+        "damage": 332.31,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 101.29,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1045,
+       "delta": {
+        "damage": 132.47,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3100,
+     "delta": {
+      "damage": 1627.97,
+      "effectiveHp": 0,
+      "selfSustain": 0,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 6653,
+       "delta": {
+        "damage": 151.88,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3089,
+       "delta": {
+        "damage": 506.41,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3020,
+       "delta": {
+        "damage": 108.53,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3165,
+       "delta": {
+        "damage": 186.27,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1029,
+       "delta": {
+        "damage": 873.53,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 54.98,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1045,
+       "delta": {
+        "damage": 67.83,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3020,
+     "delta": {
+      "damage": 453.16,
+      "effectiveHp": 0,
+      "selfSustain": 0,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 6653,
+       "delta": {
+        "damage": 97.32,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3089,
+       "delta": {
+        "damage": 114.81,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3100,
+       "delta": {
+        "damage": 108.53,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3165,
+       "delta": {
+        "damage": 74.71,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1029,
+       "delta": {
+        "damage": 58.24,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 18.71,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1045,
+       "delta": {
+        "damage": 46.5,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3165,
+     "delta": {
+      "damage": 1120.61,
+      "effectiveHp": 597.07,
+      "selfSustain": 0,
+      "abilitySupport": 0,
+      "healingDenied": 360
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 6653,
+       "delta": {
+        "damage": 144.92,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3089,
+       "delta": {
+        "damage": 255.78,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3100,
+       "delta": {
+        "damage": 186.27,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3020,
+       "delta": {
+        "damage": 74.71,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1029,
+       "delta": {
+        "damage": 135.28,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 41.23,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1045,
+       "delta": {
+        "damage": 469.35,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    }
+   ],
+   "notModelled": [
+    "Ethereal Weapon: Abilities apply on-hit effects, 1s cooldown per target: on_hit_repeat has no ability trigger.",
+    "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب"
+   ],
+   "variants": [
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "change": {
+      "damage": 0,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [
+      {
+       "id": 3086,
+       "op": "delayed_dot",
+       "landed": 1.01
+      }
+     ],
+     "units": {
+      "damage": 6797.44,
+      "fromAbilities": 4597.59,
+      "fromAttacks": 0,
+      "fromCards": 2199.85,
+      "fromAllies": 0,
+      "effectiveHp": 5488.9,
+      "healedHp": 0,
+      "abilityHealing": 0,
+      "healingDenied": 360,
+      "attacks": 0,
+      "casts": {
+       "E": 1,
+       "R": 1,
+       "Q": 7
+      },
+      "perCast": {
+       "E": 185,
+       "R": 832,
+       "Q": 598,
+       "W": 0
+      },
+      "stats": {
+       "ad": 93.04,
+       "ap": 474.5,
+       "hp": 3217.54,
+       "armor": 89.03,
+       "mr": 48.82,
+       "attackSpeed": 0.82,
+       "crit": 0,
+       "haste": 25
+      }
+     },
+     "notModelled": [
+      "Ethereal Weapon: Abilities apply on-hit effects, 1s cooldown per target: on_hit_repeat has no ability trigger.",
+      "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nasus-bread-q",
+   "inputs": {
+    "champion": {
+     "id": 75,
+     "alias": "nasus"
+    },
+    "level": 13,
+    "stacks": 300,
+    "items": [
+     3078,
+     3047,
+     3065
+    ],
+    "augments": [
+     {
+      "id": 1103,
+      "acquiredLevel": 3,
+      "abilityKey": "Q"
+     }
+    ],
+    "enemy": {
+     "armor": 100,
+     "mr": 70,
+     "physicalShare": 0.5,
+     "hp": 3500
+    },
+    "incomingDps": 506,
+    "seconds": 15
+   },
+   "units": {
+    "damage": 3248.04,
+    "fromAbilities": 1739.84,
+    "fromAttacks": 954.2,
+    "fromCards": 554,
+    "fromAllies": 0,
+    "effectiveHp": 6909.43,
+    "healedHp": 2017.41,
+    "abilityHealing": 0,
+    "healingDenied": 0,
+    "attacks": 13,
+    "casts": {
+     "R": 1,
+     "Q": 6,
+     "W": 2,
+     "E": 1
+    },
+    "perCast": {
+     "R": 0,
+     "Q": 537,
+     "W": 0,
+     "E": 220
+    },
+    "stats": {
+     "ad": 146.8,
+     "ap": 0,
+     "hp": 2951.21,
+     "armor": 125.46,
+     "mr": 119.45,
+     "attackSpeed": 1.07,
+     "crit": 0,
+     "haste": 25
+    }
+   },
+   "hits": [],
+   "augments": [
+    {
+     "id": 1103,
+     "name": "Bread And Butter",
+     "delta": {
+      "damage": 647.6,
+      "fromCards": 110.8,
+      "effectiveHp": 0,
+      "healedHp": 164.09
+     }
+    }
+   ],
+   "items": [
+    {
+     "id": 3078,
+     "delta": {
+      "damage": 1006.8,
+      "effectiveHp": 779.63,
+      "selfSustain": 775.88,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 3047,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 81.9,
+        "selfSustain": 44.96,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3065,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 101.42,
+        "selfSustain": 235.92,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1103,
+       "delta": {
+        "damage": 146.8,
+        "effectiveHp": 0,
+        "selfSustain": 52.55,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3047,
+     "delta": {
+      "damage": 0,
+      "effectiveHp": 725.83,
+      "selfSustain": 116.9,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 3078,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 81.9,
+        "selfSustain": 44.96,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3065,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 215.32,
+        "selfSustain": 45.59,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1103,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 0,
+        "selfSustain": 9.51,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3065,
+     "delta": {
+      "damage": 0,
+      "effectiveHp": 1713.46,
+      "selfSustain": 613.43,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 3078,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 101.42,
+        "selfSustain": 235.92,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3047,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 215.32,
+        "selfSustain": 45.59,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1103,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 0,
+        "selfSustain": 49.89,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    }
+   ],
+   "notModelled": [],
+   "variants": [
+    {
+     "label": "Bread And Butter with no target skill given",
+     "change": {
+      "damage": -647.6,
+      "fromCards": -110.8,
+      "effectiveHp": 0,
+      "healedHp": -164.09
+     },
+     "hits": [],
+     "units": {
+      "damage": 2600.44,
+      "fromAbilities": 1203.04,
+      "fromAttacks": 954.2,
+      "fromCards": 443.2,
+      "fromAllies": 0,
+      "effectiveHp": 6909.43,
+      "healedHp": 1853.32,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 13,
+      "casts": {
+       "R": 1,
+       "Q": 4,
+       "W": 2,
+       "E": 1
+      },
+      "perCast": {
+       "R": 0,
+       "Q": 537,
+       "W": 0,
+       "E": 220
+      },
+      "stats": {
+       "ad": 146.8,
+       "ap": 0,
+       "hp": 2951.21,
+       "armor": 125.46,
+       "mr": 119.45,
+       "attackSpeed": 1.07,
+       "crit": 0,
+       "haste": 25
+      }
+     },
+     "notModelled": [
+      "Bread And Butter: المهارة المستهدفة غير محددة؛ أثر التسارع غير محسوب"
+     ]
+    },
+    {
+     "label": "Skills maxed Q, then E, then W (a stated order, as the build page gives one; not read from a site here)",
+     "change": {
+      "damage": 1076.58,
+      "fromCards": 110.8,
+      "effectiveHp": 0,
+      "healedHp": 219.87
+     },
+     "hits": [],
+     "units": {
+      "damage": 4324.62,
+      "fromAbilities": 2705.62,
+      "fromAttacks": 954.2,
+      "fromCards": 664.8,
+      "fromAllies": 0,
+      "effectiveHp": 6909.43,
+      "healedHp": 2237.28,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 13,
+      "casts": {
+       "R": 1,
+       "Q": 9,
+       "W": 1,
+       "E": 1
+      },
+      "perCast": {
+       "R": 0,
+       "Q": 557,
+       "W": 0,
+       "E": 340
+      },
+      "stats": {
+       "ad": 146.8,
+       "ap": 0,
+       "hp": 2951.21,
+       "armor": 125.46,
+       "mr": 119.45,
+       "attackSpeed": 1.07,
+       "crit": 0,
+       "haste": 25
+      }
+     },
+     "notModelled": []
+    },
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "change": {
+      "damage": -19.42,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [],
+     "units": {
+      "damage": 3228.62,
+      "fromAbilities": 1720.42,
+      "fromAttacks": 954.2,
+      "fromCards": 554,
+      "fromAllies": 0,
+      "effectiveHp": 6909.43,
+      "healedHp": 2017.41,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 13,
+      "casts": {
+       "R": 1,
+       "Q": 6,
+       "W": 2,
+       "E": 1
+      },
+      "perCast": {
+       "R": 0,
+       "Q": 537,
+       "W": 0,
+       "E": 220
+      },
+      "stats": {
+       "ad": 146.8,
+       "ap": 0,
+       "hp": 2951.21,
+       "armor": 125.46,
+       "mr": 119.45,
+       "attackSpeed": 1.07,
+       "crit": 0,
+       "haste": 25
+      }
+     },
+     "notModelled": []
+    }
+   ]
+  },
+  {
+   "name": "gragas-tank-engine",
+   "inputs": {
+    "champion": {
+     "id": 79,
+     "alias": "gragas"
+    },
+    "level": 9,
+    "items": [
+     3084,
+     3068,
+     3075
+    ],
+    "augments": [
+     {
+      "id": 1353,
+      "acquiredLevel": 3
+     },
+     {
+      "id": 1019,
+      "acquiredLevel": 7
+     }
+    ],
+    "enemy": {
+     "armor": 70,
+     "mr": 50,
+     "physicalShare": 0.7,
+     "hp": 2900,
+     "healPerSecond": 30
+    },
+    "incomingDps": 600,
+    "seconds": 15
+   },
+   "units": {
+    "damage": 1102.5,
+    "fromAbilities": 566.67,
+    "fromAttacks": 0,
+    "fromCards": 535.83,
+    "fromAllies": 0,
+    "effectiveHp": 9600.38,
+    "healedHp": 2112.08,
+    "abilityHealing": 0,
+    "healingDenied": 180,
+    "attacks": 0,
+    "casts": {
+     "R": 1,
+     "Q": 1,
+     "W": 2,
+     "E": 2
+    },
+    "perCast": {
+     "R": 200,
+     "Q": 240,
+     "W": 80,
+     "E": 125
+    },
+    "stats": {
+     "ad": 87.59,
+     "ap": 0,
+     "hp": 3946.93,
+     "armor": 211.7,
+     "mr": 60.82,
+     "attackSpeed": 0.76,
+     "crit": 0,
+     "haste": 10
+    }
+   },
+   "hits": [],
+   "augments": [
+    {
+     "id": 1353,
+     "name": "Tank Engine",
+     "delta": {
+      "damage": 90.31,
+      "fromCards": 90.31,
+      "effectiveHp": 1464.46,
+      "healedHp": 322.18
+     }
+    },
+    {
+     "id": 1019,
+     "name": "Dashing",
+     "delta": {
+      "damage": 30,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": -528.02
+     }
+    }
+   ],
+   "items": [
+    {
+     "id": 3084,
+     "delta": {
+      "damage": 201.22,
+      "effectiveHp": 3262.88,
+      "selfSustain": 717.83,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 3068,
+       "delta": {
+        "damage": 201.22,
+        "effectiveHp": 358.74,
+        "selfSustain": 78.92,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3075,
+       "delta": {
+        "damage": 1.47,
+        "effectiveHp": 501.75,
+        "selfSustain": 110.39,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1353,
+       "delta": {
+        "damage": 30.69,
+        "effectiveHp": 497.73,
+        "selfSustain": 109.5,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1019,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 0,
+        "selfSustain": -179.46,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3068,
+     "delta": {
+      "damage": 535.83,
+      "effectiveHp": 1867.29,
+      "selfSustain": 410.8,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 3084,
+       "delta": {
+        "damage": 201.22,
+        "effectiveHp": 358.74,
+        "selfSustain": 78.92,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3075,
+       "delta": {
+        "damage": 28.02,
+        "effectiveHp": -8.77,
+        "selfSustain": -1.93,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1353,
+       "delta": {
+        "damage": 90.31,
+        "effectiveHp": 284.84,
+        "selfSustain": 62.66,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1019,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 0,
+        "selfSustain": -102.7,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3075,
+     "delta": {
+      "damage": 28.02,
+      "effectiveHp": 1803.83,
+      "selfSustain": 396.84,
+      "abilitySupport": 0,
+      "healingDenied": 180
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 3084,
+       "delta": {
+        "damage": 1.47,
+        "effectiveHp": 501.75,
+        "selfSustain": 110.39,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3068,
+       "delta": {
+        "damage": 28.02,
+        "effectiveHp": -8.77,
+        "selfSustain": -1.93,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1353,
+       "delta": {
+        "damage": 4.27,
+        "effectiveHp": 275.16,
+        "selfSustain": 60.54,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 1019,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 0,
+        "selfSustain": -99.21,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    }
+   ],
+   "notModelled": [
+    "Tank Engine: 5% size per stack; no stat for size.",
+    "Dashing: المهارات المتحركة تُعرف من وسوم ملف الشخصية (MoveBlock وTeleport وDashDirection)، وكون Dashing يقرأ هذه الوسوم نفسها غير مثبت؛ تفوتها Twisted Fate R وSion R وNocturne R وQ الثانية لـLee Sin، ومهارات الشكل الآخر للمتحولين"
+   ],
+   "variants": [
+    {
+     "label": "Dashing before the file reader (the generated data at d2124b3: 175/3 haste on every basic skill)",
+     "change": {
+      "damage": 23.33,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 528.02
+     },
+     "hits": [],
+     "units": {
+      "damage": 1125.83,
+      "fromAbilities": 590,
+      "fromAttacks": 0,
+      "fromCards": 535.83,
+      "fromAllies": 0,
+      "effectiveHp": 9600.38,
+      "healedHp": 2640.1,
+      "abilityHealing": 0,
+      "healingDenied": 180,
+      "attacks": 0,
+      "casts": {
+       "R": 1,
+       "Q": 1,
+       "W": 4,
+       "E": 1
+      },
+      "perCast": {
+       "R": 200,
+       "Q": 240,
+       "W": 80,
+       "E": 125
+      },
+      "stats": {
+       "ad": 87.59,
+       "ap": 0,
+       "hp": 3946.93,
+       "armor": 211.7,
+       "mr": 60.82,
+       "attackSpeed": 0.76,
+       "crit": 0,
+       "haste": 10
+      }
+     },
+     "notModelled": [
+      "Tank Engine: 5% size per stack; no stat for size.",
+      "Dashing: 175 haste on those abilities only: no form for haste on some abilities."
+     ]
+    },
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "change": {
+      "damage": 0,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [],
+     "units": {
+      "damage": 1102.5,
+      "fromAbilities": 566.67,
+      "fromAttacks": 0,
+      "fromCards": 535.83,
+      "fromAllies": 0,
+      "effectiveHp": 9600.38,
+      "healedHp": 2112.08,
+      "abilityHealing": 0,
+      "healingDenied": 180,
+      "attacks": 0,
+      "casts": {
+       "R": 1,
+       "Q": 1,
+       "W": 2,
+       "E": 2
+      },
+      "perCast": {
+       "R": 200,
+       "Q": 240,
+       "W": 80,
+       "E": 125
+      },
+      "stats": {
+       "ad": 87.59,
+       "ap": 0,
+       "hp": 3946.93,
+       "armor": 211.7,
+       "mr": 60.82,
+       "attackSpeed": 0.76,
+       "crit": 0,
+       "haste": 10
+      }
+     },
+     "notModelled": [
+      "Tank Engine: 5% size per stack; no stat for size.",
+      "Dashing: المهارات المتحركة تُعرف من وسوم ملف الشخصية (MoveBlock وTeleport وDashDirection)، وكون Dashing يقرأ هذه الوسوم نفسها غير مثبت؛ تفوتها Twisted Fate R وSion R وNocturne R وQ الثانية لـLee Sin، ومهارات الشكل الآخر للمتحولين"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "udyr-onhit-bees",
+   "inputs": {
+    "champion": {
+     "id": 77,
+     "alias": "udyr"
+    },
+    "level": 15,
+    "items": [
+     6672,
+     3153,
+     3006,
+     3115
+    ],
+    "augments": [
+     {
+      "id": 3086,
+      "acquiredLevel": 7
+     }
+    ],
+    "enemy": {
+     "armor": 100,
+     "mr": 80,
+     "physicalShare": 0.5,
+     "hp": 3600
+    },
+    "incomingDps": 506,
+    "seconds": 15
+   },
+   "units": {
+    "damage": 7829.59,
+    "fromAbilities": 1889.75,
+    "fromAttacks": 2300.69,
+    "fromCards": 3639.16,
+    "fromAllies": 0,
+    "effectiveHp": 4519.77,
+    "healedHp": 3447.25,
+    "abilityHealing": 0,
+    "healingDenied": 0,
+    "attacks": 23,
+    "casts": {
+     "R": 3,
+     "Q": 3,
+     "W": 3,
+     "E": 3
+    },
+    "perCast": {
+     "R": 647,
+     "Q": 541,
+     "W": 0,
+     "E": 0
+    },
+    "stats": {
+     "ad": 200.06,
+     "ap": 80,
+     "hp": 2382.03,
+     "armor": 108.35,
+     "mr": 74.19,
+     "attackSpeed": 1.85,
+     "crit": 0,
+     "haste": 15
+    }
+   },
+   "hits": [
+    {
+     "id": 3086,
+     "op": "delayed_dot",
+     "landed": 2
+    }
+   ],
+   "augments": [
+    {
+     "id": 3086,
+     "name": "BEES!!!",
+     "delta": {
+      "damage": 423.5,
+      "fromCards": 423.5,
+      "effectiveHp": 0,
+      "healedHp": 0
+     }
+    }
+   ],
+   "items": [
+    {
+     "id": 6672,
+     "delta": {
+      "damage": 1908.69,
+      "effectiveHp": 0,
+      "selfSustain": 547.73,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 3153,
+       "delta": {
+        "damage": 22.25,
+        "effectiveHp": 0,
+        "selfSustain": 322.32,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3006,
+       "delta": {
+        "damage": -280.75,
+        "effectiveHp": 0,
+        "selfSustain": -53.27,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3115,
+       "delta": {
+        "damage": -93.75,
+        "effectiveHp": 0,
+        "selfSustain": -19.57,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 75,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3153,
+     "delta": {
+      "damage": 2713.31,
+      "effectiveHp": 0,
+      "selfSustain": 1247.07,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 6672,
+       "delta": {
+        "damage": 22.25,
+        "effectiveHp": 0,
+        "selfSustain": 322.32,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3006,
+       "delta": {
+        "damage": -37.84,
+        "effectiveHp": 0,
+        "selfSustain": 45.51,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3115,
+       "delta": {
+        "damage": 202.49,
+        "effectiveHp": 0,
+        "selfSustain": 193.45,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 131.47,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3006,
+     "delta": {
+      "damage": 239.84,
+      "effectiveHp": 0,
+      "selfSustain": 45.51,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 6672,
+       "delta": {
+        "damage": -280.75,
+        "effectiveHp": 0,
+        "selfSustain": -53.27,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3153,
+       "delta": {
+        "damage": -37.84,
+        "effectiveHp": 0,
+        "selfSustain": 45.51,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3115,
+       "delta": {
+        "damage": -209.84,
+        "effectiveHp": 0,
+        "selfSustain": -39.82,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 0,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    },
+    {
+     "id": 3115,
+     "delta": {
+      "damage": 1343.97,
+      "effectiveHp": 0,
+      "selfSustain": 448.47,
+      "abilitySupport": 0,
+      "healingDenied": 0
+     },
+     "interactions": [
+      {
+       "kind": "item",
+       "id": 6672,
+       "delta": {
+        "damage": -93.75,
+        "effectiveHp": 0,
+        "selfSustain": -19.57,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3153,
+       "delta": {
+        "damage": 202.49,
+        "effectiveHp": 0,
+        "selfSustain": 193.45,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "item",
+       "id": 3006,
+       "delta": {
+        "damage": -209.84,
+        "effectiveHp": 0,
+        "selfSustain": -39.82,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      },
+      {
+       "kind": "augment",
+       "id": 3086,
+       "delta": {
+        "damage": 109.78,
+        "effectiveHp": 0,
+        "selfSustain": 0,
+        "abilitySupport": 0,
+        "healingDenied": 0
+       }
+      }
+     ]
+    }
+   ],
+   "notModelled": [
+    "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب"
+   ],
+   "variants": [
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "change": {
+      "damage": -8.78,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [
+      {
+       "id": 3086,
+       "op": "delayed_dot",
+       "landed": 2
+      }
+     ],
+     "units": {
+      "damage": 7820.81,
+      "fromAbilities": 1880.96,
+      "fromAttacks": 2300.69,
+      "fromCards": 3639.16,
+      "fromAllies": 0,
+      "effectiveHp": 4519.77,
+      "healedHp": 3447.25,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 23,
+      "casts": {
+       "R": 3,
+       "Q": 3,
+       "W": 3,
+       "E": 3
+      },
+      "perCast": {
+       "R": 647,
+       "Q": 541,
+       "W": 0,
+       "E": 0
+      },
+      "stats": {
+       "ad": 200.06,
+       "ap": 80,
+       "hp": 2382.03,
+       "armor": 108.35,
+       "mr": 74.19,
+       "attackSpeed": 1.85,
+       "crit": 0,
+       "haste": 15
+      }
+     },
+     "notModelled": [
+      "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "jayce-level-5-no-items",
+   "inputs": {
+    "champion": {
+     "id": 126,
+     "alias": "jayce"
+    },
+    "level": 5,
+    "items": [],
+    "augments": [],
+    "enemy": {
+     "armor": 60,
+     "mr": 45,
+     "physicalShare": 0.5,
+     "hp": 1800
+    },
+    "incomingDps": 506,
+    "seconds": 15
+   },
+   "units": {
+    "damage": 912.31,
+    "fromAbilities": 506.56,
+    "fromAttacks": 405.75,
+    "fromCards": 0,
+    "fromAllies": 0,
+    "effectiveHp": 1632.65,
+    "healedHp": 0,
+    "abilityHealing": 0,
+    "healingDenied": 0,
+    "attacks": 9,
+    "casts": {
+     "R": 3,
+     "Q": 2,
+     "W": 2,
+     "E": 1
+    },
+    "perCast": {
+     "R": 50,
+     "Q": 110,
+     "W": 200,
+     "E": 0
+    },
+    "stats": {
+     "ad": 72.13,
+     "ap": 0,
+     "hp": 1083.28,
+     "armor": 52.45,
+     "mr": 49.02,
+     "attackSpeed": 0.72,
+     "crit": 0,
+     "haste": 0
+    }
+   },
+   "hits": [],
+   "augments": [],
+   "items": [],
+   "notModelled": [],
+   "variants": [
+    {
+     "label": "Damage type from the kit (before reading each tooltip)",
+     "change": {
+      "damage": -25.87,
+      "fromCards": 0,
+      "effectiveHp": 0,
+      "healedHp": 0
+     },
+     "hits": [],
+     "units": {
+      "damage": 886.44,
+      "fromAbilities": 480.7,
+      "fromAttacks": 405.75,
+      "fromCards": 0,
+      "fromAllies": 0,
+      "effectiveHp": 1632.65,
+      "healedHp": 0,
+      "abilityHealing": 0,
+      "healingDenied": 0,
+      "attacks": 9,
+      "casts": {
+       "R": 3,
+       "Q": 2,
+       "W": 2,
+       "E": 1
+      },
+      "perCast": {
+       "R": 50,
+       "Q": 110,
+       "W": 200,
+       "E": 0
+      },
+      "stats": {
+       "ad": 72.13,
+       "ap": 0,
+       "hp": 1083.28,
+       "armor": 52.45,
+       "mr": 49.02,
+       "attackSpeed": 0.72,
+       "crit": 0,
+       "haste": 0
+      }
+     },
+     "notModelled": []
+    }
+   ]
+  }
+ ]
+}

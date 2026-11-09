@@ -500,5 +500,8 @@ body.overlay.large .ov-main.both .ov-list { grid-template-columns: repeat(2, min
 .ov-adapted-row .ic { width: 44px; height: 44px; }
 .ov-adapted-row b { font-size: 14px; }
 .ov-adapted-row small { font-size: 11.5px; line-height: 1.5; }
+#ov-walk .ov-offers { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.ov-ability-target { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.ov-ability-target select { font: inherit; max-width: 100%; }
 .stack-field { display: flex; align-items: center; gap: 8px; margin: 6px 0; } .stack-field input { width: 90px; padding: 4px 6px; font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; }
 .web-link { direction: ltr; user-select: text; word-break: break-all; color: var(--text); }

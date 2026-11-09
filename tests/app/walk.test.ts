@@ -25,3 +25,11 @@ describe('walkItems', () => {
     expect(walkItems([1, 2], [])).toEqual({ next: [1, 2], offPath: [] });
   });
 });
+
+describe('rankOffer with open conditions', () => {
+  it('puts settled cards first, then open-condition ones, then unknown, each by percent', () => {
+    const p: Record<string, number | undefined> = { a: 40, b: undefined, c: 90, d: 95, e: 10 };
+    const open = new Set(['d', 'e']);
+    expect(rankOffer(['a', 'b', 'c', 'd', 'e'], (x) => p[x], (x) => open.has(x))).toEqual(['c', 'a', 'd', 'e', 'b']);
+  });
+});

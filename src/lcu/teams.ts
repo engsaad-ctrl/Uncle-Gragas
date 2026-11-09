@@ -12,7 +12,7 @@ export interface GamePlayer {
   name: string;
 }
 
-export function teamsInGame(gameflow: unknown, myChampion: number | null | undefined): { mine: GamePlayer[]; enemy: GamePlayer[] } | null {
+export function teamsInGame(gameflow: unknown, myChampion: number | null | undefined, myTeam?: 'ORDER' | 'CHAOS'): { mine: GamePlayer[]; enemy: GamePlayer[] } | null {
   const data = obj(obj(gameflow)?.gameData);
   const team = (v: unknown): GamePlayer[] =>
     (Array.isArray(v) ? v : []).map(obj).flatMap((p) => {
@@ -22,6 +22,9 @@ export function teamsInGame(gameflow: unknown, myChampion: number | null | undef
     });
   const one = team(data?.teamOne), two = team(data?.teamTwo);
   if (!myChampion || !one.length || !two.length) return null;
+  if (myTeam === 'ORDER' && one.some((p) => p.championId === myChampion)) return { mine: one, enemy: two };
+  if (myTeam === 'CHAOS' && two.some((p) => p.championId === myChampion)) return { mine: two, enemy: one };
+  if (one.some((p) => p.championId === myChampion) && two.some((p) => p.championId === myChampion)) return null; // unknown side in a mirror: do not guess
   if (one.some((p) => p.championId === myChampion)) return { mine: one, enemy: two };
   if (two.some((p) => p.championId === myChampion)) return { mine: two, enemy: one };
   return null;

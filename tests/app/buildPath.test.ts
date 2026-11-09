@@ -1,35 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { followPath } from '../../src/app/buildPath.js';
+import { walkedPath } from '../../src/app/buildPath.js';
 
-describe('followPath', () => {
-  it('starts with the engine list and nothing bought', () => {
-    expect(followPath(undefined, [1], [10, 20, 30])).toEqual({ marks: [1], items: [10, 20, 30], bought: 0, dropped: [] });
+describe('recommendations follow actual purchases', () => {
+  it('does not infer purchases from several augments marked together', () => {
+    expect(walkedPath(undefined, [1, 2, 3], [], [10, 20, 30])).toEqual({ marks: [1, 2, 3], items: [10, 20, 30], bought: 0, dropped: [] });
   });
-  it('keeps the first item when a new augment reorders the list, and moves on to the next', () => {
-    const first = followPath(undefined, [1], [10, 20, 30]);
-    expect(followPath(first, [1, 2], [20, 10, 30])).toEqual({ marks: [1, 2], items: [10, 20, 30], bought: 1, dropped: [] });
+  it('uses the newly calculated order when an earlier suggestion was never purchased', () => {
+    const first = walkedPath(undefined, [1], [], [10, 20, 30]);
+    expect(walkedPath(first, [1, 2], [], [20, 10, 30])).toMatchObject({ items: [20, 10, 30], bought: 0 });
   });
-  it('says so when an advised item no longer fits', () => {
-    const first = followPath(undefined, [1], [10, 20, 30]);
-    expect(followPath(first, [1, 2], [20, 30, 40])).toEqual({ marks: [1, 2], items: [20, 30, 40], bought: 0, dropped: [10] });
+  it('keeps observed items first while refreshing recommendations with the same augments', () => {
+    const first = walkedPath(undefined, [1], [10], [10, 20, 30]);
+    expect(walkedPath(first, [1], [10], [30, 10, 40])).toEqual({ marks: [1], items: [10, 30, 40], bought: 1, dropped: [20] });
   });
-  it('holds earlier items over several steps', () => {
-    let p = followPath(undefined, [1], [10, 20, 30]);
-    p = followPath(p, [1, 2], [20, 10, 30]);
-    p = followPath(p, [1, 2, 3], [30, 40, 20, 10]);
-    expect(p.items).toEqual([10, 20, 30, 40]);
-    expect(p.bought).toBe(2);
+  it('records superseded suggestions and clears them on the following refresh', () => {
+    const first = walkedPath(undefined, [1], [], [10, 20]);
+    const second = walkedPath(first, [1, 2], [], [30, 40]);
+    expect(second.dropped).toEqual([10, 20]);
+    expect(walkedPath(second, [1, 2], [], [30, 40]).dropped).toEqual([]);
   });
-  it('changes nothing for the same marks, and clears the old notice', () => {
-    const first = followPath(undefined, [1], [10, 20]);
-    const second = followPath(first, [1, 2], [20, 30]);
-    expect(followPath(second, [2, 1], [99, 98])).toEqual({ ...second, dropped: [] });
+  it('recomputes after removing an augment without manufacturing purchases', () => {
+    const first = walkedPath(undefined, [1, 2, 3], [], [10, 20]);
+    expect(walkedPath(first, [1], [], [30, 40])).toMatchObject({ marks: [1], items: [30, 40], bought: 0 });
   });
-  it('starts over when an augment is removed', () => {
-    const second = followPath(followPath(undefined, [1], [10, 20]), [1, 2], [20, 10]);
-    expect(followPath(second, [1], [30, 40])).toEqual({ marks: [1], items: [30, 40], bought: 0, dropped: [] });
-  });
-  it('takes earlier items as bought when several are marked at once', () => {
-    expect(followPath(undefined, [1, 2, 3], [10, 20, 30]).bought).toBe(2);
+  it('does not duplicate an owned or suggested item', () => {
+    expect(walkedPath(undefined, [1], [10, 10], [10, 20, 10])).toMatchObject({ items: [10, 20], bought: 1 });
   });
 });

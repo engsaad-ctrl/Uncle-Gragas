@@ -20,4 +20,10 @@ describe('teamsInGame', () => {
     expect(teamsInGame(flow, 999)).toBeNull();
     expect(teamsInGame(flow, null)).toBeNull();
   });
+  it('uses the live side in a mirror match and abstains if the side is unknown', () => {
+    const mirror = { gameData: { teamOne: [{ championId: 103 }, { championId: 81 }], teamTwo: [{ championId: 103 }, { championId: 222 }] } };
+    expect(teamsInGame(mirror, 103)).toBeNull();
+    expect(teamsInGame(mirror, 103, 'CHAOS')?.mine.map((p) => p.championId)).toEqual([103, 222]);
+    expect(teamsInGame(mirror, 103, 'ORDER')?.mine.map((p) => p.championId)).toEqual([103, 81]);
+  });
 });

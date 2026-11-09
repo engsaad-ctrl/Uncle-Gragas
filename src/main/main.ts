@@ -12,7 +12,8 @@ import { loadProfile, parsePuuid, toRanked, type RankedQueue } from '../lcu/prof
 import { teamsInGame, type GamePlayer } from '../lcu/teams.js';
 import { LcuWatcher } from '../lcu/watcher.js';
 import { enemiesInGame } from '../lcu/state.js';
-import { liveItems } from '../lcu/liveGame.js';
+import { liveSnapshot, MatchEpoch, type LiveSnapshot } from '../lcu/liveGame.js';
+import { parseAugmentProgress } from '../ai/augmentProgress.js';
 import type { Position } from '../stats/opgg.js';
 import { errorLog } from './errorLog.js';
 import { gameWindowRect } from './gameWindow.js';
@@ -87,6 +88,7 @@ handle('suggest:get', (_e, position: unknown, enemies: unknown, taken: unknown) 
 let mainWindow: BrowserWindow | undefined;
 // The client stops naming the champion once the game starts: remember the last champ-select pick for the overlay.
 let lastPick: { championId: number; mode: AppMode; position: Position | null } | null = null;
+const matchEpoch = new MatchEpoch();
 // Mayhem games from the match history, read when the client connects and after each game; one read at a time.
 const COLLECT_ON = new Set(['None', 'Lobby', 'EndOfGame']);
 let lastPhase = 'Disconnected';
@@ -125,6 +127,8 @@ const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c),
   // teams, as other overlays do (only with F7 turned on).
   if (state.phase === 'InProgress' && lastPhase !== 'InProgress' && lastPick && lastPick.mode !== 'arena' && overlayOn) overlay.show('teams');
   const started = state.phase === 'InProgress' && lastPhase !== 'InProgress';
+  if (matchEpoch.observe(state.phase, watcher.session)) live = { at: 0, snapshot: null };
+  else if (state.phase !== 'InProgress') live = { at: 0, snapshot: null };
   lastPhase = state.phase;
   if (started) void followGame();
   else if (state.phase !== 'InProgress') overlay.setGame(null);
@@ -159,7 +163,11 @@ handle('profile:get', (_e, puuid: unknown) =>
 const overlay = overlayWindow(root);
 const OVERLAY_KEY = 'F7';
 // The game's mode as the client reports it now (it keeps it during the match) wins over the one remembered at the pick.
-handle('overlay:data', () => reply(() => services.overlayData(lastPick && { ...lastPick, mode: watcher.state.mode ?? lastPick.mode })));
+handle('overlay:data', () => reply(async () => {
+  const data = await services.overlayData(lastPick && { ...lastPick, mode: watcher.state.mode ?? lastPick.mode });
+  const player = data.champion ? await playerNow(data.champion.id) : undefined;
+  return { ...data, game: matchEpoch.value, ...(player?.level === undefined ? {} : { live: { level: player.level, items: player.items, game: matchEpoch.value } }) };
+}));
 handle('overlay:hide', () => overlay.hide());
 handle('overlay:large', (_e, on: unknown) => overlay.setLarge(on === true));
 // Mayhem build from Gemini, with the owner's key from settings.
@@ -184,7 +192,7 @@ handle('ai:last', () => lastAi);
 const rankCache = new Map<string, RankedQueue[]>();
 handle('game:teams', () =>
   reply(async (): Promise<GameTeams | null> => {
-    const teams = teamsInGame(watcher.session, lastPick?.championId);
+    const teams = teamsInGame(watcher.session, lastPick?.championId, (await liveNow())?.active?.team);
     const creds = watcher.creds;
     if (!teams || !creds) return null;
     const call = lcuCaller(creds);
@@ -207,35 +215,67 @@ handle('mayhem:open', (_e, id: unknown) => reply(() => services.openAugments(Num
 handle('mayhem:strengths', (_e, ids: unknown) => reply(() => services.championStrengths(parseIds(ids, 20))));
 // In a loaded game both teams are known: items and cards answer them.
 // Once the match runs, the enemies' real items from the game's own API (src/lcu/liveGame.ts), read at most every 20 s.
-let live: { at: number; items: Record<string, number[]> | null } = { at: 0, items: null };
+let live: { at: number; snapshot: LiveSnapshot | null } = { at: 0, snapshot: null };
+let livePending: Promise<LiveSnapshot | null> | undefined;
+const liveNow = async (fresh = false) => {
+  if (watcher.state.phase !== 'InProgress') return null;
+  if (fresh || Date.now() - live.at > 20_000) {
+    if (!livePending) {
+      const epoch = matchEpoch.value;
+      livePending = liveSnapshot().then((snapshot) => {
+        if (matchEpoch.value !== epoch || watcher.state.phase !== 'InProgress') return null;
+        live = { at: Date.now(), snapshot };
+        return snapshot;
+      }).finally(() => { livePending = undefined; });
+    }
+    return livePending;
+  }
+  return live.snapshot;
+};
+const playerNow = async (id: number, fresh = false) => {
+  if (id !== lastPick?.championId) return undefined;
+  const snapshot = await liveNow(fresh);
+  if (!snapshot?.active) return undefined;
+  const alias = (await services.champions()).find((c) => c.id === id)?.alias;
+  return snapshot.active.alias === alias ? snapshot.active : undefined;
+};
+handle('game:progress', (_e, championId: unknown, fresh: unknown) => reply(async () => {
+  const [id] = parseIds([championId]);
+  const player = await playerNow(id, fresh === true);
+  return { game: matchEpoch.value, ...(player?.level === undefined ? {} : { level: player.level, items: player.items }) };
+}));
 const teamsNow = async () => {
-  const t = teamsInGame(watcher.session, lastPick?.championId);
-  const ids = (list: GamePlayer[]) => list.map((p) => p.championId).filter((id) => id > 0 && id !== lastPick?.championId);
+  const snapshot = await liveNow();
+  const t = teamsInGame(watcher.session, lastPick?.championId, snapshot?.active?.team);
+  const ids = (list: GamePlayer[]) => list.map((p) => p.championId).filter((id) => id > 0);
   if (!t) return undefined;
   const enemies = ids(t.enemy);
-  if (Date.now() - live.at > 20_000) live = { at: Date.now(), items: await liveItems() };
-  const byAlias = live.items;
+  const byAlias = snapshot?.enemies ?? snapshot?.players;
   const champs = byAlias ? await services.champions().catch(() => []) : [];
-  const enemyItems = Object.fromEntries(enemies.flatMap((id) => { const alias = champs.find((c) => c.id === id)?.alias; const held = alias ? byAlias?.[alias] : undefined; return held?.length ? [[id, held]] : []; }));
-  return { allies: ids(t.mine), enemies, ...(Object.keys(enemyItems).length ? { enemyItems } : {}) };
+  const enemyItems = Object.fromEntries(enemies.flatMap((id) => { const alias = champs.find((c) => c.id === id)?.alias; const held = alias ? byAlias?.[alias]?.items : undefined; return held === undefined ? [] : [[id, held]]; }));
+  return { allies: ids(t.mine).filter((id) => id !== lastPick?.championId), enemies, ...(Object.keys(enemyItems).length ? { enemyItems } : {}) };
 };
 handle('build:stackBase', (_e, championId: unknown) => reply(() => services.stackBase(parseIds([championId])[0]!)));
-handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown, style: unknown, stacks: unknown) =>
+handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLines: unknown, owned: unknown, style: unknown, stacks: unknown, progress: unknown) =>
   reply(async () => {
     const [id] = parseIds([championId]);
-    return services.mathBuild(id, parseIds(augmentIds), Array.isArray(owned) ? parseIds(owned) : [], await teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
+    const parsed = parseAugmentProgress(progress), player = await playerNow(id);
+    const timing = player?.level === undefined ? parsed : { ...parsed, level: player.level, ...(player.ranks ? { abilityRanks: player.ranks } : {}) };
+    return services.mathBuild(id, parseIds(augmentIds), player?.items ?? (Array.isArray(owned) ? parseIds(owned) : []), await teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined, timing);
   }),
 );
-handle('build:styles', (_e, championId: unknown, augmentIds: unknown) =>
+handle('build:styles', (_e, championId: unknown, augmentIds: unknown, progress: unknown) =>
   reply(() => {
     const [id] = parseIds([championId]);
-    return services.buildStyles(id, Array.isArray(augmentIds) ? parseIds(augmentIds) : []);
+    return services.buildStyles(id, Array.isArray(augmentIds) ? parseIds(augmentIds) : [], parseAugmentProgress(progress));
   }),
 );
-handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemIds: unknown) =>
+handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemIds: unknown, progress: unknown, offered: unknown, style: unknown, stacks: unknown) =>
   reply(async () => {
     const [id] = parseIds([championId]);
-    return services.cardValues(id, parseIds(augmentIds), Array.isArray(itemIds) ? parseIds(itemIds) : [], await teamsNow());
+    const parsed = parseAugmentProgress(progress), player = await playerNow(id);
+    const timing = player?.level === undefined ? parsed : { ...parsed, level: player.level, ...(player.ranks ? { abilityRanks: player.ranks } : {}) };
+    return services.cardValues(id, parseIds(augmentIds), player?.items ?? (Array.isArray(itemIds) ? parseIds(itemIds) : []), await teamsNow(), timing, offered === undefined ? [] : parseIds(offered, 3), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
   }),
 );
 handle('build:experimental', (_e, championId: unknown, augmentIds: unknown) =>

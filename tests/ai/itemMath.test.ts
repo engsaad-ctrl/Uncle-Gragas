@@ -92,6 +92,15 @@ describe('next items by arithmetic', () => {
     expect(searchSet({ ...args, width: 1, swaps: false })).toContain(1);
     expect([...searchSet({ ...args, width: 3, swaps: false })].sort()).toEqual([2, 3]);
   });
+  it('crosses a flat intermediate stage to find items that only work together', () => {
+    const value = (ids: number[]) => ids.includes(2) && ids.includes(3) ? 30 : 10;
+    const args = { start: [], candidates: [1, 2, 3], slots: 2, value, fits: (id: number, held: number[]) => !held.includes(id), width: 3, swaps: false };
+    expect(searchSet(args).sort()).toEqual([2, 3]);
+  });
+  it('keeps the best feasible partial set when deeper combinations are worse', () => {
+    const value = (ids: number[]) => ids.length === 1 ? 20 : ids.length ? 5 : 10;
+    expect(searchSet({ start: [], candidates: [1, 2], slots: 2, value, fits: (id, held) => !held.includes(id), width: 2, swaps: false })).toHaveLength(1);
+  });
   it('takes what adds most first, with no regard to how often it is bought', () => {
     expect(mathBuild(base)[0]!.id).toBe(1);
   });

@@ -8,7 +8,8 @@ import type { Suggestion } from '../app/suggestions.js';
 import type { ApplyResult, FlashKey } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
 import type { Advice } from '../ai/advisor.js';
-import type { AppMode, AugmentEffect, ExperimentalBuild, GameTeams, Listed, OverlayData } from '../main/services.js';
+import type { AppMode, AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, Listed, OverlayData } from '../main/services.js';
+import type { AugmentProgress } from '../ai/augmentProgress.js';
 import type { UpdateStatus } from '../main/updater.js';
 import type { LanePosition } from '../stats/opgg.js';
 import type { RankRow } from '../texts/abilityDetails.js';
@@ -41,13 +42,13 @@ declare global {
       /** Every augment's effect on its team's win chance, from the team model. */
       augmentEffects(): Promise<Reply<AugmentEffect[]>>;
       /** The build without AI for a champion and the augments taken, each item with why it is in. */
-      engineBuild(championId: number, augmentIds: number[], followLines?: boolean, owned?: number[], style?: 'ap' | 'ad' | 'tank' | 'aphp', stacks?: number):
-      Promise<Reply<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>;
+      engineBuild(championId: number, augmentIds: number[], followLines?: boolean, owned?: number[], style?: 'ap' | 'ad' | 'tank' | 'aphp', stacks?: number, progress?: AugmentProgress):
+      Promise<Reply<{ item: ItemEntry; why: string[]; offPath?: boolean; missing?: string[] }[]>>;
       /** His stacks by level 15 when his abilities grow with stacks, or null. */
       stackBase(championId: number): Promise<Reply<number | null>>;
       /** The other ways this champion's kit can be built (magic, physical, tank), besides his kit's own. */
-      buildStyles(championId: number, augmentIds?: number[]): Promise<Reply<('ap' | 'ad' | 'tank' | 'aphp')[]>>;
-      cardValues(championId: number, augmentIds: number[], itemIds: number[]): Promise<Reply<{ id: number; damage: number; health: number; value: number; certain: boolean; missing: string | null }[]>>;
+      buildStyles(championId: number, augmentIds?: number[], progress?: AugmentProgress): Promise<Reply<('ap' | 'ad' | 'tank' | 'aphp')[]>>;
+      cardValues(championId: number, augmentIds: number[], itemIds: number[], progress?: AugmentProgress, offered?: number[], style?: 'ap' | 'ad' | 'tank' | 'aphp', stacks?: number): Promise<Reply<AugmentValue[]>>;
       /** A labelled second build no test vouches for, when there is one. */
       experimentalBuild(championId: number, augmentIds: number[]): Promise<Reply<ExperimentalBuild | null>>;
       hasAiKey(): Promise<boolean>;
@@ -61,6 +62,7 @@ declare global {
       /** Both teams once the game is loaded, with ranks and how they compare; null before. */
       setShareGames(on: boolean): Promise<boolean>;
       gameTeams(): Promise<Reply<GameTeams | null>>;
+      gameProgress(championId: number, fresh?: boolean): Promise<Reply<{ game: number; level?: number; items?: number[] }>>;
       /** F7 on the phone: starts or stops the page; its link (with the access key) while on. */
       setWebPage(on: boolean): Promise<Reply<{ url: string | null }>>;
       updateStatus(): Promise<{ version: string; status: UpdateStatus }>;

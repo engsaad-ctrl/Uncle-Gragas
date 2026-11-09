@@ -14,6 +14,7 @@ export const WEB_PORT = 7317;
 export const WEB_CHANNELS = new Set([
   'overlay:data', 'ai:build', 'ai:last', 'mayhem:fit', 'mayhem:effects', 'mayhem:open', 'items:list', 'champions:list', 'game:teams',
   'build:engine', 'build:stackBase', 'build:styles', 'build:cardvalues', 'build:experimental',
+  'game:progress',
 ]);
 
 const TYPES: Record<string, string> = {
