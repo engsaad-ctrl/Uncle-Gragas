@@ -1,4 +1,4 @@
-2026-11-08T17:06:54.312Z on 3b4649c (with uncommitted changes)
+2026-11-09T06:23:48.109Z on 9bee7c9 (with uncommitted changes)
 strict rules: 10 of 10 rules counted; engine builds breaking a counted rule: 0
 rules tried on builds made to break them (a rule must catch all of them to count):
 - shop: caught 40 of 40 breakers -> counted
@@ -9,17 +9,17 @@ rules tried on builds made to break them (a rule must catch all of them to count
 - marksman-crit: caught 18 of 18 breakers -> counted
 - damage-kind: caught 40 of 40 breakers -> counted
 - tank-style: caught 40 of 40 breakers -> counted
-- aphp-style: caught 18 of 18 breakers -> counted
+- aphp-style: caught 14 of 14 breakers -> counted
 - stacks-first: caught 40 of 40 breakers -> counted
 
-the engine on 561 builds (173 champions, every style offered, no augments):
-- shop (only items in the Mayhem shop (no 77xxxx copies such as Deathfire Grasp)): 0 of 561 break it
-- limits (no two items of one limit group): 0 of 561 break it
-- boots (one pair of boots at most): 0 of 561 break it
+the engine on 560 builds (173 champions, every style offered, no augments):
+- shop (only items in the Mayhem shop (no 77xxxx copies such as Deathfire Grasp)): 0 of 560 break it
+- limits (no two items of one limit group): 0 of 560 break it
+- boots (one pair of boots at most): 0 of 560 break it
 - mana-first (a mage starts with a magic mana item): 0 of 78 break it
-- no-attack-items (a magic non-attacker gets no attack or on-hit items, nor Dusk and Dawn): 0 of 174 break it
+- no-attack-items (a magic non-attacker gets no attack or on-hit items, nor Dusk and Dawn): 0 of 139 break it
 - marksman-crit (a marksman (ranged physical attacker, not on-hit, not frontline) has a crit item in his first three): 0 of 18 break it
-- damage-kind (the build keeps its style's damage kind): 0 of 358 break it
+- damage-kind (the build keeps its style's damage kind): 0 of 361 break it
 - tank-style (the tank button holds no AP or AD items): 0 of 173 break it
-- aphp-style (magic with health: no physical items, at most one pure tank item besides boots): 0 of 18 break it
-- stacks-first (Heartsteel, when held, is bought first): 0 of 561 break it
+- aphp-style (magic with health: no physical items, at most one pure tank item besides boots): 0 of 14 break it
+- stacks-first (Heartsteel, when held, is bought first): 0 of 560 break it

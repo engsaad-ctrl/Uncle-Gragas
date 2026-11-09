@@ -1,10 +1,10 @@
-2026-11-08T17:02:04.316Z on 3b4649c (with uncommitted changes)
+2026-11-09T05:52:41.047Z on 9bee7c9 (with uncommitted changes)
 owner cases
 passed 28 of 40
 PASS 1 Lux: first item not Riftmaker: Blackfire Torch, Sorcerer's Shoes, Stormsurge (Luden's first: no)
 PASS 2 Veigar: first item not Riftmaker, Rabadon's in the first three: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap
 PASS 3 Ahri: no Riftmaker nor Dusk and Dawn: Luden's Echo, Sorcerer's Shoes, Stormsurge
-PASS 4 Zed: no Warmog's nor Sorcerer's Shoes: Hubris, Plated Steelcaps, Profane Hydra
+PASS 4 Zed: no Warmog's nor Sorcerer's Shoes: Blade of The Ruined King, Plated Steelcaps, Kraken Slayer
 PASS 5 Jinx: a crit item in the first three: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
 PASS 6 Yasuo: first item not Bloodthirster: Hubris, Berserker's Greaves, Blade of The Ruined King
 PASS 7 Ezreal: no Lord Dominik's without augments, a crit item with Jeweled Gauntlet: none Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane | with Jeweled Gauntlet Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
@@ -35,7 +35,7 @@ PASS 34 Sivir with Skilled Sniper, Magic Missile, Upgrade Collector, Stats on St
 PASS 15 Miss Fortune with Vulnerability: the magic build offered: ap, ad, tank
 PASS 16 Galio: magic, magic with health and tank offered: ap, aphp, ad, tank
 FAIL 8 Katarina: AP, AD and tank offered, and Goliath changes her build: ap, ad, tank | none Hextech Gunblade, Sorcerer's Shoes, Stormsurge | with Goliath Hextech Gunblade, Sorcerer's Shoes, Stormsurge (Heartsteel with Goliath: no)
-FAIL 29 Nasus with Infinite Recursion, Marksmage, Infernal Conduit, Overloaded: the magic build offered, Blackfire Torch or Liandry's in its first three: ad, tank | ap: 
+FAIL 29 Nasus with Infinite Recursion, Marksmage, Infernal Conduit, Overloaded: the magic build offered, Blackfire Torch or Liandry's in its first three: ap, aphp, ad, tank | ap: Imperial Mandate, Berserker's Greaves, Rite of Ruin
 FAIL 32 Kog'Maw, magic build: Nashor's Tooth and Dusk and Dawn in the first four: Wit's End, Berserker's Greaves, Runaan's Hurricane, Guinsoo's Rageblade
 FAIL 33 Kog'Maw with Phenomenal Evil, Magic Missile, Big Brain, magic build: Malignance in the first three: Liandry's Torment, Berserker's Greaves, Blackfire Torch
 PASS 36 Teemo with Dual Wield, Firebrand, Lightning Strikes, Scopier Weapons: four of Nashor's, Berserker's, Statikk, BotRK, Terminus: Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane, Guinsoo's Rageblade, Terminus, Statikk Shiv

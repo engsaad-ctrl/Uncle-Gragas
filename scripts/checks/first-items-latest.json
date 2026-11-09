@@ -152,7 +152,7 @@
  "31": [
   "Heartsteel",
   "Plated Steelcaps",
-  "Bloodletter's Curse"
+  "Rod of Ages"
  ],
  "32": [
   "Rod of Ages",
@@ -287,7 +287,7 @@
  "62": [
   "Hubris",
   "Plated Steelcaps",
-  "Profane Hydra"
+  "Lord Dominik's Regards"
  ],
  "63": [
   "Blackfire Torch",
@@ -352,7 +352,7 @@
  "80": [
   "Hubris",
   "Plated Steelcaps",
-  "Profane Hydra"
+  "Lord Dominik's Regards"
  ],
  "81": [
   "Blade of The Ruined King",
@@ -470,7 +470,7 @@
   "Liandry's Torment"
  ],
  "113": [
-  "Jak'Sho, The Protean",
+  "Heartsteel",
   "Plated Steelcaps",
   "Liandry's Torment"
  ],
@@ -570,7 +570,7 @@
   "Death's Dance"
  ],
  "154": [
-  "Jak'Sho, The Protean",
+  "Heartsteel",
   "Plated Steelcaps",
   "Liandry's Torment"
  ],
@@ -655,9 +655,9 @@
   "Runaan's Hurricane"
  ],
  "238": [
-  "Hubris",
+  "Blade of The Ruined King",
   "Plated Steelcaps",
-  "Profane Hydra"
+  "Kraken Slayer"
  ],
  "240": [
   "Heartsteel",
@@ -785,9 +785,9 @@
   "Kraken Slayer"
  ],
  "799": [
-  "Heartsteel",
-  "Plated Steelcaps",
-  "Death's Dance"
+  "Hubris",
+  "Berserker's Greaves",
+  "Blade of The Ruined King"
  ],
  "800": [
   "Luden's Echo",

@@ -1,9 +1,82 @@
-2026-11-08T10:33:25.161Z on 3b4649c (with uncommitted changes)
+2026-11-09T05:59:22.987Z on 9bee7c9 (with uncommitted changes)
 first items, champions 173, failed 0
-against C:/Users/dell/AppData/Local/Temp/claude/ea25d38a10ccfe87/10641184-942c-433f-83c9-640001650c8e/scratchpad/first-items-before-draw.json: first item changed 6 of 173, any of the first three 11
-  Twisted Fate: Hextech Gunblade, Sorcerer's Shoes, Stormsurge -> Luden's Echo, Sorcerer's Shoes, Lich Bane
-  Cho'Gath: Rod of Ages, Plated Steelcaps, Jak'Sho, The Protean -> Heartsteel, Plated Steelcaps, Bloodletter's Curse
-  Swain: Rod of Ages, Plated Steelcaps, Jak'Sho, The Protean -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment
-  Shyvana: Jak'Sho, The Protean, Plated Steelcaps, Titanic Hydra -> Heartsteel, Plated Steelcaps, Death's Dance
-  Sejuani: Rod of Ages, Plated Steelcaps, Jak'Sho, The Protean -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment
-  Zac: Heartsteel, Plated Steelcaps, Liandry's Torment -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment
+against C:\Users\dell\Desktop\Uncle-Gragas\scripts\checks\first-items-baseline.json: first item changed 79 of 172, any of the first three 150: MORE THAN 30, stop for the owner
+  Annie: Rod of Ages, Sorcerer's Shoes, Rabadon's Deathcap -> Luden's Echo, Sorcerer's Shoes, Blackfire Torch
+  Vladimir: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Liandry's Torment, Sorcerer's Shoes, Abyssal Mask
+  Fiddlesticks: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Shadowflame
+  Ryze: Archangel's Staff, Sorcerer's Shoes, Warmog's Armor -> Blackfire Torch, Sorcerer's Shoes, Liandry's Torment
+  Sivir: Trinity Force, Plated Steelcaps, Lord Dominik's Regards -> Infinity Edge, Berserker's Greaves, Runaan's Hurricane
+  Teemo: Dusk and Dawn, Berserker's Greaves, Guinsoo's Rageblade -> Wit's End, Berserker's Greaves, Runaan's Hurricane
+  Tristana: Lord Dominik's Regards, Berserker's Greaves, Yun Tal Wildarrows -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+  Miss Fortune: Lord Dominik's Regards, Plated Steelcaps, Infinity Edge -> Infinity Edge, Berserker's Greaves, Lord Dominik's Regards
+  Ashe: Umbral Glaive, Berserker's Greaves, Manamune -> Kraken Slayer, Berserker's Greaves, Runaan's Hurricane
+  Morgana: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Liandry's Torment
+  Zilean: Rod of Ages, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Liandry's Torment
+  Singed: Heartsteel, Plated Steelcaps, Warmog's Armor -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment
+  Twitch: Kraken Slayer, Berserker's Greaves, Bloodthirster -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+  Karthus: Luden's Echo, Sorcerer's Shoes, Liandry's Torment -> Blackfire Torch, Sorcerer's Shoes, Bloodletter's Curse
+  Amumu: Heartsteel, Plated Steelcaps, Warmog's Armor -> Rod of Ages, Plated Steelcaps, Jak'Sho, The Protean
+  Anivia: Rod of Ages, Sorcerer's Shoes, Liandry's Torment -> Blackfire Torch, Sorcerer's Shoes, Liandry's Torment
+  Sona: Ardent Censer, Sorcerer's Shoes, Warmog's Armor -> Redemption, Ionian Boots of Lucidity, Ardent Censer
+  Kassadin: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Corki: Bloodthirster, Berserker's Greaves, Kraken Slayer -> Essence Reaver, Gluttonous Greaves, Umbral Glaive
+  Karma: Malignance, Sorcerer's Shoes, Riftmaker -> Blackfire Torch, Sorcerer's Shoes, Bloodletter's Curse
+  Veigar: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap
+  Swain: Heartsteel, Plated Steelcaps, Warmog's Armor -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment
+  Caitlyn: Lord Dominik's Regards, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+  Katarina: Rabadon's Deathcap, Sorcerer's Shoes, Shadowflame -> Hextech Gunblade, Sorcerer's Shoes, Stormsurge
+  Nocturne: Kraken Slayer, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Profane Hydra
+  Elise: Stormsurge, Sorcerer's Shoes, Rabadon's Deathcap -> Hextech Gunblade, Sorcerer's Shoes, Stormsurge
+  Orianna: Blackfire Torch, Sorcerer's Shoes, Riftmaker -> Archangel's Staff, Sorcerer's Shoes, Blackfire Torch
+  Brand: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Vayne: Trinity Force, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
+  Rumble: Warmog's Armor, Sorcerer's Shoes, Riftmaker -> Heartsteel, Sorcerer's Shoes, Liandry's Torment
+  Heimerdinger: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Shadowflame
+  Gragas: Heartsteel, Plated Steelcaps, Warmog's Armor -> Jak'Sho, The Protean, Plated Steelcaps, Liandry's Torment
+  Ezreal: Trinity Force, Berserker's Greaves, Umbral Glaive -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+  Kennen: Rabadon's Deathcap, Sorcerer's Shoes, Stormsurge -> Stormsurge, Sorcerer's Shoes, Void Staff
+  Malzahar: Blackfire Torch, Sorcerer's Shoes, Rabadon's Deathcap -> Luden's Echo, Sorcerer's Shoes, Liandry's Torment
+  Lux: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Xerath: Luden's Echo, Sorcerer's Shoes, Malignance -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Graves: Trinity Force, Berserker's Greaves, Lord Dominik's Regards -> Lord Dominik's Regards, Berserker's Greaves, Runaan's Hurricane
+  Rengar: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Profane Hydra
+  Ziggs: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Draven: Trinity Force, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+  Hecarim: Warmog's Armor, Berserker's Greaves, Sunfire Aegis -> Heartsteel, Sorcerer's Shoes, Sunfire Aegis
+  Jayce: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Profane Hydra
+  Lissandra: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Diana: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Quinn: Umbral Glaive, Ionian Boots of Lucidity, Blade of The Ruined King -> Kraken Slayer, Plated Steelcaps, Profane Hydra
+  Zyra: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Liandry's Torment
+  Kai'Sa: Profane Hydra, Sorcerer's Shoes, Umbral Glaive -> Infinity Edge, Sorcerer's Shoes, Runaan's Hurricane
+  Yasuo: Blade of The Ruined King, Berserker's Greaves, Bloodthirster -> Hubris, Berserker's Greaves, Blade of The Ruined King
+  Vel'Koz: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Taliyah: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Camille: Umbral Glaive, Plated Steelcaps, Profane Hydra -> Hubris, Plated Steelcaps, Profane Hydra
+  Akshan: Profane Hydra, Plated Steelcaps, Kraken Slayer -> Umbral Glaive, Plated Steelcaps, Runaan's Hurricane
+  Bel'Veth: Warmog's Armor, Berserker's Greaves, Blade of The Ruined King -> Blade of The Ruined King, Berserker's Greaves, Kraken Slayer
+  Jhin: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Yun Tal Wildarrows, Berserker's Greaves, Runaan's Hurricane
+  Kindred: Bloodthirster, Berserker's Greaves, Lord Dominik's Regards -> Blade of The Ruined King, Gluttonous Greaves, Runaan's Hurricane
+  Zeri: Lord Dominik's Regards, Gluttonous Greaves, Essence Reaver -> Axiom Arc, Gluttonous Greaves, Lord Dominik's Regards
+  Jinx: Umbral Glaive, Berserker's Greaves, Lord Dominik's Regards -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+  Briar: Heartsteel, Berserker's Greaves, Warmog's Armor -> Blade of The Ruined King, Gluttonous Greaves, Yun Tal Wildarrows
+  Viego: Lord Dominik's Regards, Berserker's Greaves, Infinity Edge -> Hubris, Gluttonous Greaves, Lord Dominik's Regards
+  Senna: Bloodthirster, Berserker's Greaves, Lord Dominik's Regards -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+  Lucian: Trinity Force, Berserker's Greaves, Bloodthirster -> Lord Dominik's Regards, Berserker's Greaves, Runaan's Hurricane
+  Zed: Hubris, Plated Steelcaps, Profane Hydra -> Blade of The Ruined King, Plated Steelcaps, Kraken Slayer
+  Vi: Profane Hydra, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Berserker's Greaves, Lord Dominik's Regards
+  Azir: Riftmaker, Sorcerer's Shoes, Blackfire Torch -> Luden's Echo, Sorcerer's Shoes, Dusk and Dawn
+  Samira: Profane Hydra, Plated Steelcaps, Lord Dominik's Regards -> Kraken Slayer, Plated Steelcaps, Lord Dominik's Regards
+  Rek'Sai: Umbral Glaive, Plated Steelcaps, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Profane Hydra
+  Ivern: Staff of Flowing Water, Sorcerer's Shoes, Riftmaker -> Ardent Censer, Sorcerer's Shoes, Staff of Flowing Water
+  Kalista: Bloodthirster, Berserker's Greaves, Kraken Slayer -> Blade of The Ruined King, Berserker's Greaves, Runaan's Hurricane
+  Bard: Luden's Echo, Plated Steelcaps, Ardent Censer -> Rod of Ages, Plated Steelcaps, Luden's Echo
+  Sylas: Dusk and Dawn, Gluttonous Greaves, Riftmaker -> Nashor's Tooth, Sorcerer's Shoes, Blackfire Torch
+  Neeko: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Pyke: Heartsteel, Berserker's Greaves, Lord Dominik's Regards -> Hubris, Plated Steelcaps, Profane Hydra
+  Vex: Luden's Echo, Sorcerer's Shoes, Rabadon's Deathcap -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Ambessa: Heartsteel, Sorcerer's Shoes, Sunfire Aegis -> Hubris, Berserker's Greaves, Blade of The Ruined King
+  Locke: Rabadon's Deathcap, Sorcerer's Shoes, Lich Bane -> Nashor's Tooth, Sorcerer's Shoes, Shadowflame
+  Gwen: Dusk and Dawn, Berserker's Greaves, Guinsoo's Rageblade -> Wit's End, Berserker's Greaves, Guinsoo's Rageblade
+  Aurora: Luden's Echo, Sorcerer's Shoes, Stormsurge -> Blackfire Torch, Sorcerer's Shoes, Stormsurge
+  Nilah: Blade of The Ruined King, Berserker's Greaves, Bloodthirster -> Hubris, Gluttonous Greaves, The Collector
