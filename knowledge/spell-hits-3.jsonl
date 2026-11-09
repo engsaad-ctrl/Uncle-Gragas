@@ -1,0 +1,30 @@
+{"path":"Characters/Sett/Spells/SettQAbility/SettQ","hits":2,"why":"next two attacks each deal the max-health bonus"}
+{"path":"Characters/Shyvana/Spells/ShyvanaQAbility/ShyvanaQ","hits":1,"calc":"Calc_Damage","why":"largest number is the dragon-form recast; normal use is the base strike"}
+{"path":"Characters/Shyvana/Spells/ShyvanaEAbility/ShyvanaE","hits":1,"calc":"Damage","why":"largest number is the dragon-form fireball; normal use is the base"}
+{"path":"Characters/Shyvana/Spells/ShyvanaRAbility/ShyvanaR","hits":0.08,"why":"cd 0 counts 12 casts; the leap is cast once"}
+{"path":"Characters/Singed/Spells/PoisonTrailAbility/PoisonTrail","hits":1,"calc":"DamagePerSecond","why":"cd 0 gives 12 casts of one second each; the approximate total is a longer span and was counted 12 times"}
+{"path":"Characters/Sion/Spells/SionQAbility/SionQ","hits":1,"calc":"MinDamageTotal","why":"largest number needs a full charge"}
+{"path":"Characters/Sion/Spells/SionRAbility/SionR","hits":1,"calc":"MinDamageTotal","why":"largest number needs the longest charge distance"}
+{"path":"Characters/Sona/Spells/SonaQAbility/SonaQ","hits":1,"calc":"TotalDamage","why":"largest number is the power chord, only every third cast"}
+{"path":"Characters/Smolder/Spells/SmolderEAbility/SmolderE","hits":5,"why":"5 attacks on the lowest health enemy, one target, each the per-hit number"}
+{"path":"Characters/Smolder/Spells/SmolderRAbility/SmolderR","hits":1,"calc":"TotalDamage","why":"largest number is the sweetspot only"}
+{"path":"Characters/Syndra/Spells/SyndraRAbility/SyndraR","hits":4,"calc":"DamageCalc","why":"one sphere is 160; 3 to 7 spheres, about 4 land, not the 7-sphere maximum"}
+{"path":"Characters/Sylas/Spells/SylasQAbility/SylasQ","hits":1.43,"why":"initial 120 plus delayed explosion 280 both hit; 400 over the 280 used"}
+{"path":"Characters/TahmKench/Spells/TahmKenchRWrapperAbility/TahmKenchRWrapper","hits":0.125,"why":"cd 0 counts 8 casts; a devour is cast once"}
+{"path":"Characters/Talon/Spells/TalonWAbility/TalonW","hits":1.5,"why":"daggers hit going out 90 and returning 180; 270 over the 180 used"}
+{"path":"Characters/Talon/Spells/TalonRAbility/TalonR","hits":2,"why":"blades deal damage when they move out and again when they converge"}
+{"path":"Characters/TwistedFate/Spells/CardmasterStackAbility/CardmasterStack","hits":0.25,"why":"bonus damage on every 4th attack; the 11 casts are one per second, not one per proc"}
+{"path":"Characters/Vayne/Spells/VayneTumbleAbility/VayneTumble","hits":1,"calc":"ADRatioBonus","why":"next attack deals bonus damage; the only number is zero in the fight"}
+{"path":"Characters/Vayne/Spells/VayneCondemnAbility/VayneCondemn","hits":1,"calc":"TotalDamage","why":"largest number needs a terrain impale"}
+{"path":"Characters/Velkoz/Spells/VelkozWAbility/VelkozW","hits":1.67,"why":"initial 110 plus delayed burst 165; 275 over the 165 used"}
+{"path":"Characters/Vi/Spells/ViQAbility/ViQ","hits":1,"calc":"TotalDamage","why":"largest number needs a full charge"}
+{"path":"Characters/Vladimir/Spells/VladimirQAbility/VladimirQ","hits":1,"calc":"BaseDamageTooltip","why":"largest number is the empowered form at a full resource"}
+{"path":"Characters/Vladimir/Spells/VladimirEAbility/VladimirE","hits":1,"calc":"MinDamageTooltip","why":"largest number needs a full charge"}
+{"path":"Characters/XinZhao/Spells/XinZhaoQAbility/XinZhaoQ","hits":3,"why":"next 3 attacks each deal the bonus"}
+{"path":"Characters/XinZhao/Spells/XinZhaoWAbility/XinZhaoW","hits":1.53,"why":"slash 101 then thrust 190 both hit; 291 over the 190 used"}
+{"path":"Characters/Xerath/Spells/XerathArcaneBarrage2Ability/XerathArcaneBarrage2","hits":1,"calc":"TotalDamage","why":"largest number is the middle sweet spot only"}
+{"path":"Characters/Yuumi/Spells/YuumiQAbility/YuumiQ","hits":1,"calc":"TotalMissileDamage","why":"largest number needs a flight of at least 1.35 seconds"}
+{"path":"Characters/Zaahen/Spells/ZaahenQAbility/ZaahenQ","hits":1.5,"why":"slashes twice: 75 then 150; 225 over the 150 used"}
+{"path":"Characters/Zac/Spells/ZacQAbility/ZacQ","hits":1,"calc":"TotalDamage","why":"360 needs a second enemy thrown into the first; one target takes 180"}
+{"path":"Characters/Zoe/Spells/ZoeQAbility/ZoeQ","hits":1,"calc":"TotalDamageTooltip","why":"largest number needs a long straight flight"}
+{"path":"Characters/Zoe/Spells/ZoeEAbility/ZoeE","hits":2,"why":"the hit plus the doubled break damage, both 230"}

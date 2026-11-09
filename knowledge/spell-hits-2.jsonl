@@ -1,0 +1,20 @@
+{"path":"Characters/Karthus/Spells/KarthusDefileAbility/KarthusDefile","hits":8,"why":"TotalDPS is per second and the toggle runs for the fight; capped at 8 by fast mana drain"}
+{"path":"Characters/Kennen/Spells/KennenShurikenStormAbility/KennenShurikenStorm","hits":3,"why":"PerTickDamageCalculated is one strike; the storm strikes several times, 3 is the safe floor"}
+{"path":"Characters/Leblanc/Spells/LeblancQAbility/LeblancQ","hits":2,"why":"Damage plus MarkDamage of the same size when the sigil is detonated"}
+{"path":"Characters/Leblanc/Spells/LeblancEAbility/LeblancE","hits":1.5,"why":"InitialDamage 130 plus DelayedDamage 240 against 240 taken now: 370/240"}
+{"path":"Characters/KogMaw/Spells/KogMawLivingArtilleryAbility/KogMawLivingArtillery","hits":1,"calc":"MidDamageCalc","why":"MaxDamageCalc is the low-health case only; the middle number fits a target going down during the fight"}
+{"path":"Characters/Maokai/Spells/MaokaiEAbility/MaokaiE","hits":1,"calc":"TotalDamage","why":"Empowered 300 needs the brush; normal use is TotalDamage"}
+{"path":"Characters/Nasus/Spells/NasusEAbility/NasusE","hits":2,"why":"InitialDamage plus TotalDotDamage are both named, the target stays on the flame"}
+{"path":"Characters/Nasus/Spells/NasusRAbility/NasusR","hits":1,"calc":"DamageCalc","why":"fightPerCast is 0 but the storm damages; DamageCalc is a share of target health"}
+{"path":"Characters/Nautilus/Spells/NautilusSplashZoneAbility/NautilusSplashZone","hits":3,"why":"Three exploding waves, each damages; DamageCalc is one wave"}
+{"path":"Characters/Neeko/Spells/NeekoQAbility/NeekoQ","hits":1.5,"why":"ExplosionDamage 260 plus SecondDamage 135 bloom on a champion: 395/260"}
+{"path":"Characters/Nunu/Spells/NunuEAbility/NunuE","hits":1.75,"why":"TotalSnowballDamage 45 plus TotalRootDamage 60 against 60 taken now: 105/60"}
+{"path":"Characters/Pantheon/Spells/PantheonQAbility/PantheonQ","hits":1,"calc":"HoldDamageCalc","why":"ExecuteDamageCalcModified needs a low-health target; normal use is the hold number"}
+{"path":"Characters/Poppy/Spells/PoppyQAbility/PoppyQ","hits":2,"why":"Hits, then the slow zone explodes after a delay with BaseDamage"}
+{"path":"Characters/RekSai/Spells/RekSaiEAbility/RekSaiE","hits":1,"calc":"BaseDamageCalculation","why":"Empowered true damage needs max Fury; normal use is the base bite"}
+{"path":"Characters/Renekton/Spells/RenektonCleaveAbility/RenektonCleave","hits":1,"calc":"BasicDamage","why":"Empowered needs more than 50 Fury; normal use is BasicDamage"}
+{"path":"Characters/Renekton/Spells/RenektonPreExecuteAbility/RenektonPreExecute","hits":1,"calc":"BasicTotalDamage","why":"Empowered three slashes need more than 50 Fury; normal use is BasicTotalDamage"}
+{"path":"Characters/Renekton/Spells/RenektonSliceAndDiceAbility/RenektonSliceAndDice","hits":1,"calc":"BasicDamage","why":"Empowered needs more than 50 Fury; normal use is BasicDamage"}
+{"path":"Characters/Riven/Spells/RivenTriCleaveAbility/RivenTriCleave","hits":3,"why":"Text: reactivated three times; each strike hits; FirstSlashDamage is one strike"}
+{"path":"Characters/Rumble/Spells/RumbleFlameThrowerAbility/RumbleFlameThrower","hits":1,"calc":"FlatDamage","why":"EmpoweredDamage needs the Danger Zone; normal use is FlatDamage"}
+{"path":"Characters/Rumble/Spells/RumbleGrenadeAbility/RumbleGrenade","hits":1,"calc":"TotalDamage","why":"EmpDamage needs the Danger Zone; normal use is TotalDamage"}

@@ -1,0 +1,1207 @@
+{
+  "schema": 1,
+  "provenance": {
+    "baseline_commit": "d2124b38a1ac4948f1ffd657de5d626290cd251d",
+    "baseline_file_sha256": "4adfa7176a756a06642bc2788e7dca88d7425de65fb95ed3387a58e2e102fc9c",
+    "meaning": "Preserves existing definitions missing from the old generator inputs. This is not a claim that every definition has been verified in game."
+  },
+  "cards": [
+    {
+      "id": 1025,
+      "name": "Dive Bomber",
+      "status": "partial",
+      "ops": [],
+      "not_modelled": "On your death, 20% of the target's max health as true damage to nearby enemies: the fight has no death, so it counts nothing (was read as every 15 s)."
+    },
+    {
+      "id": 1038,
+      "name": "From Beginning To End",
+      "status": "partial",
+      "ops": [
+        {
+          "op": "damage_amp",
+          "scope": "all",
+          "factor": 1.014
+        },
+        {
+          "op": "proc",
+          "trigger": "periodic",
+          "internal_cooldown": 15,
+          "damage": {
+            "flat": {
+              "min": 52,
+              "max": 470
+            },
+            "bonus_ad": 0.1,
+            "ap": 0.05
+          },
+          "type": "adaptive"
+        }
+      ],
+      "needs": "First Strike needs you to start the fight; Dark Harvest needs a low-health champion",
+      "not_modelled": "First Strike: 10% bonus damage for 3s when you start a fight: timed has no damage stat, and a plain damage_amp would last for ever. Gold not given. Dark Harvest: damage and souls not given."
+    },
+    {
+      "id": 1134,
+      "name": "Draw Your Sword",
+      "status": "partial",
+      "ops": [
+        {
+          "op": "mult",
+          "stat": "ad",
+          "factor": 1.24
+        },
+        {
+          "op": "mult",
+          "stat": "hp",
+          "factor": 1.24
+        },
+        {
+          "op": "add",
+          "stat": "attack_speed",
+          "value": 0.2
+        },
+        {
+          "op": "add",
+          "stat": "life_steal",
+          "value": 0.2
+        },
+        {
+          "op": "mult",
+          "stat": "move_speed",
+          "factor": 1.2
+        },
+        {
+          "op": "melee"
+        }
+      ],
+      "not_modelled": "You become melee: attack range 200 (wiki). Each bonus grows further by attack range lost, with no number given."
+    },
+    {
+      "id": 1325,
+      "name": "Glass Cannon",
+      "status": "partial",
+      "ops": [
+        {
+          "op": "mult",
+          "stat": "hp",
+          "factor": 0.7
+        },
+        {
+          "op": "damage_amp",
+          "scope": "all",
+          "factor": 1.25,
+          "needs": "melee"
+        },
+        {
+          "op": "damage_amp",
+          "scope": "all",
+          "factor": 1.15,
+          "needs": "ranged"
+        }
+      ],
+      "need": {
+        "class": "always",
+        "items": null,
+        "ability_kind": null
+      },
+      "needs": "melee 25%, ranged 15% (each op carries its own)",
+      "not_modelled": "The extra damage is true damage; damage_amp has no type. Ranged gets 15%, not 25%."
+    },
+    {
+      "id": 2016,
+      "name": "Juiced",
+      "status": "partial",
+      "ops": [
+        {
+          "op": "proc",
+          "trigger": "on_hit",
+          "internal_cooldown": null,
+          "damage": {
+            "mana": 0.07
+          },
+          "type": "magic"
+        }
+      ],
+      "not_modelled": "Wiki text (Module:MayhemAugmentData, 2026-11-07, patch 16.22): 7% of maximum mana as on-hit magic damage; its critical strike is not counted."
+    },
+    {
+      "id": 2087,
+      "name": "Archmage",
+      "status": "computed",
+      "ops": [
+        {
+          "op": "refund",
+          "scope": "other_ability",
+          "amount": 0.3,
+          "unit": "cast_share",
+          "trigger": "ability_cast",
+          "internal_cooldown": null
+        }
+      ],
+      "not_modelled": "The 30% is of the cast spell's cooldown and comes off one other random spell; the op has no such base."
+    },
+    {
+      "id": 2107,
+      "name": "Hellbent",
+      "status": "partial",
+      "ops": [
+        {
+          "op": "shield",
+          "amount": {
+            "hp": 0.6
+          },
+          "trigger": "periodic",
+          "internal_cooldown": 90
+        },
+        {
+          "op": "timed",
+          "trigger": "always",
+          "stat": "move_speed",
+          "value": {
+            "min": 0.2,
+            "max": 0.4
+          },
+          "mode": "percent",
+          "duration": 15,
+          "decays": false,
+          "stacks_max": 1,
+          "refresh": false,
+          "internal_cooldown": 90
+        },
+        {
+          "op": "timed",
+          "trigger": "always",
+          "stat": "omnivamp",
+          "value": {
+            "min": 0.15,
+            "max": 0.3
+          },
+          "mode": "add",
+          "duration": 15,
+          "decays": false,
+          "stacks_max": 1,
+          "refresh": false,
+          "internal_cooldown": 90
+        }
+      ],
+      "need": {
+        "class": "other",
+        "items": null,
+        "ability_kind": null
+      },
+      "needs": "10 stacks from hitting champions, each lasting 6s; 90s cooldown; only on death",
+      "not_modelled": "Needs a death at 10 stacks (each stack lasts 6s): no death trigger, so always stands in with the 90s cooldown and overcounts. Speed is only toward enemies. Revive over 4s for 35-75% max health. 25-200 adaptive force: no stat."
+    }
+  ],
+  "passives": [
+    {
+      "id": 2,
+      "ops": [
+        {
+          "op": "add",
+          "stat": "ad",
+          "value": 18
+        },
+        {
+          "op": "mult",
+          "stat": "ad",
+          "factor": 1.09
+        },
+        {
+          "op": "shield",
+          "amount": {
+            "flat": 130,
+            "hp": 0.0875
+          },
+          "trigger": "cast_W",
+          "internal_cooldown": null,
+          "kit": true
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "ops": [
+        {
+          "op": "add",
+          "stat": "crit_damage",
+          "value": 0.25
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "ops": [
+        {
+          "op": "add",
+          "stat": "armor",
+          "value": 56
+        },
+        {
+          "op": "add",
+          "stat": "mr",
+          "value": 34
+        },
+        {
+          "op": "convert",
+          "from": "ad",
+          "to": "armor",
+          "ratio": 0.21,
+          "scope": "bonus"
+        },
+        {
+          "op": "convert",
+          "from": "ad",
+          "to": "mr",
+          "ratio": 0.127,
+          "scope": "bonus"
+        },
+        {
+          "op": "timed",
+          "trigger": "attack",
+          "stat": "attack_speed",
+          "value": {
+            "min": 0.05,
+            "max": 0.125
+          },
+          "mode": "add",
+          "duration": 2.5,
+          "decays": false,
+          "stacks_max": 8,
+          "refresh": true,
+          "internal_cooldown": null
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "ops": [
+        {
+          "op": "add",
+          "stat": "armor",
+          "value": 67.5
+        },
+        {
+          "op": "add",
+          "stat": "mr",
+          "value": 60
+        },
+        {
+          "op": "mult",
+          "stat": "armor",
+          "factor": 1.5
+        },
+        {
+          "op": "mult",
+          "stat": "mr",
+          "factor": 1.5
+        },
+        {
+          "op": "convert",
+          "from": "armor",
+          "to": "bonus_ad",
+          "ratio": 0.15
+        },
+        {
+          "op": "convert",
+          "from": "mr",
+          "to": "bonus_ad",
+          "ratio": 0.15
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "ops": [
+        {
+          "op": "convert",
+          "from": "hp",
+          "to": "bonus_ad",
+          "ratio": 0.032
+        },
+        {
+          "op": "heal",
+          "amount": {
+            "hp": 0.6
+          },
+          "trigger": "cast_R",
+          "internal_cooldown": null,
+          "kit": true
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "ops": [
+        {
+          "op": "mult",
+          "stat": "armor",
+          "factor": 1.1
+        },
+        {
+          "op": "proc",
+          "trigger": "next_attack",
+          "internal_cooldown": null,
+          "damage": {
+            "flat": {
+              "min": 25,
+              "max": 93
+            },
+            "bonus_armor": 0.15
+          },
+          "type": "magic"
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "ops": [
+        {
+          "op": "proc",
+          "trigger": "attack",
+          "internal_cooldown": null,
+          "damage": {
+            "ad": 0.14,
+            "ad_crit": 0.16
+          },
+          "type": "adaptive"
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "ops": [
+        {
+          "op": "mult",
+          "stat": "armor",
+          "factor": 1.3
+        },
+        {
+          "op": "shield",
+          "amount": {
+            "hp": 0.1
+          },
+          "trigger": "periodic",
+          "internal_cooldown": null
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "ops": [
+        {
+          "op": "mult",
+          "stat": "armor",
+          "factor": 1.16
+        },
+        {
+          "op": "mult",
+          "stat": "mr",
+          "factor": 1.16
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "ops": [
+        {
+          "op": "add",
+          "stat": "armor",
+          "value": 15
+        },
+        {
+          "op": "add",
+          "stat": "mr",
+          "value": 15
+        },
+        {
+          "op": "convert",
+          "from": "armor",
+          "to": "armor",
+          "ratio": 0.06,
+          "scope": "bonus"
+        },
+        {
+          "op": "convert",
+          "from": "mr",
+          "to": "mr",
+          "ratio": 0.06,
+          "scope": "bonus"
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "ops": [
+        {
+          "op": "mult",
+          "stat": "ad",
+          "factor": 1.2
+        },
+        {
+          "op": "proc",
+          "trigger": "next_attack",
+          "internal_cooldown": null,
+          "damage": {
+            "ad": 0.375
+          },
+          "type": "adaptive"
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "ops": [
+        {
+          "op": "add",
+          "stat": "armor",
+          "value": 2
+        },
+        {
+          "op": "add",
+          "stat": "mr",
+          "value": 2
+        },
+        {
+          "op": "convert",
+          "from": "armor",
+          "to": "armor",
+          "ratio": 0.15,
+          "scope": "bonus"
+        },
+        {
+          "op": "convert",
+          "from": "mr",
+          "to": "mr",
+          "ratio": 0.15,
+          "scope": "bonus"
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "ops": [
+        {
+          "op": "convert",
+          "from": "bonus_move_speed",
+          "to": "bonus_ad",
+          "ratio": {
+            "min": 0.12,
+            "max": 0.24
+          }
+        },
+        {
+          "op": "heal",
+          "amount": {
+            "flat": 60
+          },
+          "trigger": "cast_W",
+          "internal_cooldown": null,
+          "kit": true
+        }
+      ]
+    },
+    {
+      "id": 201,
+      "ops": [
+        {
+          "op": "add",
+          "stat": "armor",
+          "value": 15
+        },
+        {
+          "op": "add",
+          "stat": "mr",
+          "value": 15
+        },
+        {
+          "op": "convert",
+          "from": "armor",
+          "to": "armor",
+          "ratio": 0.135,
+          "scope": "bonus"
+        },
+        {
+          "op": "convert",
+          "from": "mr",
+          "to": "mr",
+          "ratio": 0.135,
+          "scope": "bonus"
+        }
+      ]
+    },
+    {
+      "id": 223,
+      "ops": [
+        {
+          "op": "proc",
+          "trigger": "on_hit",
+          "internal_cooldown": null,
+          "damage": {
+            "flat": {
+              "min": 5,
+              "max": 95
+            },
+            "bonus_hp": 0.04,
+            "ap_per_bonus_hp": 0.000125
+          },
+          "type": "magic"
+        }
+      ]
+    },
+    {
+      "id": 555,
+      "ops": [
+        {
+          "op": "convert",
+          "from": "bonus_hp",
+          "to": "bonus_ad",
+          "ratio": 0.07142857,
+          "replace": true
+        }
+      ]
+    },
+    {
+      "id": 895,
+      "ops": [
+        {
+          "op": "convert",
+          "from": "crit",
+          "to": "armor_pen",
+          "ratio": 0.3
+        }
+      ]
+    },
+    {
+      "id": 950,
+      "ops": [
+        {
+          "op": "mult",
+          "stat": "ad",
+          "factor": 1.073
+        }
+      ]
+    }
+  ],
+  "spellHits": {
+    "Characters/Sett/Spells/SettRAbility/SettR": {
+      "hits": 1,
+      "targetBonusHealth": true
+    }
+  },
+  "items": [
+    {
+      "id": 3004,
+      "ops": [
+        {
+          "op": "convert",
+          "from": "mana",
+          "to": "ad",
+          "ratio": 0.02
+        }
+      ]
+    },
+    {
+      "id": 3085,
+      "ops": [
+        {
+          "op": "bolts",
+          "ranged": 2,
+          "melee": 1,
+          "ad": 0.6
+        }
+      ]
+    },
+    {
+      "id": 3087,
+      "ops": [
+        {
+          "op": "bolts",
+          "ranged": 0.67,
+          "melee": 0.67,
+          "ad": 0
+        },
+        {
+          "op": "proc",
+          "trigger": "attack",
+          "internal_cooldown": null,
+          "damage": {
+            "flat": 6.3
+          },
+          "type": "magic",
+          "needs": "Energized Attacks only; how often is not given"
+        }
+      ]
+    },
+    {
+      "id": 3508,
+      "ops": [
+        {
+          "op": "mana_restore",
+          "trigger": "next_attack",
+          "amount": {
+            "ad": 0.625,
+            "bonus_ad": -0.625,
+            "crit": 25
+          },
+          "internal_cooldown": 1.5
+        },
+        {
+          "op": "proc",
+          "trigger": "next_attack",
+          "internal_cooldown": 1.5,
+          "damage": {
+            "ad": 1.25,
+            "bonus_ad": -1.25
+          },
+          "type": "physical"
+        }
+      ]
+    },
+    {
+      "id": 6333,
+      "ops": [
+        {
+          "op": "add",
+          "stat": "damage_reduction",
+          "value": 0.09,
+          "needs": "melee"
+        },
+        {
+          "op": "add",
+          "stat": "damage_reduction",
+          "value": 0.03,
+          "needs": "ranged"
+        },
+        {
+          "op": "heal",
+          "amount": {
+            "bonus_ad": 1
+          },
+          "trigger": "takedown",
+          "internal_cooldown": null
+        }
+      ]
+    },
+    {
+      "id": 6697,
+      "ops": [
+        {
+          "op": "timed",
+          "trigger": "takedown",
+          "stat": "ad",
+          "value": 15,
+          "mode": "add",
+          "duration": 90,
+          "decays": false,
+          "stacks_max": 1,
+          "refresh": true,
+          "internal_cooldown": null,
+          "needs": "melee"
+        },
+        {
+          "op": "timed",
+          "trigger": "takedown",
+          "stat": "ad",
+          "value": 10.005,
+          "mode": "add",
+          "duration": 45,
+          "decays": false,
+          "stacks_max": 1,
+          "refresh": true,
+          "internal_cooldown": null,
+          "needs": "ranged"
+        },
+        {
+          "op": "per_stack",
+          "stat": "ad",
+          "value": 2,
+          "mode": "add",
+          "per": "kill",
+          "cap": null,
+          "lost_on_death": null,
+          "needs": "melee"
+        },
+        {
+          "op": "per_stack",
+          "stat": "ad",
+          "value": 1,
+          "mode": "add",
+          "per": "kill",
+          "cap": null,
+          "lost_on_death": null,
+          "needs": "ranged"
+        }
+      ]
+    }
+  ],
+  "expectedInputs": {
+    "cards": {
+      "1025": {
+        "id": 1025,
+        "name": "Dive Bomber",
+        "status": "partial",
+        "ops": [],
+        "not_modelled": "on your death, 20% of the target max health as true damage to nearby enemies; T has no death trigger"
+      },
+      "1038": {
+        "id": 1038,
+        "name": "From Beginning To End",
+        "status": "partial",
+        "ops": [
+          {
+            "op": "damage_amp",
+            "scope": "all",
+            "factor": 1.02
+          },
+          {
+            "op": "proc",
+            "trigger": "periodic",
+            "internal_cooldown": 15,
+            "damage": {
+              "flat": {
+                "min": 138,
+                "max": 188
+              },
+              "bonus_ad": 0.1,
+              "ap": 0.05
+            },
+            "type": "adaptive"
+          }
+        ],
+        "needs": "First Strike needs you to start the fight; Dark Harvest needs a low-health champion",
+        "not_modelled": "First Strike: 10% bonus damage for 3s when you start a fight: timed has no damage stat, and a plain damage_amp would last for ever. Gold not given. Dark Harvest: damage and souls not given."
+      },
+      "1134": {
+        "id": 1134,
+        "name": "Draw Your Sword",
+        "status": "partial",
+        "ops": [
+          {
+            "op": "mult",
+            "stat": "ad",
+            "factor": 1.24
+          },
+          {
+            "op": "mult",
+            "stat": "hp",
+            "factor": 1.24
+          },
+          {
+            "op": "add",
+            "stat": "attack_speed",
+            "value": 0.2
+          },
+          {
+            "op": "add",
+            "stat": "life_steal",
+            "value": 0.2
+          },
+          {
+            "op": "mult",
+            "stat": "move_speed",
+            "factor": 1.2
+          }
+        ],
+        "not_modelled": "You become melee (range lost has no number). Each bonus grows further by attack range lost, with no number given."
+      },
+      "1325": {
+        "id": 1325,
+        "name": "Glass Cannon",
+        "status": "partial",
+        "ops": [
+          {
+            "op": "mult",
+            "stat": "hp",
+            "factor": 0.7
+          },
+          {
+            "op": "damage_amp",
+            "scope": "all",
+            "factor": 1.25,
+            "needs": "melee"
+          },
+          {
+            "op": "damage_amp",
+            "scope": "all",
+            "factor": 1.15,
+            "needs": "ranged"
+          }
+        ],
+        "need": {
+          "class": "always",
+          "items": null,
+          "ability_kind": null
+        },
+        "needs": "melee; ranged is 1.15",
+        "not_modelled": "The extra damage is true damage; damage_amp has no type. Ranged gets 15%, not 25%."
+      },
+      "2016": {
+        "id": 2016,
+        "name": "Juiced",
+        "status": "unreadable",
+        "ops": [
+          {
+            "op": "proc",
+            "trigger": "on_hit",
+            "internal_cooldown": null,
+            "damage": {
+              "mana": 0.07
+            },
+            "type": "magic"
+          }
+        ],
+        "not_modelled": "On-hit magic damage is shown as ?."
+      },
+      "2087": {
+        "id": 2087,
+        "name": "Archmage",
+        "status": "computed",
+        "ops": [
+          {
+            "op": "refund",
+            "scope": "one_ability",
+            "amount": 0.15,
+            "unit": "fraction",
+            "trigger": "ability_cast",
+            "internal_cooldown": null
+          }
+        ],
+        "not_modelled": "Random target taken as its expected share over the other abilities (2026-11-09)"
+      },
+      "2107": {
+        "id": 2107,
+        "name": "Hellbent",
+        "status": "partial",
+        "ops": [
+          {
+            "op": "timed",
+            "trigger": "always",
+            "stat": "move_speed",
+            "value": {
+              "min": 0.2,
+              "max": 0.4
+            },
+            "mode": "percent",
+            "duration": 15,
+            "decays": false,
+            "stacks_max": 1,
+            "refresh": false,
+            "internal_cooldown": 90
+          },
+          {
+            "op": "timed",
+            "trigger": "always",
+            "stat": "omnivamp",
+            "value": {
+              "min": 0.15,
+              "max": 0.3
+            },
+            "mode": "add",
+            "duration": 15,
+            "decays": false,
+            "stacks_max": 1,
+            "refresh": false,
+            "internal_cooldown": 90
+          }
+        ],
+        "need": {
+          "class": "other",
+          "items": null,
+          "ability_kind": null
+        },
+        "needs": "10 stacks from hitting champions, each lasting 6s; 90s cooldown; only on death",
+        "not_modelled": "Needs a death at 10 stacks (each stack lasts 6s): no death trigger, so always stands in with the 90s cooldown and overcounts. Speed is only toward enemies. Revive over 4s for 35-75% max health. 25-200 adaptive force: no stat."
+      }
+    },
+    "passives": {
+      "2": {
+        "id": 2,
+        "ops": [
+          {
+            "op": "shield",
+            "amount": {
+              "flat": 130,
+              "hp": 0.0875
+            },
+            "trigger": "cast_W",
+            "internal_cooldown": null,
+            "kit": true
+          }
+        ]
+      },
+      "22": null,
+      "24": {
+        "id": 24,
+        "ops": [
+          {
+            "op": "timed",
+            "trigger": "attack",
+            "stat": "attack_speed",
+            "value": {
+              "min": 0.05,
+              "max": 0.125
+            },
+            "mode": "add",
+            "duration": 2.5,
+            "decays": false,
+            "stacks_max": 8,
+            "refresh": true,
+            "internal_cooldown": null
+          }
+        ]
+      },
+      "33": {
+        "id": 33,
+        "ops": [
+          {
+            "op": "convert",
+            "from": "armor",
+            "to": "bonus_ad",
+            "ratio": 0.15
+          },
+          {
+            "op": "convert",
+            "from": "mr",
+            "to": "bonus_ad",
+            "ratio": 0.15
+          }
+        ]
+      },
+      "36": {
+        "id": 36,
+        "ops": [
+          {
+            "op": "heal",
+            "amount": {
+              "hp": 0.6
+            },
+            "trigger": "cast_R",
+            "internal_cooldown": null,
+            "kit": true
+          }
+        ]
+      },
+      "44": {
+        "id": 44,
+        "ops": [
+          {
+            "op": "proc",
+            "trigger": "next_attack",
+            "internal_cooldown": null,
+            "damage": {
+              "flat": {
+                "min": 25,
+                "max": 93
+              },
+              "bonus_armor": 0.15
+            },
+            "type": "magic"
+          }
+        ]
+      },
+      "51": {
+        "id": 51,
+        "ops": [
+          {
+            "op": "proc",
+            "trigger": "attack",
+            "internal_cooldown": null,
+            "damage": {
+              "ad": 0.14
+            },
+            "type": "adaptive"
+          }
+        ]
+      },
+      "54": {
+        "id": 54,
+        "ops": [
+          {
+            "op": "shield",
+            "amount": {
+              "hp": 0.1
+            },
+            "trigger": "periodic",
+            "internal_cooldown": null
+          }
+        ]
+      },
+      "78": null,
+      "89": null,
+      "92": {
+        "id": 92,
+        "ops": [
+          {
+            "op": "proc",
+            "trigger": "next_attack",
+            "internal_cooldown": null,
+            "damage": {
+              "ad": 0.375
+            },
+            "type": "adaptive"
+          }
+        ]
+      },
+      "113": null,
+      "120": {
+        "id": 120,
+        "ops": [
+          {
+            "op": "heal",
+            "amount": {
+              "flat": 60
+            },
+            "trigger": "cast_W",
+            "internal_cooldown": null,
+            "kit": true
+          }
+        ]
+      },
+      "201": null,
+      "223": {
+        "id": 223,
+        "ops": [
+          {
+            "op": "proc",
+            "trigger": "on_hit",
+            "internal_cooldown": null,
+            "damage": {
+              "flat": {
+                "min": 5,
+                "max": 95
+              },
+              "bonus_hp": 0.04
+            },
+            "type": "magic"
+          }
+        ]
+      },
+      "555": {
+        "id": 555,
+        "ops": [
+          {
+            "op": "convert",
+            "from": "hp",
+            "to": "bonus_ad",
+            "ratio": 0.07142857
+          }
+        ]
+      },
+      "895": null,
+      "950": null
+    },
+    "spellHits": {
+      "Characters/Sett/Spells/SettRAbility/SettR": null
+    },
+    "items": {
+      "3004": {
+        "id": 3004,
+        "ops": [
+          {
+            "op": "add",
+            "stat": "ad",
+            "value": 7.2,
+            "needs": "Manaflow fully charged to 360 Mana"
+          }
+        ]
+      },
+      "3085": null,
+      "3087": {
+        "id": 3087,
+        "ops": [
+          {
+            "op": "proc",
+            "trigger": "attack",
+            "internal_cooldown": null,
+            "damage": {
+              "flat": 6.3
+            },
+            "type": "magic",
+            "needs": "Energized Attacks only; how often is not given"
+          }
+        ]
+      },
+      "3508": {
+        "id": 3508,
+        "ops": [
+          {
+            "op": "proc",
+            "trigger": "next_attack",
+            "internal_cooldown": 1.5,
+            "damage": {
+              "ad": 1.25,
+              "bonus_ad": -1.25
+            },
+            "type": "physical"
+          }
+        ]
+      },
+      "6333": {
+        "id": 6333,
+        "ops": [
+          {
+            "op": "heal",
+            "amount": {
+              "bonus_ad": 1
+            },
+            "trigger": "takedown",
+            "internal_cooldown": null
+          }
+        ]
+      },
+      "6697": {
+        "id": 6697,
+        "ops": [
+          {
+            "op": "timed",
+            "trigger": "takedown",
+            "stat": "ad",
+            "value": 15,
+            "mode": "add",
+            "duration": 90,
+            "decays": false,
+            "stacks_max": 1,
+            "refresh": true,
+            "internal_cooldown": null,
+            "needs": "melee"
+          },
+          {
+            "op": "timed",
+            "trigger": "takedown",
+            "stat": "ad",
+            "value": 10.005,
+            "mode": "add",
+            "duration": 45,
+            "decays": false,
+            "stacks_max": 1,
+            "refresh": true,
+            "internal_cooldown": null,
+            "needs": "ranged"
+          },
+          {
+            "op": "per_stack",
+            "stat": "ad",
+            "value": 2,
+            "mode": "add",
+            "per": "kill",
+            "cap": 5,
+            "lost_on_death": null,
+            "needs": "melee"
+          },
+          {
+            "op": "per_stack",
+            "stat": "ad",
+            "value": 1,
+            "mode": "add",
+            "per": "kill",
+            "cap": 5,
+            "lost_on_death": null,
+            "needs": "ranged"
+          }
+        ]
+      }
+    }
+  }
+}

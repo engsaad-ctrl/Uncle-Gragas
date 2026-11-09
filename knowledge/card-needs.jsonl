@@ -1,0 +1,104 @@
+{"id":1375,"name":"Soul Eater","class":"ability_kind","items":null,"ability_kind":"immobilize","window":null,"ops_fix":null,"why":"Stacks only from hits that immobilize a champion."}
+{"id":3052,"name":"Hands off the Talent","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Attack must fire beyond 75% of max range."}
+{"id":1115,"name":"Scopiest Weapons","class":"melee","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Listed value is melee; ranged gains 150."}
+{"id":1071,"name":"Scopier Weapons","class":"melee","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Listed value is melee; ranged gains 100.05."}
+{"id":1170,"name":"Scoped Weapons","class":"melee","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Listed value is melee; ranged gains 50.02."}
+{"id":3116,"name":"Take'em Down Down Down","class":"melee","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Listed values are melee; ranged numbers differ."}
+{"id":3121,"name":"Fruitify","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Must walk to each fruit to pick it up."}
+{"id":2042,"name":"Hide on Bush","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Only in brush or 2s after leaving it."}
+{"id":1358,"name":"Pinball","class":"summoner","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs the Snowball summoner spell."}
+{"id":3049,"name":"Armored Impact","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Next attack after a cast; routine in fights."}
+{"id":1087,"name":"Typhoon","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs a second enemy in range beside the target."}
+{"id":1214,"name":"Spin To Win","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs a spinning ability; not a listed kind."}
+{"id":1076,"name":"Sonic Boom","class":"ability_kind","items":null,"ability_kind":"heal_ally","window":null,"ops_fix":null,"why":"Cast must buff, heal or shield an ally."}
+{"id":3078,"name":"The Boom and the Bass","class":"melee","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Listed values are melee; ranged numbers are lower."}
+{"id":2098,"name":"En Passant","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Must hit vitals; how often they appear is unknown."}
+{"id":1345,"name":"Spiritual Purification","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Enemies near a takedown are normal in fights."}
+{"id":1335,"name":"Goldrend","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Any attack or ability; 30s per champion already in ops."}
+{"id":2076,"name":"Stay Resolute","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Armor and MR only if not the first augment."}
+{"id":2133,"name":"Mercy's Strike","class":"ability_kind","items":null,"ability_kind":"heal_ally","window":null,"ops_fix":null,"why":"Chosen ability must heal or shield an ally."}
+{"id":2006,"name":"Dropkick","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Fires only on executing a champion with this effect."}
+{"id":1315,"name":"Swift and Safe","class":"ability_kind","items":null,"ability_kind":"dash","window":null,"ops_fix":null,"why":"Only after a dash or blink."}
+{"id":3123,"name":"Jeweled Bracelet","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Ability crits apply only to the chosen ability."}
+{"id":1390,"name":"Phenomenal Evil","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"40 AP only if this is the second augment."}
+{"id":1349,"name":"Ultimate Awakening","class":"window","items":null,"ability_kind":null,"window":{"seconds":15,"after":"ult_cast","cooldown":20},"ops_fix":null,"why":"Basic haste lasts 15s after the ultimate."}
+{"id":2091,"name":"Endless Decimation","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Bonus damage only on enemies at the outer edge."}
+{"id":1180,"name":"Big Brain","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Shield returns on death or after 70s."}
+{"id":1072,"name":"Searing Dawn","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"An ally must follow up on the marked enemy."}
+{"id":3163,"name":"Enchanting Butterflies","class":"ability_kind","items":null,"ability_kind":"heal_ally","window":null,"ops_fix":null,"why":"Needs 7 heals or shields on allies per release."}
+{"id":1311,"name":"Overflow","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs a mana champion."}
+{"id":2115,"name":"Squishy Slappy Grab","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Enemies nearby and an attack within 4s; routine."}
+{"id":1323,"name":"Cruelty","class":"ability_kind","items":null,"ability_kind":"immobilize","window":null,"ops_fix":null,"why":"Hit must immobilize or root a champion."}
+{"id":1113,"name":"Skilled Sniper","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Ability must damage from beyond 600 range."}
+{"id":2077,"name":"Ravenous Bind","class":"ability_kind","items":null,"ability_kind":"immobilize","window":null,"ops_fix":null,"why":"Text unclear; earlier reading says immobilize or root."}
+{"id":2138,"name":"Adaptive Ward","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Stats come only from the chosen ability hitting."}
+{"id":3088,"name":"CRIMSON COBALT","class":"window","items":null,"ability_kind":null,"window":{"seconds":4,"after":"ability_cast","cooldown":null},"ops_fix":null,"why":"Attack must consume the 4s mark from chosen ability."}
+{"id":1045,"name":"Infernal Conduit","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Burn from ability hits damages champions in fights."}
+{"id":3134,"name":"Lonely Warrior","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs an enemy champion within 600."}
+{"id":1332,"name":"Ominous Pact","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Values scale with missing health, full at 30%."}
+{"id":3086,"name":"BEES!!!","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Ability must hit an enemy champion."}
+{"id":3071,"name":"Brass Blast","class":"summoner","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Takes a summoner spell slot."}
+{"id":1344,"name":"Final Form","class":"window","items":null,"ability_kind":null,"window":{"seconds":10,"after":"ult_cast","cooldown":20},"ops_fix":null,"why":"Omnivamp and speed last 10s after the ultimate."}
+{"id":2141,"name":"Ultra Hydra","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Quest needs all three Hydras, not any one."}
+{"id":1095,"name":"Windspeaker's Blessing","class":"ability_kind","items":null,"ability_kind":"heal_ally","window":null,"ops_fix":null,"why":"Needs a heal or shield; stats go to target."}
+{"id":1154,"name":"Urf's Champion","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Quest: takedowns, count unknown; reward Golden Spatula."}
+{"id":2063,"name":"Dimension Shift","class":"summoner","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Takes a summoner spell slot."}
+{"id":2137,"name":"Pat On The Back","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Must pass near an ally."}
+{"id":3085,"name":"Flow of Spirit","class":"window","items":null,"ability_kind":null,"window":{"seconds":4,"after":"ability_cast","cooldown":null},"ops_fix":null,"why":"Lasts 4s after casting the chosen ability."}
+{"id":1996,"name":"Upgrade Sheen","class":"item","items":["Sheen","Trinity Force","Lich Bane","Iceborn Gauntlet","Essence Reaver","Bloodsong"],"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs any item with Spellblade."}
+{"id":1336,"name":"Upgrade Infinity Edge","class":"item","items":["Infinity Edge"],"ability_kind":null,"window":null,"ops_fix":null,"why":"Upgrades Infinity Edge."}
+{"id":2157,"name":"Upgrade Death's Dance","class":"item","items":["Death's Dance"],"ability_kind":null,"window":null,"ops_fix":null,"why":"Upgrades Death's Dance."}
+{"id":1379,"name":"Upgrade Sword of Blossoming Dawn","class":"item","items":["Sword of Blossoming Dawn"],"ability_kind":null,"window":null,"ops_fix":null,"why":"Upgrades Sword of Blossoming Dawn."}
+{"id":7007,"name":"Upgrade: Deathfire Grasp","class":"item","items":["Deathfire Grasp"],"ability_kind":null,"window":null,"ops_fix":null,"why":"Upgrades Deathfire Grasp; amp follows its active."}
+{"id":2026,"name":"Kill Secured","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Only moving toward enemies below 40% health."}
+{"id":3025,"name":"Sound Barrier","class":"ability_kind","items":null,"ability_kind":"shield_ally","window":null,"ops_fix":null,"why":"Must shield an ally."}
+{"id":1105,"name":"Homeguard","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Only with no damage taken in the last 6s."}
+{"id":2125,"name":"It's Go Time","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Only while the chosen ability is in effect."}
+{"id":1211,"name":"It's Killing Time","class":"window","items":null,"ability_kind":null,"window":{"seconds":5,"after":"ult_cast","cooldown":8},"ops_fix":null,"why":"Only damage in 5s after the ultimate."}
+{"id":2134,"name":"Surge Field","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Only inside the zone the ultimate makes."}
+{"id":1151,"name":"Bread and Cheese","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Haste goes to the chosen ability."}
+{"id":1103,"name":"Bread And Butter","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Haste goes to the chosen ability."}
+{"id":1150,"name":"Bread And Jam","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Haste goes to the chosen ability."}
+{"id":1333,"name":"Escape Plan","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Fires when own health reaches 35%."}
+{"id":1401,"name":"Growth Spurt","class":"summoner","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Takes a summoner spell slot."}
+{"id":3079,"name":"Totentanz","class":"summoner","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Takes a summoner spell slot."}
+{"id":1406,"name":"Grandma's Chili Oil","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Must stand near the chili pool."}
+{"id":3004,"name":"Get Jinxed","class":"summoner","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Replaces one summoner spell with the rocket."}
+{"id":2129,"name":"Terrain'd","class":"ability_kind","items":null,"ability_kind":"terrain","window":null,"ops_fix":null,"why":"Chosen ability must create terrain."}
+{"id":2078,"name":"Chain Reaction","class":"ability_kind","items":null,"ability_kind":"knockback","window":null,"ops_fix":[{"op":"proc","trigger":"ability_hit","internal_cooldown":null,"damage":{"flat":{"min":100,"max":400}},"type":"magic","scope":"one_ability"}],"why":"Knockback into champion or terrain; kept champion op."}
+{"id":1018,"name":"Courage of the Colossus","class":"ability_kind","items":null,"ability_kind":"immobilize","window":null,"ops_fix":null,"why":"Must immobilize or root a champion."}
+{"id":2107,"name":"Hellbent","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs 10 stacks; triggers only on death."}
+{"id":1074,"name":"Shrink Ray","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Must attack the enemy."}
+{"id":2099,"name":"Rite of Ascension","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Must attack the essence within 8s after a takedown."}
+{"id":1027,"name":"Earthwake","class":"ability_kind","items":null,"ability_kind":"dash","window":null,"ops_fix":null,"why":"Needs a dash, leap, blink or teleport."}
+{"id":1220,"name":"Fan The Hammer","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Attacks on champions; all 5 shots must hit."}
+{"id":2111,"name":"BONK!","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Chosen ability must empower attacks or abilities."}
+{"id":2034,"name":"Shark Tempest","class":"summoner","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs the Snowball summoner spell."}
+{"id":1073,"name":"Shadow Runner","class":"ability_kind","items":null,"ability_kind":"dash","window":null,"ops_fix":null,"why":"Needs a dash, blink, teleport or stealth."}
+{"id":1063,"name":"Outlaw's Grit","class":"ability_kind","items":null,"ability_kind":"dash","window":null,"ops_fix":null,"why":"Needs a dash, blink or teleport."}
+{"id":1020,"name":"Dawnbringer's Resolve","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Fires when health drops below 50%."}
+{"id":1339,"name":"Laser Heal","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Heal reaches allies only, not the owner."}
+{"id":3149,"name":"Group Hug","class":"ability_kind","items":null,"ability_kind":"heal_ally","window":null,"ops_fix":null,"why":"Chosen ability must heal or shield an ally."}
+{"id":1195,"name":"Giant Slayer","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Damage bonus applies to champions only."}
+{"id":1156,"name":"Wooglet's Witchcap","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Quest needs both Rabadon and Zhonya, not any one."}
+{"id":2104,"name":"Spirit Bomb","class":"ability_kind","items":null,"ability_kind":"heal_ally","window":null,"ops_fix":null,"why":"Your heals and shields charge it; allies are targets."}
+{"id":1187,"name":"Flashbang","class":"summoner","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs Flash."}
+{"id":1392,"name":"Holy Snowball","class":"summoner","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Uses Snowball, granted if you lack it."}
+{"id":1141,"name":"All For You","class":"ability_kind","items":null,"ability_kind":"heal_ally","window":null,"ops_fix":null,"why":"Only when used on an ally."}
+{"id":1310,"name":"Clown College","class":"position","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Backstab needs attacks from behind."}
+{"id":2131,"name":"Don't Change the Channel","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Needs a channeled ability; not a listed kind."}
+{"id":1051,"name":"Light 'Em Up!","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Attacks; all 4 shots must hit."}
+{"id":1322,"name":"Get Excited!","class":"window","items":null,"ability_kind":null,"window":{"seconds":4,"after":"takedown","cooldown":null},"ops_fix":null,"why":"Lasts 4s after a takedown."}
+{"id":2144,"name":"Bolstered","class":"ability_kind","items":null,"ability_kind":"shield_ally","window":null,"ops_fix":null,"why":"Only shields from the chosen ability; full at low health."}
+{"id":1325,"name":"Glass Cannon","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Its ops carry melee 1.25 and ranged 1.15 each; the card holds for both (2026-11-07, was melee only)."}
+{"id":2096,"name":"Lil' Extra Help","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Only during the chosen ability."}
+{"id":2100,"name":"Pursuit of Haste","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Quest and haste both belong to the chosen ability."}
+{"id":1308,"name":"FireFox","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Enemy visible and in range."}
+{"id":1409,"name":"Poro Blaster","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Must collect poros before damaging an enemy."}
+{"id":1061,"name":"Ok Boomerang","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Enemy nearby."}
+{"id":2139,"name":"Porcupine","class":"always","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Must take champion damage."}
+{"id":3053,"name":"Mosh Monster","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Health only during the chosen ability."}
+{"id":2135,"name":"Pin Cushion","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Only attacks during the chosen ability."}
+{"id":1005,"name":"Wee Woo Wee Woo","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Full value only on targets with high missing health."}
+
+{"id":3150,"name":"Upgrade Stormsurge","class":"item","items":["Stormsurge"],"ability_kind":null,"window":null,"ops_fix":null,"why":"Upgrades Stormsurge (2026-11-05, Codex: it named no item, so the engine never bought Stormsurge for it)."}

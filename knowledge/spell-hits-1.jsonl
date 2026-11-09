@@ -1,0 +1,23 @@
+{"path":"Characters/Ahri/Spells/AhriQAbility/AhriQ","hits":2,"why":"orb deals damage on the way out and again on the way back"}
+{"path":"Characters/Ahri/Spells/AhriWAbility/AhriW","hits":1.8,"why":"three fox-fires on one target: 120 + 48 + 48 = 216 over 120"}
+{"path":"Characters/Ahri/Spells/AhriRAbility/AhriR","hits":2,"why":"up to three recasts on one cooldown, half of 3 rounded"}
+{"path":"Characters/Akali/Spells/AkaliEAbility/AkaliE","hits":1.4,"why":"shuriken 136.7 then recast dash 319 on the marked target, 455.8 over 319"}
+{"path":"Characters/Akali/Spells/AkaliRAbility/AkaliR","hits":1.6,"calc":"Cast1Damage","why":"630 is the missing-health max of the recast; normal use is leap 330 plus recast at least 210"}
+{"path":"Characters/Akshan/Spells/AkshanQAbility/AkshanQ","hits":2,"why":"boomerang damages going out and coming back"}
+{"path":"Characters/Amumu/Spells/AuraofDespairAbility/AuraofDespair","hits":14,"why":"toggle aura, 2% max health per second, one cast lasts the fight"}
+{"path":"Characters/Anivia/Spells/FlashFrostAbility/FlashFrost","hits":1.65,"why":"passthrough 130 plus explosion 200 on the same target"}
+{"path":"Characters/Anivia/Spells/GlacialStormAbility/GlacialStorm","hits":2,"calc":"TotalDamagePerSecond","why":"fight took the tooltip-only empowered per second; storm is a per-second toggle, about 2 s per counted cast"}
+{"path":"Characters/AurelionSol/Spells/AurelionSolQAbility/AurelionSolQ","hits":2,"why":"channel named per second, a few seconds, shares the fight with its cooldown"}
+{"path":"Characters/AurelionSol/Spells/AurelionSolEAbility/AurelionSolE","hits":4,"why":"black hole damage named per second, target mostly stays inside"}
+{"path":"Characters/AurelionSol/Spells/AurelionSolRAbility/AurelionSolR","hits":1,"calc":"MaxDamageTooltip","why":"437.5 is The Skies Descend, only after enough Stardust; normal cast is Falling Star 350"}
+{"path":"Characters/Belveth/Spells/BelvethEAbility/BelvethE","hits":6,"calc":"DamagePerStrike","why":"six strikes all on the only target; 54 per strike is the low-health max"}
+{"path":"Characters/Brand/Spells/BrandRAbility/BrandR","hits":3,"why":"bounces up to 5, half of 5 rounded"}
+{"path":"Characters/Briar/Spells/BriarEAbility/BriarE","hits":1,"calc":"Damage","why":"440 needs a full charge and a wall hit; normal scream is 220"}
+{"path":"Characters/Camille/Spells/CamilleQAbility/CamilleQ","hits":1.5,"calc":"EmpoweredBonusDamage","why":"fight took 1; first attack 47.4 plus recast attack 94.7 on the same target"}
+{"path":"Characters/Cassiopeia/Spells/CassiopeiaEAbility/CassiopeiaE","hits":2.1,"why":"basic 107.6 plus 120 bonus vs poisoned target; she keeps targets poisoned"}
+{"path":"Characters/Corki/Spells/MissileBarrageAbility/MissileBarrage","hits":1.33,"calc":"RSmallMissileDamage","why":"every third missile is big: average of 250, 250, 500 is 333"}
+{"path":"Characters/Diana/Spells/DianaRAbility/DianaR","hits":1,"calc":"RExplosionDamage","why":"425 max counts extra targets pulled in; one target gets 400"}
+{"path":"Characters/Draven/Spells/DravenRCastAbility/DravenRCast","hits":2,"why":"axes hit going out then reverse and hit again on return"}
+{"path":"Characters/Ekko/Spells/EkkoQAbility/EkkoQ","hits":2,"why":"initial damage and the rewind return damage are both 140"}
+{"path":"Characters/Evelynn/Spells/EvelynnRAbility/EvelynnR","hits":1,"calc":"Damage","why":"900 is the crit/low-health version; normal is 375"}
+{"path":"Characters/Jhin/Spells/JhinRAbility/JhinR","hits":4,"why":"four shots, each stops on the first champion hit"}
