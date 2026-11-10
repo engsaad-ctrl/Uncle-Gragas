@@ -160,11 +160,13 @@ const UPGRADES: Record<number, number> = { 3004: 3042, 3003: 3040, 3119: 3121 };
 const UPGRADE_LEVEL = 99;
 /** Abilities whose hit takes seconds off all his cooldowns, with the field that holds them, each checked against its tooltip: Mystic Shot lowers Ezreal's cooldowns by 1.5 s. */
 const REFUND_ON_HIT: Record<string, string> = { 'Characters/Ezreal/Spells/EzrealQAbility/EzrealQ': 'CDRefund' };
+const GRAGAS_BODY_SLAM = 'Characters/Gragas/Spells/GragasEAbility/GragasE';
 const HEALING_NAME = /heal|shield/i;
 const NOT_ANY_DAMAGE = /monster|minion|shield|heal|cap|tooltiponly/i;
 const HEALTH_SHARE_NAME = /(percent|max|total).*(health|hp)|(health|hp).*(percent|damage)|percent.*damage/i;
 const JAYCE_MELEE_E = 'Characters/Jayce/Spells/JayceThunderingBlowAbility/JayceThunderingBlow';
 const NASUS_STORM = 'Characters/Nasus/Spells/NasusRAbility/NasusR';
+const NASUS_SIPHONING_STRIKE = 'Characters/Nasus/Spells/NasusQAbility/NasusQ';
 const NOT_HEALTH_SHARE = /heal$|healing|shield|cost|decay|monster|minion|cap|missing|tooltip$/i;
 const NOT_DAMAGE = /monster|minion|shield|heal|bonus|floor|secondary/i;
 /** A spell's damage when it crits (CritDamage, TotalDamageCrit, CriticalDamage), not its base (TotalDamageNoCrit, ActiveDamageThatCanCrit, PreCritDamage). */
@@ -469,6 +471,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const targetHp = o.enemy?.hp ?? FIGHT.target.hp;
   const stateOf = new Map<CardOp, { stacks: number; until: number; start: number }>();
   const dots: { op: Extract<CardOp, { op: 'dot' }>; until: number; stacks: number; fromAbility: boolean }[] = [];
+  let nasusQBuff: { until: number; factor: number } | undefined;
   const lastProc = new Map<CardOp, number>();
   const landing: { op: Extract<CardOp, { op: 'delayed_dot' }>; at: number; each: number; ticks: number; done: number; landed: boolean }[] = [];
   const echoes: { at: number; dealt: number; hits: number; events: boolean; onHit: boolean }[] = [];
@@ -659,11 +662,17 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
           fromAbilities += hit * abilityTaken;
           if (nasusStorm) {
             const duration = sl.spell.DataValues?.find((v) => v.name === 'Duration')?.values?.[sl.rank] ?? 0;
+            const qReduction = sl.spell.DataValues?.find((v) => v.name === 'QCDR')?.values?.[sl.rank] ?? 0;
             const ratio = chosen.find((v) => !v.partial)?.value ?? 0;
-            const validStorm = duration > 0 && Number.isFinite(duration) && ratio > 0 && ratio <= 1;
+            const validDuration = duration > 0 && Number.isFinite(duration);
+            const validStorm = validDuration && ratio > 0 && ratio <= 1;
+            nasusQBuff = validDuration && qReduction > 0 && qReduction < 1 ? { until: t + duration, factor: 1 - qReduction } : undefined;
             if (sl.last === undefined) {
-              notModelled.push('Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات الفعلي وتفعيل آثار الإصابة والصحة والمقاومات وخفض تبريد Q غير محسوبة');
+              notModelled.push('Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة والصحة والمقاومات غير محسوبة');
               if (!validStorm) notModelled.push('Nasus R: نسبة الضرر أو مدة العاصفة غير متاحة من ملف اللعبة');
+              notModelled.push(nasusQBuff
+                ? 'Nasus R: خفض تبريد Q يُحسب للإلقاءات الجديدة أثناء R؛ تغيير تبريد بدأ قبل R غير محسوب'
+                : 'Nasus R: خفض تبريد Q أو مدة تأثيره غير متاح من ملف اللعبة');
             }
             if (validStorm) {
               const dps = ratio * targetHp * amp('abilities', t) * amp(scope, t, false);
@@ -674,9 +683,18 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
               perCast[sl.key] = Math.round(dps * Math.min(duration, FIGHT.seconds - t));
             }
           }
+          const qFactor = sl.path === NASUS_SIPHONING_STRIKE && nasusQBuff && t < nasusQBuff.until ? nasusQBuff.factor : 1;
+          sl.ready = t + Math.max(0.5, (sl.cooldown * qFactor * cdFactor(scope) * 100) / (100 + haste(scope, sl.key)));
+          if (sl.path === GRAGAS_BODY_SLAM) {
+            const refund = sl.spell.DataValues?.find((v) => v.name === 'CooldownRefund')?.values?.[sl.rank] ?? 0;
+            const validRefund = refund > 0 && refund < 1;
+            if (sl.last === undefined) notModelled.push(validRefund
+              ? 'Gragas E: استرداد التبريد يفترض اصطدامًا؛ احتمال الإخفاق والتمركز غير محسوبين'
+              : 'Gragas E: نسبة استرداد التبريد غير متاحة من ملف اللعبة');
+            if (one > 0 && validRefund) sl.ready = t + Math.max(0.5, (sl.ready - t) * (1 - refund));
+          }
           sl.last = t;
           sl.dealt = hit * abilityTaken;
-          sl.ready = t + Math.max(0.5, (sl.cooldown * cdFactor(scope) * 100) / (100 + haste(scope, sl.key)));
           if (sl.recast) { sl.ready = t + CAST_SECONDS; sl.recast = false; }
         }
         const refund = REFUND_ON_HIT[sl.path] && sl.spell.DataValues?.find((v) => v.name === REFUND_ON_HIT[sl.path])?.values?.[sl.rank];

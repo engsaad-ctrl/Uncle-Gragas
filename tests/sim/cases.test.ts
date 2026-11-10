@@ -147,4 +147,33 @@ describe('fixed fight cases on pinned 16.22 files', () => {
     expect(r.damageBySecond[0]! - base.damageBySecond[0]!).toBeCloseTo(30);
     expect(r.notModelled.join(' ')).toContain('Nasus R');
   });
+  it('shortens only the cooldown of a landed Gragas E using the pinned refund', async () => {
+    const rawBin = await loadChampionBin(opts, manifest.contentVersion, 'gragas');
+    const bin = withDamageTypes(rawBin, TOOLTIPS);
+    const cards: CardNumbers[] = [{ id: 0, name: 'Test haste', status: 'computed', ops: [{ op: 'add', stat: 'haste', value: 20 }] }];
+    const options = { shop: {}, kit: { damage: 'magic' as const, attacks: false }, items: [], cards, level: 9, knownRanks: { level: 9, ranks: { Q: 1, W: 0, E: 5, R: 0 } } };
+    const r = fight({ ...options, bin });
+    const path = 'Characters/Gragas/Spells/GragasEAbility/GragasE';
+    const entry = bin[path] as { mSpell: { DataValues: { name: string }[] } };
+    const withoutRefund = { ...bin, [path]: { ...entry, mSpell: { ...entry.mSpell, DataValues: entry.mSpell.DataValues.filter((v) => v.name !== 'CooldownRefund') } } };
+    const base = fight({ ...options, bin: withoutRefund });
+    expect(base.casts.E).toBe(2);
+    expect(r.casts.E).toBe(3);
+    expect(r.casts.Q).toBe(base.casts.Q);
+    expect(r.notModelled.join(' ')).toContain('Gragas E');
+  });
+  it('uses the pinned Nasus Q cooldown reduction only for casts during R', async () => {
+    const rawBin = await loadChampionBin(opts, manifest.contentVersion, 'nasus');
+    const bin = withDamageTypes(rawBin, TOOLTIPS);
+    const path = 'Characters/Nasus/Spells/NasusRAbility/NasusR';
+    const entry = bin[path] as { mSpell: { DataValues: { name: string; values: number[] }[] } };
+    const countQ = (data = entry.mSpell.DataValues) => fight({
+      bin: { ...bin, [path]: { ...entry, mSpell: { ...entry.mSpell, DataValues: data } } },
+      shop: {}, kit: { damage: 'physical', attacks: true }, items: [], cards: [], level: 6,
+      knownRanks: { level: 6, ranks: { Q: 1, W: 0, E: 0, R: 1 } },
+    }).casts.Q;
+    expect(countQ(entry.mSpell.DataValues.filter((v) => v.name !== 'QCDR'))).toBe(2);
+    expect(countQ()).toBe(4);
+    expect(countQ(entry.mSpell.DataValues.map((v) => v.name === 'Duration' ? { ...v, values: v.values.map(() => 1) } : v))).toBe(3);
+  });
 });
