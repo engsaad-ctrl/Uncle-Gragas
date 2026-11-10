@@ -176,4 +176,16 @@ describe('fixed fight cases on pinned 16.22 files', () => {
     expect(countQ()).toBe(4);
     expect(countQ(entry.mSpell.DataValues.map((v) => v.name === 'Duration' ? { ...v, values: v.values.map(() => 1) } : v))).toBe(3);
   });
+  it('reads Karthus E mana restored per kill and funds an extra Q', async () => {
+    const bin = await loadChampionBin(opts, manifest.contentVersion, 'karthus');
+    const path = 'Characters/Karthus/Spells/KarthusDefileAbility/KarthusDefile';
+    const entry = bin[path] as { mSpell: { DataValues: { name: string }[] } };
+    const withoutRestore = { ...bin, [path]: { ...entry, mSpell: { ...entry.mSpell, DataValues: entry.mSpell.DataValues.filter((v) => v.name !== 'ManaRestoreOnKill') } } };
+    const countQ = (input: typeof bin) => fight({
+      bin: input, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [], level: 2, mana: 55,
+      knownRanks: { level: 2, ranks: { Q: 1, W: 0, E: 1, R: 0 } },
+    }).casts.Q;
+    expect(countQ(withoutRestore)).toBe(2);
+    expect(countQ(bin)).toBe(3);
+  });
 });

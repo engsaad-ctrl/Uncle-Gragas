@@ -430,6 +430,12 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (rank === 0) return;
     const spellLimit = SPELL_HITS[path]?.notModelled;
     if (spellLimit) notModelled.push(spellLimit);
+    if (path === 'Characters/Karthus/Spells/KarthusDefileAbility/KarthusDefile') {
+      const restore = spell.DataValues?.find((v) => v.name === 'ManaRestoreOnKill')?.values?.[rank] ?? 0;
+      if (Number.isFinite(restore) && restore > 0) ops.push({ op: 'mana_restore', trigger: 'kill', amount: { flat: restore } });
+      else notModelled.push('Karthus E: قيمة استرداد المانا غير متاحة من ملف اللعبة');
+      notModelled.push('Karthus E: استرداد المانا يتبع القتل المفترض في المحاكاة؛ قتل الوحدات الصغيرة والاستنزاف المستمر للمانا غير محسوبين');
+    }
     // Some abilities keep their numbers in a sibling record of the same folder (Lux Q in LuxLightBindingMis), or name a base cooldown (Veigar W).
     const folder = path.slice(0, path.lastIndexOf('/') + 1);
     const sibling = folder ? Object.entries(bin).find(([p, v]) => p !== path && p.startsWith(folder) && (v?.mSpell?.cooldownTime?.[rank] ?? 0) > 1)?.[1]?.mSpell : undefined;
