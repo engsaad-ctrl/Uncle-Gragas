@@ -140,7 +140,7 @@ export function searchSet(o: { start: number[]; candidates: number[]; slots: num
   return best;
 }
 
-export function mathBuild(o: { /** The live level is a floor: a late purchase never takes the champion back to level 5. */ level?: number; /** He can't buy boots (Cassiopeia): six other items. */ noBoots?: boolean; /** A card that needs one item of a kind (Upgrade Sheen: any Spellblade item): one of each group, which one by the whole build. */ requiredAnyOf?: number[][]; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number; knownRanks?: KnownRanks; skillPlan?: SkillPlan }): MathStep[] {
+export function mathBuild(o: { /** The live level is a floor: a late purchase never takes the champion back to level 5. */ level?: number; /** He can't buy boots (Cassiopeia): six other items. */ noBoots?: boolean; /** A card that needs one item of a kind (Upgrade Sheen: any Spellblade item): one of each group, which one by the whole build. */ requiredAnyOf?: number[][]; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; plannedItem?: number; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number; knownRanks?: KnownRanks; skillPlan?: SkillPlan }): MathStep[] {
   // The game's own limits on what can be held together, and those its file doesn't name.
   const clashes = (id: number, held: number[]) => ONE_OF.some((g) => g.includes(id % 10000) && held.some((x) => x !== id && g.includes(x % 10000))) || (o.shop[id]?.limits ?? []).some((g) => held.some((x) => x !== id && o.shop[x]?.limits?.includes(g)));
   // His share of the enemy's damage, so effects on falling below a share of his health come when it gets there (cardMath lowHealthAt).
@@ -151,6 +151,9 @@ export function mathBuild(o: { /** The live level is a floor: a late purchase ne
 
   // The set: what adds most to the fight at the build's full size.
   const set = [...o.owned];
+  // Reserve the finished item for a staged purchase, without moving it to the front of the buy order.
+  const planned = o.plannedItem;
+  if (planned !== undefined && set.length < SLOTS && !set.includes(planned) && !clashes(planned, set) && o.shop[planned]) set.push(planned);
   // What a card asks for passes the one-of limits among themselves: Ultra Hydra's quest is to hold all three Hydras, which the shop otherwise allows one at a time.
   for (const id of o.required) if (set.length < SLOTS && !set.includes(id) && !clashes(id, set.filter((x) => !o.required.includes(x))) && o.shop[id]) set.push(id);
   const isBoots = (id: number) => o.pool.find((p) => p.id === id)?.boots;

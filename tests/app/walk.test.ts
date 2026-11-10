@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { rankOffer, walkItems } from '../../src/app/walk.js';
+import { offerPlanIds, rankOffer, walkItems } from '../../src/app/walk.js';
+
+describe('offerPlanIds', () => {
+  it('waits for all three cards unless the player asks to compare a partial offer', () => {
+    expect(offerPlanIds(new Set([10]), false)).toEqual([]);
+    expect(offerPlanIds(new Set([10, 20]), false)).toEqual([]);
+    expect(offerPlanIds(new Set([10, 20, 30]), false)).toEqual([10, 20, 30]);
+    expect(offerPlanIds(new Set([10, 20]), true)).toEqual([10, 20]);
+    expect(offerPlanIds(new Set(), true)).toEqual([]);
+  });
+});
 
 describe('rankOffer', () => {
   it('puts the highest percent first and unknown last', () => {

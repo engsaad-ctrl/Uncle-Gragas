@@ -143,6 +143,11 @@ describe('next items by arithmetic', () => {
   it('brings an item a held card needs', () => {
     expect(mathBuild({ ...base, required: [2] })[0]).toMatchObject({ id: 2, reason: 'required' });
   });
+  it('reserves a planned upgrade without ordering it as a required first purchase', () => {
+    const steps = mathBuild({ ...base, plannedItem: 2, offKind: (i) => i.id === 2 });
+    expect(steps[0]!.id).toBe(1);
+    expect(steps).toContainEqual(expect.objectContaining({ id: 2, reason: 'math' }));
+  });
   it('lets a card bring items the shop holds one at a time (Ultra Hydra\'s three Hydras)', () => {
     const hydra = (ad: number) => ({ ...item({ FlatPhysicalDamageMod: ad }), limits: ['hydra'] }) as unknown as GameItem;
     const hydras = { ...shop, 1: hydra(100), 2: hydra(20) };

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FIGHT, cardGain, fight, needHolds, type CardNumbers, type CardOp } from '../../src/ai/cardMath.js';
+import { CARD_NUMBERS } from '../../src/ai/cardMathData.js';
 // These tests count attacks exactly; the uptime has its own test.
 beforeAll(() => { FIGHT.attackUptime.melee = 1; FIGHT.attackUptime.ranged = 1; });
 afterAll(() => { FIGHT.attackUptime.melee = 0.8; FIGHT.attackUptime.ranged = 0.7; });
@@ -361,4 +362,20 @@ describe('effects that wait seconds of champion combat (timing)', () => {
     const own = r.fromAbilities + r.fromAttacks + r.fromCards;
     expect(r.healParts!.omnivamp).toBeCloseTo(0.1 * (own - r.damageBySecond[3]!));
   });
+});
+
+it('gates The Boom and the Bass on a cast and consumes its six-second charge once', () => {
+  const boom = CARD_NUMBERS.find((c) => c.id === 3078)!;
+  expect(run([boom]).fromCards).toBe(0);
+
+  const withCast = (range: number, speed: number) => fight({
+    bin: {
+      rec: { ...bin.rec, spells: ['x/q'], attackRangeModifiable: num(range), attackSpeedModifiable: num(speed) },
+      'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [20, 20, 20, 20, 20] } },
+    },
+    shop: {}, kit, items: [], cards: [boom], level: 1,
+  });
+  expect(withCast(500, 0.6).fromCards).toBeCloseTo(25 / 1.6);
+  expect(withCast(175, 0.6).fromCards).toBeCloseTo(50 / 1.6);
+  expect(withCast(500, 0.1).fromCards).toBe(0);
 });

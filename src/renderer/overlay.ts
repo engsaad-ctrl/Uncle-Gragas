@@ -1,8 +1,9 @@
 // The over-the-game window: the picked champion's build (spells, runes, skills, items) and augments, with a quick search.
 
 import type { Advice } from '../ai/advisor.js';
+import { EZREAL, MANAMUNE, MURAMANA, TEAR, ezrealNextItems, ezrealTearStage } from '../app/ezrealPurchases.js';
 import { walkedPath, type BuildPath } from '../app/buildPath.js';
-import { rankOffer, walkItems } from '../app/walk.js';
+import { offerPlanIds, rankOffer, walkItems } from '../app/walk.js';
 import { cardFit, conflictsWith, itemPart, openLines, placesOf, type ChampionDamage } from '../ai/lines.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { augmentStage, type AugmentProgress } from '../ai/augmentProgress.js';
@@ -17,7 +18,7 @@ import type { AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, Overlay
 import { adviceNodes, AI_HINT, AI_LOADING, EXPERIMENTAL_TITLE, experimentalHint, WHY_AR } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
 import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, stackInput, withTooltip, type Describable } from './dom.js';
-import { filterAugments } from './search.js';
+import { filterAugments, findOfferMatches } from './search.js';
 import { applyRandomTheme } from './theme.js';
 import { progressRequests } from './progressRequests.js';
 import { calculationNotes } from './calculationNotes.js';
@@ -46,7 +47,7 @@ let manualLevel: number | undefined;
 const acquiredLevels: Record<number, number> = {};
 const abilityTargets: Record<number, TargetAbility> = {};
 const progress = (): AugmentProgress => ({ level: data?.live?.level ?? manualLevel, acquiredLevels: { ...acquiredLevels }, abilityTargets: { ...abilityTargets } });
-const liveFinished = (items: number[], finished: Set<number>) => [...new Set(items.map((id) => finished.has(id) ? id : id % 10000).filter((id) => finished.has(id)))];
+const liveFinished = (items: number[], finished: Set<number>, champion?: number) => [...new Set(items.map((id) => finished.has(id) ? id : id % 10000).filter((id) => finished.has(id) || (champion === EZREAL && [TEAR, MANAMUNE, MURAMANA].includes(id % 10000))))];
 let restoredFor: number | undefined;
 const MAX_PICKS = 6;
 const FIT_GAMES = 150;
@@ -79,19 +80,24 @@ const heldParts = () => {
 /** What each card adds to this champion's fight, by arithmetic (src/ai/cardMath.ts); a card missing here can't be computed. */
 let cardMath = new Map<number, AugmentValue>();
 let cardMathFor = '';
+let cardMathContext = '';
 let cardMathLoading = false;
 async function refreshCardMath() {
   const champion = data?.champion;
   const held = data?.live?.items ?? owned;
-  const key = `${loadId}|${data?.game}|${champion?.id}|${[...picked].join()}|${held.join()}|${JSON.stringify(progress())}|${[...offer].join()}|${buildStyle ?? ''}|${stacks ?? ''}`;
+  const plans = offerPlanIds(offer, comparePartialOffer);
+  const context = `${loadId}|${data?.game}|${champion?.id}|${[...picked].join()}|${held.join()}|${JSON.stringify(progress())}|${buildStyle ?? ''}|${stacks ?? ''}`;
+  const key = `${context}|${plans.join()}`;
   if (key === cardMathFor || !champion || data?.mode !== 'mayhem') return;
   cardMathFor = key;
-  // A new level, inventory or style invalidates every old rank and conditional plan immediately.
-  cardMath.clear();
+  // The stage estimates are independent of which cards the player put on offer.
+  if (cardMathContext !== context) cardMath.clear();
+  else for (const row of cardMath.values()) { delete row.plan; delete row.planError; }
+  cardMathContext = context;
   cardMathLoading = true;
   render();
   if (tab === 'walk') renderWalk();
-  const r = await window.lolh.cardValues(champion.id, [...picked], held, progress(), [...offer], buildStyle, stacks);
+  const r = await window.lolh.cardValues(champion.id, [...picked], held, progress(), plans, buildStyle, stacks);
   if (cardMathFor !== key) return;
   cardMathLoading = false;
   cardMath = new Map(isError(r) ? [] : r.map((x) => [x.id, x]));
@@ -160,7 +166,8 @@ async function refreshFit() {
 }
 
 function resetRun() {
-  picked.clear(); offer.clear(); owned.length = 0; path = undefined; buildStyle = undefined; stacks = undefined; manualLevel = undefined;
+  picked.clear(); offer.clear(); owned.length = 0; path = undefined; buildStyle = undefined; stacks = undefined; manualLevel = undefined; tearCharged = false;
+  comparePartialOffer = false;
   for (const id of Object.keys(acquiredLevels)) delete acquiredLevels[Number(id)];
   for (const id of Object.keys(abilityTargets)) delete abilityTargets[Number(id)];
   cardMathFor = ''; cardMath.clear(); cardMathLoading = false; engineAsked = ''; engine = undefined;
@@ -184,7 +191,8 @@ async function refreshProgress(update = true, fresh = false) {
       // A previous manual level must not return after a later live reading and contradict recorded choices.
       manualLevel = undefined;
       const finished = new Set([...data.items, ...data.boots].map((i) => i.id));
-      owned.splice(0, owned.length, ...liveFinished(data.live.items, finished));
+      owned.splice(0, owned.length, ...liveFinished(data.live.items, finished, champion));
+      if (ezrealTearStage(owned, false) !== 'charging') tearCharged = false;
     }
     const changed = previous !== JSON.stringify([data.live?.level, data.live?.items, pickedGame]);
     if (changed && update) ownedChanged();
@@ -354,8 +362,10 @@ const ic = (x: Describable) => withTooltip(icon(x.iconUrl, 'ic'), x);
 
 /** The cards the player typed in for this round. */
 const offer = new Set<number>();
+let comparePartialOffer = false;
 /** Actual finished inventory, read live or entered manually; suggestions never count as purchases. */
 const owned: number[] = [];
+let tearCharged = false;
 let shopItems: ItemEntry[] | undefined;
 const pill = (text: string, onClick: () => void, cls = 'pill') => {
   const b = el('button', cls, text);
@@ -365,6 +375,7 @@ const pill = (text: string, onClick: () => void, cls = 'pill') => {
 };
 
 const ownedChanged = () => {
+  if (ezrealTearStage(owned, false) !== 'charging') tearCharged = false;
   void refreshEngine();
   void refreshCardMath();
   render();
@@ -392,7 +403,7 @@ function renderWalk() {
   });
   if (!shopItems) {
     void window.lolh.listItems('mayhem').then((r) => {
-      shopItems = isError(r) ? [] : r.list.filter((i) => i.group === 'legendary' || i.group === 'boots');
+      shopItems = isError(r) ? [] : r.list.filter((i) => i.group === 'legendary' || i.group === 'boots' || i.id % 10000 === TEAR);
       if (tab === 'walk') renderWalk();
     });
   }
@@ -424,6 +435,7 @@ function renderWalk() {
     const p = percent(a);
     txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? cardMathLoading ? 'جاري حساب الحالة الحالية…' : 'غير مقاسة: أثرها في حركة أو إيقاف أو هدف آخر، أو شرطها لا ينطبق. هذا لا يعني أنها ضعيفة' : [`ترتيب نسبي ${p}%: ${mathWords(a.id)}${a.id === winner ? ' · يتقدم في متوسط المرحلة والخطة المكتملة حسب الأجزاء المحسوبة' : stageComparable && a === cards[0] && cards.length > 1 ? ' · الأعلى في المرحلة الحالية' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
     const m = cardMath.get(a.id);
+    if (!m && a.unmeasuredReason) txt.append(el('small', 'missing', `غير محسوب: ${a.unmeasuredReason}`));
     if (m?.open.length) txt.append(el('small', '', `مشروطة، تُرتَّب بعد المحسومة: ${m.open.join('، ')}. القيمة إن تحقق الشرط، واحتماله غير مقاس.`));
     if (m?.plan) {
       const names = m.plan.items.map((id) => [...data!.items, ...data!.boots].find((i) => i.id === id)?.enName ?? String(id));
@@ -434,46 +446,80 @@ function renderWalk() {
     if (targetField) txt.append(targetField);
     r.append(ic(a), txt, pill('اخترته', () => {
       for (const id of offer) if (id !== a.id && !picked.has(id)) delete abilityTargets[id];
-      offer.clear(); void toggleMark(a.id); renderWalk();
-    }), pill('✕', () => { offer.delete(a.id); delete abilityTargets[a.id]; void refreshCardMath(); renderWalk(); }, 'pill ghost'));
+      offer.clear(); comparePartialOffer = false; void toggleMark(a.id); renderWalk();
+    }), pill('✕', () => { offer.delete(a.id); comparePartialOffer = false; delete abilityTargets[a.id]; void refreshCardMath(); renderWalk(); }, 'pill ghost'));
     rows.append(r);
   }
-  const findCard = finder('اكتب اسم البطاقة المعروضة…', (q) =>
-    filterAugments(pool, q, 'all', 'all').filter((a) => !offer.has(a.id) && !picked.has(a.id)).slice(0, 6).map((a) => {
-      const b = pill(shownName(a), () => { if (offer.size >= 3) return; offer.add(a.id); byId<HTMLInputElement>('ov-walk-card').value = ''; void refreshCardMath(); renderWalk(); byId<HTMLInputElement>('ov-walk-card').focus(); });
+  const availableOffers = pool.filter((a) => !offer.has(a.id) && !picked.has(a.id));
+  const findCard = finder('اختصر الاسم واضغط Enter عند ظهور نتيجة واحدة', (q) =>
+    findOfferMatches(availableOffers, q).slice(0, 6).map((a) => {
+      const b = pill(shownName(a), () => { if (offer.size >= 3) return; offer.add(a.id); comparePartialOffer = false; byId<HTMLInputElement>('ov-walk-card').value = ''; void refreshCardMath(); renderWalk(); byId<HTMLInputElement>('ov-walk-card').focus(); });
       return b;
     }), previousCard?.value);
   findCard.input.id = 'ov-walk-card';
+  if (offer.size > 0 && offer.size < 3 && !comparePartialOffer) {
+    rows.append(pill('قارن الخطط للبطاقات المدخلة', () => {
+      comparePartialOffer = true;
+      void refreshCardMath();
+      renderWalk();
+    }));
+  } else if (offer.size && cardMathLoading) {
+    rows.append(el('p', 'hint', 'جاري حساب خطط البناء المكتملة…'));
+  }
+  findCard.input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.isComposing || event.repeat || findCard.box.childElementCount !== 1) return;
+    event.preventDefault();
+    findCard.box.querySelector('button')?.click();
+  });
 
   // What he bought, and what's next.
   const chosen = data.augments.filter((a) => picked.has(a.id));
   const known = new Map((shopItems ?? []).map((i) => [i.id, i]));
   const advised = engine?.key === engineKey() ? engine.items : [];
   for (const { item } of advised) known.set(item.id, item);
-  const { next } = walkItems(advised.map((e) => e.item.id), owned);
+  const ezreal = data.champion?.id === EZREAL;
+  const tear = ezreal ? ezrealTearStage(owned, tearCharged) : undefined;
+  const ids = advised.map((e) => e.item.id);
+  const next = ezreal ? ezrealNextItems(owned, ids, tearCharged) : walkItems(ids, owned).next;
+  const tearItem = shopItems?.find((item) => item.id % 10000 === TEAR);
+  const tearControl = el('label', 'hint');
+  const charge = el('input', '') as HTMLInputElement;
+  charge.type = 'checkbox';
+  charge.checked = tearCharged;
+  charge.addEventListener('change', () => {
+    tearCharged = charge.checked;
+    renderWalk();
+    if (data?.build) renderBuild(data.build);
+  });
+  tearControl.append(charge, ' اكتملت تراكمات Tear of the Goddess في اللعبة');
   const offPath = advised.flatMap((e) => (e.offPath ? e.item.id : []));
   const ownedRow = el('div', 'ov-adapted');
   for (const id of owned) {
-    const item = known.get(id);
-    if (!item) continue;
+    const item = known.get(id) ?? (id % 10000 === TEAR ? tearItem : undefined);
+    if (!item && id % 10000 !== TEAR) continue;
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
-    txt.append(el('b', '', shownName(item)), el('small', '', offPath.includes(id) ? 'لم يكن المحرك ليختاره الآن' : 'في مسارك'));
-    r.append(ic(item), txt);
+    txt.append(el('b', '', item ? shownName(item) : 'Tear of the Goddess'), el('small', '', offPath.includes(id) ? 'لم يكن المحرك ليختاره الآن' : 'في مسارك'));
+    if (item) r.append(ic(item));
+    r.append(txt);
     if (!data.live) r.append(pill('✕', () => { owned.splice(owned.indexOf(id), 1); ownedChanged(); }, 'pill ghost'));
     ownedRow.append(r);
   }
   const findItem = finder('اكتب اسم الغرض الذي اشتريته…', (q) =>
-    (shopItems ?? []).filter((i) => !owned.includes(i.id) && `${i.name} ${shownName(i)}`.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6).map((i) =>
+    (shopItems ?? []).filter((i) => (ezreal || i.id % 10000 !== TEAR) && !owned.includes(i.id) && `${i.name} ${shownName(i)}`.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6).map((i) =>
       pill(shownName(i), () => { owned.push(i.id); byId<HTMLInputElement>('ov-walk-item').value = ''; ownedChanged(); })), previousItem?.value);
   findItem.input.id = 'ov-walk-item';
   const nextRow = el('div', 'ov-adapted');
   for (const id of next) {
-    const item = known.get(id);
+    const item = id === TEAR ? tearItem : known.get(id);
+    if (id === TEAR && !item) {
+      nextRow.append(el('p', 'hint', 'التالي: Tear of the Goddess وحده لبدء جمع التراكمات.'));
+      continue;
+    }
     if (!item) continue;
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
-    const why = engine?.items.find((x) => x.item.id === id)?.why.filter((w) => w !== 'owned') ?? [];
+    const why = id === TEAR ? ['ابدأ بجمع التراكمات'] : engine?.items.find((x) => x.item.id === id)?.why.filter((w) => w !== 'owned') ?? [];
     txt.append(el('b', '', shownName(item)), el('small', '', [...(id === next[0] ? ['التالي'] : []), ...why].join(' · ')));
     r.append(ic(item), txt);
     nextRow.append(r);
@@ -481,8 +527,8 @@ function renderWalk() {
   walkBox.replaceChildren(
     section(`الاختيار ${picked.size + 1}: البطاقات المعروضة`, levelLabel, el('p', 'hint', `الاختيارات الأساسية عند المستويات 3، 7، 11، 15. التقييم حتى مستوى ${stage.untilLevel}${stage.estimatedLevel ? '؛ المستوى الحالي افتراضي حتى تحدده أو تُقرأ المباراة' : ''}.`), findCard.label, findCard.box, rows, el('p', 'hint', 'الترتيب نسبي بين تعزيزات الندرة نفسها. متوسط المرحلة يستخدم أغراضك الحالية فقط. الخطة المكتملة تعيد البحث عن الأيتمات لكل تعزيز؛ لا تقدّر الذهب أو وقت الشراء أو تكلفة تغيير المسار، ولا تفترض تعزيزات قادمة. عند اختلاف الأفضل بين المرحلة والخطة، توجد مقايضة. الأرقام ليست احتمال فوز.')),
     ...(chosen.length ? [section('ما أخذته', chosenChips(chosen), ...chosen.flatMap((a) => abilityTargetField(a) ?? []))] : []),
-    section('أغراضك', ...(data.live ? [el('p', 'hint', 'تُقرأ الأغراض من اللعبة.')] : [findItem.label, findItem.box]), ownedRow),
-    ...(chosen.length ? [section('الأغراض التالية', advised.length ? nextRow : el('p', 'hint', 'جاري حساب البناء…'), ...calculationNotes(advised))] : []),
+    section('أغراضك', ...(data.live ? [el('p', 'hint', 'تُقرأ الأغراض من اللعبة.')] : [findItem.label, findItem.box, ...(tear === 'start' && !tearItem ? [pill('اشتريت Tear of the Goddess', () => { owned.push(TEAR); ownedChanged(); })] : [])]), ownedRow, ...(tear === 'charging' || tear === 'ready' ? [tearControl] : [])),
+    ...(chosen.length || ezreal ? [section('الأغراض التالية', advised.length || tear === 'start' ? nextRow : el('p', 'hint', 'جاري حساب البناء…'), ...(tear === 'charging' ? [el('p', 'hint', 'أجّل Manamune حتى تكتمل تراكمات Tear of the Goddess.')] : []), ...calculationNotes(advised))] : []),
   );
   if (focused === 'ov-walk-card') findCard.input.focus();
   if (focused === 'ov-walk-item' && !data.live) findItem.input.focus();
@@ -550,12 +596,15 @@ function adaptedSection(): HTMLElement {
   }
   if (engine.error) return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...targetFields, el('p', 'missing', `تعذّر حساب البناء: ${engine.error}`));
   const bought = path?.bought ?? 0;
+  const ezreal = data?.champion?.id === EZREAL;
+  const nextEzreal = ezreal ? ezrealNextItems(owned, engine.items.map(({ item }) => item.id), tearCharged)[0] : undefined;
+  if (nextEzreal === TEAR) rows.append(el('p', 'hint', 'التالي: Tear of the Goddess وحده. تابع شراء الأغراض من «مساري».'));
   const styleRow = styleSwitch();
   const stackRow = stacksField(() => { path = undefined; if (data?.build) renderBuild(data.build); });
   engine.items.forEach(({ item, why }, place) => {
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
-    const step = place < bought ? ['تملكه'] : place === bought ? ['التالي'] : [];
+    const step = place < bought || why.includes('owned') ? ['تملكه'] : (ezreal ? item.id === nextEzreal : place === bought) ? ['التالي'] : [];
     txt.append(el('b', '', shownName(item)), el('small', '', [...step, ...why.map((w) => WHY_AR[w] ?? w)].join(' · ')));
     r.append(ic(item), txt);
     rows.append(r);
@@ -787,7 +836,8 @@ async function load() {
   if (reply.live) {
     manualLevel = undefined;
     const finished = new Set([...reply.items, ...reply.boots].map((i) => i.id));
-    owned.splice(0, owned.length, ...liveFinished(reply.live.items, finished));
+    owned.splice(0, owned.length, ...liveFinished(reply.live.items, finished, reply.champion?.id));
+    if (ezrealTearStage(owned, false) !== 'charging') tearCharged = false;
   }
   cardMathFor = ''; cardMath.clear();
   // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.

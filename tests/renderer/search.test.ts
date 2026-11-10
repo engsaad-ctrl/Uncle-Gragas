@@ -1,11 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { filterAugments, normalizeArabic } from '../../src/renderer/search.js';
+import { filterAugments, findOfferMatches, normalizeArabic } from '../../src/renderer/search.js';
 
 const list = [
   { name: 'شديد الإصرار', enName: 'Adamant', rarity: 'silver', modes: ['mayhem'] },
   { name: 'مبدأ السحر', enName: 'Arcane Axiom', rarity: 'gold', modes: ['arena'] },
   { name: 'كبير السحرة', enName: 'Archmage', rarity: 'prismatic', modes: ['arena', 'mayhem'] },
 ];
+
+describe('findOfferMatches', () => {
+  const boom = { name: 'الصخب والإيقاع', enName: 'The Boom and the Bass' };
+  const cards = [...list, boom];
+
+  it('accepts ordered word prefixes in either language, skipping intervening words', () => {
+    expect(findOfferMatches(cards, 'bo ba')).toEqual([boom]);
+    expect(findOfferMatches(cards, 'الص والإ')).toEqual([boom]);
+    expect(findOfferMatches(cards, 'ba bo')).toEqual([]);
+  });
+
+  it('keeps ordinary partial matches, including ambiguous ones, and ignores blank input', () => {
+    expect(findOfferMatches(cards, 'arc')).toEqual(list.slice(1));
+    expect(findOfferMatches(cards, '  ')).toEqual([]);
+  });
+});
 
 describe('normalizeArabic', () => {
   it('folds hamza forms, taa marbuta, alef maqsura, diacritics and tatweel', () => {

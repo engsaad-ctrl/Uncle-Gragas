@@ -31,13 +31,15 @@ const BOTH_RANGES = new Set(['The Boom and the Bass', "Take'em Down Down Down", 
 const SECONDS = 15;
 const cardsRead = [1, 2, 3].flatMap((n) => lines(`knowledge/augment-math-${n}.jsonl`)).map((c) => {
   const t = timed.get(c.id), need = BOTH_RANGES.has(c.name) ? { ...needs.get(c.id), class: 'always' } : needs.get(c.id);
-  let ops = fixes.get(c.name)?.ops ?? fromFile.get(c.id)?.ops ?? need?.ops_fix ?? t?.ops ?? c.ops ?? [];
+  const fix = fixes.get(c.name);
+  const notModelled = fix?.not_modelled ?? t?.not_modelled ?? c.not_modelled;
+  let ops = fix?.ops ?? fromFile.get(c.id)?.ops ?? need?.ops_fix ?? t?.ops ?? c.ops ?? [];
   if (need?.class === 'window' && need.window?.seconds) {
     // Only part of a fight falls in the window, so a lasting effect counts for that share of it.
     const share = Math.min(1, need.window.seconds / Math.max(SECONDS, need.window.cooldown ?? 0));
     ops = ops.map((x) => (x.op === 'damage_amp' || x.op === 'mult' ? { ...x, factor: 1 + (x.factor - 1) * share } : x.op === 'add' && typeof x.value === 'number' ? { ...x, value: x.value * share } : x));
   }
-  return { id: c.id, name: c.name, status: c.status, ops, ...(need ? { need: { class: need.class, items: need.items ?? null, ability_kind: need.ability_kind ?? null } } : {}), ...(c.needs ? { needs: c.needs } : {}), ...(t?.not_modelled ?? c.not_modelled ? { not_modelled: t?.not_modelled ?? c.not_modelled } : {}) };
+  return { id: c.id, name: c.name, status: c.status, ops, ...(need ? { need: { class: need.class, items: need.items ?? null, ability_kind: need.ability_kind ?? null } } : {}), ...(c.needs ? { needs: c.needs } : {}), ...(notModelled ? { not_modelled: notModelled } : {}) };
 });
 const cards = mergeRows(cardsRead, overrides.cards, overrides.expectedInputs.cards);
 // Passives read again with the game's calculation records; these replace the first reading.
@@ -72,7 +74,7 @@ const itemsRead = [1, 2].flatMap((n) => lines(`knowledge/item-math-${n}.jsonl`))
 }) })).filter((p) => p.ops.length);
 const items = mergeRows(itemsRead, overrides.items, overrides.expectedInputs.items);
 // How many times a cast hits one target, or which of its numbers is the normal one: read from each ability's text and calculation names.
-const hitsRead = Object.fromEntries([1, 2, 3].flatMap((n) => lines(`knowledge/spell-hits-${n}.jsonl`)).map((h) => [h.path, h.calc ? { hits: h.hits ?? 1, calc: h.calc } : { hits: h.hits ?? 1 }]));
+const hitsRead = Object.fromEntries([1, 2, 3].flatMap((n) => lines(`knowledge/spell-hits-${n}.jsonl`)).map((h) => [h.path, { hits: h.hits ?? 1, ...(h.calc ? { calc: h.calc } : {}), ...(h.notModelled ? { notModelled: h.notModelled } : {}) }]));
 for (const key of Object.keys(overrides.spellHits)) {
   if (!Object.hasOwn(overrides.expectedInputs.spellHits, key)) throw new Error('missing expected spell hit input');
   unchangedInput(hitsRead[key], overrides.expectedInputs.spellHits[key], key);
@@ -86,7 +88,7 @@ export const CARD_NUMBERS: (CardNumbers & { need?: CardNeed })[] = ${JSON.string
 
 export const PASSIVE_NUMBERS: { id: number; ops: CardOp[] }[] = ${JSON.stringify(passives)} as { id: number; ops: CardOp[] }[];
 
-export const SPELL_HITS: Record<string, { hits: number; calc?: string; targetBonusHealth?: boolean }> = ${JSON.stringify(hits)};
+export const SPELL_HITS: Record<string, { hits: number; calc?: string; targetBonusHealth?: boolean; notModelled?: string }> = ${JSON.stringify(hits)};
 export const ITEM_NUMBERS: { id: number; ops: CardOp[] }[] = ${JSON.stringify(items)} as { id: number; ops: CardOp[] }[];
 `;
 let output = 'src/ai/cardMathData.ts', check = false;

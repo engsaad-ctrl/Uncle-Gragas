@@ -34,7 +34,7 @@ export type CardOp =
   | { op: 'cooldown'; scope: string; factor: number; after_quest?: boolean }
   | { op: 'refund'; scope: string; amount: Amount; unit: string; trigger: string; internal_cooldown?: number | null; after_quest?: boolean }
   | { op: 'recast'; key: string; internal_cooldown?: number | null; after_quest?: boolean }
-  | { op: 'proc'; trigger: string; internal_cooldown?: number | null; damage: DamageFormula; type: string; after_quest?: boolean }
+  | { op: 'proc'; trigger: string; afterCastWindow?: number; internal_cooldown?: number | null; damage: DamageFormula; type: string; after_quest?: boolean }
   | { op: 'dot'; per_second: DamageFormula; duration: number; type: string; stacks_max?: number | null; trigger?: string; after_quest?: boolean }
   /** Sent on the trigger once per cooldown (by his level), it lands `delay` s later and deals `damage` in even ticks over `duration` s, a tick at the end of each 1/ticksPerSecond;
    * ticks past the fight's end are lost. On landing it applies on-hit damage at `onHitEfficacy`, once. BEES!!!, read from the patch's file (src/ai/augmentFiles.ts). */
@@ -54,7 +54,7 @@ export type CardOp =
   | { op: 'on_hit_repeat'; extra_hits: number; trigger: string; after_quest?: boolean }
   /** Each attack also fires bolts at other enemies near the target (Runaan's Hurricane): this many for a ranged or melee champion, each a share of his AD that crits and applies on-hit. */
   | { op: 'bolts'; ranged: number; melee: number; ad: number; after_quest?: boolean }
-  | { op: 'timed'; trigger: string; stat: string; value: Amount; mode: 'add' | 'percent'; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; after_quest?: boolean };
+  | { op: 'timed'; trigger: string; afterCastWindow?: number; stat: string; value: Amount; mode: 'add' | 'percent'; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; after_quest?: boolean };
 
 export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null; /** Actual or explicitly estimated choice level; only this card's lifetime stacks start here. */ acquiredLevel?: number; abilityKey?: TargetAbility }
 
@@ -163,6 +163,8 @@ const REFUND_ON_HIT: Record<string, string> = { 'Characters/Ezreal/Spells/Ezreal
 const HEALING_NAME = /heal|shield/i;
 const NOT_ANY_DAMAGE = /monster|minion|shield|heal|cap|tooltiponly/i;
 const HEALTH_SHARE_NAME = /(percent|max|total).*(health|hp)|(health|hp).*(percent|damage)|percent.*damage/i;
+const JAYCE_MELEE_E = 'Characters/Jayce/Spells/JayceThunderingBlowAbility/JayceThunderingBlow';
+const NASUS_STORM = 'Characters/Nasus/Spells/NasusRAbility/NasusR';
 const NOT_HEALTH_SHARE = /heal$|healing|shield|cost|decay|monster|minion|cap|missing|tooltip$/i;
 const NOT_DAMAGE = /monster|minion|shield|heal|bonus|floor|secondary/i;
 /** A spell's damage when it crits (CritDamage, TotalDamageCrit, CriticalDamage), not its base (TotalDamageNoCrit, ActiveDamageThatCanCrit, PreCritDamage). */
@@ -424,6 +426,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (!spell || locked.has(key)) return;
     const { rank, ranks } = allocation[key];
     if (rank === 0) return;
+    const spellLimit = SPELL_HITS[path]?.notModelled;
+    if (spellLimit) notModelled.push(spellLimit);
     // Some abilities keep their numbers in a sibling record of the same folder (Lux Q in LuxLightBindingMis), or name a base cooldown (Veigar W).
     const folder = path.slice(0, path.lastIndexOf('/') + 1);
     const sibling = folder ? Object.entries(bin).find(([p, v]) => p !== path && p.startsWith(folder) && (v?.mSpell?.cooldownTime?.[rank] ?? 0) > 1)?.[1]?.mSpell : undefined;
@@ -500,6 +504,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     return { physical: 100 / (100 + armor), magic: 100 / (100 + mr), true: 1, adaptive: c.ap > c.bonusAd ? 100 / (100 + mr) : 100 / (100 + armor) };
   };
   // The ability just cast, for a refund measured on its cooldown (Archmage: 30% of it off another random ability).
+  let lastCast = -Infinity;
   let castNow: { key: string; cooldown: number } | null = null;
   const reduce = (scope: string, amount: Amount, unit: string, t: number) => {
     // A share of the cast ability's cooldown taken off another ability at random: each other ability gets its expected part.
@@ -521,6 +526,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     const taken = takenBy(c);
     for (const x of ops) {
       if (!('trigger' in x) || (x.trigger !== trigger && !(trigger === 'ability_hit' && (x.trigger === 'spell_hit' || x.trigger === 'burn')))) continue;
+      if ('afterCastWindow' in x && x.afterCastWindow !== undefined && t - lastCast > x.afterCastWindow) continue;
       // A card's summoner spell or chosen spell comes once in a fight, whatever the abilities do.
       const icd = x.trigger === 'spell_hit' ? (('internal_cooldown' in x ? x.internal_cooldown : 0) || FIGHT.seconds) : 'internal_cooldown' in x ? (x.internal_cooldown ?? 0) : 0;
       if (icd && t - (lastProc.get(x) ?? -Infinity) < icd) continue;
@@ -590,6 +596,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       fire('on_hit', t, c);
       for (; repeatCarry >= 1; repeatCarry--) fire('on_hit', t, c); // a share of attacks hits twice
       fire('attack', t, c);
+      lastCast = -Infinity; // A basic attack consumes any charge from a previous cast.
       if (armed) { armed = false; fire('next_attack', t, c); } // an attack after an ability: it comes no faster than his attacks
       critCarry += c.crit;
       if (critCarry >= 1) { critCarry -= 1; fire('crit', t, c); }
@@ -610,13 +617,22 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const chosen = reading?.calc ? read.filter((v) => v.name === reading.calc) : [];
         const values = chosen.length ? chosen : named.length ? named : read.filter((v) => DAMAGE_NAME.test(v.name) && !NOT_ANY_DAMAGE.test(v.name) && !CRIT_VARIANT(v.name));
         const critHit = Math.max(0, ...read.filter((v) => CRIT_VARIANT(v.name) && DAMAGE_NAME.test(v.name) && !NOT_ANY_DAMAGE.test(v.name) && !/mod|mult|scaling|current/i.test(v.name)).map((v) => v.value));
-        const healthShare = Math.max(0, ...read.filter((v) => HEALTH_SHARE_NAME.test(v.name) && !NOT_HEALTH_SHARE.test(v.name)).map((v) => (v.value <= 1 ? v.value : v.value <= 100 ? v.value / 100 : 0)));
+        // Jayce's tooltip adds a fraction stored as a raw rank value, outside the FlatDamage calculation.
+        const jayceMeleeE = sl.path === JAYCE_MELEE_E;
+        const percHp = jayceMeleeE ? sl.spell.DataValues?.find((v) => v.name === 'PercHPDamage')?.values?.[sl.rank] ?? 0 : 0;
+        const validPercHp = percHp > 0 && percHp <= 1;
+        if (jayceMeleeE && sl.last === undefined) {
+          notModelled.push('Jayce E: الإطاحة وتغيير موضع الهدف غير محسوبين');
+          if (!validPercHp) notModelled.push('Jayce E: نسبة ضرر الصحة القصوى غير متاحة من ملف اللعبة');
+        }
+        const healthShare = jayceMeleeE ? (validPercHp ? percHp : 0) : Math.max(0, ...read.filter((v) => HEALTH_SHARE_NAME.test(v.name) && !NOT_HEALTH_SHARE.test(v.name)).map((v) => (v.value <= 1 ? v.value : v.value <= 100 ? v.value / 100 : 0)));
         const healing = Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
         if (!kitHeals) abilityHealing += healing; // read per ability as his own healing instead (knowledge/champion-heal-*.jsonl)
         if (!kitHeals) abilityHealingOnly += Math.max(0, ...read.filter((v) => /heal/i.test(v.name) && !/shield|monster|minion/i.test(v.name)).map((v) => v.value));
         if (healing > 0) for (const b of allyBuffs) b.until = t + b.seconds;
         const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * targetHp * (reading?.targetBonusHealth ? TARGET_BONUS_SHARE : 1)) + fromPassive.reduce((t, v) => t + v.value, 0);
-        const one = each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
+        const nasusStorm = sl.path === NASUS_STORM;
+        const one = nasusStorm ? 0 : each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
         // A cast that deals damage over time (Miss Fortune's E: TotalDamagePerSecond for 2 s) is dealt at once here, so a card that crits damage over time crits it here; a toggle's goes through the dots.
         const overTime = sl.overTime && !sl.toggle ? 1 + c.crit * dotCrit : 1;
         // The game's own crit version says what a crit adds (Nasus: crit damage on his AD part, his stacks uncritted); without one, a crit raises the whole hit.
@@ -641,6 +657,23 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
           else fromAbilities += hit * abilityTaken;
         } else {
           fromAbilities += hit * abilityTaken;
+          if (nasusStorm) {
+            const duration = sl.spell.DataValues?.find((v) => v.name === 'Duration')?.values?.[sl.rank] ?? 0;
+            const ratio = chosen.find((v) => !v.partial)?.value ?? 0;
+            const validStorm = duration > 0 && Number.isFinite(duration) && ratio > 0 && ratio <= 1;
+            if (sl.last === undefined) {
+              notModelled.push('Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات الفعلي وتفعيل آثار الإصابة والصحة والمقاومات وخفض تبريد Q غير محسوبة');
+              if (!validStorm) notModelled.push('Nasus R: نسبة الضرر أو مدة العاصفة غير متاحة من ملف اللعبة');
+            }
+            if (validStorm) {
+              const dps = ratio * targetHp * amp('abilities', t) * amp(scope, t, false);
+              const storm = { op: { op: 'dot' as const, trigger: 'nasus_storm', per_second: { flat: dps }, duration, type: 'magic' }, until: t + duration, stacks: 1, fromAbility: true };
+              const previous = dots.findIndex((d) => d.op.trigger === 'nasus_storm');
+              if (previous < 0) dots.push(storm);
+              else dots[previous] = storm;
+              perCast[sl.key] = Math.round(dps * Math.min(duration, FIGHT.seconds - t));
+            }
+          }
           sl.last = t;
           sl.dealt = hit * abilityTaken;
           sl.ready = t + Math.max(0.5, (sl.cooldown * cdFactor(scope) * 100) / (100 + haste(scope, sl.key)));
@@ -657,6 +690,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         if (one > 0 && !sl.toggle) for (const x of ops) if (x.op === 'echo' && x.key === sl.key) echoes.push({ at: t + x.delay, dealt: hit * abilityTaken * x.ratio, hits: reading?.hits ?? 1, events: !!x.events, onHit: asAttack || etherealHit });
         if (one > 0) { fire('ability_hit', t, c); if (asAttack || etherealHit) fire('on_hit', t, c); if (etherealHit && !asAttack) fire('next_attack', t, c); }
         armed = true;
+        lastCast = t;
         castNow = { key: sl.key, cooldown: Math.max(0, sl.ready - t) };
         fire('ability_cast', t, c);
         castNow = null;

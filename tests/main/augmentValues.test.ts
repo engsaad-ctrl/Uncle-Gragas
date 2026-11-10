@@ -22,15 +22,24 @@ vi.mock('../../src/ai/cardMathData.js', () => ({ SPELL_HITS: {}, ITEM_NUMBERS: [
   { id: 90001, name: 'Flat health', status: 'computed', ops: [{ op: 'add', stat: 'hp', value: 100 }] },
   { id: 90002, name: 'Growing health', status: 'conditional', ops: [{ op: 'per_stack', stat: 'hp', value: 10, mode: 'add', per: 'takedown' }] },
   { id: 90003, name: 'Unreadable', status: 'unreadable', ops: [] },
+  { id: 3086, name: 'BEES!!!', status: 'computed', ops: [] },
   { id: 1103, name: 'Bread And Butter', status: 'computed', ops: [{ op: 'add', stat: 'haste', value: 100, scope: 'chosen_ability' }] },
 ] }));
-vi.mock('../../src/texts/augmentsLoader.js', () => ({ loadAugments: async () => ({ version: 'test', stale: false, augments: [90001, 90002, 90003, 1103].map((id) => ({ id, ids: [id], enName: String(id), rarity: 'gold', modes: ['mayhem'] })) }) }));
+vi.mock('../../src/texts/augmentsLoader.js', () => ({ loadAugments: async () => ({ version: 'test', stale: false, augments: [90001, 90002, 90003, 1103, 3086].map((id) => ({ id, ids: [id], enName: String(id), rarity: 'gold', modes: ['mayhem'] })) }) }));
 
 import { createServices } from '../../src/main/services.js';
 import { enemyTeam } from '../../src/ai/itemMath.js';
 const services = () => createServices({ cacheDir: 'unused-in-memory-fixture', fetchImpl: vi.fn(() => { throw new Error('network forbidden in this test'); }) });
 
 describe('augment values across separate offers', () => {
+  it('shows why an unreadable offer is unmeasured when the patch data is missing', async () => {
+    const s = services();
+    const overlay = await s.overlayData({ championId: 103, mode: 'mayhem' });
+    expect(overlay.augments.find((a) => a.id === 3086)?.unmeasuredReason).toContain('بيانات BEES من ملف الإصدار غير محمّلة');
+    expect(overlay.augments.find((a) => a.id === 90003)?.unmeasuredReason).toContain('لا توجد معادلات');
+    expect(overlay.augments.find((a) => a.id === 90001)?.unmeasuredReason).toBeUndefined();
+    expect(await s.cardValues(103, [], [], undefined, { level: 7 }, [3086])).not.toContainEqual(expect.objectContaining({ id: 3086 }));
+  });
   it('evaluates the actual delayed level through the levels before the next offer', async () => {
     const rows = await services().cardValues(103, [90003], [], undefined, { level: 9, acquiredLevels: { 90003: 3 } });
     expect(rows).toHaveLength(3);

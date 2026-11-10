@@ -18,6 +18,7 @@ import { itemExplanationWords } from '../app/buildExplanation.js';
 import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
+import { EZREAL, MANAMUNE, MURAMANA } from '../app/ezrealPurchases.js';
 import { composeItemList, type ItemEntry } from '../app/itemList.js';
 import { composeProfile, type ProfilePage } from '../app/profilePage.js';
 import { counterPicks, metaPicks, type Suggestion } from '../app/suggestions.js';
@@ -75,7 +76,7 @@ export interface OverlayData {
   items: ItemEntry[];
   /** Boots on the map: the AI build can pick other boots than the usual ones. */
   boots: ItemEntry[];
-  augments: (AugmentText & { rank?: number; popularity?: number; tierLabel?: string })[];
+  augments: (AugmentText & { rank?: number; popularity?: number; tierLabel?: string; unmeasuredReason?: string })[];
 }
 
 export interface AugmentValue {
@@ -372,7 +373,12 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const list = (await items('mayhem').catch(() => null))?.list ?? [];
       const pool = list.filter((i) => i.group === 'legendary');
       const boots = list.filter((i) => i.group === 'boots');
-      return { champion, mode: 'mayhem', rated: rated.length > 0, build, items: pool, boots, augments: [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))] };
+      const offered = [...rated, ...all.filter((a) => a.modes.includes('mayhem') && !ratedIds.has(a.id))];
+      const augmentsWithNotes = offered.map((a) => {
+        const card = cardsOf(all, [a.id])[0];
+        return card?.ops.length ? a : { ...a, unmeasuredReason: card?.not_modelled ?? 'لا توجد معادلات لهذا التعزيز' };
+      });
+      return { champion, mode: 'mayhem', rated: rated.length > 0, build, items: pool, boots, augments: augmentsWithNotes };
     }
     if (pick?.mode === 'arena') return { champion, mode: 'arena', rated: false, build: null, items: [], boots: [], augments: all.filter((a) => a.modes.includes('arena')) };
     return { champion, mode: pick?.mode ?? null, rated: false, build, items: [], boots: [], augments: all };
@@ -687,7 +693,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     // Full searches only for the actual offer (at most three), never for the entire augment catalogue.
     // Finished items keep their slots. Components are retained in the current fight but their future upgrade cost is unknown.
     const finished = new Set(shopNames.list.filter((i) => i.group === 'legendary' || i.group === 'boots').map((i) => i.id));
-    const owned = knownItems.filter((id) => finished.has(id));
+    const owned = [...knownItems.filter((id) => finished.has(id)), ...(championId === EZREAL ? itemIds.filter((id) => id % 10000 === MURAMANA && !finished.has(id) && !finished.has(id % 10000)) : [])];
     const timing = { ...progress, level: stage.level, acquiredLevels: stage.acquiredLevels };
     let baselineItems: number[];
     try { baselineItems = (await mathBuild(championId, augmentIds, owned, teams, style, stacks, timing)).map((r) => r.item.id); }
@@ -710,7 +716,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   }
 
   const ITEM_OPS = Object.fromEntries(ITEM_NUMBERS.map((i) => [i.id, i.ops]));
-  const builds = new Map<string, Promise<{ item: ItemEntry; why: string[]; offPath?: boolean }[]>>();
+  const builds = new Map<string, Promise<{ item: ItemEntry; why: string[]; missing: string[] }[]>>();
   /** The next items by arithmetic (src/ai/itemMath.ts). No pick, buy or win rates. */
   // The one lookup every path takes (offer, plan, build, styles, explanation), so an augment read from the patch's file (src/ai/augmentFiles.ts) has one set of numbers.
   const cardsOf = (list: { id: number; ids?: number[]; game?: AugmentGameData }[], augmentIds: number[]) => augmentIds.flatMap((id) => { const entry = list.find((a) => a.id === id); const ids = entry?.ids ?? [id]; const card = CARD_NUMBERS.find((c) => ids.includes(c.id)); return card ? [cardFromFiles(card, entry?.game)] : []; });
@@ -755,7 +761,14 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const sold = list.list.filter((i) => (i.group === 'legendary' || (i.group === 'boots' && i.gold > PLAIN_BOOTS_GOLD)) && i.html && Math.floor(i.id / 10000) !== 77);
       // Live inventory may contain mode copies and components; only finished shop items occupy fixed build slots.
       const soldIds = new Set(sold.map((i) => i.id));
-      const ownedItems = [...new Set(owned.map((id) => soldIds.has(id) ? id : id % 10000).filter((id) => soldIds.has(id)))];
+      const manamune = championId === EZREAL ? sold.find((i) => i.id % 10000 === MANAMUNE && shop[i.id])?.id : undefined;
+      const ownedItems = [...new Set(owned.map((id) => {
+        const base = id % 10000;
+        if (soldIds.has(id)) return id;
+        if (soldIds.has(base)) return base;
+        if (base === MURAMANA && manamune !== undefined) return manamune;
+        return base;
+      }).filter((id) => soldIds.has(id)))];
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
       const stage = augmentStage(augmentIds, progress);
       const cards = progress ? augmentIds.flatMap((id) => cardsOf(all.augments, [id]).map((c) => ({ ...c, acquiredLevel: stage.acquiredLevels[id], abilityKey: progress.abilityTargets?.[id] }))) : cardsOf(all.augments, augmentIds);
@@ -769,6 +782,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const requiredAnyOf = all.augments.some((a) => augmentIds.some((x) => a.ids.includes(x)) && a.enName === 'Upgrade Sheen') && spellblade.length ? [spellblade] : [];
       // A quest card that asks for items (Ultra Hydra, Wooglet's Witchcap) gets them, since its reward counts only once they're all held.
       const quests = cards.filter((c) => c.ops.some((x) => x.after_quest)).flatMap((c) => questItems(c.id)).flatMap((id) => sold.find((i) => i.id % 10000 === id)?.id ?? []);
+      const plannedItem = ownedItems.some((id) => id % 10000 === MURAMANA) ? undefined : manamune;
       const required = [...new Set([...cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []), ...upgraded, ...quests])];
       const damageKind = kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed';
       const switched = cards.some((c) => switchesDamage([c.id]));
@@ -807,7 +821,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const rangedOnly = (id: number) => id % 10000 === RUNAANS; // Statikk Shiv also carries a bolts op now, and melee champions build it
       const tankOnly = (i?: { id: number; group?: string; boots?: boolean }) => !!i && !i.boots && i.group !== 'boots' && itemDamage(i.id) === 'none';
       const skillPlan = await skillPlanFor(championId);
-      const steps = itemsByMath({ bin, shop, level: progress?.level, knownRanks: knownRanksOf(progress), skillPlan, enemy: facts.enemy, place, offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' || hybrid(i.id) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style && !switched : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned: ownedItems, required, noBoots: championId === CASSIOPEIA, requiredAnyOf, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks });
+      const steps = itemsByMath({ bin, shop, level: progress?.level, knownRanks: knownRanksOf(progress), skillPlan, enemy: facts.enemy, place, offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' || hybrid(i.id) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style && !switched : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.filter((i) => championId !== EZREAL || i.id % 10000 !== MURAMANA).map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned: ownedItems, required, plannedItem, noBoots: championId === CASSIOPEIA, requiredAnyOf, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks });
       const explanation = explainBuild({ bin, shop, kit: fightKitOf(championId), cards, passive, itemOps: ITEM_OPS, items: steps.map((s) => s.id), level: Math.max(15, stage.level), enemy: facts.enemy, stacks, knownRanks: knownRanksOf(progress), skillPlan, incomingDps: place.share * place.enemyDps * (place.draw ?? 1) });
       const missing = [...new Set([
         ...explanation.missing,
@@ -822,7 +836,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       ])];
       const partName = (kind: 'item' | 'augment', id: number) => kind === 'item' ? sold.find((i) => i.id === id)?.enName ?? String(id) : cards.find((c) => c.id === id)?.name ?? String(id);
       const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
-      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, missing, why: [...(s.reason === 'owned' ? ['owned'] : [s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean)), ...itemExplanationWords(explanation, s.id, partName)] }] : []; });
+      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, missing, why: [...(s.reason === 'owned' ? ['owned'] : [s.id === manamune ? 'أكمل Manamune بعد اكتمال تراكمات Tear of the Goddess' : s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean)), ...itemExplanationWords(explanation, s.id, partName)] }] : []; });
     })();
     builds.set(key, work);
     work.catch(() => builds.delete(key));

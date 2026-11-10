@@ -1,4 +1,5 @@
 {"path":"Characters/Karthus/Spells/KarthusDefileAbility/KarthusDefile","hits":8,"why":"TotalDPS is per second and the toggle runs for the fight; capped at 8 by fast mana drain"}
+{"path":"Characters/Gragas/Spells/GragasQAbility/GragasQ","hits":1,"calc":"MinDamage","notModelled":"Gragas Q: زيادة الضرر والإبطاء مع بقاء البرميل غير محسوبة؛ الحساب يستخدم التفجير الفوري","why":"16.22 GragasQ tooltip ties MaxDamage to the time the barrel is left out; MinDamage is the immediate detonation."}
 {"path":"Characters/Kennen/Spells/KennenShurikenStormAbility/KennenShurikenStorm","hits":3,"why":"PerTickDamageCalculated is one strike; the storm strikes several times, 3 is the safe floor"}
 {"path":"Characters/Leblanc/Spells/LeblancQAbility/LeblancQ","hits":2,"why":"Damage plus MarkDamage of the same size when the sigil is detonated"}
 {"path":"Characters/Leblanc/Spells/LeblancEAbility/LeblancE","hits":1.5,"why":"InitialDamage 130 plus DelayedDamage 240 against 240 taken now: 370/240"}

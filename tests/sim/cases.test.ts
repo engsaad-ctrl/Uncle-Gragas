@@ -97,6 +97,15 @@ async function run(c: Case, v?: NonNullable<Case['variants']>[number]) {
 }
 
 describe('fixed fight cases on pinned 16.22 files', () => {
+  it('uses the immediate Gragas Q damage and exposes the unmodelled charge', async () => {
+    const rawBin = await loadChampionBin(opts, manifest.contentVersion, 'gragas');
+    const r = fight({
+      bin: withDamageTypes(rawBin, TOOLTIPS), shop: {}, kit: fightKitOf(79),
+      items: [], cards: [], level: 1, knownRanks: { level: 1, ranks: { Q: 1, W: 0, E: 0, R: 0 } },
+    });
+    expect(r.perCast.Q).toBe(80); // MinDamage at rank 1, with zero AP
+    expect(r.notModelled.join(' ')).toContain('Gragas Q');
+  });
   it('reads only the pinned files, unchanged', () => {
     for (const f of manifest.files) expect(createHash('sha256').update(readFileSync(DIR + f.path)).digest('hex'), f.path).toBe(f.sha256);
   });
@@ -113,5 +122,29 @@ describe('fixed fight cases on pinned 16.22 files', () => {
       report.push({ name: c.name, inputs: { champion: c.champion, level: c.level, stacks: c.stacks, skillPlan: c.skillPlan, items: c.items, augments: c.augments, enemy: c.enemy, incomingDps: c.incomingDps ?? FIGHT.incomingDps, seconds: FIGHT.seconds }, ...base, variants });
     }
     await expect(`${JSON.stringify({ patch: manifest.contentVersion, report }, null, 1)}\n`).toMatchFileSnapshot('../fixtures/sim/report.json');
+  });
+  it.each([[1, 144], [2, 194]])('adds rank %i Jayce melee E max-health damage as magic', async (rank, expected) => {
+    const rawBin = await loadChampionBin(opts, manifest.contentVersion, 'jayce');
+    const r = fight({
+      bin: withDamageTypes(rawBin, TOOLTIPS), shop: {}, kit: { damage: 'physical', attacks: false },
+      items: [], cards: [], level: 3, knownRanks: { level: 3, ranks: { Q: 0, W: 0, E: rank, R: 0 } },
+      enemy: { armor: 0, mr: 100, physicalShare: 0.5, hp: 1800 },
+    });
+    expect(r.perCast.E).toBe(expected);
+    expect(r.fromAbilities / r.casts.E!).toBeCloseTo(rank === 1 ? 72 : 97.2);
+    expect(r.notModelled.join(' ')).toContain('Jayce E');
+  });
+  it('deals Nasus R max-health magic damage over the storm instead of on cast', async () => {
+    const rawBin = await loadChampionBin(opts, manifest.contentVersion, 'nasus');
+    const cast = (rank: number) => fight({
+      bin: withDamageTypes(rawBin, TOOLTIPS), shop: {}, kit: { damage: 'physical', attacks: false },
+      items: [], cards: [], level: 6, knownRanks: { level: 6, ranks: { Q: 0, W: 0, E: 0, R: rank } },
+      enemy: { armor: 0, mr: 100, physicalShare: 0.5, hp: 2000 },
+    });
+    const r = cast(1), base = cast(0);
+    expect(r.casts.R).toBe(1);
+    expect(r.fromAbilities).toBeCloseTo(450); // 3% of 2000 per second, for 15 s, halved by 100 MR
+    expect(r.damageBySecond[0]! - base.damageBySecond[0]!).toBeCloseTo(30);
+    expect(r.notModelled.join(' ')).toContain('Nasus R');
   });
 });
