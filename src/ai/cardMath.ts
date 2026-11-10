@@ -48,7 +48,7 @@ export type CardOp =
   | { op: 'crit_abilities'; extra: number; after_quest?: boolean }
   | { op: 'crit_dot'; extra: number; after_quest?: boolean }
   | { op: 'heal_damage'; ratio: number; after_quest?: boolean }
-  | { op: 'abilities_on_hit'; after_quest?: boolean }
+  | { op: 'abilities_on_hit'; internal_cooldown?: number; after_quest?: boolean }
   /** He becomes melee (Draw Your Sword): attack range 200, melee uptime and the mode's melee resists, no ranged-only items. */
   | { op: 'melee'; after_quest?: boolean }
   | { op: 'on_hit_repeat'; extra_hits: number; trigger: string; after_quest?: boolean }
@@ -502,6 +502,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   let abilityInstances = 0, armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = o.kit.attacks || o.kit.damage !== 'magic' || passiveOnAttack ? 0 : Infinity, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
   const casts: Record<string, number> = {}, perCast: Record<string, number> = {};
   const kills = [...FIGHT.killTimes];
+  const abilityOnHit = ops.find((x) => x.op === 'abilities_on_hit');
+  let nextAbilityOnHit = 0;
   const damageBySecond: number[] = [], ownBySecond: number[] = [];
   const current = (t: number) => {
     const c: BuildStats = { ...s };
@@ -609,7 +611,14 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     const taken = takenBy(c);
     // At each kill he turns to a new target: burns his items and cards left on the dead one end, so their stacks build again (knowledge/fight-rules.md, target switching).
     // The kill times stand for it: stored games show a champion death every 9.9 s of game time, about every 5 s of fighting if half the game is fighting.
-    while (kills.length && t >= kills[0]!) { kills.shift(); fromAbilities += executeShare * targetHp; for (let i = dots.length - 1; i >= 0; i--) if (!dots[i]!.fromAbility) dots.splice(i, 1); fire('takedown', t, c); fire('kill', t, c); }
+    while (kills.length && t >= kills[0]!) {
+      kills.shift();
+      nextAbilityOnHit = t;
+      fromAbilities += executeShare * targetHp;
+      for (let i = dots.length - 1; i >= 0; i--) if (!dots[i]!.fromAbility) dots.splice(i, 1);
+      fire('takedown', t, c);
+      fire('kill', t, c);
+    }
     // A mage or support who doesn't fight with attacks makes none (the owner: Ahri, Soraka); a physical non-attacker attacks between casts only, an assumption.
     if (t >= nextAttack) {
       attacks++;
@@ -729,7 +738,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const asAttack = (sl.spell as { mApplyAttackEffect?: boolean }).mApplyAttackEffect === true;
         if (one > 0 && asAttack && armed) { armed = false; fire('next_attack', t, c); }
         // Abilities that apply on-hit (Ethereal Weapon) also set off spellblade, its own cooldown kept: the owner's Karthus with Lich Bane (2026-11-06), seen on screen.
-        const etherealHit = ops.some((x) => x.op === 'abilities_on_hit');
+        const etherealHit = one > 0 && !asAttack && abilityOnHit !== undefined && t + 1e-9 >= nextAbilityOnHit;
+        if (etherealHit) nextAbilityOnHit = t + (abilityOnHit.internal_cooldown ?? 0);
         // Echo Cast: the same hit again after its delay, read from his stats now; no mana, no cooldown, no healing (knowledge/math-generation.md).
         if (one > 0 && !sl.toggle) for (const x of ops) if (x.op === 'echo' && x.key === sl.key) echoes.push({ at: t + x.delay, dealt: hit * abilityTaken * x.ratio, hits: reading?.hits ?? 1, events: !!x.events, onHit: asAttack || etherealHit });
         if (one > 0) { fire('ability_hit', t, c); if (asAttack || etherealHit) fire('on_hit', t, c); if (etherealHit && !asAttack) fire('next_attack', t, c); }

@@ -702,8 +702,8 @@
      "id": 1045,
      "name": "Infernal Conduit",
      "delta": {
-      "damage": 537.79,
-      "fromCards": 201.98,
+      "damage": 716.54,
+      "fromCards": 380.74,
       "effectiveHp": 0,
       "healedHp": 0
      }
@@ -757,7 +757,7 @@
        "kind": "item",
        "id": 3165,
        "delta": {
-        "damage": 55.89,
+        "damage": 85.33,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -790,7 +790,7 @@
        "kind": "augment",
        "id": 1045,
        "delta": {
-        "damage": 43.97,
+        "damage": 74.98,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -846,7 +846,7 @@
        "kind": "item",
        "id": 3165,
        "delta": {
-        "damage": 218.91,
+        "damage": 280.52,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -879,7 +879,7 @@
        "kind": "augment",
        "id": 1045,
        "delta": {
-        "damage": 74.73,
+        "damage": 142.73,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -935,7 +935,7 @@
        "kind": "item",
        "id": 3165,
        "delta": {
-        "damage": 77.33,
+        "damage": 228.41,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -968,7 +968,7 @@
        "kind": "augment",
        "id": 1045,
        "delta": {
-        "damage": -97.21,
+        "damage": 81.55,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -1024,7 +1024,7 @@
        "kind": "item",
        "id": 3165,
        "delta": {
-        "damage": 66.74,
+        "damage": 76.81,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -1057,7 +1057,7 @@
        "kind": "augment",
        "id": 1045,
        "delta": {
-        "damage": 35.85,
+        "damage": 47.77,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -1069,7 +1069,7 @@
     {
      "id": 3165,
      "delta": {
-      "damage": 1001.04,
+      "damage": 1152.11,
       "effectiveHp": 597.07,
       "selfSustain": 0,
       "abilitySupport": 0,
@@ -1080,7 +1080,7 @@
        "kind": "item",
        "id": 6653,
        "delta": {
-        "damage": 55.89,
+        "damage": 85.33,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -1091,7 +1091,7 @@
        "kind": "item",
        "id": 3089,
        "delta": {
-        "damage": 218.91,
+        "damage": 280.52,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -1102,7 +1102,7 @@
        "kind": "item",
        "id": 3100,
        "delta": {
-        "damage": 77.33,
+        "damage": 228.41,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -1113,7 +1113,7 @@
        "kind": "item",
        "id": 3020,
        "delta": {
-        "damage": 66.74,
+        "damage": 76.81,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -1124,7 +1124,7 @@
        "kind": "augment",
        "id": 1029,
        "delta": {
-        "damage": 11.89,
+        "damage": 162.96,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -1146,7 +1146,7 @@
        "kind": "augment",
        "id": 1045,
        "delta": {
-        "damage": 220.51,
+        "damage": 399.26,
         "effectiveHp": 0,
         "selfSustain": 0,
         "abilitySupport": 0,
@@ -1157,7 +1157,7 @@
     }
    ],
    "notModelled": [
-    "Ethereal Weapon: Abilities apply on-hit effects, 1s cooldown per target: on_hit_repeat has no ability trigger.",
+    "Ethereal Weapon: توقيت الإصابات المتعددة والنبضات وتعدد الأهداف غير محسوب. التأثير الأصلي للقدرات التي تطبّق on-hit لا يستهلك تبريد التعزيز في المحاكاة؛ تفاعله الفعلي غير مثبت.",
     "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب",
     "Karthus E: استرداد المانا يتبع القتل المفترض في المحاكاة؛ قتل الوحدات الصغيرة والاستنزاف المستمر للمانا غير محسوبين"
    ],
@@ -1211,7 +1211,7 @@
       }
      },
      "notModelled": [
-      "Ethereal Weapon: Abilities apply on-hit effects, 1s cooldown per target: on_hit_repeat has no ability trigger.",
+      "Ethereal Weapon: توقيت الإصابات المتعددة والنبضات وتعدد الأهداف غير محسوب. التأثير الأصلي للقدرات التي تطبّق on-hit لا يستهلك تبريد التعزيز في المحاكاة؛ تفاعله الفعلي غير مثبت.",
       "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب",
       "Karthus E: استرداد المانا يتبع القتل المفترض في المحاكاة؛ قتل الوحدات الصغيرة والاستنزاف المستمر للمانا غير محسوبين"
      ]

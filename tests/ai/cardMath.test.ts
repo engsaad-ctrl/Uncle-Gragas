@@ -18,6 +18,28 @@ const kit = { damage: 'physical' as const, attacks: true };
 const card = (name: string, ops: CardOp[]): CardNumbers => ({ id: 1, name, status: 'computed', ops });
 const run = (cards: CardNumbers[] = [], passive?: CardOp[]) => fight({ bin, shop: {}, kit, items: [], cards, level: 1, passive });
 
+it('limits Ethereal Weapon on-hit damage to one trigger per second on the same target', () => {
+  const ethereal = CARD_NUMBERS.find((c) => c.id === 1029)!;
+  const onHit = card('On-hit', [{ op: 'proc', trigger: 'on_hit', damage: { flat: 10 }, type: 'true' }]);
+  const spell = (native = false) => ({ mSpell: {
+    cooldownTime: [30, 30], mApplyAttackEffect: native,
+    mSpellCalculations: { Damage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 100 }] } },
+  } });
+  const cast = (native = false) => fight({
+    bin: { rec: { ...bin.rec, spells: ['q', 'w', 'e'] }, q: spell(), w: spell(native), e: spell() },
+    shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [ethereal, onHit], level: 3,
+  }).fromCards;
+  expect(cast()).toBe(20); // first and third casts, 1.5 seconds apart
+  expect(cast(true)).toBe(30); // the middle cast applies its own on-hit independently
+  const killTimes = FIGHT.killTimes;
+  try {
+    FIGHT.killTimes = [1];
+    expect(cast()).toBe(20); // second is still blocked, third hits the next target
+    FIGHT.killTimes = [0.5, 1];
+    expect(cast()).toBe(30); // each cast hits a different target
+  } finally { FIGHT.killTimes = killTimes; }
+});
+
 describe('the fight', () => {
   it('counts attacks from attack speed', () => {
     expect(run().attacks).toBe(9); // 0.6 a second over 15 seconds, the first at once
