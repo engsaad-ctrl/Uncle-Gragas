@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FIGHT, cardGain, fight, needHolds, type CardNumbers, type CardOp } from '../../src/ai/cardMath.js';
-import { CARD_NUMBERS } from '../../src/ai/cardMathData.js';
+import { CARD_NUMBERS, ITEM_NUMBERS } from '../../src/ai/cardMathData.js';
 // These tests count attacks exactly; the uptime has its own test.
 beforeAll(() => { FIGHT.attackUptime.melee = 1; FIGHT.attackUptime.ranged = 1; });
 afterAll(() => { FIGHT.attackUptime.melee = 0.8; FIGHT.attackUptime.ranged = 0.7; });
@@ -41,6 +41,20 @@ it('limits Ethereal Weapon on-hit damage to one trigger per second on the same t
 });
 
 describe('the fight', () => {
+  it('keeps the Dusk and Dawn on-hit repeat on its Spellblade cooldown', () => {
+    const dusk = ITEM_NUMBERS.find((i) => i.id === 2510)!;
+    const spell = { mSpell: { cooldownTime: [30, 30] } };
+    const cards = [card('On-hit', [{ op: 'proc', trigger: 'on_hit', damage: { flat: 10 }, type: 'true' }])];
+    const at = (delay: number, ops: CardOp[]) => fight({
+      bin: { rec: { ...bin.rec, spells: ['q', 'w'], attackSpeedModifiable: num(2) }, q: spell, w: spell },
+      shop: { 2510: {} } as never, kit, items: [2510], itemOps: { 2510: ops },
+      cards, level: 2, cooldowns: { W: delay },
+    }).fromCards;
+    const extra = (delay: number) => at(delay, dusk.ops) - at(delay, dusk.ops.filter((x) => x.op !== 'on_hit_repeat'));
+    expect(extra(0)).toBeCloseTo(10);
+    expect(extra(3)).toBeCloseTo(20);
+  });
+
   it('does not let other on-hit repeats trigger Double Tap before a critical attack', () => {
     const doubleTap = CARD_NUMBERS.find((c) => c.id === 2010)!;
     const cards = [

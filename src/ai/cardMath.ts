@@ -51,7 +51,7 @@ export type CardOp =
   | { op: 'abilities_on_hit'; internal_cooldown?: number; after_quest?: boolean }
   /** He becomes melee (Draw Your Sword): attack range 200, melee uptime and the mode's melee resists, no ranged-only items. */
   | { op: 'melee'; after_quest?: boolean }
-  | { op: 'on_hit_repeat'; extra_hits: number; trigger: string; after_quest?: boolean }
+  | { op: 'on_hit_repeat'; extra_hits: number; trigger: string; internal_cooldown?: number; after_quest?: boolean }
   /** Each attack also fires bolts at other enemies near the target (Runaan's Hurricane): this many for a ranged or melee champion, each a share of his AD that crits and applies on-hit. */
   | { op: 'bolts'; ranged: number; melee: number; ad: number; after_quest?: boolean }
   | { op: 'timed'; trigger: string; afterCastWindow?: number; stat: string; value: Amount; mode: 'add' | 'percent'; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; after_quest?: boolean };
