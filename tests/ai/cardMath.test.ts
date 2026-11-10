@@ -41,6 +41,20 @@ it('limits Ethereal Weapon on-hit damage to one trigger per second on the same t
 });
 
 describe('the fight', () => {
+  it('counts Guinsoo phantom hits only on every third attack while already at four stacks', () => {
+    const guinsoo = ITEM_NUMBERS.find((i) => i.id === 3124)!;
+    const cards = [card('On-hit', [{ op: 'proc', trigger: 'on_hit', damage: { flat: 10 }, type: 'true' }])];
+    const at = (speed: number) => fight({
+      bin: { rec: { ...bin.rec, attackSpeedModifiable: num(speed) } },
+      shop: { 3124: {} } as never, kit, items: [3124], itemOps: { 3124: guinsoo.ops }, cards, level: 1,
+      enemy: { armor: 0, mr: 0, physicalShare: 0.5 },
+    });
+    const slow = at(0.22), fast = at(0.6);
+    expect(slow).toMatchObject({ attacks: 4, fromCards: 160 }); // every gap exceeds the four-second stack duration
+    expect(fast.attacks).toBeGreaterThanOrEqual(7);
+    expect(fast.fromCards).toBe(40 * (fast.attacks + Math.floor((fast.attacks - 4) / 3)));
+  });
+
   it('keeps the Dusk and Dawn on-hit repeat on its Spellblade cooldown', () => {
     const dusk = ITEM_NUMBERS.find((i) => i.id === 2510)!;
     const spell = { mSpell: { cooldownTime: [30, 30] } };

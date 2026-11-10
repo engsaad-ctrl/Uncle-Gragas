@@ -54,7 +54,7 @@ export type CardOp =
   | { op: 'on_hit_repeat'; extra_hits: number; trigger: string; internal_cooldown?: number; after_quest?: boolean }
   /** Each attack also fires bolts at other enemies near the target (Runaan's Hurricane): this many for a ranged or melee champion, each a share of his AD that crits and applies on-hit. */
   | { op: 'bolts'; ranged: number; melee: number; ad: number; after_quest?: boolean }
-  | { op: 'timed'; trigger: string; afterCastWindow?: number; stat: string; value: Amount; mode: 'add' | 'percent'; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; after_quest?: boolean };
+  | { op: 'timed'; trigger: string; afterCastWindow?: number; stat: string; value: Amount; mode: 'add' | 'percent'; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; repeatOnHitEvery?: number; after_quest?: boolean };
 
 export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null; /** Actual or explicitly estimated choice level; only this card's lifetime stacks start here. */ acquiredLevel?: number; abilityKey?: TargetAbility }
 
@@ -604,6 +604,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const boltAd = ops.reduce((n, x) => (x.op === 'bolts' ? n + (melee ? x.melee : x.ranged) * FIGHT.boltHitShare * x.ad : n), 0);
   const repeatOnAttack = ops.reduce((n, x) => x.op === 'on_hit_repeat' && x.trigger !== 'next_attack' && x.trigger !== 'crit' ? n + x.extra_hits : n, 0);
   const repeatOnCrit = ops.reduce((n, x) => x.op === 'on_hit_repeat' && x.trigger === 'crit' ? n + x.extra_hits : n, 0);
+  const stackedRepeats = ops.filter((x): x is Extract<CardOp, { op: 'timed' }> => x.op === 'timed' && x.trigger === 'attack' && (x.repeatOnHitEvery ?? 0) > 0);
+  const stackedRepeatCounts = new Map<CardOp, number>();
+  if (stackedRepeats.length) notModelled.push("Guinsoo's Rageblade: تفترض المحاكاة أن عدّ الضربات الإضافية يبدأ بعد اكتمال التراكمات، ويُصفّر عند انتهائها؛ توقيت الضربة الأولى يحتاج تحققًا في اللعبة");
 
   for (let t = 0; t < FIGHT.seconds; t += dt) {
     const c = current(t);
@@ -636,6 +639,18 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       fire('on_hit', t, c);
       for (; repeatCarry >= 1; repeatCarry--) fire('on_hit', t, c); // a share of attacks hits twice
       for (; critRepeatCarry >= 1; critRepeatCarry--) fire('on_hit', t, c);
+      for (const x of stackedRepeats) {
+        const st = stateOf.get(x);
+        if (!st || t > st.until || st.stacks !== x.stacks_max) {
+          stackedRepeatCounts.delete(x);
+          continue;
+        }
+        const count = (stackedRepeatCounts.get(x) ?? 0) + 1;
+        if (count === x.repeatOnHitEvery) {
+          fire('on_hit', t, c);
+          stackedRepeatCounts.delete(x);
+        } else stackedRepeatCounts.set(x, count);
+      }
       fire('attack', t, c);
       lastCast = -Infinity; // A basic attack consumes any charge from a previous cast.
       if (armed) { armed = false; fire('next_attack', t, c); } // an attack after an ability: it comes no faster than his attacks
