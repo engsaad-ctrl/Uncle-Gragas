@@ -500,6 +500,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const passiveOnAttack = (o.passive ?? []).some((x) => 'trigger' in x && ON_ATTACK.has(x.trigger ?? ''));
   let abilityHealingOnly = 0;
   let abilityInstances = 0, armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = o.kit.attacks || o.kit.damage !== 'magic' || passiveOnAttack ? 0 : Infinity, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
+  let critRepeatCarry = 0;
   const casts: Record<string, number> = {}, perCast: Record<string, number> = {};
   const kills = [...FIGHT.killTimes];
   const abilityOnHit = ops.find((x) => x.op === 'abilities_on_hit');
@@ -601,7 +602,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // Bolts at other enemies: their damage in shares of an attack's, and their on-hits, both counted as damage dealt.
   const boltHits = ops.reduce((n, x) => (x.op === 'bolts' ? n + (melee ? x.melee : x.ranged) * FIGHT.boltHitShare : n), 0);
   const boltAd = ops.reduce((n, x) => (x.op === 'bolts' ? n + (melee ? x.melee : x.ranged) * FIGHT.boltHitShare * x.ad : n), 0);
-  const onHitRepeat = (c: BuildStats) => ops.reduce((n, x) => (x.op === 'on_hit_repeat' && x.trigger !== 'next_attack' ? n + x.extra_hits * (x.trigger === 'crit' ? c.crit : 1) : n), 0);
+  const repeatOnAttack = ops.reduce((n, x) => x.op === 'on_hit_repeat' && x.trigger !== 'next_attack' && x.trigger !== 'crit' ? n + x.extra_hits : n, 0);
+  const repeatOnCrit = ops.reduce((n, x) => x.op === 'on_hit_repeat' && x.trigger === 'crit' ? n + x.extra_hits : n, 0);
 
   for (let t = 0; t < FIGHT.seconds; t += dt) {
     const c = current(t);
@@ -624,14 +626,20 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       attacks++;
       nextAttack = t + 1 / (c.attackSpeed * (o.kit.attackPace ?? (o.kit.attacks ? 1 : o.kit.damage === 'magic' && !passiveOnAttack ? 0 : 0.25)) * (melee ? FIGHT.attackUptime.melee : FIGHT.attackUptime.ranged));
       fromAttacks += c.ad * (1 + c.crit * (c.critDamage - 1)) * amp('attacks', t) * taken.physical * (1 + boltAd);
-      repeatCarry += onHitRepeat(c) + boltHits;
+      critCarry += c.crit;
+      const critical = critCarry >= 1;
+      if (critical) {
+        critCarry -= 1;
+        critRepeatCarry += repeatOnCrit;
+      }
+      repeatCarry += repeatOnAttack + boltHits;
       fire('on_hit', t, c);
       for (; repeatCarry >= 1; repeatCarry--) fire('on_hit', t, c); // a share of attacks hits twice
+      for (; critRepeatCarry >= 1; critRepeatCarry--) fire('on_hit', t, c);
       fire('attack', t, c);
       lastCast = -Infinity; // A basic attack consumes any charge from a previous cast.
       if (armed) { armed = false; fire('next_attack', t, c); } // an attack after an ability: it comes no faster than his attacks
-      critCarry += c.crit;
-      if (critCarry >= 1) { critCarry -= 1; fire('crit', t, c); }
+      if (critical) fire('crit', t, c);
     }
     if (t >= nextCast) {
       const haste = (scope: string, key: string) => c.haste + ops.reduce((n, x) => (x.op === 'add' && (x.stat === `${scope}_haste` || x.stat === `${key}_haste`) ? n + scaled(x.value, o.level) : n), 0);

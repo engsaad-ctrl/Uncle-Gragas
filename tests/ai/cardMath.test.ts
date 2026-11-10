@@ -41,6 +41,21 @@ it('limits Ethereal Weapon on-hit damage to one trigger per second on the same t
 });
 
 describe('the fight', () => {
+  it('does not let other on-hit repeats trigger Double Tap before a critical attack', () => {
+    const doubleTap = CARD_NUMBERS.find((c) => c.id === 2010)!;
+    const cards = [
+      doubleTap,
+      card('Other repeats', [{ op: 'on_hit_repeat', extra_hits: 0.5, trigger: 'attack' }]),
+      card('On-hit', [{ op: 'proc', trigger: 'on_hit', damage: { flat: 10 }, type: 'true' }]),
+    ];
+    const at = (speed: number) => fight({
+      bin: { rec: { ...bin.rec, attackSpeedModifiable: num(speed) } },
+      shop: {}, kit, items: [], cards, level: 1,
+    });
+    expect(at(0.2)).toMatchObject({ attacks: 3, fromCards: 40 }); // three attacks, one repeat, no crit
+    expect(at(0.25)).toMatchObject({ attacks: 4, fromCards: 70 }); // four attacks, two other repeats, one Double Tap
+  });
+
   it('counts attacks from attack speed', () => {
     expect(run().attacks).toBe(9); // 0.6 a second over 15 seconds, the first at once
   });
