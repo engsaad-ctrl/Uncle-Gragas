@@ -32,7 +32,7 @@ export type CardOp =
   | { op: 'per_stack'; stat: string; value: number; mode: 'add' | 'mult'; per: string; cap?: number | null; lost_on_death?: number | null; after_quest?: boolean }
   | { op: 'lock'; key: string; after_quest?: boolean }
   | { op: 'cooldown'; scope: string; factor: number; after_quest?: boolean }
-  | { op: 'refund'; scope: string; amount: Amount; unit: string; trigger: string; internal_cooldown?: number | null; after_quest?: boolean }
+  | { op: 'refund'; scope: string; amount: Amount; unit: string; trigger: string; internal_cooldown?: number | null; periodicAmount?: Amount; minHitRange?: number; after_quest?: boolean }
   | { op: 'recast'; key: string; internal_cooldown?: number | null; after_quest?: boolean }
   | { op: 'proc'; trigger: string; afterCastWindow?: number; internal_cooldown?: number | null; damage: DamageFormula; type: string; after_quest?: boolean }
   | { op: 'dot'; per_second: DamageFormula; duration: number; type: string; stacks_max?: number | null; trigger?: string; after_quest?: boolean }
@@ -245,7 +245,12 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // Range in a condition (knowledge/fight-rules.md, conditions): "beyond N range" holds when one of his basic abilities reaches past N (Skilled Sniper: not for
   // Vladimir, whose longest is 600); "target within N range" when he fights at N or closer (Sunfire Aegis's 300: melee only).
   const attackRange = becomesMelee ? 200 : (record as unknown as { attackRangeModifiable?: { baseValue?: number } }).attackRangeModifiable?.baseValue ?? 0;
-  const reach = Math.max(0, ...(record.spells ?? []).slice(0, 3).map((path) => { const sp = (o.bin as Bin)[path]?.mSpell as { mCastRangeGrowthMax?: number[]; castRangeDisplayOverride?: number[]; castRange?: number[] } | undefined; return sp?.mCastRangeGrowthMax?.[1] ?? sp?.castRangeDisplayOverride?.[1] ?? sp?.castRange?.[1] ?? 0; }));
+  const spellReach = (path: string, rank: number) => {
+    const sp = (o.bin as Bin)[path]?.mSpell as { mCastRangeGrowthMax?: number[]; castRangeDisplayOverride?: number[]; castRange?: number[] } | undefined;
+    const atRank = (values?: number[]) => values?.[rank] ?? values?.[1] ?? values?.[0];
+    return atRank(sp?.mCastRangeGrowthMax) ?? atRank(sp?.castRangeDisplayOverride) ?? atRank(sp?.castRange) ?? 0;
+  };
+  const reach = Math.max(0, ...(record.spells ?? []).slice(0, 3).map((path) => spellReach(path, 1)));
   const inRange = (n: string) => { const beyond = /beyond (\d+) range/i.exec(n), within = /within (\d+)(?: range|$|[;,)])/i.exec(n); return (!beyond || reach > +beyond[1]!) && (!within || attackRange <= +within[1]!); };
   const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return inRange(n) && !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!) && !((x.op === 'mult' || x.op === 'add') && /below \d+% remaining health/i.test(n)); };
   // A quest card's reward counts once its quest items are all held (Ultra Hydra: the three Hydras; Wooglet's Witchcap: Rabadon's and Zhonya's). Quests counted in takedowns or hits never complete here.
@@ -548,7 +553,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // Heal and shield power (items' PercentHealingAmountMod, cards' heal_shield_power) raises the heals and shields items and cards give too, not only his abilities' (knowledge/fight-rules.md, heal).
   const healShieldPower = healPower + ops.reduce((m, x) => (x.op === 'add' && x.stat === 'heal_shield_power' ? m + scaled(x.value, o.level) : m), 0);
   let healed = 0, shielded = 0, fromAllies = 0, fromAttackProcs = 0;
-  const fire = (trigger: string, t: number, c: BuildStats) => {
+  const fire = (trigger: string, t: number, c: BuildStats, hitSlot?: Slot) => {
     const taken = takenBy(c);
     for (const x of ops) {
       if (!('trigger' in x) || (x.trigger !== trigger && !(trigger === 'ability_hit' && (x.trigger === 'spell_hit' || x.trigger === 'burn')))) continue;
@@ -574,7 +579,14 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         landing.push({ op: x, at: t + x.delay, each: (formula(x.damage, c, o.level, targetHp) * (taken[x.type as keyof typeof taken] ?? taken.adaptive)) / ticks, ticks, done: 0, landed: false });
         lastProc.set(x, t);
       }
-      if (x.op === 'refund') { reduce(x.scope, x.amount, x.unit, t); lastProc.set(x, t); }
+      if (x.op === 'refund') {
+        if (x.scope === 'hit_basic') {
+          if (!hitSlot || hitSlot.key === 'R' || spellReach(hitSlot.path, hitSlot.rank) <= (x.minHitRange ?? 0) || hitSlot.ready <= t) continue;
+          const amount = hitSlot.overTime ? x.periodicAmount ?? x.amount : x.amount;
+          hitSlot.ready -= (hitSlot.ready - t) * scaled(amount, o.level);
+        } else reduce(x.scope, x.amount, x.unit, t);
+        lastProc.set(x, t);
+      }
       if (x.op === 'mana_restore' && Number.isFinite(fullMana)) { mana = Math.min(fullMana, mana + formula(x.amount, c, o.level, targetHp)); lastProc.set(x, t); }
       // A burn applied again while it lasts adds a stack and refreshes; one that has ended starts again at one stack (knowledge/fight-rules.md).
       if (x.op === 'dot') { const d = dots.find((y) => y.op === x); if (d) { d.stacks = t > d.until ? 1 : Math.min(x.stacks_max ?? 1, d.stacks + 1); d.until = t + (x.duration ?? FIGHT.seconds); } else dots.push({ op: x, until: t + (x.duration ?? FIGHT.seconds), stacks: 1, fromAbility: false }); }
@@ -765,7 +777,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         if (etherealHit) nextAbilityOnHit = t + (abilityOnHit.internal_cooldown ?? 0);
         // Echo Cast: the same hit again after its delay, read from his stats now; no mana, no cooldown, no healing (knowledge/math-generation.md).
         if (one > 0 && !sl.toggle) for (const x of ops) if (x.op === 'echo' && x.key === sl.key) echoes.push({ at: t + x.delay, dealt: hit * abilityTaken * x.ratio, hits: reading?.hits ?? 1, events: !!x.events, onHit: asAttack || etherealHit });
-        if (one > 0) { fire('ability_hit', t, c); if (asAttack || etherealHit) fire('on_hit', t, c); if (etherealHit && !asAttack) fire('next_attack', t, c); }
+        if (one > 0) { fire('ability_hit', t, c, sl); if (asAttack || etherealHit) fire('on_hit', t, c); if (etherealHit && !asAttack) fire('next_attack', t, c); }
         armed = true;
         lastCast = t;
         castNow = { key: sl.key, cooldown: Math.max(0, sl.ready - t) };

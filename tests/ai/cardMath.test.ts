@@ -41,6 +41,22 @@ it('limits Ethereal Weapon on-hit damage to one trigger per second on the same t
 });
 
 describe('the fight', () => {
+  it('refunds only the long-range basic ability that hit with Skilled Sniper', () => {
+    const sniper = CARD_NUMBERS.find((c) => c.id === 1113)!;
+    const spell = (range: number, name = 'Damage') => ({ mSpell: {
+      cooldownTime: [30, 30], castRange: [range, range],
+      mSpellCalculations: { [name]: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 100 }] } },
+    } });
+    const cast = (range: number, name?: string) => fight({
+      bin: { rec: { ...bin.rec, spells: ['q', 'w', 'e', 'r'] }, q: spell(range, name), w: spell(400), r: spell(1000) },
+      shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [sniper], level: 6,
+      knownRanks: { level: 6, ranks: { Q: 1, W: 1, E: 0, R: 1 } },
+    }).casts;
+    expect(cast(700)).toMatchObject({ Q: 3, W: 1, R: 1 });
+    expect(cast(700, 'DamagePerSecond')).toMatchObject({ Q: 2, W: 1, R: 1 });
+    expect(cast(600)).toMatchObject({ Q: 1, W: 1, R: 1 });
+  });
+
   it('counts Guinsoo phantom hits only on every third attack while already at four stacks', () => {
     const guinsoo = ITEM_NUMBERS.find((i) => i.id === 3124)!;
     const cards = [card('On-hit', [{ op: 'proc', trigger: 'on_hit', damage: { flat: 10 }, type: 'true' }])];
