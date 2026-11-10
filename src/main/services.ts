@@ -782,7 +782,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const requiredAnyOf = all.augments.some((a) => augmentIds.some((x) => a.ids.includes(x)) && a.enName === 'Upgrade Sheen') && spellblade.length ? [spellblade] : [];
       // A quest card that asks for items (Ultra Hydra, Wooglet's Witchcap) gets them, since its reward counts only once they're all held.
       const quests = cards.filter((c) => c.ops.some((x) => x.after_quest)).flatMap((c) => questItems(c.id)).flatMap((id) => sold.find((i) => i.id % 10000 === id)?.id ?? []);
-      const plannedItem = ownedItems.some((id) => id % 10000 === MURAMANA) ? undefined : manamune;
+      // The owner's Tear-then-Manamune path is for his normal and AD builds; tank, AP and AP-health buttons stay free of it (strict rules).
+      const plannedItem = ownedItems.some((id) => id % 10000 === MURAMANA) || (style !== undefined && style !== 'ad') ? undefined : manamune;
       const required = [...new Set([...cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []), ...upgraded, ...quests])];
       const damageKind = kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed';
       const switched = cards.some((c) => switchesDamage([c.id]));

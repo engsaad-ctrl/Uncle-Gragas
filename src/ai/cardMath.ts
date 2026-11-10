@@ -437,10 +437,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     const spellLimit = SPELL_HITS[path]?.notModelled;
     if (spellLimit) notModelled.push(spellLimit);
     if (path === 'Characters/Karthus/Spells/KarthusDefileAbility/KarthusDefile') {
-      const restore = spell.DataValues?.find((v) => v.name === 'ManaRestoreOnKill')?.values?.[rank] ?? 0;
-      if (Number.isFinite(restore) && restore > 0) ops.push({ op: 'mana_restore', trigger: 'kill', amount: { flat: restore } });
-      else notModelled.push('Karthus E: قيمة استرداد المانا غير متاحة من ملف اللعبة');
-      notModelled.push('Karthus E: استرداد المانا يتبع القتل المفترض في المحاكاة؛ قتل الوحدات الصغيرة والاستنزاف المستمر للمانا غير محسوبين');
+      // The simulated target changes carry no last-hit credit for Karthus.
+      notModelled.push('Karthus E: استرداد المانا يتطلب قتلاً يُنسب إلى Karthus؛ هوية القاتل وقتل الوحدات الصغيرة والاستنزاف المستمر للمانا غير محسوبة');
     }
     if (path === NASUS_STORM) {
       const value = (name: string) => spell.DataValues?.find((v) => v.name === name)?.values?.[rank] ?? 0;

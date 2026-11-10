@@ -176,7 +176,7 @@ describe('fixed fight cases on pinned 16.22 files', () => {
     expect(countQ()).toBe(4);
     expect(countQ(entry.mSpell.DataValues.map((v) => v.name === 'Duration' ? { ...v, values: v.values.map(() => 1) } : v))).toBe(3);
   });
-  it('reads Karthus E mana restored per kill and funds an extra Q', async () => {
+  it('does not award Karthus E mana for simulated target changes without kill credit', async () => {
     const bin = await loadChampionBin(opts, manifest.contentVersion, 'karthus');
     const path = 'Characters/Karthus/Spells/KarthusDefileAbility/KarthusDefile';
     const entry = bin[path] as { mSpell: { DataValues: { name: string }[] } };
@@ -186,7 +186,7 @@ describe('fixed fight cases on pinned 16.22 files', () => {
       knownRanks: { level: 2, ranks: { Q: 1, W: 0, E: 1, R: 0 } },
     }).casts.Q;
     expect(countQ(withoutRestore)).toBe(2);
-    expect(countQ(bin)).toBe(3);
+    expect(countQ(bin)).toBe(2);
   });
   it('weights Nasus R bonus health and resists by its active time', async () => {
     const bin = await loadChampionBin(opts, manifest.contentVersion, 'nasus');
