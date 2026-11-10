@@ -1254,8 +1254,8 @@
     "fromAttacks": 954.2,
     "fromCards": 554,
     "fromAllies": 0,
-    "effectiveHp": 6909.43,
-    "healedHp": 2240.5,
+    "effectiveHp": 9932.38,
+    "healedHp": 2794.62,
     "abilityHealing": 0,
     "healingDenied": 0,
     "attacks": 13,
@@ -1274,9 +1274,9 @@
     "stats": {
      "ad": 146.8,
      "ap": 0,
-     "hp": 2951.21,
-     "armor": 125.46,
-     "mr": 119.45,
+     "hp": 3401.21,
+     "armor": 180.46,
+     "mr": 174.45,
      "attackSpeed": 1.07,
      "crit": 0,
      "haste": 25
@@ -1291,7 +1291,7 @@
       "damage": 1073.6,
       "fromCards": 0,
       "effectiveHp": 0,
-      "healedHp": 223.09
+      "healedHp": 278.26
      }
     }
    ],
@@ -1300,8 +1300,8 @@
      "id": 3078,
      "delta": {
       "damage": 1078.8,
-      "effectiveHp": 779.63,
-      "selfSustain": 775.88,
+      "effectiveHp": 972.44,
+      "selfSustain": 967.77,
       "abilitySupport": 0,
       "healingDenied": 0
      },
@@ -1311,8 +1311,8 @@
        "id": 3047,
        "delta": {
         "damage": 0,
-        "effectiveHp": 81.9,
-        "selfSustain": 44.96,
+        "effectiveHp": 91.27,
+        "selfSustain": 44.68,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -1322,8 +1322,8 @@
        "id": 3065,
        "delta": {
         "damage": 0,
-        "effectiveHp": 101.42,
-        "selfSustain": 235.92,
+        "effectiveHp": 98.41,
+        "selfSustain": 271.9,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -1345,8 +1345,8 @@
      "id": 3047,
      "delta": {
       "damage": 0,
-      "effectiveHp": 725.83,
-      "selfSustain": 129.83,
+      "effectiveHp": 932.22,
+      "selfSustain": 129.01,
       "abilitySupport": 0,
       "healingDenied": 0
      },
@@ -1356,8 +1356,8 @@
        "id": 3078,
        "delta": {
         "damage": 0,
-        "effectiveHp": 81.9,
-        "selfSustain": 44.96,
+        "effectiveHp": 91.27,
+        "selfSustain": 44.68,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -1367,8 +1367,8 @@
        "id": 3065,
        "delta": {
         "damage": 0,
-        "effectiveHp": 215.32,
-        "selfSustain": 50.63,
+        "effectiveHp": 226.38,
+        "selfSustain": 45.24,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -1379,7 +1379,7 @@
        "delta": {
         "damage": 0,
         "effectiveHp": 0,
-        "selfSustain": 12.93,
+        "selfSustain": 12.85,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -1390,8 +1390,8 @@
      "id": 3065,
      "delta": {
       "damage": 0,
-      "effectiveHp": 1713.46,
-      "selfSustain": 681.26,
+      "effectiveHp": 2055.03,
+      "selfSustain": 785.17,
       "abilitySupport": 0,
       "healingDenied": 0
      },
@@ -1401,8 +1401,8 @@
        "id": 3078,
        "delta": {
         "damage": 0,
-        "effectiveHp": 101.42,
-        "selfSustain": 235.92,
+        "effectiveHp": 98.41,
+        "selfSustain": 271.9,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -1412,8 +1412,8 @@
        "id": 3047,
        "delta": {
         "damage": 0,
-        "effectiveHp": 215.32,
-        "selfSustain": 50.63,
+        "effectiveHp": 226.38,
+        "selfSustain": 45.24,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -1424,7 +1424,7 @@
        "delta": {
         "damage": 0,
         "effectiveHp": 0,
-        "selfSustain": 67.83,
+        "selfSustain": 78.18,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -1433,7 +1433,8 @@
     }
    ],
    "notModelled": [
-    "Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة والصحة والمقاومات غير محسوبة",
+    "Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة غير محسوبين",
+    "Nasus R: الصحة والمقاومات المؤقتة محسوبة بمتوسط مدة نشاطها؛ مسار الصحة الفعلي عند البدء والانتهاء غير محسوب",
     "Nasus R: خفض تبريد Q يُحسب للإلقاءات الجديدة أثناء R؛ تغيير تبريد بدأ قبل R غير محسوب"
    ],
    "variants": [
@@ -1443,7 +1444,7 @@
       "damage": -1073.6,
       "fromCards": 0,
       "effectiveHp": 0,
-      "healedHp": -223.09
+      "healedHp": -278.26
      },
      "hits": [],
      "units": {
@@ -1452,8 +1453,8 @@
       "fromAttacks": 954.2,
       "fromCards": 554,
       "fromAllies": 0,
-      "effectiveHp": 6909.43,
-      "healedHp": 2017.41,
+      "effectiveHp": 9932.38,
+      "healedHp": 2516.36,
       "abilityHealing": 0,
       "healingDenied": 0,
       "attacks": 13,
@@ -1472,9 +1473,9 @@
       "stats": {
        "ad": 146.8,
        "ap": 0,
-       "hp": 2951.21,
-       "armor": 125.46,
-       "mr": 119.45,
+       "hp": 3401.21,
+       "armor": 180.46,
+       "mr": 174.45,
        "attackSpeed": 1.07,
        "crit": 0,
        "haste": 25
@@ -1482,7 +1483,8 @@
      },
      "notModelled": [
       "Bread And Butter: المهارة المستهدفة غير محددة؛ أثر التسارع غير محسوب",
-      "Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة والصحة والمقاومات غير محسوبة",
+      "Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة غير محسوبين",
+      "Nasus R: الصحة والمقاومات المؤقتة محسوبة بمتوسط مدة نشاطها؛ مسار الصحة الفعلي عند البدء والانتهاء غير محسوب",
       "Nasus R: خفض تبريد Q يُحسب للإلقاءات الجديدة أثناء R؛ تغيير تبريد بدأ قبل R غير محسوب"
      ]
     },
@@ -1492,7 +1494,7 @@
       "damage": 1084.18,
       "fromCards": 0,
       "effectiveHp": 0,
-      "healedHp": 223.08
+      "healedHp": 278.26
      },
      "hits": [],
      "units": {
@@ -1501,8 +1503,8 @@
       "fromAttacks": 954.2,
       "fromCards": 554,
       "fromAllies": 0,
-      "effectiveHp": 6909.43,
-      "healedHp": 2463.58,
+      "effectiveHp": 9932.38,
+      "healedHp": 3072.88,
       "abilityHealing": 0,
       "healingDenied": 0,
       "attacks": 13,
@@ -1520,16 +1522,17 @@
       "stats": {
        "ad": 146.8,
        "ap": 0,
-       "hp": 2951.21,
-       "armor": 125.46,
-       "mr": 119.45,
+       "hp": 3401.21,
+       "armor": 180.46,
+       "mr": 174.45,
        "attackSpeed": 1.07,
        "crit": 0,
        "haste": 25
       }
      },
      "notModelled": [
-      "Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة والصحة والمقاومات غير محسوبة",
+      "Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة غير محسوبين",
+      "Nasus R: الصحة والمقاومات المؤقتة محسوبة بمتوسط مدة نشاطها؛ مسار الصحة الفعلي عند البدء والانتهاء غير محسوب",
       "Nasus R: خفض تبريد Q يُحسب للإلقاءات الجديدة أثناء R؛ تغيير تبريد بدأ قبل R غير محسوب"
      ]
     },
@@ -1548,8 +1551,8 @@
       "fromAttacks": 954.2,
       "fromCards": 554,
       "fromAllies": 0,
-      "effectiveHp": 6909.43,
-      "healedHp": 2240.5,
+      "effectiveHp": 9932.38,
+      "healedHp": 2794.62,
       "abilityHealing": 0,
       "healingDenied": 0,
       "attacks": 13,
@@ -1568,16 +1571,17 @@
       "stats": {
        "ad": 146.8,
        "ap": 0,
-       "hp": 2951.21,
-       "armor": 125.46,
-       "mr": 119.45,
+       "hp": 3401.21,
+       "armor": 180.46,
+       "mr": 174.45,
        "attackSpeed": 1.07,
        "crit": 0,
        "haste": 25
       }
      },
      "notModelled": [
-      "Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة والصحة والمقاومات غير محسوبة",
+      "Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة غير محسوبين",
+      "Nasus R: الصحة والمقاومات المؤقتة محسوبة بمتوسط مدة نشاطها؛ مسار الصحة الفعلي عند البدء والانتهاء غير محسوب",
       "Nasus R: خفض تبريد Q يُحسب للإلقاءات الجديدة أثناء R؛ تغيير تبريد بدأ قبل R غير محسوب"
      ]
     }

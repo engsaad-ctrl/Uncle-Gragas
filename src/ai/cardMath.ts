@@ -420,6 +420,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     });
   }));
   const slots: Slot[] = [];
+  const nasusDefense: Extract<CardOp, { op: 'timed' }>[] = [];
   const rankCounts = Object.fromEntries((['Q', 'W', 'E', 'R'] as const).map((k, i) => [k, bin[record.spells?.[i] ?? '']?.mSpell?.mClientData?.mTooltipData?.mLists?.LevelUp?.levelCount]));
   const allocation = allocateAbilityRanks(record, rankCounts, o.level, { ...o.skillPlan, from: o.knownRanks });
   (['R', 'Q', 'W', 'E'] as const).forEach((key) => {
@@ -435,6 +436,18 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (Number.isFinite(restore) && restore > 0) ops.push({ op: 'mana_restore', trigger: 'kill', amount: { flat: restore } });
       else notModelled.push('Karthus E: قيمة استرداد المانا غير متاحة من ملف اللعبة');
       notModelled.push('Karthus E: استرداد المانا يتبع القتل المفترض في المحاكاة؛ قتل الوحدات الصغيرة والاستنزاف المستمر للمانا غير محسوبين');
+    }
+    if (path === NASUS_STORM) {
+      const value = (name: string) => spell.DataValues?.find((v) => v.name === name)?.values?.[rank] ?? 0;
+      const duration = value('Duration');
+      const resist = value('InitialResistGain');
+      if (duration > 0 && Number.isFinite(duration)) {
+        for (const [stat, amount] of [['hp', value('BonusHealth')], ['armor', resist], ['mr', resist]] as const) {
+          if (amount > 0 && Number.isFinite(amount)) nasusDefense.push({ op: 'timed', trigger: 'cast_R', stat, value: amount, mode: 'add', duration, refresh: true, stacks_max: 1 });
+        }
+        ops.push(...nasusDefense);
+      }
+      if (nasusDefense.length < 3) notModelled.push('Nasus R: بعض مكافآت الدفاع أو مدتها غير متاحة من ملف اللعبة');
     }
     // Some abilities keep their numbers in a sibling record of the same folder (Lux Q in LuxLightBindingMis), or name a base cooldown (Veigar W).
     const folder = path.slice(0, path.lastIndexOf('/') + 1);
@@ -478,6 +491,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const stateOf = new Map<CardOp, { stacks: number; until: number; start: number }>();
   const dots: { op: Extract<CardOp, { op: 'dot' }>; until: number; stacks: number; fromAbility: boolean }[] = [];
   let nasusQBuff: { until: number; factor: number } | undefined;
+  let nasusDefenseUntil = 0, nasusDefenseSeconds = 0;
   const lastProc = new Map<CardOp, number>();
   const landing: { op: Extract<CardOp, { op: 'delayed_dot' }>; at: number; each: number; ticks: number; done: number; landed: boolean }[] = [];
   const echoes: { at: number; dealt: number; hits: number; events: boolean; onHit: boolean }[] = [];
@@ -673,8 +687,14 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
             const validDuration = duration > 0 && Number.isFinite(duration);
             const validStorm = validDuration && ratio > 0 && ratio <= 1;
             nasusQBuff = validDuration && qReduction > 0 && qReduction < 1 ? { until: t + duration, factor: 1 - qReduction } : undefined;
+            if (nasusDefense.length && validDuration) {
+              const end = Math.min(FIGHT.seconds, t + duration);
+              nasusDefenseSeconds += end - Math.max(t, nasusDefenseUntil);
+              nasusDefenseUntil = end;
+            }
             if (sl.last === undefined) {
-              notModelled.push('Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة والصحة والمقاومات غير محسوبة');
+              notModelled.push('Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة غير محسوبين');
+              if (nasusDefense.length) notModelled.push('Nasus R: الصحة والمقاومات المؤقتة محسوبة بمتوسط مدة نشاطها؛ مسار الصحة الفعلي عند البدء والانتهاء غير محسوب');
               if (!validStorm) notModelled.push('Nasus R: نسبة الضرر أو مدة العاصفة غير متاحة من ملف اللعبة');
               notModelled.push(nasusQBuff
                 ? 'Nasus R: خفض تبريد Q يُحسب للإلقاءات الجديدة أثناء R؛ تغيير تبريد بدأ قبل R غير محسوب'
@@ -765,6 +785,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const receives = (name: string) => 1 + owned.reduce((t, it) => t + (it.DataValues?.find((d) => d.name === name)?.values?.[0] ?? 0), 0);
   const receivedHeal = receives('HealingIncrease'), receivedShield = receives('ShieldIncrease');
   const selfHeal = (healed - shielded) * receivedHeal + shielded * receivedShield;
+  for (const x of nasusDefense) add(sAvg, x.stat, scaled(x.value, o.level) * nasusDefenseSeconds / FIGHT.seconds);
   const physical = sAvg.hp * (1 + Math.max(0, sAvg.armor) / 100), magic = sAvg.hp * (1 + Math.max(0, sAvg.mr) / 100);
   // Omnivamp that waits seconds of combat (Riftmaker) heals from the damage he deals after them: his own damage at that time, read off the seconds.
   const own = fromAbilities + fromAttacks + fromCards;

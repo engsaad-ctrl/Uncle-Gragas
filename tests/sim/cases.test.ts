@@ -188,4 +188,19 @@ describe('fixed fight cases on pinned 16.22 files', () => {
     expect(countQ(withoutRestore)).toBe(2);
     expect(countQ(bin)).toBe(3);
   });
+  it('weights Nasus R bonus health and resists by its active time', async () => {
+    const bin = await loadChampionBin(opts, manifest.contentVersion, 'nasus');
+    const run = (ready: number) => fight({
+      bin, shop: {}, kit: { damage: 'physical', attacks: true }, items: [], cards: [], level: 6,
+      knownRanks: { level: 6, ranks: { Q: 0, W: 0, E: 0, R: 1 } }, cooldowns: { R: ready },
+    });
+    const base = run(16);
+    for (const [ready, share] of [[0, 1], [7.49, 0.5]] as const) {
+      const r = run(ready);
+      expect(r.stats.hp - base.stats.hp).toBeCloseTo(300 * share);
+      expect(r.stats.armor - base.stats.armor).toBeCloseTo(40 * share);
+      expect(r.stats.mr - base.stats.mr).toBeCloseTo(40 * share);
+      expect(r.effectiveHp).toBeGreaterThan(base.effectiveHp);
+    }
+  });
 });
