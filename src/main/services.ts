@@ -10,12 +10,12 @@ import { AUGMENT_TAGS } from '../ai/augmentTags.js';
 import { tagWeight } from '../ai/tagWeight.js';
 import { CARD_NUMBERS, ITEM_NUMBERS, PASSIVE_NUMBERS } from '../ai/cardMathData.js';
 import { cardFromFiles } from '../ai/augmentFiles.js';
-import { augmentStage, type AugmentProgress } from '../ai/augmentProgress.js';
+import { augmentStage, FIGHT_READ_LEVEL, type AugmentProgress } from '../ai/augmentProgress.js';
 import { skillPlanOf, type KnownRanks, type SkillPlan } from '../ai/abilityRank.js';
 import { compareAugmentPlan, kitWithCards, type AugmentPlan } from '../ai/augmentChoice.js';
 import { explainBuild } from '../ai/buildExplanation.js';
 import { itemExplanationWords } from '../app/buildExplanation.js';
-import { enemyDpsAt, enemyTeam, fightValue, mathBuild as itemsByMath, teamPlace, type BuildStyle } from '../ai/itemMath.js';
+import { enemyDpsAt, enemyTeam, fightValue, LEVEL_BY_ITEMS, mathBuild as itemsByMath, SLOTS, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
 import { EZREAL, MANAMUNE, MURAMANA } from '../app/ezrealPurchases.js';
@@ -85,9 +85,17 @@ export interface AugmentValue {
   /** Conditions the fight doesn't settle: its value is what it gives if they hold; ranked apart from settled cards (the owner, 2026-11-09). */
   open: string[];
   level: number; untilLevel: number; estimatedLevel: boolean; estimatedHistory: boolean;
-  plan?: AugmentPlan;
+  plan?: AugmentPlan & PlanOwned & PlanReasons;
   planError?: string;
 }
+/** The held items each of a card's two searches kept, in its order: mathBuild's 'owned' rows, which open its result (T015). It describes the
+ *  search's input as main used it (the live items, mapped by mathBuild), so the page compares the upcoming items past it, not past its own list.
+ *  No certificate of where the items came from. */
+export interface PlanOwned { baselineOwned: number[]; itemsOwned: number[] }
+/** Why the card's own search put each item to buy in its plan, in its order: mathBuild's why for its rows past the held ones (T017). The words
+ *  the search wrote, no new explanation; they don't say the card alone caused a change. */
+export interface PlanReasons { itemsWhy: { id: number; why: string[] }[] }
+const ownedRows = (rows: { item: { id: number }; why: string[] }[]) => rows.filter((r) => r.why.includes('owned')).map((r) => r.item.id);
 
 /** The app-wide mode chosen in the side menu. */
 export type AppMode = 'normal' | 'aram' | 'mayhem' | 'arena';
@@ -640,6 +648,19 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     }
     return plan;
   };
+  /** Which augment `id` was in the order taken (1 = first), only when that is proven. The caller must vouch the history is complete
+   * (historyComplete); then an explicit order of every pick (pickOrder) gives it, or else recorded levels do when every pick, held or not
+   * (otherPicks), has one and none shares this one's level. Otherwise undefined: nothing that depends on the order is given. */
+  const pickPlaceOf = (id: number, augmentIds: number[], progress?: AugmentProgress) => {
+    if (!progress?.historyComplete) return undefined;
+    const all = [...new Set([...augmentIds, ...Object.keys(progress.otherPicks ?? {}).map(Number)])];
+    if (progress.pickOrder) return all.every((a) => progress.pickOrder!.includes(a)) ? progress.pickOrder.indexOf(id) + 1 : undefined;
+    const levelOf = (a: number) => (augmentIds.includes(a) ? progress.acquiredLevels?.[a] : progress.otherPicks?.[a]) ?? undefined;
+    if (progress.unknownPicks || all.some((a) => levelOf(a) === undefined)) return undefined;
+    const mine = levelOf(id)!;
+    if (all.some((a) => a !== id && levelOf(a) === mine)) return undefined;
+    return 1 + all.filter((a) => levelOf(a)! < mine).length;
+  };
   const rankNote = (progress: AugmentProgress | undefined, plan: SkillPlan | undefined) => knownRanksOf(progress) ? [] : [plan ? 'رتب المهارات حسب ترتيب صفحة البناء الأشهر، لا قراءة من المباراة' : 'رتب المهارات توزيع قانوني متساوٍ للنقاط، لا قراءة من المباراة'];
 
   async function cardValues(championId: number, augmentIds: number[], itemIds: number[], teams?: Teams, progress?: AugmentProgress, offeredIds: number[] = [], style?: BuildStyle, stacks?: number): Promise<AugmentValue[]> {
@@ -652,7 +673,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined;
     const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id] } : undefined; };
     const stage = augmentStage(augmentIds, progress);
-    const held = augmentIds.flatMap((id) => { const card = numbersOf(id); return card ? [{ ...card, acquiredLevel: stage.acquiredLevels[id] }] : []; });
+    const held = augmentIds.flatMap((id) => { const card = numbersOf(id); return card ? [{ ...card, acquiredLevel: stage.acquiredLevels[id], pickPlace: pickPlaceOf(id, augmentIds, progress) }] : []; });
     const knownItems = itemIds.flatMap((id) => shop[id] ? [id] : shop[id % 10000] ? [id % 10000] : []);
     const base = {
       bin, shop, level: stage.level, items: knownItems, cards: held, itemOps: ITEM_OPS, stacks, knownRanks: knownRanksOf(progress), skillPlan: await skillPlanFor(championId),
@@ -675,39 +696,45 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       if (!card?.ops.length || augmentIds.includes(a.id) || a.ids.some((id) => RETIRED_AUGMENTS.has(id))) return []; // out of Mayhem: nobody picks it (src/ai/retiredAugments.ts)
       const holds = needHolds(card.need, facts);
       if (holds === 'no') return [];
-      const candidate = { ...card, acquiredLevel: stage.level };
+      // The offered card as a possibility: taken now, it would come after every logged pick. Nothing of this goes into the log.
+      const candidate = { ...card, acquiredLevel: stage.level, pickPlace: pickPlaceOf(a.id, [...augmentIds, a.id], progress && { ...progress, acquiredLevels: { ...progress.acquiredLevels, [a.id]: stage.level }, ...(progress.pickOrder ? { pickOrder: [...progress.pickOrder, a.id] } : {}) }) };
       const after = before.map((b) => fight({ ...b.input, kit: kitWithCards(base.kit, [candidate]), cards: [...held, candidate] }));
       // Its tags (src/ai/augmentTags.ts) weigh its value (src/ai/tagWeight.ts); a card with a condition the fight doesn't check is never certain.
       const tags = a.ids.map((id) => AUGMENT_TAGS[id]).find(Boolean);
       const { weight, unread, open } = tagWeight(tags, card.ops, card.need?.class === 'ability_kind' ? holds : undefined);
       const gains = after.map((r, i) => weight * (fightValue(r, before[i]!.place) / Math.max(before[i]!.value, 1e-9) - 1));
       const first = before[0]!.result, now = after[0]!;
-      const missing = [...new Set([...first.notModelled, ...now.notModelled]), card.not_modelled, ...open.map((c) => `شرط لا يفحصه القتال: ${c}؛ القيمة إن تحقق، واحتمال تحققه غير مقاس`), ...augmentIds.flatMap((id) => {
+      // The fight already lists each card's own note (cardMath notModelled, prefixed with its name); adding card.not_modelled again showed it twice.
+      const missing = [...new Set([...first.notModelled, ...now.notModelled]), ...open.map((c) => `شرط لا يفحصه القتال: ${c}؛ القيمة إن تحقق، واحتمال تحققه غير مقاس`), ...augmentIds.flatMap((id) => {
         const heldCard = numbersOf(id);
         if (!heldCard?.ops.length) return ['تعزيز مختار لا يملك معادلات؛ أثره وروابطه غير محسوبة'];
         return heldCard.not_modelled ? [`${heldCard.name}: ${heldCard.not_modelled}`] : heldCard.status !== 'computed' ? [`${heldCard.name}: أثره المختار جزئي أو مشروط`] : [];
-      }), ...(card.ops.some((x) => x.op === 'per_stack') || held.some((c) => c.ops.some((x) => x.op === 'per_stack')) ? ['التكديس مقدّر حسب المستويات منذ الاختيار، وليس عددًا مقروءًا من اللعبة؛ زيادته أثناء القتال الحالي غير محسوبة'] : [])].filter(Boolean).join(' · ') || null;
+      }), ...(card.ops.some((x) => x.op === 'per_stack') || held.some((c) => c.ops.some((x) => x.op === 'per_stack')) ? ['التكديس مقدّر حسب المستويات منذ الاختيار، وليس عددًا مقروءًا من اللعبة؛ زيادته أثناء القتال الحالي غير محسوبة'] : []), ...(stage.level > FIGHT_READ_LEVEL ? ['فوق المستوى 18 (حد Superfans 21): نمو البطل وأرقام القتال بعد 18 غير مقروءة؛ الحساب تقديري وناقص'] : [])].filter(Boolean).join(' · ') || null;
       return [{ id: a.id, damage: first.damage ? now.damage / first.damage - 1 : 0, health: first.effectiveHp ? now.effectiveHp / first.effectiveHp - 1 : 0, currentValue: gains[0]!, value: gains.reduce((sum, n) => sum + n, 0) / gains.length, open, certain: !stage.estimatedLevel && !stage.estimatedHistory && !missing && !unread && tags?.sure !== false && holds === 'yes' && card.status === 'computed' && card.ops.every((x) => x.op === 'add' || x.op === 'mult'), missing, level: stage.level, untilLevel: stage.untilLevel, estimatedLevel: stage.estimatedLevel, estimatedHistory: stage.estimatedHistory }];
     });
     if (!offeredIds.length) return rows;
     // Full searches only for the actual offer (at most three), never for the entire augment catalogue.
     // Finished items keep their slots. Components are retained in the current fight but their future upgrade cost is unknown.
     const finished = new Set(shopNames.list.filter((i) => i.group === 'legendary' || i.group === 'boots').map((i) => i.id));
-    const owned = [...knownItems.filter((id) => finished.has(id)), ...(championId === EZREAL ? itemIds.filter((id) => id % 10000 === MURAMANA && !finished.has(id) && !finished.has(id % 10000)) : [])];
-    const timing = { ...progress, level: stage.level, acquiredLevels: stage.acquiredLevels };
-    let baselineItems: number[];
-    try { baselineItems = (await mathBuild(championId, augmentIds, owned, teams, style, stacks, timing)).map((r) => r.item.id); }
+    // A held Mayhem copy (22xxxx) is kept when the catalog knows it or its base item; mathBuild then holds it as the catalog's own id (the copy
+    // when sold, else its base), so the plans don't buy it again (T016). The fight above keeps the shop's own copy stats (knownItems).
+    const owned = [...knownItems.filter((id) => finished.has(id) || finished.has(id % 10000)), ...(championId === EZREAL ? itemIds.filter((id) => id % 10000 === MURAMANA && !finished.has(id) && !finished.has(id % 10000)) : [])];
+    // Estimated levels fill the gaps here, so the order among his augments is proven only when none was estimated.
+    const timing = { ...progress, level: stage.level, acquiredLevels: stage.acquiredLevels, unknownPicks: progress?.unknownPicks || stage.estimatedHistory };
+    let baselineItems: number[], baselineOwned: number[];
+    try { const rows = await mathBuild(championId, augmentIds, owned, teams, style, stacks, timing); baselineItems = rows.map((r) => r.item.id); baselineOwned = ownedRows(rows); }
     catch { for (const row of rows) if (offeredIds.includes(row.id)) row.planError = 'تعذّر حساب خطة البناء الأساسية'; return rows; }
     for (const row of rows.filter((r) => offeredIds.includes(r.id))) {
       try {
         const card = numbersOf(row.id)!;
-        const candidate = { ...card, acquiredLevel: stage.level };
-        const nextTiming = { ...timing, acquiredLevels: { ...timing.acquiredLevels, [row.id]: stage.level } };
-        const items = (await mathBuild(championId, [...augmentIds, row.id], owned, teams, style, stacks, nextTiming)).map((r) => r.item.id);
+        const candidate = { ...card, acquiredLevel: stage.level, pickPlace: pickPlaceOf(row.id, [...augmentIds, row.id], progress && { ...progress, acquiredLevels: { ...progress.acquiredLevels, [row.id]: stage.level }, ...(progress.pickOrder ? { pickOrder: [...progress.pickOrder, row.id] } : {}) }) };
+        const nextTiming = { ...timing, acquiredLevels: { ...timing.acquiredLevels, [row.id]: stage.level }, ...(timing.pickOrder ? { pickOrder: [...timing.pickOrder, row.id] } : {}) };
+        const rows = await mathBuild(championId, [...augmentIds, row.id], owned, teams, style, stacks, nextTiming);
+        const items = rows.map((r) => r.item.id);
         if (!baselineItems.length || !items.length) { row.planError = 'لا تتوفر أيتمات كافية لحساب خطة البناء'; continue; }
         const level = Math.max(15, stage.level);
         const at = { ...place, enemyDps: enemyDpsAt(level) };
-        row.plan = compareAugmentPlan({ base: { ...base, level, enemy: facts2.enemy, incomingDps: at.share * at.enemyDps * (at.draw ?? 1) }, candidate, baselineItems, items, place: at });
+        row.plan = { ...compareAugmentPlan({ base: { ...base, level, enemy: facts2.enemy, incomingDps: at.share * at.enemyDps * (at.draw ?? 1) }, candidate, baselineItems, items, place: at }), baselineOwned, itemsOwned: ownedRows(rows), itemsWhy: rows.filter((r) => !r.why.includes('owned')).map((r) => ({ id: r.item.id, why: r.why })) };
         const a = all.augments.find((a) => a.id === row.id)!;
         row.plan.value *= tagWeight(a.ids.map((id) => AUGMENT_TAGS[id]).find(Boolean), card.ops, card.need?.class === 'ability_kind' ? needHolds(card.need, facts) : undefined).weight;
       } catch { row.planError = 'تعذّر حساب خطة هذا التعزيز؛ التقييم الحالي وحده متاح'; }
@@ -771,7 +798,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       }).filter((id) => soldIds.has(id)))];
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
       const stage = augmentStage(augmentIds, progress);
-      const cards = progress ? augmentIds.flatMap((id) => cardsOf(all.augments, [id]).map((c) => ({ ...c, acquiredLevel: stage.acquiredLevels[id], abilityKey: progress.abilityTargets?.[id] }))) : cardsOf(all.augments, augmentIds);
+      const cards = progress ? augmentIds.flatMap((id) => cardsOf(all.augments, [id]).map((c) => ({ ...c, acquiredLevel: stage.acquiredLevels[id], abilityKey: progress.abilityTargets?.[id], pickPlace: pickPlaceOf(id, augmentIds, progress) }))) : cardsOf(all.augments, augmentIds);
       // A frontline mage holding a card that makes his AP pay in crits (Jeweled Gauntlet: abilities crit, AP into crit chance) builds as a damage dealer, all magic:
       // the owner's Swain (2026-11-08, «نعم صحيح»: Zwag's Zhonya's, Blackfire, Rite of Ruin, Rabadon's, Liandry's, Void).
       if (!style && kit?.damage === 'magic' && kit.traits.includes('frontline') && cards.some((c) => c.ops.some((x) => x.op === 'crit_abilities' || (x.op === 'convert' && x.from === 'ap')))) style = 'ap';
@@ -822,7 +849,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const rangedOnly = (id: number) => id % 10000 === RUNAANS; // Statikk Shiv also carries a bolts op now, and melee champions build it
       const tankOnly = (i?: { id: number; group?: string; boots?: boolean }) => !!i && !i.boots && i.group !== 'boots' && itemDamage(i.id) === 'none';
       const skillPlan = await skillPlanFor(championId);
-      const steps = itemsByMath({ bin, shop, level: progress?.level, knownRanks: knownRanksOf(progress), skillPlan, enemy: facts.enemy, place, offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' || hybrid(i.id) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style && !switched : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.filter((i) => championId !== EZREAL || i.id % 10000 !== MURAMANA).map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned: ownedItems, required, plannedItem, noBoots: championId === CASSIOPEIA, requiredAnyOf, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks });
+      const steps = itemsByMath({ bin, shop, level: progress?.level, knownRanks: knownRanksOf(progress), skillPlan, enemy: facts.enemy, place, offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' || hybrid(i.id) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style && !switched : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.filter((i) => championId !== EZREAL || i.id % 10000 !== MURAMANA).map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned: ownedItems, required, plannedItem, noBoots: championId === CASSIOPEIA, requiredAnyOf, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks,
+        // "Without this augment" is a whole context: his kit and team place made again from the other cards, as for the build itself.
+        contextFor: (others) => { const k = kitWithCards(fightKitOf(championId), others); return { kit: k, place: teamPlace({ championId, bin, shop, kit: k, passive, enemy: facts.enemy, allies: facts.allies, style }) }; } });
       const explanation = explainBuild({ bin, shop, kit: fightKitOf(championId), cards, passive, itemOps: ITEM_OPS, items: steps.map((s) => s.id), level: Math.max(15, stage.level), enemy: facts.enemy, stacks, knownRanks: knownRanksOf(progress), skillPlan, incomingDps: place.share * place.enemyDps * (place.draw ?? 1) });
       const missing = [...new Set([
         ...explanation.missing,
@@ -832,16 +861,59 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         }),
         ...rankNote(progress, skillPlan),
         ...(stage.estimatedHistory && augmentIds.length ? ['مستويات اقتناء التعزيزات غير المسجلة مقدّرة'] : []),
+        ...(progress?.historySource === 'player-confirmed' ? ['ترتيب الاختيارات ومستوياتها حسب تأكيدك أن سجلك كامل، لا من اللعبة'] : progress?.historySource === 'recorded-at-mark' && augmentIds.length ? ['مستويات الاختيارات هي مستواك عند الضغط على «اخترته»؛ ترتيبها غير مؤكد'] : []),
         ...(cards.some((c) => c.ops.some((x) => x.op === 'per_stack')) ? ['تكديس التعزيزات مقدّر منذ الاختيار، وزيادته خلال القتال الحالي غير محسوبة'] : []),
         ...(explanation.total.healingDenied > 0 ? ['وصول مضاد العلاج إلى مصادر الشفاء ومدة تطبيقه مقدّران'] : []),
+        ...(stage.level > FIGHT_READ_LEVEL ? ['فوق المستوى 18 (حد Superfans 21): نمو البطل وأرقام القتال بعد 18 غير مقروءة؛ الحساب تقديري وناقص'] : []),
       ])];
       const partName = (kind: 'item' | 'augment', id: number) => kind === 'item' ? sold.find((i) => i.id === id)?.enName ?? String(id) : cards.find((c) => c.id === id)?.name ?? String(id);
       const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
-      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, missing, why: [...(s.reason === 'owned' ? ['owned'] : [s.id === manamune ? 'أكمل Manamune بعد اكتمال تراكمات Tear of the Goddess' : s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean)), ...itemExplanationWords(explanation, s.id, partName)] }] : []; });
+      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, missing, why: [...(s.reason === 'owned' ? ['owned'] : [s.id === manamune ? 'أكمل Manamune بعد اكتمال تراكمات Tear of the Goddess' : s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'augment' ? 'تعزيز مكتسب يجعله الأفضل الآن: يُشترى قبل أغراض التراكمات' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean)), ...itemExplanationWords(explanation, s.id, partName)] }] : []; });
     })();
     builds.set(key, work);
     work.catch(() => builds.delete(key));
     return work;
+  }
+
+  /** One purchase decision at an explicit point: his level and the items he holds then, and the augments known before it.
+   * Known: picked at a lower level, or at the same level and listed in `pickedBefore` (an explicit order of events). A pick with no level, or one at
+   * the same level with no order, isn't known either way: it is left out, listed in `unsure`, and the decision isn't settled (`settled` false).
+   * The items held stay first in the build (mathBuild's owned). Nothing about later picks reaches it. */
+  async function decisionAt(championId: number, picks: { id: number; level?: number }[], point: { level: number; owned: number[]; pickedBefore?: number[] }, teams?: Teams, style?: BuildStyle, history?: { complete: boolean; order?: number[] }) {
+    const known = picks.filter((p) => p.level !== undefined && (p.level < point.level || (p.level === point.level && !!point.pickedBefore?.includes(p.id))));
+    const unsure = picks.filter((p) => p.level === undefined || (p.level === point.level && !point.pickedBefore?.includes(p.id))).map((p) => p.id);
+    const notes = [
+      ...(picks.some((p) => p.level === undefined) ? ['مستوى اكتساب بعض التعزيزات مجهول: لم تُحسب في هذا القرار، فالقرار غير محسوم'] : []),
+      ...(picks.some((p) => p.level === point.level && !point.pickedBefore?.includes(p.id)) ? [`المستوى ${point.level}: لا ترتيب معلوم بين اختيار التعزيز والشراء، فلم يُحسب التعزيز`] : []),
+    ];
+    // The picks left out of this decision still count for the order: one taken at this level with no order of events might be before Soul Eater.
+    const others = Object.fromEntries(picks.filter((p) => !known.includes(p)).map((p) => [p.id, p.level ?? null]));
+    const progress = { level: point.level, acquiredLevels: Object.fromEntries(known.map((p) => [p.id, p.level!])), unknownPicks: picks.some((p) => p.level === undefined), otherPicks: others, ...(history?.complete ? { historyComplete: true } : {}), ...(history?.order ? { pickOrder: history.order } : {}) };
+    const build = await mathBuild(championId, known.map((p) => p.id), point.owned, teams, style, undefined, progress);
+    return { settled: unsure.length === 0, known: known.map((p) => p.id), unsure, notes, build, next: build.find((r) => !point.owned.includes(r.item.id)) };
+  }
+
+  /** An estimate, not a match record: the purchases after `from`, one decision each (decisionAt), at levels guessed from the item count
+   * (itemMath LEVEL_BY_ITEMS) and never below the level he is at. The first step is at his own level; the later ones are marked estimated.
+   * For the owner's question "Skilled Sniper first or last": a scenario of pick levels, written as such by whoever calls it. */
+  async function projectBuild(championId: number, picks: { id: number; level?: number }[], from: { level: number; owned: number[]; pickedBefore?: number[] }, teams?: Teams, style?: BuildStyle, history?: { complete: boolean; order?: number[] }) {
+    const held = [...from.owned];
+    const steps: { level: number; estimated: boolean; settled: boolean; known: number[]; item: Awaited<ReturnType<typeof mathBuild>>[number]['item']; why: string[] }[] = [];
+    const notes = new Set<string>(['إسقاط تقديري: مستويات الشراء بعد الأولى مقدّرة من عدد الأغراض، لا من سجل مباراة']);
+    let level = from.level;
+    // What was settled before the start stays settled after it: picks confirmed then, at levels up to his own. A pick from a later level never
+    // counts as confirmed, and one never confirmed stays unsettled while the level is the same.
+    const confirmed = (from.pickedBefore ?? []).filter((id) => picks.some((p) => p.id === id && p.level !== undefined && p.level <= from.level));
+    while (held.length < SLOTS) {
+      const first = steps.length === 0;
+      if (!first) level = Math.max(level, LEVEL_BY_ITEMS[Math.min(held.length, 6)]!);
+      const d = await decisionAt(championId, picks, { level, owned: held, pickedBefore: confirmed }, teams, style, history);
+      for (const n of d.notes) notes.add(n);
+      if (!d.next) break;
+      steps.push({ level, estimated: !first, settled: d.settled, known: d.known, item: d.next.item, why: d.next.why });
+      held.push(d.next.item.id);
+    }
+    return { estimate: true as const, notes: [...notes], steps };
   }
 
   /** A second build the tests can't vouch for (src/app/experimentalBuild.ts); null when there's none worth showing. */
@@ -901,5 +973,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { side: diff > 0.15 ? 'stronger' : diff < -0.15 ? 'weaker' : 'even', magic: { mine: magic(mine), enemy: magic(enemy) } };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, mathBuild, stackBase, buildStyles, cardValues, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
+  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, mathBuild, decisionAt, projectBuild, stackBase, buildStyles, cardValues, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
 }

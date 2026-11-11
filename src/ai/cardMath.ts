@@ -19,7 +19,7 @@ type Amount = number | { min: number; max: number };
 export interface DamageFormula { flat?: Amount; mana?: number; ap?: number; ad?: number; bonus_ad?: number; hp?: number; bonus_hp?: number; armor?: number; mr?: number; bonus_armor?: number; bonus_mr?: number; target_max_hp?: number; target_missing_hp?: number; target_current_hp?: number; /** AP times bonus health: a ratio on AP that grows with bonus health (Tahm Kench's passive, 1.25% AP per 100 bonus health). */ ap_per_bonus_hp?: number; /** AD times crit chance times crit damage above 100%: a bonus that grows with crit without critting (Caitlyn's headshot, 0.8 of it). */ ad_crit?: number; /** Per 100% crit chance (Essence Reaver's mana: 25). */ crit?: number }
 export type CardOp =
   /** scope chosen_ability: haste on the skill the player names (Bread); movement_abilities: on each of his skills the files tag as moving him (Dashing, MOVEMENT_TAGS). */
-  | { op: 'add'; stat: string; value: Amount; scope?: 'chosen_ability' | 'movement_abilities'; after_quest?: boolean }
+  | { op: 'add'; stat: string; value: Amount; scope?: 'chosen_ability' | 'movement_abilities'; after_quest?: boolean; /** Only if this card was the Nth augment taken (Soul Eater's 300 health as the second). */ if_pick?: number }
   | { op: 'mult'; stat: string; factor: number; scope?: string; after_quest?: boolean }
   /** A stat raised by a share that grows with his level and with other stats, after all items (Jhin's passive: AD +4-44% by level, +0.35 x crit chance, +0.30 x bonus attack speed). byLevel: levels 1 to 18. */
   | { op: 'mult_from'; stat: string; byLevel: number[]; per: { stat: string; ratio: number }[]; after_quest?: boolean }
@@ -31,6 +31,10 @@ export type CardOp =
   | { op: 'convert'; from: string; to: string; ratio: Amount; replace?: boolean; scope?: string; after_quest?: boolean }
   | { op: 'per_stack'; stat: string; value: number; mode: 'add' | 'mult'; per: string; cap?: number | null; lost_on_death?: number | null; after_quest?: boolean }
   | { op: 'lock'; key: string; after_quest?: boolean }
+  /** His own permanent stacks (champion passive and ability counters) gained after the card is taken are larger by ratio (Stackosaurus Rex, file StackModifier=1). */
+  | { op: 'stack_bonus'; ratio: number; after_quest?: boolean }
+  /** The chosen ability's damage rises per100 per 100 ability haste, and that ability no longer gets ability haste (One Hit Wonder). `key` is filled from the card's abilityKey. */
+  | { op: 'haste_to_damage'; per100: number; scope: 'chosen_ability'; key?: string; after_quest?: boolean }
   | { op: 'cooldown'; scope: string; factor: number; after_quest?: boolean }
   | { op: 'refund'; scope: string; amount: Amount; unit: string; trigger: string; internal_cooldown?: number | null; periodicAmount?: Amount; minHitRange?: number; after_quest?: boolean }
   | { op: 'recast'; key: string; internal_cooldown?: number | null; after_quest?: boolean }
@@ -54,9 +58,9 @@ export type CardOp =
   | { op: 'on_hit_repeat'; extra_hits: number; trigger: string; internal_cooldown?: number; after_quest?: boolean }
   /** Each attack also fires bolts at other enemies near the target (Runaan's Hurricane): this many for a ranged or melee champion, each a share of his AD that crits and applies on-hit. */
   | { op: 'bolts'; ranged: number; melee: number; ad: number; after_quest?: boolean }
-  | { op: 'timed'; trigger: string; afterCastWindow?: number; stat: string; value: Amount; mode: 'add' | 'percent'; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; repeatOnHitEvery?: number; after_quest?: boolean };
+  | { op: 'timed'; trigger: string; afterCastWindow?: number; stat: string; value: Amount; mode: 'add' | 'percent'; /** A gain that stays after the fight (Soul Eater's health): carried into the next fight of the chain. */ permanent?: boolean; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; repeatOnHitEvery?: number; after_quest?: boolean };
 
-export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null; /** Actual or explicitly estimated choice level; only this card's lifetime stacks start here. */ acquiredLevel?: number; abilityKey?: TargetAbility }
+export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null; /** Actual or explicitly estimated choice level; only this card's lifetime stacks start here. */ acquiredLevel?: number; abilityKey?: TargetAbility; /** Which augment this was in the order taken (1 = first), only when the order is proven; unset when it isn't. */ pickPlace?: number }
 
 /** The fixed fight. Assumptions, all visible: changing them changes every card alike, not who is popular. */
 /** incomingDps: the enemies' damage a second on him before his resists, when the caller doesn't pass his own (itemMath passes his share of the enemy's damage): a typical share 0.2 of ENEMY_DPS 2530 in itemMath.ts. It says when his health falls below a mark (Sterak's, Maw, Escape Plan). */
@@ -139,6 +143,8 @@ export interface FightResult {
   notModelled: string[];
   /** Instances of ability damage on champions in this fight: each hit of a cast, and a tick every half second of a burn an ability or its item started. */
   abilityInstances: number;
+  /** Immobilizes his landed ability hits put on the fight target: only abilities checked one by one (IMMOBILIZE_ON_HIT). */
+  ccEvents: CcEvent[];
   /** The next fight, started with the mana this one left; this same fight when that mana covers it. */
   again?: () => FightResult;
 }
@@ -160,6 +166,14 @@ const UPGRADES: Record<number, number> = { 3004: 3042, 3003: 3040, 3119: 3121 };
 const UPGRADE_LEVEL = 99;
 /** Abilities whose hit takes seconds off all his cooldowns, with the field that holds them, each checked against its tooltip: Mystic Shot lowers Ezreal's cooldowns by 1.5 s. */
 const REFUND_ON_HIT: Record<string, string> = { 'Characters/Ezreal/Spells/EzrealQAbility/EzrealQ': 'CDRefund' };
+/** Abilities whose landed hit immobilizes the champion it hits, with the field that holds the duration, each checked against its tooltip (16.22):
+ * Morgana Q roots the first enemy hit, Lux Q the first two. Only these raise an immobilize event (trigger 'immobilize_hit'); an ability with the
+ * Trait_ImmobilizingCCSpell tag that isn't here raises none, since the tag doesn't say whether its hit, its delay or a condition does the CC. */
+const IMMOBILIZE_ON_HIT: Record<string, { field: string; kind: 'root' }> = {
+  'Characters/Morgana/Spells/MorganaQAbility/MorganaQ': { field: 'RootDuration', kind: 'root' },
+  'Characters/Lux/Spells/LuxLightBindingAbility/LuxLightBinding': { field: 'RootDuration', kind: 'root' },
+};
+export interface CcEvent { source: 'ability'; key: string; path: string; target: 'main'; at: number; kind: 'root'; duration: number }
 const GRAGAS_BODY_SLAM = 'Characters/Gragas/Spells/GragasEAbility/GragasE';
 const HEALING_NAME = /heal|shield/i;
 const NOT_ANY_DAMAGE = /monster|minion|shield|heal|cap|tooltiponly/i;
@@ -198,7 +212,7 @@ const STAT_ADD: Record<string, (s: BuildStats, v: number) => void> = {
 const statValue = (s: BuildStats, k: string) => ({ move_speed: s.moveSpeed, ap: s.ap, ad: s.ad, bonus_ad: s.bonusAd, hp: s.hp, bonus_hp: s.bonusHp, armor: s.armor, mr: s.mr, attack_speed: s.bonusAttackSpeed, crit: s.crit, haste: s.haste, mana: s.mana }[k] ?? NaN);
 
 /** One fight, second by second, with these items and cards at this level, so anything that feeds itself shows up. Cards apply in order: flat stats, then conversions, then multipliers; then the fight runs. */
-export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam; ampStack?: 'add'; mana?: number; cooldowns?: Record<string, number>; stacks?: number; noStackScale?: boolean; incomingDps?: number; /** His ranks read from the game at a level; else a legal even allocation (abilityRank.ts). */ knownRanks?: KnownRanks; /** How he levels his skills when his ranks aren't read (the build page's order). */ skillPlan?: SkillPlan }): FightResult {
+export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam; ampStack?: 'add'; mana?: number; cooldowns?: Record<string, number>; /** Health this simulation's earlier fights gave for good (permanent timed gains); nothing from before the chain. */ gainedHp?: number; stacks?: number; noStackScale?: boolean; incomingDps?: number; /** His ranks read from the game at a level; else a legal even allocation (abilityRank.ts). */ knownRanks?: KnownRanks; /** How he levels his skills when his ranks aren't read (the build page's order). */ skillPlan?: SkillPlan }): FightResult {
   const record = championRecord(o.bin);
   if (!record) throw new Error('no character record');
   // Tear items turn into their finished form; in Mayhem two augment rounds after purchase (their mode records' RoundCount 2): an assumption that a build has them by level 11.
@@ -264,28 +278,39 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const needsUlt = (c: CardNumbers) => ultUnavailable && /ultimate cast|after (?:an|your) ultimate|cast(?:ing)? (?:an|your) ultimate/i.test(String(c.needs ?? ''));
   const targetMissing: string[] = [];
   const cardOps = (card: CardNumbers) => card.ops.filter((x) => noQuest(x) || questDone(card)).flatMap((x): CardOp[] => {
+    // A reward for being the Nth augment taken counts only when the order is proven; an unknown order gives nothing and says so.
+    if (x.op === 'add' && x.if_pick !== undefined) {
+      if (card.pickPlace === undefined) { targetMissing.push(`${card.name}: ترتيب اختياره غير مثبت، فمكافأة كونه الاختيار ${x.if_pick} غير محسوبة`); return []; }
+      return card.pickPlace === x.if_pick ? [x] : [];
+    }
     if (x.op === 'add' && x.scope === 'movement_abilities') {
       const keys = (['Q', 'W', 'E', 'R'] as const).filter((k) => (((o.bin as Bin)[record.spells?.['QWER'.indexOf(k)] ?? '']?.mSpell as { mSpellTags?: string[] } | undefined)?.mSpellTags ?? []).some((tag) => MOVEMENT_TAGS.has(tag)));
       if (!keys.length) targetMissing.push(`${card.name}: لا مهارة عليها وسم حركة في ملف الشخصية؛ لا أثر`);
       return keys.map((k): CardOp => ({ op: 'add', stat: `${k}_haste`, value: x.value }));
     }
-    if (x.op !== 'echo' && (x.op !== 'add' || x.scope !== 'chosen_ability')) return [x];
+    if (x.op !== 'echo' && x.op !== 'haste_to_damage' && (x.op !== 'add' || x.scope !== 'chosen_ability')) return [x];
     const path = card.abilityKey ? record.spells?.['QWER'.indexOf(card.abilityKey)] : undefined;
     if (!path || !(o.bin as Bin)[path]?.mSpell) {
-      targetMissing.push(`${card.name}: ${card.abilityKey ? `المهارة ${card.abilityKey} غير موجودة في ملف الشخصية` : 'المهارة المستهدفة غير محددة'}؛ ${x.op === 'echo' ? 'أثر النسخة' : 'أثر التسارع'} غير محسوب`);
+      targetMissing.push(`${card.name}: ${card.abilityKey ? `المهارة ${card.abilityKey} غير موجودة في ملف الشخصية` : 'المهارة المستهدفة غير محددة'}؛ ${x.op === 'echo' ? 'أثر النسخة' : x.op === 'haste_to_damage' ? 'تحويل التسارع إلى ضرر' : 'أثر التسارع'} غير محسوب`);
       return [];
     }
-    if (x.op === 'echo') return [{ ...x, key: card.abilityKey }];
+    if (x.op === 'echo' || x.op === 'haste_to_damage') return [{ ...x, key: card.abilityKey }];
     // Slot haste never enters global stats. Each augment keeps its own selected skill.
     return [{ ...x, stat: `${card.abilityKey}_haste` }];
   });
   const ops = [...(o.passive ?? []).filter(noQuest), ...o.cards.filter((c) => !needsUlt(c)).flatMap(cardOps).filter(applies), ...held.flatMap((id) => o.itemOps?.[id % 10000] ?? []).filter(applies).filter(noQuest), ...fromFile.filter(noQuest)];
   const notModelled = [...o.cards.flatMap((c) => (c.not_modelled ? [`${c.name}: ${c.not_modelled}`] : [])), ...targetMissing];
+  // Whether the card also drops haste given to that ability alone (Bread) or to its basic/ult group is not settled by its text (T028 review): say so.
+  for (const x of ops) if (x.op === 'haste_to_damage' && ops.some((y) => y.op === 'add' && (y.stat === `${x.key}_haste` || y.stat === `${x.key === 'R' ? 'ult' : 'basic'}_haste`))) notModelled.push(`تحويل التسارع إلى ضرر للمهارة ${x.key}: تفاعله مع تسارع خاص بها (Bread أو تسارع المهارات الأساسية/الخارقة) غير محسوم؛ الحساب يبقي ذلك التسارع على تبريدها ولا يحوّله، وهذا تقدير`);
   // Stacks held by this level, read from 23 screen windows with Tank Engine (health order: Heartsteel, then the multiplier, which one reading of Mundo forces): 0.6 a level when deaths take most of them, 2.2 a level of takedowns when they don't. Other stacks are a guess.
   // Stacks from every instance of ability damage grow fast with the game (Phenomenal Evil); fitted to screens.
   const stackName = (record as { mCharacterName?: string } | undefined)?.mCharacterName ?? '';
   // The stacks the player typed (they differ from game to game), else the estimate for this level.
-  const stacks = STACKS_AT_15[stackName] === undefined ? undefined : o.stacks ?? STACKS_AT_15[stackName]! * (o.level / 15);
+  // Stackosaurus Rex (stack_bonus): only what his own counters gain after it is taken, so count(now) - count(pick); stacks before it and a count he typed stay as they are (T027).
+  const stackBonus = o.cards.flatMap((c) => (c.acquiredLevel === undefined ? [] : c.ops.flatMap((x) => (x.op === 'stack_bonus' ? [{ ratio: x.ratio, at: c.acquiredLevel! }] : []))));
+  const gainedAfter = (count: (level: number) => number) => stackBonus.reduce((n, b) => n + b.ratio * Math.max(0, count(o.level) - count(Math.min(o.level, b.at))), 0);
+  const estimate = (level: number) => STACKS_AT_15[stackName]! * (level / 15);
+  const stacks = STACKS_AT_15[stackName] === undefined ? undefined : o.stacks ?? estimate(o.level) + gainedAfter(estimate);
   // His own passive's stacks (Veigar's AP, Senna's and Thresh's souls) are his count above, not the generic one.
   // One count a stat: Veigar's AP from hits and from takedowns are both in his count, so his second AP source adds nothing more.
   const ownPassive = new Set(o.passive ?? []), firstOfStat = new Map<string, CardOp>();
@@ -305,7 +330,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     const countAt = (level: number) => x.per === 'takedown' ? (x.lost_on_death ? 0.6 : 2.2) * level : x.per === 'kill' ? (x.lost_on_death ? 0.6 : KILLS_PER_LEVEL) * level : x.per === 'every_ability_damage' ? FIGHT.everyDamageStacks.at18 * (level / 18) ** FIGHT.everyDamageStacks.power * instanceScale() : FIGHT.stacksByLevel(level);
     const at = acquired.get(x);
     // These curves remain estimates, not observed stack counts. Subtract before applying the cap.
-    const n = Math.max(0, countAt(o.level) - (at === undefined ? 0 : countAt(Math.min(o.level, at))));
+    const n = Math.max(0, countAt(o.level) - (at === undefined ? 0 : countAt(Math.min(o.level, at)))) + (ownPassive.has(x) ? gainedAfter(countAt) : 0);
     return x.cap == null ? n : Math.min(x.cap, n);
   };
   const add = (t: BuildStats, stat: string, v: number) => { STAT_ADD[stat]?.(t, v); };
@@ -316,6 +341,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const waits = ops.filter((x) => waitOf(x) > 0 && waitOf(x) < FIGHT.seconds);
   for (const x of ops) if (x.op === 'add' && !waits.includes(x)) add(s, x.stat, scaled(x.value, o.level));
   for (const x of ops) if (x.op === 'per_stack' && x.mode === 'add') add(s, x.stat, x.value * stacksOf(x));
+  // Health kept from earlier fights of this chain (permanent gains this simulation counted, FightResult.again); nothing from before the chain.
+  if (o.gainedHp) add(s, 'hp', o.gainedHp);
   // An item whose proc leaves max health for good (Heartsteel: DamageToMaxHealthRatio of 70 + 6% of max health a proc) has grown by this level.
   for (const it of owned) {
     const dv = (n: string) => it.DataValues?.find((d) => d.name === n)?.values?.[0] ?? 0;
@@ -505,6 +532,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   let abilityInstances = 0, armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = o.kit.attacks || o.kit.damage !== 'magic' || passiveOnAttack ? 0 : Infinity, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
   let critRepeatCarry = 0;
   const casts: Record<string, number> = {}, perCast: Record<string, number> = {};
+  const ccEvents: CcEvent[] = [];
+  const unreadCc = new Set<string>();
   const kills = [...FIGHT.killTimes];
   const abilityOnHit = ops.find((x) => x.op === 'abilities_on_hit');
   let nextAbilityOnHit = 0;
@@ -667,7 +696,10 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (critical) fire('crit', t, c);
     }
     if (t >= nextCast) {
-      const haste = (scope: string, key: string) => c.haste + ops.reduce((n, x) => (x.op === 'add' && (x.stat === `${scope}_haste` || x.stat === `${key}_haste`) ? n + scaled(x.value, o.level) : n), 0);
+      // One Hit Wonder: its chosen ability gets no ability haste on its cooldown and turns that haste into damage instead (T028). Haste given to the
+      // ability alone (Bread) or to basic/ult abilities stays on the cooldown and is not turned into damage: an estimate, flagged in notModelled above.
+      const hasteToDamage = (key: string) => ops.reduce((m, x) => (x.op === 'haste_to_damage' && x.key === key ? m + x.per100 : m), 0);
+      const haste = (scope: string, key: string) => (hasteToDamage(key) > 0 ? 0 : c.haste) + ops.reduce((n, x) => (x.op === 'add' && (x.stat === `${scope}_haste` || x.stat === `${key}_haste`) ? n + scaled(x.value, o.level) : n), 0);
       for (const sl of slots) {
         const cost = sl.rising ? Math.min(sl.rising.cap, sl.cost + sl.rising.step * sl.rising.casts.filter((x) => t - x < sl.rising!.window).length) : sl.cost;
         if (t < sl.ready || sl.on || mana < cost || (sl.key !== 'R' && mana < startMana && mana - cost < manaFloor)) continue;
@@ -703,7 +735,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         // The game's own crit version says what a crit adds (Nasus: crit damage on his AD part, his stacks uncritted); without one, a crit raises the whole hit.
         const base = values.length ? Math.max(...values.map((v) => v.value)) : 0;
         const critGain = !sl.crits ? 0 : critHit > base && each > 0 ? (critHit - base) / each : c.critDamage - 1;
-        const hit = one * amp('abilities', t) * amp(scope, t, false) * overTime * (1 + c.crit * (critExtra + critGain)); // shortcut without a crit version: a crit raises the whole hit, not only its AD part
+        // One Hit Wonder's gain on the chosen ability, used once on every damage path this cast builds: the hit, and Nasus R's storm built apart from it (T032).
+        const hasteGain = 1 + (hasteToDamage(sl.key) * c.haste) / 100;
+        const hit = one * amp('abilities', t) * amp(scope, t, false) * hasteGain * overTime * (1 + c.crit * (critExtra + critGain)); // shortcut without a crit version: a crit raises the whole hit, not only its AD part
         perCast[sl.key] = Math.round(hit);
         casts[sl.key] = (casts[sl.key] ?? 0) + 1;
         if (one > 0) abilityInstances += sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1;
@@ -743,7 +777,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
                 : 'Nasus R: خفض تبريد Q أو مدة تأثيره غير متاح من ملف اللعبة');
             }
             if (validStorm) {
-              const dps = ratio * targetHp * amp('abilities', t) * amp(scope, t, false);
+              const dps = ratio * targetHp * amp('abilities', t) * amp(scope, t, false) * hasteGain;
               const storm = { op: { op: 'dot' as const, trigger: 'nasus_storm', per_second: { flat: dps }, duration, type: 'magic' }, until: t + duration, stacks: 1, fromAbility: true };
               const previous = dots.findIndex((d) => d.op.trigger === 'nasus_storm');
               if (previous < 0) dots.push(storm);
@@ -776,6 +810,13 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         // Echo Cast: the same hit again after its delay, read from his stats now; no mana, no cooldown, no healing (knowledge/math-generation.md).
         if (one > 0 && !sl.toggle) for (const x of ops) if (x.op === 'echo' && x.key === sl.key) echoes.push({ at: t + x.delay, dealt: hit * abilityTaken * x.ratio, hits: reading?.hits ?? 1, events: !!x.events, onHit: asAttack || etherealHit });
         if (one > 0) { fire('ability_hit', t, c, sl); if (asAttack || etherealHit) fire('on_hit', t, c); if (etherealHit && !asAttack) fire('next_attack', t, c); }
+        // A landed hit of a checked immobilizing ability roots the fight target: one event per cast on him, its duration from the file at this rank.
+        const cc = IMMOBILIZE_ON_HIT[sl.path];
+        const ccFor = cc && ((o.bin as Bin)[sl.path]?.mSpell?.DataValues ?? sl.spell.DataValues)?.find((v) => v.name === cc.field)?.values?.[sl.rank];
+        // A known 0 is no root at this rank. No field, no value at this rank, or a value that isn't a number: the duration is unknown, so no
+        // event is guessed and the limit is said (unreadCc, below) when a card waits on it.
+        if (one > 0 && !sl.toggle && cc && !(typeof ccFor === 'number' && Number.isFinite(ccFor) && ccFor >= 0)) unreadCc.add(sl.key);
+        if (one > 0 && !sl.toggle && cc && typeof ccFor === 'number' && Number.isFinite(ccFor) && ccFor > 0) { ccEvents.push({ source: 'ability', key: sl.key, path: sl.path, target: 'main', at: t, kind: cc.kind, duration: ccFor }); fire('immobilize_hit', t, c, sl); }
         armed = true;
         lastCast = t;
         castNow = { key: sl.key, cooldown: Math.max(0, sl.ready - t) };
@@ -818,7 +859,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     fromAbilities += part;
     if (damageBySecond.length) damageBySecond[damageBySecond.length - 1]! += part;
   }
-  fromCards += healed * ops.reduce((m, x) => (x.op === 'heal_damage' ? m + x.ratio : m), 0) * takenBy(s).magic;
+  // Heals only: shields are in healed too, and the card turns healing into damage, not shields (T034).
+  fromCards += (healed - shielded) * ops.reduce((m, x) => (x.op === 'heal_damage' ? m + x.ratio : m), 0) * takenBy(s).magic;
   // An anti-heal item prevents healing; this is not damage and cannot generate omnivamp.
   // Includes healing on allies and assumes the healing is reached; per-enemy hit and debuff uptime remain unmodelled. Shields are excluded in enemyTeam.
   const grievous = Math.max(0, ...o.items.map((id) => o.shop[id]?.DataValues?.find((d) => d.name === 'GrievousAmount')?.values?.[0] ?? 0));
@@ -829,6 +871,10 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const receivedHeal = receives('HealingIncrease'), receivedShield = receives('ShieldIncrease');
   const selfHeal = (healed - shielded) * receivedHeal + shielded * receivedShield;
   for (const x of nasusDefense) add(sAvg, x.stat, scaled(x.value, o.level) * nasusDefenseSeconds / FIGHT.seconds);
+  // Health gained from each immobilize in this fight (Soul Eater) lasts from that root to the fight's end: effective health takes its share of the fight.
+  for (const x of ops) if (x.op === 'timed' && x.permanent && x.trigger === 'immobilize_hit' && x.stat === 'hp' && x.mode === 'add') add(sAvg, 'hp', ccEvents.reduce((m, e) => m + scaled(x.value, o.level) * Math.max(0, FIGHT.seconds - e.at), 0) / FIGHT.seconds);
+  // What this fight's permanent gains add for the next one: each stack in full, from its start.
+  const gainedHere = ops.reduce((m, x) => (x.op === 'timed' && x.permanent && x.stat === 'hp' && x.mode === 'add' ? m + scaled(x.value, o.level) * (stateOf.get(x)?.stacks ?? 0) : m), 0);
   const physical = sAvg.hp * (1 + Math.max(0, sAvg.armor) / 100), magic = sAvg.hp * (1 + Math.max(0, sAvg.mr) / 100);
   // Omnivamp that waits seconds of combat (Riftmaker) heals from the damage he deals after them: his own damage at that time, read off the seconds.
   const own = fromAbilities + fromAttacks + fromCards;
@@ -842,8 +888,12 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const short = Number.isFinite(left) && next < startMana - left;
   const waiting = FIGHT.carryCooldowns ? Object.fromEntries(slots.flatMap((sl) => (sl.ready > FIGHT.seconds + FIGHT.gapSeconds ? [[sl.key, sl.ready - FIGHT.seconds - FIGHT.gapSeconds]] : []))) : {};
   const abilityHealPower = 1 + healPower + chainHeal + ops.reduce((m, x) => (x.op === 'add' && x.stat === 'heal_shield_power' ? m + scaled(x.value, o.level) : x.op === 'mana_amp' && x.scope === 'heal_shield' && Number.isFinite(fullMana) ? m + (x.per100 * fullMana) / 100 : m), 0);
+  // A card waiting on an immobilize counts nothing from his abilities that weren't checked: say so rather than read that as "no CC".
+  const unchecked = slots.filter((sl) => !IMMOBILIZE_ON_HIT[sl.path] && ((sl.spell as { mSpellTags?: string[] }).mSpellTags ?? []).includes('Trait_ImmobilizingCCSpell')).map((sl) => sl.key);
+  if (unchecked.length && ops.some((x) => 'trigger' in x && x.trigger === 'immobilize_hit')) notModelled.push(`شل الحركة: قدرات ${unchecked.join('، ')} تحمل وسم شل الحركة لكن إصابتها لم تُفحص، فآثار التعزيزات المشروطة به منها غير محسوبة`);
+  if (unreadCc.size && ops.some((x) => 'trigger' in x && x.trigger === 'immobilize_hit')) notModelled.push(`شل الحركة: مدة التثبيت لقدرات ${[...unreadCc].join('، ')} غير مقروءة من ملف اللعبة في هذه الرتبة، فلم يُحسب حدث ولا آثار التعزيزات المشروطة به`);
   const result: FightResult = {
-    again: () => (short || Object.keys(waiting).length ? fight({ ...o, mana: short ? next : o.mana, cooldowns: waiting }) : result),
+    again: () => (short || Object.keys(waiting).length || gainedHere > 0 ? fight({ ...o, mana: short ? next : o.mana, cooldowns: waiting, gainedHp: (o.gainedHp ?? 0) + gainedHere }) : result),
     damage: fromAbilities + fromAttacks + fromCards + fromAllies,
     healingDenied,
     damageBySecond,
@@ -864,6 +914,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     stats: { ad: sAvg.ad, ap: sAvg.ap, hp: sAvg.hp, armor: sAvg.armor, mr: sAvg.mr, attackSpeed: Math.min(ATTACK_SPEED_CAP, as0 + asRatio * sAvg.bonusAttackSpeed), crit: sAvg.crit, haste: sAvg.haste },
     notModelled,
     abilityInstances,
+    ccEvents,
   };
   return result;
 }

@@ -3,10 +3,10 @@
 import type { Advice } from '../ai/advisor.js';
 import { EZREAL, MANAMUNE, MURAMANA, TEAR, ezrealNextItems, ezrealTearStage } from '../app/ezrealPurchases.js';
 import { walkedPath, type BuildPath } from '../app/buildPath.js';
-import { offerPlanIds, rankOffer, walkItems } from '../app/walk.js';
+import { offerPlanIds, pathChange, pathChangeLine, planReason, rankOffer, walkItems } from '../app/walk.js';
 import { cardFit, conflictsWith, itemPart, openLines, placesOf, type ChampionDamage } from '../ai/lines.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
-import { augmentStage, type AugmentProgress } from '../ai/augmentProgress.js';
+import { augmentStage, MAYHEM_MAX_LEVEL, type AugmentProgress } from '../ai/augmentProgress.js';
 import { dominantOffer } from '../app/offerComparison.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
@@ -15,6 +15,7 @@ import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
 import type { AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, OverlayData } from '../main/services.js';
+import type { PickSnapshot } from '../main/pickLog.js';
 import { adviceNodes, AI_HINT, AI_LOADING, EXPERIMENTAL_TITLE, experimentalHint, WHY_AR } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
 import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, stackInput, withTooltip, type Describable } from './dom.js';
@@ -22,6 +23,7 @@ import { filterAugments, findOfferMatches } from './search.js';
 import { applyRandomTheme } from './theme.js';
 import { progressRequests } from './progressRequests.js';
 import { calculationNotes } from './calculationNotes.js';
+import { restorePicks } from './pickRestore.js';
 import { needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 
 applyRandomTheme(); // colours only: the overlay hides the background art
@@ -82,11 +84,13 @@ let cardMath = new Map<number, AugmentValue>();
 let cardMathFor = '';
 let cardMathContext = '';
 let cardMathLoading = false;
+/** The state the card values are asked for; an answer for another one is stale (T014: no plan comparison from it). */
+const cardContext = () => `${loadId}|${data?.game}|${data?.champion?.id}|${[...picked].join()}|${(data?.live?.items ?? owned).join()}|${JSON.stringify(progress())}|${buildStyle ?? ''}|${stacks ?? ''}`;
 async function refreshCardMath() {
   const champion = data?.champion;
   const held = data?.live?.items ?? owned;
   const plans = offerPlanIds(offer, comparePartialOffer);
-  const context = `${loadId}|${data?.game}|${champion?.id}|${[...picked].join()}|${held.join()}|${JSON.stringify(progress())}|${buildStyle ?? ''}|${stacks ?? ''}`;
+  const context = cardContext();
   const key = `${context}|${plans.join()}`;
   if (key === cardMathFor || !champion || data?.mode !== 'mayhem') return;
   cardMathFor = key;
@@ -171,6 +175,7 @@ function resetRun() {
   for (const id of Object.keys(acquiredLevels)) delete acquiredLevels[Number(id)];
   for (const id of Object.keys(abilityTargets)) delete abilityTargets[Number(id)];
   cardMathFor = ''; cardMath.clear(); cardMathLoading = false; engineAsked = ''; engine = undefined;
+  pickSnap = undefined; pickNote = undefined; pickRefused = undefined;
 }
 
 const requestProgress = progressRequests((champion, fresh) => window.lolh.gameProgress(champion, fresh));
@@ -200,16 +205,26 @@ async function refreshProgress(update = true, fresh = false) {
   } catch { return false; }
 }
 
-let marking = false;
-async function toggleMark(id: number) {
-  if (marking) return;
-  marking = true;
-  const champion = data?.champion?.id;
-  const generation = loadId, game = data?.game;
-  let fresh = false;
-  try { fresh = await refreshProgress(false, true); }
-  finally { marking = false; }
-  if (data?.champion?.id !== champion || generation !== loadId || (game !== undefined && game !== data?.game)) return;
+/** The pick log main keeps for this match (src/main/pickLog.ts), as last returned; undefined when there is none (no match, the phone page). */
+let pickSnap: PickSnapshot | undefined;
+/** Why the marks are only kept on this page, when main's log can't take them. */
+let pickNote: string | undefined;
+const PICK_LOG_OFF = 'سجل الاختيارات غير متاح هنا (لا مباراة جارية أو صفحة الهاتف): العلامات محلية ومستوياتها تقديرية.';
+/** Why main refused the last mark, in the page's words; the log stays as it was. */
+let pickRefused: string | undefined;
+const REFUSED: [RegExp, string][] = [[/too many picks/, 'بلغت ستة اختيارات'], [/unknown augment/, 'هذا التعزيز ليس من تعزيزات الطور'], [/pick log full/, 'امتلأ سجل هذه المباراة'], [/bad pick request/, 'طلب غير صالح']];
+/** The marks and their levels as main's log holds them; the page keeps no history of its own beside it. An older snapshot of the same log
+ * (a late answer to an earlier request) never replaces a newer one. */
+function applyPicks(snap: PickSnapshot) {
+  if (pickSnap && pickSnap.game === snap.game && pickSnap.championId === snap.championId && snap.version < pickSnap.version) return;
+  pickSnap = snap; pickNote = undefined; pickRefused = undefined;
+  picked.clear();
+  for (const id of Object.keys(acquiredLevels)) delete acquiredLevels[Number(id)];
+  for (const h of snap.held) { picked.add(h.id); if (h.recordedLevel !== undefined) acquiredLevels[h.id] = h.recordedLevel; }
+  for (const id of Object.keys(abilityTargets)) if (!picked.has(Number(id))) delete abilityTargets[Number(id)];
+}
+/** No log to write to: the marks stay on this page as before, the level from the game when just read, or typed in. */
+function markLocally(id: number, fresh: boolean) {
   if (picked.has(id)) { picked.delete(id); delete acquiredLevels[id]; delete abilityTargets[id]; }
   else if (picked.size < MAX_PICKS) {
     // Without a live/manual level leave history unknown; the calculator labels the unlock-level fallback as estimated.
@@ -217,6 +232,73 @@ async function toggleMark(id: number) {
     if (level !== undefined) acquiredLevels[id] = level;
     picked.add(id);
   }
+}
+
+let marking = false;
+async function toggleMark(id: number) {
+  if (marking) return;
+  marking = true;
+  try { if (!(await markNow(id))) return; }
+  finally { marking = false; }
+  afterMarks();
+}
+/** One mark, through main's log when there is one. False when the answer belongs to an earlier match or champion and nothing changed. */
+async function markNow(id: number): Promise<boolean> {
+  const champion = data?.champion?.id;
+  const generation = loadId, game = data?.game;
+  const fresh = await refreshProgress(false, true);
+  const same = () => data?.champion?.id === champion && generation === loadId && (game === undefined || game === data?.game);
+  if (!same()) return false;
+  const on = !picked.has(id);
+  if (on && picked.size >= MAX_PICKS) return false;
+  if (champion !== undefined && game !== undefined) {
+    const r = await window.lolh.pickMark(game, champion, id, on);
+    if (!same()) return false;
+    if (!isError(r)) { applyPicks(r); return true; }
+    if (/^pick-stale/.test(r.error)) return false; // the match changed meanwhile: main refused it, and so does the page
+    // A refused mark in a running log: the log stays as main holds it, the mark isn't kept anywhere, and the page says why.
+    if (/^pick-rejected/.test(r.error)) { pickRefused = REFUSED.find(([re]) => re.test(r.error))?.[1] ?? 'رُفض الطلب'; return true; }
+  }
+  // No log here (no active match, the phone page, main unreachable): the marks stay on this page as before, said so.
+  pickSnap = undefined; pickNote = PICK_LOG_OFF;
+  markLocally(id, fresh);
+  return true;
+}
+/** One bounded wait for marks main was still recording when this page loaded. */
+async function followPending(game: number, champion: number, generation: number) {
+  const r = await window.lolh.pickLog(game, champion, true);
+  if (generation !== loadId || data?.champion?.id !== champion || data?.game !== game || isError(r) || !r) return;
+  applyPicks(r);
+  afterMarks();
+}
+let declaring = false;
+async function declarePicks() {
+  const champion = data?.champion?.id, game = data?.game, generation = loadId;
+  if (declaring || champion === undefined || game === undefined) return;
+  declaring = true;
+  if (tab === 'walk') renderWalk();
+  try {
+    const r = await window.lolh.pickDeclare(game, champion);
+    if (data?.champion?.id !== champion || generation !== loadId || game !== data?.game) return;
+    if (isError(r)) pickRefused = 'تعذّر حفظ التأكيد؛ أعد المحاولة.';
+    else applyPicks(r);
+  } finally { declaring = false; }
+  afterMarks();
+}
+/** The log's state near the picks, and the optional statement when the log allows it; plain words, nothing of how it is kept. */
+function pickStatus(): HTMLElement[] {
+  if (!pickSnap) return pickNote ? [el('p', 'hint', pickNote)] : [];
+  const refused = pickRefused ? [el('p', 'missing', `لم يُسجَّل الاختيار: ${pickRefused}.`)] : [];
+  const line = el('p', 'hint', pickSnap.declaredComplete
+    ? 'سجل اختياراتك كامل حسب تأكيدك أنك سجّلت كل اختيار وقت أخذه؛ اللعبة لا تقرأ التعزيزات، فالترتيب والمستويات هي ما سجّلته.'
+    : pickSnap.reason ? `سجل اختياراتك غير مكتمل: ${pickSnap.reason}. البناء يتبع ما اخترته، ومكافآت ترتيب الاختيار لا تُحسب.` : 'سجل اختياراتك يُحفظ لهذه المباراة بترتيب ضغطك على «اخترته».');
+  line.setAttribute('role', 'status');
+  if (!pickSnap.canDeclare) return [...refused, line];
+  const confirm = pill(declaring ? 'جارٍ حفظ التأكيد…' : 'أؤكد أنني سجّلت كل اختياراتي بترتيبها، كلٌّ منها وقت أخذه', () => void declarePicks());
+  confirm.disabled = declaring;
+  return [...refused, line, confirm];
+}
+function afterMarks() {
   buildView = undefined; // the marks changed: back to the build that follows them
   render();
   if (data?.build) renderBuild(data.build);
@@ -391,13 +473,13 @@ function renderWalk() {
   const focused = document.activeElement?.id;
   const stage = augmentStage([...picked], progress());
   const levelInput = el('input', '') as HTMLInputElement;
-  levelInput.type = 'number'; levelInput.min = '3'; levelInput.max = '18'; levelInput.step = '1';
+  levelInput.type = 'number'; levelInput.min = '3'; levelInput.max = String(MAYHEM_MAX_LEVEL); levelInput.step = '1';
   levelInput.value = String(stage.level); levelInput.disabled = !!data.live;
   const levelLabel = el('label', 'hint', data.live ? 'مستواك من اللعبة: ' : 'مستواك الحالي (عدّله عند تأخر الاختيار): ');
   levelLabel.append(levelInput);
   levelInput.addEventListener('change', () => {
     const level = levelInput.valueAsNumber;
-    if (!Number.isInteger(level) || level < 3 || level > 18 || Object.values(acquiredLevels).some((at) => at > level)) { levelInput.value = String(stage.level); return; }
+    if (!Number.isInteger(level) || level < 3 || level > MAYHEM_MAX_LEVEL || Object.values(acquiredLevels).some((at) => at > level)) { levelInput.value = String(stage.level); return; }
     manualLevel = level;
     ownedChanged();
   });
@@ -440,6 +522,22 @@ function renderWalk() {
     if (m?.plan) {
       const names = m.plan.items.map((id) => [...data!.items, ...data!.boots].find((i) => i.id === id)?.enName ?? String(id));
       txt.append(el('small', '', `عند اكتمال البناء في سيناريو مستوى ${m.plan.level}: ضرر ${signed(m.plan.damage)}، تحمّل ${signed(m.plan.health)} · أثر القتال ${signed(m.plan.value)}`), el('small', 'en', names.join(' › ')));
+      // The plan with this card against the plan without it, same state and style (T014), past the held items main's search itself kept (T015),
+      // never the page's own list; only for an answer to the current state.
+      const itemName = (id: number) => [...data!.items, ...data!.boots].find((i) => i.id === id)?.enName;
+      const verdict = !cardMathLoading && cardMathContext === cardContext() ? pathChange(m.plan.baselineItems, m.plan.items, m.plan.baselineOwned, m.plan.itemsOwned) : undefined;
+      const change = pathChangeLine(verdict, itemName);
+      if (change) {
+        txt.append(el('small', 'path-change', change));
+        // The card plan's own reason for the item the line names (T017), folded: the search's words, not a claim that the card alone caused it.
+        const reason = planReason(verdict, m.plan.items, m.plan.itemsOwned, m.plan.itemsWhy);
+        const reasonName = reason && itemName(reason.id);
+        if (reason && reasonName) {
+          const more = el('details', 'plan-reason');
+          more.append(el('summary', '', `سبب ترشيح ${reasonName} في هذه الخطة`), el('small', '', reason.why.join(' · ')));
+          txt.append(more);
+        }
+      }
       if (m.plan.missing.length) txt.append(el('small', '', `غير محسوب في الخطة: ${m.plan.missing.join(' · ')}`));
     } else if (m?.planError) txt.append(el('small', 'missing', m.planError));
     const targetField = abilityTargetField(a);
@@ -476,6 +574,9 @@ function renderWalk() {
   const chosen = data.augments.filter((a) => picked.has(a.id));
   const known = new Map((shopItems ?? []).map((i) => [i.id, i]));
   const advised = engine?.key === engineKey() ? engine.items : [];
+  // The state moved on after the build came (a live level read after a reload): ask for the state now, as renderBuild does, or the walk
+  // would wait on «جاري حساب البناء…» for good (T018). refreshEngine asks once per state (engineAsked).
+  if (engine?.key !== engineKey()) void refreshEngine();
   for (const { item } of advised) known.set(item.id, item);
   const ezreal = data.champion?.id === EZREAL;
   const tear = ezreal ? ezrealTearStage(owned, tearCharged) : undefined;
@@ -499,7 +600,7 @@ function renderWalk() {
     if (!item && id % 10000 !== TEAR) continue;
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
-    txt.append(el('b', '', item ? shownName(item) : 'Tear of the Goddess'), el('small', '', offPath.includes(id) ? 'لم يكن المحرك ليختاره الآن' : 'في مسارك'));
+    txt.append(el('b', '', item ? shownName(item) : 'Tear of the Goddess'), el('small', '', offPath.includes(id) ? 'لم يكن المحرك ليختاره الآن' : 'مملوك'));
     if (item) r.append(ic(item));
     r.append(txt);
     if (!data.live) r.append(pill('✕', () => { owned.splice(owned.indexOf(id), 1); ownedChanged(); }, 'pill ghost'));
@@ -527,6 +628,7 @@ function renderWalk() {
   walkBox.replaceChildren(
     section(`الاختيار ${picked.size + 1}: البطاقات المعروضة`, levelLabel, el('p', 'hint', `الاختيارات الأساسية عند المستويات 3، 7، 11، 15. التقييم حتى مستوى ${stage.untilLevel}${stage.estimatedLevel ? '؛ المستوى الحالي افتراضي حتى تحدده أو تُقرأ المباراة' : ''}.`), findCard.label, findCard.box, rows, el('p', 'hint', 'الترتيب نسبي بين تعزيزات الندرة نفسها. متوسط المرحلة يستخدم أغراضك الحالية فقط. الخطة المكتملة تعيد البحث عن الأيتمات لكل تعزيز؛ لا تقدّر الذهب أو وقت الشراء أو تكلفة تغيير المسار، ولا تفترض تعزيزات قادمة. عند اختلاف الأفضل بين المرحلة والخطة، توجد مقايضة. الأرقام ليست احتمال فوز.')),
     ...(chosen.length ? [section('ما أخذته', chosenChips(chosen), ...chosen.flatMap((a) => abilityTargetField(a) ?? []))] : []),
+    ...(pickSnap || pickNote ? [section('سجل الاختيارات', ...pickStatus())] : []),
     section('أغراضك', ...(data.live ? [el('p', 'hint', 'تُقرأ الأغراض من اللعبة.')] : [findItem.label, findItem.box, ...(tear === 'start' && !tearItem ? [pill('اشتريت Tear of the Goddess', () => { owned.push(TEAR); ownedChanged(); })] : [])]), ownedRow, ...(tear === 'charging' || tear === 'ready' ? [tearControl] : [])),
     ...(chosen.length || ezreal ? [section('الأغراض التالية', advised.length || tear === 'start' ? nextRow : el('p', 'hint', 'جاري حساب البناء…'), ...(tear === 'charging' ? [el('p', 'hint', 'أجّل Manamune حتى تكتمل تراكمات Tear of the Goddess.')] : []), ...calculationNotes(advised))] : []),
   );
@@ -840,14 +942,22 @@ async function load() {
     if (ezrealTearStage(owned, false) !== 'charging') tearCharged = false;
   }
   cardMathFor = ''; cardMath.clear();
-  // A build already asked for in the app (or an earlier F7) for this champion: mark its augments and show it.
+  // This match's marks come back from main's live log, even an empty one (src/renderer/pickRestore.ts). Only with no live log do the last
+  // build's augments come back, as manual marks with no certificate, once per champion.
   let restored = false;
-  if (!picked.size && reply.champion && reply.mode === 'mayhem' && restoredFor !== reply.champion.id) {
-    restoredFor = reply.champion.id;
-    const last = await window.lolh.lastAiPicks();
+  if (!picked.size && reply.champion && reply.mode === 'mayhem') {
+    const champion = reply.champion.id;
+    const plan = await restorePicks(window.lolh, { game: reply.game, championId: champion, known: (a) => reply.augments.some((x) => x.id === a), manualAllowed: restoredFor !== champion });
     if (id !== loadId) return;
-    for (const a of last?.championId === reply.champion.id ? last.augmentIds : []) {
-      if (reply.augments.some((x) => x.id === a)) (picked.add(a), (restored = true));
+    if (plan.source === 'log') {
+      if (plan.snap) { applyPicks(plan.snap); restored = plan.snap.held.length > 0; }
+      // Marks still being recorded when F7 reloaded: one wait for them, then the log as it ends up (never from an older match or load).
+      if (plan.followPending && reply.game !== undefined) void followPending(reply.game, champion, id);
+    } else if (plan.source === 'manual') {
+      restoredFor = champion;
+      for (const a of plan.ids) (picked.add(a), (restored = true));
+      // The marks brought back here are local and their levels estimated: said from load, not only after the next mark (T014).
+      if (plan.ids.length) (pickSnap = undefined, pickNote = PICK_LOG_OFF);
     }
   }
   const champ = byId<HTMLImageElement>('ov-champ');

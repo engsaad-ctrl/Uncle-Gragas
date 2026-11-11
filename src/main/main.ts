@@ -14,6 +14,7 @@ import { LcuWatcher } from '../lcu/watcher.js';
 import { enemiesInGame } from '../lcu/state.js';
 import { liveSnapshot, MatchEpoch, type LiveSnapshot } from '../lcu/liveGame.js';
 import { parseAugmentProgress } from '../ai/augmentProgress.js';
+import { createPickDesk, readActive, withPickLog } from './pickLog.js';
 import type { Position } from '../stats/opgg.js';
 import { errorLog } from './errorLog.js';
 import { gameWindowRect } from './gameWindow.js';
@@ -232,13 +233,26 @@ const liveNow = async (fresh = false) => {
   }
   return live.snapshot;
 };
-const playerNow = async (id: number, fresh = false) => {
-  if (id !== lastPick?.championId) return undefined;
-  const snapshot = await liveNow(fresh);
-  if (!snapshot?.active) return undefined;
-  const alias = (await services.champions()).find((c) => c.id === id)?.alias;
-  return snapshot.active.alias === alias ? snapshot.active : undefined;
-};
+// A Mayhem match running now: the only time the pick log is served or certified.
+const activeMayhem = () => watcher.state.phase === 'InProgress' && (watcher.state.mode ?? lastPick?.mode) === 'mayhem';
+// His live state; the pick log opens at the first reading main sees in a match, with the identity checked after every wait (readActive).
+const playerNow = (id: number, fresh = false) => readActive({
+  desk: picks, game: () => matchEpoch.value, champion: () => lastPick?.championId, active: activeMayhem, championId: id,
+  snapshot: () => liveNow(fresh), aliasOf: async (cid) => (await services.champions()).find((c) => c.id === cid)?.alias,
+});
+// The F7 pick log (src/main/pickLog.ts): main keeps it for the running match; the page sends only the augment and whether it is marked.
+const picks = createPickDesk({
+  game: () => matchEpoch.value,
+  champion: () => lastPick?.championId,
+  active: activeMayhem,
+  readLive: async (id) => { const p = await playerNow(id, true); return p && { level: p.level, belowThree: p.belowThree }; },
+  knownAugment: async (id) => (await services.augments()).augments.some((a) => a.ids.includes(id) && a.modes.includes('mayhem')),
+});
+handle('picks:mark', (_e, game: unknown, championId: unknown, id: unknown, on: unknown) => reply(() => picks.mark(game, championId, id, on)));
+handle('picks:declare', (_e, game: unknown, championId: unknown) => reply(async () => picks.declare(game, championId)));
+handle('picks:get', (_e, game: unknown, championId: unknown, wait: unknown) => reply(async () => (wait === true ? picks.whenRecorded(game, championId) : picks.get(game, championId))));
+// The page's own claims about history are dropped (parseAugmentProgress); what the log holds is added only for the exact augments it logged.
+const withLog = (id: number, augmentIds: number[], timing: ReturnType<typeof parseAugmentProgress>) => withPickLog(picks, id, augmentIds, timing);
 handle('game:progress', (_e, championId: unknown, fresh: unknown) => reply(async () => {
   const [id] = parseIds([championId]);
   const player = await playerNow(id, fresh === true);
@@ -260,7 +274,7 @@ handle('build:engine', (_e, championId: unknown, augmentIds: unknown, followLine
   reply(async () => {
     const [id] = parseIds([championId]);
     const parsed = parseAugmentProgress(progress), player = await playerNow(id);
-    const timing = player?.level === undefined ? parsed : { ...parsed, level: player.level, ...(player.ranks ? { abilityRanks: player.ranks } : {}) };
+    const timing = withLog(id, parseIds(augmentIds), player?.level === undefined ? parsed : { ...parsed, level: player.level, ...(player.ranks ? { abilityRanks: player.ranks } : {}) });
     return services.mathBuild(id, parseIds(augmentIds), player?.items ?? (Array.isArray(owned) ? parseIds(owned) : []), await teamsNow(), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined, timing);
   }),
 );
@@ -274,7 +288,7 @@ handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemId
   reply(async () => {
     const [id] = parseIds([championId]);
     const parsed = parseAugmentProgress(progress), player = await playerNow(id);
-    const timing = player?.level === undefined ? parsed : { ...parsed, level: player.level, ...(player.ranks ? { abilityRanks: player.ranks } : {}) };
+    const timing = withLog(id, parseIds(augmentIds), player?.level === undefined ? parsed : { ...parsed, level: player.level, ...(player.ranks ? { abilityRanks: player.ranks } : {}) });
     return services.cardValues(id, parseIds(augmentIds), player?.items ?? (Array.isArray(itemIds) ? parseIds(itemIds) : []), await teamsNow(), timing, offered === undefined ? [] : parseIds(offered, 3), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
   }),
 );

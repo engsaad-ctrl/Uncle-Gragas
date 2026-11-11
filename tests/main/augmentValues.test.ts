@@ -12,7 +12,8 @@ vi.mock('../../src/texts/gameData.js', async (original) => ({
   loadTooltipStrings: async () => ({}), loadStringTable: async () => ({}),
 }));
 vi.mock('../../src/stats/opgg.js', async (original) => ({ ...await original<typeof import('../../src/stats/opgg.js')>(), OpggStats: class { mapItems() { return { data: {}, fetchedAt: 0, stale: false }; } } }));
-vi.mock('../../src/app/itemList.js', () => ({ composeItemList: () => [1, 2].map((id) => ({ id, enName: String(id), html: 'fixture item', group: 'legendary', gold: 3000 })) }));
+vi.mock('../../src/app/itemList.js', () => ({ composeItemList: () => [...[1, 2].map((id) => ({ id, enName: String(id), html: 'fixture item', group: 'legendary', gold: 3000 })), ...extraList] }));
+const extraList = vi.hoisted((): { id: number; enName: string; html: string; group: string; gold: number }[] => []);
 vi.mock('../../src/ai/itemMath.js', async (original) => {
   const actual = await original<typeof import('../../src/ai/itemMath.js')>();
   return { ...actual, enemyTeam: vi.fn(actual.enemyTeam) };
@@ -46,6 +47,24 @@ describe('augment values across separate offers', () => {
     expect(rows[0]).toMatchObject({ level: 9, untilLevel: 10, estimatedLevel: false, certain: false });
     expect(rows[0]!.missing).toContain('لا يملك معادلات');
   });
+  it('values cards past level 18 (Superfans 21) instead of failing, marked partial, at its real level (T026)', async () => {
+    const s = services();
+    const note = 'فوق المستوى 18';
+    for (const level of [19, 21]) {
+      const rows = await s.cardValues(103, [], [], undefined, { level });
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((r) => Number.isFinite(r.value) && Number.isFinite(r.currentValue))).toBe(true);
+      expect(rows[0]).toMatchObject({ level, untilLevel: level, certain: false });
+      expect(rows.every((r) => r.missing?.includes(note))).toBe(true);
+    }
+    const at18 = await s.cardValues(103, [], [], undefined, { level: 18 });
+    expect(at18.some((r) => r.missing?.includes(note))).toBe(false);
+  });
+  it('keeps a card taken at 19 at its own level when deciding at 21 (T026)', async () => {
+    const rows = await services().cardValues(103, [90003], [], undefined, { level: 21, acquiredLevels: { 90003: 19 } });
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0]).toMatchObject({ level: 21, untilLevel: 21 });
+  });
   it('counts an unreadable chosen card when estimating the next choice level', async () => {
     const rows = await services().cardValues(103, [90003], []);
     expect(rows[0]).toMatchObject({ level: 7, untilLevel: 10, estimatedLevel: true, estimatedHistory: true });
@@ -66,6 +85,58 @@ describe('augment values across separate offers', () => {
     expect(planned.plan!.items).toContain(1);
     expect(planned.plan!.baselineItems).toContain(1);
     expect(rows.find((r) => r.id === 90002)!.plan).toBeUndefined();
+  });
+  it('sends with each plan the held items its own search kept, as mathBuild mapped them (T015)', async () => {
+    // A Mayhem copy id (22xxxx) of item 1: the search holds item 1, and both plans say so at their head, whatever the page had sent.
+    const s = services();
+    const rows = await s.cardValues(103, [], [220001], undefined, { level: 7 }, [90001]);
+    const plan = rows.find((r) => r.id === 90001)!.plan!;
+    expect(plan.baselineOwned).toEqual([1]);
+    expect(plan.itemsOwned).toEqual([1]);
+    expect(plan.baselineItems.slice(0, 1)).toEqual([1]);
+    expect(plan.items.slice(0, 1)).toEqual([1]);
+    const none = (await s.cardValues(103, [], [], undefined, { level: 7 }, [90001])).find((r) => r.id === 90001)!.plan!;
+    expect(none).toMatchObject({ baselineOwned: [], itemsOwned: [] });
+  });
+  it("sends with each plan the card plan's own reasons for its items to buy, in its order, none for held items (T017)", async () => {
+    const plan = (await services().cardValues(103, [], [1], undefined, { level: 7 }, [90001])).find((r) => r.id === 90001)!.plan!;
+    expect(plan.itemsWhy.map((x) => x.id)).toEqual(plan.items.slice(plan.itemsOwned.length));
+    expect(plan.itemsWhy.some((x) => x.id === 1)).toBe(false);
+    expect(plan.itemsWhy.every((x) => x.why.length > 0 && !x.why.includes('owned'))).toBe(true);
+    // Nothing held: two items to buy, so the reasons must follow the card plan's own order.
+    const free = (await services().cardValues(103, [], [], undefined, { level: 7 }, [90001])).find((r) => r.id === 90001)!.plan!;
+    expect(free.itemsWhy.length).toBeGreaterThanOrEqual(2);
+    expect(free.itemsWhy.map((x) => x.id)).toEqual(free.items);
+  });
+  describe('held items under another id (T016)', () => {
+    // The real case (T015): the shop holds the Mayhem copy (223089) and the base item (3089), the composed list only the base.
+    const shop = fixture.shop as Record<number, unknown>;
+    const proof = async (held: number[]) => {
+      const plan = (await services().cardValues(103, [], held, undefined, { level: 7 }, [90001])).find((r) => r.id === 90001)!.plan!;
+      return { owned: plan.baselineOwned, withCard: plan.itemsOwned, base: plan.baselineItems, items: plan.items };
+    };
+    const withShop = async (extra: Record<number, unknown>, run: () => Promise<void>) => {
+      Object.assign(shop, extra);
+      try { await run(); } finally { for (const id of Object.keys(extra)) delete shop[Number(id)]; extraList.length = 0; }
+    };
+    it('keeps a held Mayhem copy the shop knows, as its catalog item, and never buys it again', () => withShop({ 220001: shop[1] }, async () => {
+      const p = await proof([220001]);
+      expect(p.owned).toEqual([1]);
+      expect(p.withCard).toEqual([1]);
+      expect(p.base[0]).toBe(1);
+      expect(p.base.filter((id) => id === 1)).toHaveLength(1);
+      expect(p.items.filter((id) => id === 1)).toHaveLength(1);
+    }));
+    it('the base id alone, and the base with its copy, hold it once', () => withShop({ 220001: shop[1] }, async () => {
+      expect((await proof([1])).owned).toEqual([1]);
+      expect((await proof([1, 220001])).owned).toEqual([1]);
+    }));
+    it('an unknown id and a component take no finished slot; a finished pair of boots does', () => withShop({ 3070: { DataValues: [{ name: 'FlatMPPoolMod', values: [240] }] }, 3006: { DataValues: [{ name: 'PercentAttackSpeedMod', values: [0.25] }] } }, async () => {
+      extraList.push({ id: 3006, enName: "Berserker's Greaves", html: 'fixture boots', group: 'boots', gold: 1100 });
+      expect((await proof([999999])).owned).toEqual([]);
+      expect((await proof([3070])).owned).toEqual([]);
+      expect((await proof([3006])).owned).toEqual([3006]);
+    }));
   });
   it('does not treat another offered card as already chosen', async () => {
     const s = services();

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FightResult } from '../../src/ai/cardMath.js';
 import { FIGHTS, enemyDpsAt, fightValue, mathBuild, searchSet, type PoolItem } from '../../src/ai/itemMath.js';
 import type { GameItem } from '../../src/texts/gameData.js';
+import { kitWithCards } from '../../src/ai/augmentChoice.js';
 
 const num = (baseValue: number) => ({ baseValue });
 const bin = {
@@ -163,5 +164,37 @@ describe('next items by arithmetic', () => {
   it('leaves out what the kind of damage rules out', () => {
     const b = mathBuild({ ...base, offKind: (i) => i.id === 3 });
     expect(b.map((x) => x.id)).not.toContain(3);
+  });
+});
+
+describe('what a held augment asks for now (T003, T004)', () => {
+  // Item 3 is AP: it adds nothing to a physical attacker until a card turns his attacks into AP damage. Item 2 grows with stacks (rule 35).
+  const itemOps = { 2: [{ op: 'per_stack' as const, stat: 'ad', value: 1, mode: 'add' as const, per: 'takedown', cap: 20, lost_on_death: null }] };
+  const apHits = { id: 1, name: 'AP on attacks', status: 'computed', ops: [{ op: 'proc' as const, trigger: 'on_hit', damage: { ap: 2 }, type: 'magic' }] };
+  const flatAd = { id: 2, name: 'Flat AD', status: 'computed', ops: [{ op: 'add' as const, stat: 'ad', value: 10 }] };
+  // The same kit and place for any cards: right for this physical attacker, whose kit no card changes.
+  const sameContext = () => ({ kit: base.kit, place: base.place });
+  it('buys the item an augment makes best before a stacking item', () => {
+    expect(mathBuild({ ...base, itemOps, cards: [apHits], contextFor: sameContext })[0]).toMatchObject({ id: 3, reason: 'augment' });
+  });
+  it('keeps the stacking item first when no augment changes which item is best', () => {
+    expect(mathBuild({ ...base, itemOps, contextFor: sameContext })[0]).toMatchObject({ id: 2, reason: 'stacks' });
+    expect(mathBuild({ ...base, itemOps, cards: [flatAd], contextFor: sameContext })[0]).toMatchObject({ id: 2, reason: 'stacks' });
+  });
+  it('makes no augment claim when the comparison without it cannot be rebuilt (no contextFor)', () => {
+    expect(mathBuild({ ...base, itemOps, cards: [apHits] })[0]).toMatchObject({ id: 2, reason: 'stacks' });
+  });
+  it('judges "without this augment" with the kit that comes without it: an attack card takes the attacks with it', () => {
+    // A mage who doesn't attack; one card makes him attack (as Marksmage does). Item 5 is a little health (60): worth something with or without attacks, less than AD once he attacks.
+    const mage = { damage: 'magic' as const, attacks: false };
+    const shop5 = { ...shop, 5: item({ FlatHPPoolMod: 60 }) };
+    const pool5 = [...pool, { id: 5, gold: 3000, boots: false }];
+    const attackCard = { id: 3, name: 'Attacks with AD', status: 'computed', ops: [{ op: 'proc' as const, trigger: 'on_hit', damage: { ad: 0.1 }, type: 'physical' }] };
+    const cards = [attackCard];
+    const o = { ...base, shop: shop5, pool: pool5, itemOps, cards, kit: kitWithCards(mage, cards) };
+    // Kept kit: without the card he still attacks, AD item 1 still leads, so no augment claim and the stacking item first.
+    expect(mathBuild({ ...o, contextFor: () => ({ kit: o.kit, place: o.place }) })[0]).toMatchObject({ id: 2, reason: 'stacks' });
+    // Rebuilt kit: without the card he doesn't attack, health leads instead, so the card is why item 1 leads now.
+    expect(mathBuild({ ...o, contextFor: (cs) => ({ kit: kitWithCards(mage, cs), place: o.place }) })[0]).toMatchObject({ id: 1, reason: 'augment' });
   });
 });

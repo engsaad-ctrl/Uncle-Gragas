@@ -60,6 +60,10 @@ describe('live progression data', () => {
   it('returns the actual champion level and inventory without identifying fields', () => {
     expect(playersByChampion([{ rawChampionName: 'game_character_displayname_Gragas', level: 9, summonerName: 'private', riotId: 'private#123', items: [{ itemID: 1058 }] }])).toEqual({ Gragas: { level: 9, items: [1058] } });
   });
+  it('keeps a Superfans level up to 21 and drops anything past it (T026)', () => {
+    expect(playersByChampion([{ rawChampionName: 'game_character_displayname_Gragas', level: 21, items: [] }])).toEqual({ Gragas: { level: 21, items: [] } });
+    expect(playersByChampion([{ rawChampionName: 'game_character_displayname_Gragas', level: 22, items: [] }])).toEqual({ Gragas: { items: [] } });
+  });
   it('rejects malformed levels, item ids and unsafe aliases', () => {
     expect(playersByChampion([{ rawChampionName: 'game_character_displayname_Gragas', level: '9', items: [{ itemID: '3089' }, { itemID: -1 }, { itemID: 1.2 }, { itemID: 3089 }] }, { rawChampionName: 'game_character_displayname___proto__', level: 9 }])).toEqual({ Gragas: { items: [3089] } });
     expect(playersByChampion(null)).toEqual({});
@@ -80,4 +84,15 @@ describe('live skill ranks', () => {
 it('reads no ranks at all when one of Q W E R is missing or odd, rather than taking it as rank 0', () => {
   expect(ranksFromLive({ Q: { abilityLevel: 5 }, W: { abilityLevel: 1 }, E: { abilityLevel: 2.5 }, R: { abilityLevel: 1 } })).toBeUndefined();
   expect(ranksFromLive({ Q: { abilityLevel: 1 }, W: { abilityLevel: 0 }, E: { abilityLevel: 0 }, R: { abilityLevel: 0 } })).toEqual({ Q: 1, W: 0, E: 0, R: 0 });
+});
+
+describe('the start of the pick log (T010)', () => {
+  it('says a live level of 1 or 2 is below the first offer, and keeps the level itself to 3 through 18', () => {
+    const list = [{ rawChampionName: 'game_character_displayname_Gragas', riotId: 'mine#ONE', level: 1, team: 'ORDER', items: [] }];
+    expect(activeFromLive({ riotId: 'mine#ONE', level: 1 }, list)).toEqual({ alias: 'Gragas', team: 'ORDER', items: [], belowThree: true });
+    expect(activeFromLive({ riotId: 'mine#ONE', level: 2 }, list)?.belowThree).toBe(true);
+    expect(activeFromLive({ riotId: 'mine#ONE', level: 3 }, list)).toEqual({ alias: 'Gragas', level: 3, team: 'ORDER', items: [] });
+    expect(activeFromLive({ riotId: 'mine#ONE', level: 0 }, list)?.belowThree).toBeUndefined();
+    expect(activeFromLive({ riotId: 'mine#ONE', level: '1' }, list)?.belowThree).toBeUndefined();
+  });
 });

@@ -29,6 +29,10 @@ if (!window.lolh) {
     buildStyles: fail('build:styles'),
     cardValues: fail('build:cardvalues'),
     gameProgress: fail('game:progress'),
+    // The pick log is kept and written only on the game computer; the phone page marks picks as before, without the log.
+    pickMark: fail('picks:mark'),
+    pickDeclare: fail('picks:declare'),
+    pickLog: fail('picks:get'),
     experimentalBuild: fail('build:experimental'),
     hideOverlay: async () => undefined,
     setOverlayLarge: async () => undefined,

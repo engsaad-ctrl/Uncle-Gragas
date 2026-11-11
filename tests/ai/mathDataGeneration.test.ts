@@ -49,3 +49,30 @@ describe('arithmetic data can be regenerated without losing prior definitions', 
     expect(wrote).toBe(false);
   });
 });
+
+describe('a card whose numbers come from the game files carries the status and limits (T029)', () => {
+  const lines = (f: string) => readFileSync(f, 'utf8').split(/\r?\n/).filter(Boolean).map((l) => JSON.parse(l) as { id: number; status: string; ops: unknown[]; not_modelled: string | null });
+  const fromFile = lines('knowledge/augment-math-file.jsonl');
+  const textReading = new Map([1, 2, 3].flatMap((n) => lines(`knowledge/augment-math-${n}.jsonl`)).map((c) => [c.id, c]));
+  it('keeps the file status and note wherever its ops are used', async () => {
+    const { CARD_NUMBERS } = await import('../../src/ai/cardMathData.js');
+    const byId = new Map(CARD_NUMBERS.map((c) => [c.id, c]));
+    let used = 0;
+    for (const f of fromFile) {
+      const c = byId.get(f.id);
+      if (!c || JSON.stringify(c.ops) !== JSON.stringify(f.ops)) continue; // a fix or a preserved override took this card's ops
+      used++;
+      expect(c.status, String(f.id)).toBe(f.status);
+      expect(c.not_modelled ?? null, String(f.id)).toBe(f.not_modelled ?? null);
+    }
+    expect(used).toBeGreaterThan(30);
+  });
+  it('drops the text "not stated" note on Tooth Fairy, whose tooth the file states', async () => {
+    const { CARD_NUMBERS } = await import('../../src/ai/cardMathData.js');
+    const tooth = CARD_NUMBERS.find((c) => c.id === 2083)!;
+    expect(textReading.get(2083)!.not_modelled).toMatch(/not stated/);
+    expect(tooth.not_modelled).not.toMatch(/not stated/);
+    expect(tooth.not_modelled).toMatch(/magic pen/); // the file reading's own limit is shown instead
+    expect(tooth.status).toBe('conditional');
+  });
+});

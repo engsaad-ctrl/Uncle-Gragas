@@ -40,5 +40,8 @@ contextBridge.exposeInMainWorld('lolh', {
   onOverlayShow: (callback) => ipcRenderer.on('overlay:show', (_event, tab) => callback(tab)),
   gameTeams: () => ipcRenderer.invoke('game:teams'),
   gameProgress: (championId, fresh) => ipcRenderer.invoke('game:progress', championId, fresh === true),
+  pickMark: (game, championId, id, on) => ipcRenderer.invoke('picks:mark', game, championId, id, on === true),
+  pickDeclare: (game, championId) => ipcRenderer.invoke('picks:declare', game, championId),
+  pickLog: (game, championId, wait) => ipcRenderer.invoke('picks:get', game, championId, wait === true),
   setWebPage: (on) => ipcRenderer.invoke('web:enabled', on === true),
 });

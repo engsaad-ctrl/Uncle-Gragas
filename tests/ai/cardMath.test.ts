@@ -460,3 +460,341 @@ it('gates The Boom and the Bass on a cast and consumes its six-second charge onc
   expect(withCast(175, 0.6).fromCards).toBeCloseTo(50 / 1.6);
   expect(withCast(500, 0.1).fromCards).toBe(0);
 });
+
+describe('immobilize events (T002)', () => {
+  const MORGANA_Q = 'Characters/Morgana/Spells/MorganaQAbility/MorganaQ';
+  const cruelty = CARD_NUMBERS.find((c) => c.id === 1323)!;
+  const courage = CARD_NUMBERS.find((c) => c.id === 1018)!;
+  const spell = (o: { damage?: number; root?: number; cooldown?: number; tagged?: boolean } = {}) => ({ mSpell: {
+    cooldownTime: [o.cooldown ?? 4, o.cooldown ?? 4],
+    mSpellTags: o.tagged ? ['Trait_ImmobilizingCCSpell'] : [],
+    DataValues: o.root === undefined ? [] : [{ name: 'RootDuration', values: [o.root, o.root] }],
+    mSpellCalculations: { Damage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: o.damage ?? 100 }] } },
+  } });
+  const run = (q: ReturnType<typeof spell>, cards: CardNumbers[], qPath = MORGANA_Q) => fight({
+    bin: { rec: { ...bin.rec, spells: [qPath, 'w', 'e'] }, [qPath]: q, w: spell({ cooldown: 4 }) },
+    shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards, level: 3,
+    knownRanks: { level: 3, ranks: { Q: 1, W: 1, E: 0, R: 0 } },
+  });
+
+  it('raises one root event per landed hit of a checked ability, with its file duration', () => {
+    const r = run(spell({ root: 2, tagged: true }), []);
+    expect(r.casts.Q).toBeGreaterThan(1);
+    expect(r.ccEvents).toHaveLength(r.casts.Q!);
+    expect(r.ccEvents.every((e) => e.key === 'Q' && e.kind === 'root' && e.duration === 2 && e.target === 'main')).toBe(true);
+  });
+
+  it('raises none from a tagged ability nobody checked, and says so when a card waits on it', () => {
+    const r = run(spell({ root: 2, tagged: true }), [courage], 'q');
+    expect(r.ccEvents).toHaveLength(0);
+    expect(r.healParts?.shields ?? 0).toBe(0);
+    expect(r.notModelled.some((n) => n.includes('شل الحركة') && n.includes('Q'))).toBe(true);
+  });
+
+  it('raises none from a cast that deals nothing or a hit with no root at this rank', () => {
+    expect(run(spell({ damage: 0, root: 2 }), [courage]).ccEvents).toHaveLength(0);
+    expect(run(spell({ root: 0 }), [courage]).ccEvents).toHaveLength(0);
+    expect(run(spell({}), [courage]).ccEvents).toHaveLength(0); // no duration field: the condition isn't shown, no event
+  });
+
+  it("fires the card only on the root, not on the other ability's hits", () => {
+    const withRoot = run(spell({ root: 2 }), [courage]);
+    const noRoot = run(spell({ root: 0 }), [courage]);
+    expect(noRoot.casts.W).toBeGreaterThan(0); // W lands hits, none of them immobilizes
+    expect(noRoot.healParts?.shields ?? 0).toBe(0);
+    expect(withRoot.healParts?.shields ?? 0).toBeGreaterThan(0); // its amount is checked from the card's own numbers (T005 block below)
+  });
+
+  it("keeps Cruelty's 6 s cooldown between roots", () => {
+    const fast = run(spell({ root: 2, cooldown: 2 }), [cruelty]);
+    const alone = run(spell({ root: 2, cooldown: 2 }), []);
+    const one = run(spell({ root: 2, cooldown: 60 }), [cruelty]).fromCards;
+    expect(fast.ccEvents.length).toBeGreaterThan(3);
+    expect(one).toBeGreaterThan(0);
+    expect(fast.fromCards - alone.fromCards).toBeCloseTo(one * Math.ceil(15 / 6), 0); // at 0, 6 and 12 s of a 15 s fight
+  });
+
+  it('adds nothing when no event happens', () => {
+    expect(run(spell({ root: 0 }), [cruelty]).damage).toBeCloseTo(run(spell({ root: 0 }), []).damage);
+  });
+});
+
+describe('immobilize events, limits and amounts (T005)', () => {
+  const MORGANA_Q = 'Characters/Morgana/Spells/MorganaQAbility/MorganaQ';
+  const LUX_Q = 'Characters/Lux/Spells/LuxLightBindingAbility/LuxLightBinding';
+  const courage = CARD_NUMBERS.find((c) => c.id === 1018)!;
+  const spell = (root?: unknown[], damage = 100) => ({ mSpell: {
+    cooldownTime: [4, 4, 4],
+    DataValues: root === undefined ? [] : [{ name: 'RootDuration', values: root }],
+    mSpellCalculations: { Damage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: damage }] } },
+  } });
+  const run = (o: { path?: string; root?: unknown[]; qRank?: number; wDamage?: number; cards?: CardNumbers[] }) => {
+    const path = o.path ?? MORGANA_Q;
+    return fight({
+      bin: { rec: { ...bin.rec, spells: [path, 'w', 'e'] }, [path]: spell(o.root), w: spell(undefined, o.wDamage ?? 100) },
+      shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: o.cards ?? [courage], level: 3,
+      knownRanks: { level: 3, ranks: { Q: o.qRank ?? 1, W: 1, E: 0, R: 0 } },
+    });
+  };
+  // Courage of the Colossus at level 3, from its own numbers: 150 to 450 over levels 1 to 18, plus 4% of his health.
+  const courageAt3 = (hp: number) => 150 + ((450 - 150) * (3 - 1)) / 17 + 0.04 * hp;
+
+  it('says the duration is unread, and raises nothing, when a checked ability has no duration field or none at its rank', () => {
+    for (const root of [undefined, [0, 2]]) {
+      const r = run({ root, qRank: root ? 2 : 1 }); // no field; a field without rank 2
+      expect(r.casts.Q).toBeGreaterThan(0);
+      expect(r.ccEvents).toHaveLength(0);
+      expect(r.healParts?.shields ?? 0).toBe(0);
+      expect(r.notModelled.some((n) => n.includes('مدة التثبيت') && n.includes('Q'))).toBe(true);
+    }
+    const bad = run({ root: [0, 'x'] });
+    expect(bad.ccEvents).toHaveLength(0);
+    expect(bad.notModelled.some((n) => n.includes('مدة التثبيت'))).toBe(true);
+  });
+
+  it('reads a known 0 as no root at that rank, with no unread-duration limit', () => {
+    const r = run({ root: [0, 0] });
+    expect(r.ccEvents).toHaveLength(0);
+    expect(r.healParts?.shields ?? 0).toBe(0);
+    expect(r.notModelled.some((n) => n.includes('مدة التثبيت'))).toBe(false);
+  });
+
+  it('says nothing about unread durations when no card waits on a root', () => {
+    expect(run({ cards: [] }).notModelled.some((n) => n.includes('مدة التثبيت'))).toBe(false);
+  });
+
+  it("gives Courage's shield from its own numbers, once per root, on Morgana Q at two ranks and on Lux Q", () => {
+    for (const [path, qRank] of [[MORGANA_Q, 1], [MORGANA_Q, 2], [LUX_Q, 1]] as const) {
+      const r = run({ path, root: [0, 1.75, 2], qRank });
+      expect(r.ccEvents.length).toBeGreaterThan(0);
+      expect(r.ccEvents.every((e) => e.duration === [0, 1.75, 2][qRank])).toBe(true);
+      expect(r.healParts?.shields).toBeCloseTo(r.ccEvents.length * courageAt3(r.stats.hp), 6);
+    }
+  });
+
+  it("adds no shield for W's hits while Q's roots stay the same", () => {
+    const hitting = run({ root: [0, 2], wDamage: 100 }), silent = run({ root: [0, 2], wDamage: 0 });
+    expect(hitting.casts.W).toBeGreaterThan(0);
+    expect(hitting.ccEvents.length).toBe(silent.ccEvents.length);
+    expect(hitting.healParts?.shields).toBeCloseTo(silent.healParts?.shields ?? -1, 9);
+    expect(hitting.healParts?.shields).toBeCloseTo(hitting.ccEvents.length * courageAt3(hitting.stats.hp), 6);
+  });
+});
+
+describe('Soul Eater from immobilize events (T007)', () => {
+  const MORGANA_Q = 'Characters/Morgana/Spells/MorganaQAbility/MorganaQ';
+  const soul = CARD_NUMBERS.find((c) => c.id === 1375)!;
+  const spell = (root?: number[], damage = 100) => ({ mSpell: {
+    cooldownTime: [4, 4, 4],
+    DataValues: root === undefined ? [] : [{ name: 'RootDuration', values: root }],
+    mSpellCalculations: { Damage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: damage }] } },
+  } });
+  const run = (o: { qPath?: string; root?: number[]; cards?: CardNumbers[] }) => {
+    const path = o.qPath ?? MORGANA_Q;
+    return fight({
+      bin: { rec: { ...bin.rec, spells: [path, 'w', 'e'] }, [path]: spell(o.root), w: spell(undefined, 100) },
+      shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: o.cards ?? [], level: 3,
+      knownRanks: { level: 3, ranks: { Q: 1, W: 1, E: 0, R: 0 } },
+    });
+  };
+  // Its own numbers (kiwi.bin 16.22): 30 health per immobilize, from that root to the end of the 15 s fight; 300 if it was the second augment.
+  const fromRoots = (r: { ccEvents: { at: number }[] }) => r.ccEvents.reduce((m, e) => m + (30 * (15 - e.at)) / 15, 0);
+
+  // A proc that scales with his health reads his health in the fight at each hit, so it shows health gained mid-fight, not only the average.
+  const byHealth: CardNumbers = { id: 9, name: 'Health proc', status: 'computed', ops: [{ op: 'proc', trigger: 'ability_hit', damage: { hp: 0.1 }, type: 'true' }] };
+  it('gives no health for ability hits that do not immobilize', () => {
+    const plain = run({ root: [0, 0], cards: [byHealth] }), withCard = run({ root: [0, 0], cards: [byHealth, { ...soul, pickPlace: 1 }] });
+    expect(withCard.fromCards).toBeCloseTo(plain.fromCards, 9); // no health in the fight either
+    expect(withCard.casts.Q).toBeGreaterThan(0);
+    expect(withCard.casts.W).toBeGreaterThan(0);
+    expect(withCard.ccEvents).toHaveLength(0);
+    expect(withCard.stats.hp).toBeCloseTo(plain.stats.hp, 9);
+    expect(withCard.effectiveHp).toBeCloseTo(plain.effectiveHp, 6);
+  });
+
+  it('gives 30 health per checked root for the part of the fight after it, and more effective health for it', () => {
+    const plain = run({ root: [0, 2] }), withCard = run({ root: [0, 2], cards: [{ ...soul, pickPlace: 1 }] });
+    expect(withCard.ccEvents.length).toBeGreaterThan(1);
+    expect(withCard.stats.hp).toBeCloseTo(plain.stats.hp + fromRoots(withCard), 6);
+    expect(withCard.effectiveHp).toBeGreaterThan(plain.effectiveHp);
+    const procPlain = run({ root: [0, 2], cards: [byHealth] }), procSoul = run({ root: [0, 2], cards: [byHealth, { ...soul, pickPlace: 1 }] });
+    expect(procSoul.fromCards).toBeGreaterThan(procPlain.fromCards); // the health is there in the fight after a root
+  });
+
+  it('gives nothing from a tagged ability nobody checked', () => {
+    const plain = run({ qPath: 'q', root: [0, 2] }), withCard = run({ qPath: 'q', root: [0, 2], cards: [{ ...soul, pickPlace: 1 }] });
+    expect(withCard.stats.hp).toBeCloseTo(plain.stats.hp, 9);
+  });
+
+  it('adds the 300 only when it was proven the second augment, once, and says so when the order is unknown', () => {
+    const at = (pickPlace?: number) => run({ root: [0, 0], cards: [{ ...soul, pickPlace }] });
+    const base = run({ root: [0, 0] }).stats.hp;
+    expect(at(2).stats.hp).toBeCloseTo(base + 300, 9);
+    expect(at(1).stats.hp).toBeCloseTo(base, 9);
+    expect(at(3).stats.hp).toBeCloseTo(base, 9);
+    const unknown = at(undefined);
+    expect(unknown.stats.hp).toBeCloseTo(base, 9);
+    expect(unknown.notModelled.some((n) => n.includes('Soul Eater') && n.includes('ترتيب اختياره غير مثبت'))).toBe(true);
+    expect(at(2).notModelled.some((n) => n.includes('ترتيب اختياره غير مثبت'))).toBe(false);
+  });
+
+  // The chain of fights (health kept, 300 once) is tested in 'Soul Eater health kept through the chain of fights (T008)'.
+  it('gives the 300 once in a fight on top of its roots', () => {
+    const second = run({ root: [0, 2], cards: [{ ...soul, pickPlace: 2 }] }), plain = run({ root: [0, 2] });
+    expect(second.stats.hp).toBeCloseTo(plain.stats.hp + 300 + fromRoots(second), 6);
+  });
+
+  it('says the past stacks are unknown rather than counting them', () => {
+    expect(run({ root: [0, 2], cards: [{ ...soul, pickPlace: 1, acquiredLevel: 3 }] }).notModelled.some((n) => n.includes('Soul Eater') && n.includes('مجهول'))).toBe(true);
+  });
+});
+
+describe('Soul Eater health kept through the chain of fights (T008)', () => {
+  const MORGANA_Q = 'Characters/Morgana/Spells/MorganaQAbility/MorganaQ';
+  const soul = CARD_NUMBERS.find((c) => c.id === 1375)!;
+  const q = (mana?: number) => ({ mSpell: {
+    cooldownTime: [4, 4, 4], ...(mana === undefined ? {} : { mana: [mana, mana, mana] }),
+    DataValues: [{ name: 'RootDuration', values: [0, 2, 2] }],
+    mSpellCalculations: { Damage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 100 }] } },
+  } });
+  // A champion with 100 mana, no regeneration and Q at 100: one root in the first fight, none after. With no mana pool: roots in every fight.
+  const chain = (o: { manaPool: boolean; cards: CardNumbers[] }) => {
+    const rec = { ...bin.rec, spells: [MORGANA_Q], ...(o.manaPool ? { primaryAbilityResource: { arType: 0, '{726ee5cd}': num(100), '{6216bf7b}': num(0) } } : {}) };
+    const first = fight({ bin: { rec, [MORGANA_Q]: q(o.manaPool ? 100 : undefined) }, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: o.cards, level: 3, knownRanks: { level: 3, ranks: { Q: 1, W: 0, E: 0, R: 0 } } });
+    const second = first.again!(), third = second.again!();
+    return [first, second, third];
+  };
+  const own = (r: { ccEvents: { at: number }[] }) => r.ccEvents.reduce((m, e) => m + (30 * (15 - e.at)) / 15, 0);
+
+  it('keeps the health from a root in the first fight through the next two, with no new roots and nothing doubled', () => {
+    const plain = chain({ manaPool: true, cards: [] }), soulChain = chain({ manaPool: true, cards: [{ ...soul, pickPlace: 2 }] });
+    expect(soulChain.map((r) => r.ccEvents.length)).toEqual([1, 0, 0]);
+    const gained = 30 * soulChain[0]!.ccEvents.length;
+    expect(soulChain[0]!.stats.hp).toBeCloseTo(plain[0]!.stats.hp + 300 + own(soulChain[0]!), 6);
+    expect(soulChain[1]!.stats.hp).toBeCloseTo(plain[1]!.stats.hp + 300 + gained, 6);
+    expect(soulChain[2]!.stats.hp).toBeCloseTo(plain[2]!.stats.hp + 300 + gained, 6);
+  });
+
+  it('adds each fight\'s roots on top of what earlier fights gave, even when mana and cooldowns would make the same fight again', () => {
+    const plain = chain({ manaPool: false, cards: [] }), soulChain = chain({ manaPool: false, cards: [{ ...soul, pickPlace: 1 }] });
+    expect(plain[0]!.again!()).toBe(plain[0]); // nothing carries: the same fight
+    const n = soulChain.map((r) => r.ccEvents.length);
+    expect(n[0]).toBeGreaterThan(0);
+    expect(soulChain[1]).not.toBe(soulChain[0]);
+    expect(soulChain[1]!.stats.hp).toBeCloseTo(plain[1]!.stats.hp + 30 * n[0]! + own(soulChain[1]!), 6);
+    expect(soulChain[2]!.stats.hp).toBeCloseTo(plain[2]!.stats.hp + 30 * (n[0]! + n[1]!) + own(soulChain[2]!), 6);
+  });
+
+  it('carries nothing without the card', () => {
+    const plain = chain({ manaPool: false, cards: [] });
+    expect(plain[2]!.stats.hp).toBeCloseTo(plain[0]!.stats.hp, 9);
+  });
+});
+
+describe('Stackosaurus Rex: his own permanent stacks gained after it is taken are larger (T027)', () => {
+  const rex = (acquiredLevel?: number): CardNumbers => ({ id: 1204, name: 'Stackosaurus Rex', status: 'partial', ops: [{ op: 'stack_bonus', ratio: 1 } as CardOp], ...(acquiredLevel === undefined ? {} : { acquiredLevel }) });
+  const named = (name: string) => ({ ...bin, rec: { ...bin.rec, mCharacterName: name } });
+  // Veigar's AP passive reads his count (STACKS_AT_15 300, 20 a level); a second AP op of his passive adds nothing more.
+  const veigarPassive: CardOp[] = [{ op: 'per_stack', stat: 'ap', value: 1, mode: 'add', per: 'ability_hit' }, { op: 'per_stack', stat: 'ap', value: 1, mode: 'add', per: 'takedown' }];
+  const veigar = (cards: CardNumbers[], stacks?: number) => fight({ bin: named('Veigar'), shop: {}, kit: { damage: 'magic' as const, attacks: false }, items: [], cards, level: 15, passive: veigarPassive, ...(stacks === undefined ? {} : { stacks }) }).stats.ap;
+  it('adds only what he gains after it is taken, once', () => {
+    expect(veigar([])).toBeCloseTo(300, 6);
+    expect(veigar([rex(15)])).toBeCloseTo(300, 6); // taken now: nothing gained since
+    expect(veigar([rex(7)])).toBeCloseTo(300 + 300 * (8 / 15), 6); // 160 more, not 300
+    expect(veigar([rex(3)])).toBeCloseTo(300 + 300 * (12 / 15), 6); // taken earlier, more gained after it
+  });
+  it('keeps a count the player typed as it is, and an unknown pick level gives nothing', () => {
+    expect(veigar([rex(3)], 500)).toBeCloseTo(500, 6);
+    expect(veigar([rex()])).toBeCloseTo(300, 6);
+  });
+  it('raises a champion passive counted by the generic curve the same way, and nothing of another card or a champion with no stacks', () => {
+    const own: CardOp[] = [{ op: 'per_stack', stat: 'ap', value: 1, mode: 'add', per: 'takedown' }];
+    const plain = (cards: CardNumbers[], passive?: CardOp[]) => fight({ bin: named('Nobody'), shop: {}, kit: { damage: 'magic' as const, attacks: false }, items: [], cards, level: 15, passive }).stats.ap;
+    expect(plain([rex(7)], own) - plain([], own)).toBeCloseTo(2.2 * 15 - 2.2 * 7, 6);
+    const otherCard: CardNumbers = { id: 9, name: 'stacking card', status: 'computed', ops: [{ op: 'per_stack', stat: 'ap', value: 1, mode: 'add', per: 'takedown' }], acquiredLevel: 3 };
+    expect(plain([otherCard, rex(3)])).toBeCloseTo(plain([otherCard]), 6); // an augment's own stacks are not his abilities' stacks
+    expect(plain([rex(3)])).toBeCloseTo(plain([]), 6);
+  });
+  it('reaches his ability damage that reads his count (a buff-counter part, as Nasus\'s Q)', () => {
+    const q = { rec: { ...bin.rec, mCharacterName: 'Nasus', spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [20, 20, 20, 20, 20], DataValues: [{ name: 'BaseDamage', values: [100, 100, 100, 100, 100, 100] }], mSpellCalculations: {
+      TotalDamage: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamage' }, { __type: 'BuffCounterByCoefficientCalculationPart', mCoefficient: 1 }] },
+    } } } };
+    const cast = (cards: CardNumbers[]) => fight({ bin: q, shop: {}, kit, items: [], cards, level: 15 }).perCast.Q!;
+    expect(cast([rex(7)]) - cast([])).toBeCloseTo(700 * (8 / 15), -1); // STACKS_AT_15 Nasus 700; perCast is rounded
+  });
+});
+
+describe('One Hit Wonder: the chosen ability turns ability haste into its damage and loses the haste (T028)', () => {
+  // Two damage spells, 100 each, 10 s cooldown; no mana costs. Q and W at slots 0 and 1, R at slot 3.
+  const spell = { __type: 'SpellObject', mSpell: { cooldownTime: [10, 10, 10, 10, 10], DataValues: [{ name: 'BaseDamage', values: [100, 100, 100, 100, 100, 100] }], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamage' }] } } } };
+  const two = { rec: { ...bin.rec, spells: ['x/q', 'x/w', 'x/e', 'x/r'] }, 'x/q': spell, 'x/w': spell, 'x/r': spell };
+  const ohw = (abilityKey?: 'Q' | 'W' | 'E' | 'R'): CardNumbers => ({ id: 3060, name: 'One Hit Wonder', status: 'partial', ops: [{ op: 'haste_to_damage', per100: 0.75, scope: 'chosen_ability' } as CardOp], ...(abilityKey ? { abilityKey } : {}) });
+  const haste = (n: number) => card('haste', [{ op: 'add', stat: 'haste', value: n }]);
+  const run2 = (cards: CardNumbers[]) => fight({ bin: two, shop: {}, kit: { damage: 'magic' as const, attacks: false }, items: [], cards, level: 11 });
+  it('raises only the chosen ability\'s hit by 75% per 100 haste', () => {
+    const before = run2([haste(100)]), after = run2([haste(100), ohw('Q')]);
+    expect(after.perCast.Q!).toBeCloseTo(before.perCast.Q! * 1.75, -1);
+    expect(after.perCast.W!).toBeCloseTo(before.perCast.W!, -1);
+  });
+  it('takes the haste off that ability\'s cooldown only (its casts fall to the no-haste count), the other keeps it', () => {
+    const none = run2([]), withHaste = run2([haste(100)]), after = run2([haste(100), ohw('Q')]);
+    expect(withHaste.casts.Q!).toBeGreaterThan(none.casts.Q!);
+    expect(after.casts.Q!).toBe(none.casts.Q!);
+    expect(after.casts.W!).toBe(withHaste.casts.W!);
+  });
+  it('works on the ultimate when it is the chosen one', () => {
+    const before = run2([haste(100)]), after = run2([haste(100), ohw('R')]);
+    expect(before.casts.R).toBeGreaterThan(0); // the case needs R open and cast, else the check below proves nothing
+    expect(after.casts.R).toBeGreaterThan(0);
+    expect(after.perCast.R!).toBeCloseTo(before.perCast.R! * 1.75, -1);
+    expect(after.casts.R!).toBe(run2([]).casts.R!); // its cost: R falls to the no-haste count
+    expect(after.perCast.Q!).toBeCloseTo(before.perCast.Q!, -1);
+  });
+  it('keeps the next fight from getting back the haste on the chosen ability\'s carried cooldown', () => {
+    const longQ = { rec: { ...bin.rec, spells: ['x/q', '', '', ''] }, 'x/q': { __type: 'SpellObject', mSpell: { ...spell.mSpell, cooldownTime: [90, 90, 90, 90, 90] } } };
+    const next = (cards: CardNumbers[]) => { FIGHT.carryCooldowns = true; try { return fight({ bin: longQ, shop: {}, kit: { damage: 'magic' as const, attacks: false }, items: [], cards, level: 11 }).again!().casts.Q; } finally { FIGHT.carryCooldowns = false; } };
+    expect(next([])).toBeUndefined(); // back at 90: still waiting when the next fight starts at 55
+    expect(next([haste(100)])).toBe(1); // back at 45 with haste
+    expect(next([haste(100), ohw('Q')])).toBeUndefined(); // One Hit Wonder takes that haste off Q in the next fight too
+  });
+  it('does not raise a proc the ability sets off, only the ability\'s own hit', () => {
+    const proc = card('proc', [{ op: 'proc', trigger: 'ability_hit', damage: { flat: 50 }, type: 'true' } as CardOp]);
+    const perCast = (r: ReturnType<typeof run2>) => r.fromCards / ((r.casts.Q ?? 0) + (r.casts.W ?? 0) + (r.casts.R ?? 0));
+    const before = run2([haste(100), proc]), after = run2([haste(100), proc, ohw('Q')]);
+    expect(after.fromCards).toBeGreaterThan(0);
+    expect(perCast(after)).toBeCloseTo(perCast(before), 6);
+    expect(after.perCast.Q!).toBeCloseTo(before.perCast.Q! * 1.75, -1);
+  });
+  it('a copy of the chosen ability (echo) copies its raised hit', () => {
+    const echo = { ...card('echo', [{ op: 'echo', delay: 0.5, ratio: 0.5 } as CardOp]), abilityKey: 'Q' as const };
+    const copyPerCast = (cards: CardNumbers[]) => { const withCopy = run2([...cards, echo]), plain = run2(cards); expect(withCopy.casts.Q).toBe(plain.casts.Q); return (withCopy.fromAbilities - plain.fromAbilities) / plain.casts.Q!; };
+    const before = copyPerCast([haste(100)]);
+    expect(before).toBeGreaterThan(0);
+    expect(copyPerCast([haste(100), ohw('Q')])).toBeCloseTo(before * 1.75, -1);
+  });
+  it('raises a damage-per-second toggle\'s ticks when it is the chosen ability', () => {
+    const toggle = { __type: 'SpellObject', mSpell: { cooldownTime: [1, 1, 1, 1, 1], DataValues: [{ name: 'BaseDamage', values: [20, 20, 20, 20, 20, 20] }], mSpellCalculations: { TotalDPS: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamage' }] } } } };
+    const onlyE = { rec: { ...bin.rec, spells: ['', '', 'x/e', ''] }, 'x/e': toggle };
+    const runE = (cards: CardNumbers[]) => fight({ bin: onlyE, shop: {}, kit: { damage: 'magic' as const, attacks: false }, items: [], cards, level: 11 });
+    const before = runE([haste(100)]), after = runE([haste(100), ohw('E')]);
+    expect(before.fromAbilities).toBeGreaterThan(0);
+    expect(after.perCast.E!).toBeCloseTo(before.perCast.E! * 1.75, -1);
+    expect(after.fromAbilities).toBeCloseTo(before.fromAbilities * 1.75, -1); // the ticks carry the raised hit
+  });
+  it('gives nothing and says why with no chosen ability, and nothing with no haste', () => {
+    const before = run2([haste(100)]), unset = run2([haste(100), ohw()]);
+    expect(unset.perCast.Q!).toBeCloseTo(before.perCast.Q!, -1);
+    expect(unset.notModelled.some((m) => m.includes('One Hit Wonder'))).toBe(true);
+    expect(run2([ohw('Q')]).perCast.Q!).toBeCloseTo(run2([]).perCast.Q!, -1);
+  });
+  it('flags haste given to that ability alone (Bread) as an unsettled estimate, and not without it', () => {
+    // The card text does not settle whether Bread's haste is dropped too: the numbers are an estimate, the note says so.
+    const bread = card('bread', [{ op: 'add', stat: 'haste', value: 100, scope: 'chosen_ability' }]);
+    const breadQ = { ...bread, abilityKey: 'Q' as const };
+    const unsettled = (r: ReturnType<typeof run2>) => r.notModelled.some((m) => m.includes('غير محسوم'));
+    expect(unsettled(run2([breadQ, ohw('Q')]))).toBe(true);
+    expect(unsettled(run2([breadQ, ohw('W')]))).toBe(false); // Bread on Q, the card on W: no shared ability
+    expect(unsettled(run2([haste(100), ohw('Q')]))).toBe(false);
+    expect(unsettled(run2([card('ult', [{ op: 'add', stat: 'ult_haste', value: 50 }]), ohw('R')]))).toBe(true);
+  });
+});

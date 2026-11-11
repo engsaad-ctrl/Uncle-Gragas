@@ -32,14 +32,16 @@ const SECONDS = 15;
 const cardsRead = [1, 2, 3].flatMap((n) => lines(`knowledge/augment-math-${n}.jsonl`)).map((c) => {
   const t = timed.get(c.id), need = BOTH_RANGES.has(c.name) ? { ...needs.get(c.id), class: 'always' } : needs.get(c.id);
   const fix = fixes.get(c.name);
-  const notModelled = fix?.not_modelled ?? t?.not_modelled ?? c.not_modelled;
-  let ops = fix?.ops ?? fromFile.get(c.id)?.ops ?? need?.ops_fix ?? t?.ops ?? c.ops ?? [];
+  // Ops read from the game's files bring that reading's status and limits; the text reading's note ("no number is given") no longer applies.
+  const file = !fix?.ops && fromFile.get(c.id);
+  const notModelled = fix?.not_modelled ?? (file ? file.not_modelled : t?.not_modelled ?? c.not_modelled);
+  let ops = fix?.ops ?? (file ? file.ops : undefined) ?? need?.ops_fix ?? t?.ops ?? c.ops ?? [];
   if (need?.class === 'window' && need.window?.seconds) {
     // Only part of a fight falls in the window, so a lasting effect counts for that share of it.
     const share = Math.min(1, need.window.seconds / Math.max(SECONDS, need.window.cooldown ?? 0));
     ops = ops.map((x) => (x.op === 'damage_amp' || x.op === 'mult' ? { ...x, factor: 1 + (x.factor - 1) * share } : x.op === 'add' && typeof x.value === 'number' ? { ...x, value: x.value * share } : x));
   }
-  return { id: c.id, name: c.name, status: c.status, ops, ...(need ? { need: { class: need.class, items: need.items ?? null, ability_kind: need.ability_kind ?? null } } : {}), ...(c.needs ? { needs: c.needs } : {}), ...(notModelled ? { not_modelled: notModelled } : {}) };
+  return { id: c.id, name: c.name, status: file ? file.status : c.status, ops, ...(need ? { need: { class: need.class, items: need.items ?? null, ability_kind: need.ability_kind ?? null } } : {}), ...(c.needs ? { needs: c.needs } : {}), ...(notModelled ? { not_modelled: notModelled } : {}) };
 });
 const cards = mergeRows(cardsRead, overrides.cards, overrides.expectedInputs.cards);
 // Passives read again with the game's calculation records; these replace the first reading.

@@ -10,6 +10,7 @@ import type { LcuState } from '../lcu/state.js';
 import type { Advice } from '../ai/advisor.js';
 import type { AppMode, AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, Listed, OverlayData } from '../main/services.js';
 import type { AugmentProgress } from '../ai/augmentProgress.js';
+import type { PickSnapshot } from '../main/pickLog.js';
 import type { UpdateStatus } from '../main/updater.js';
 import type { LanePosition } from '../stats/opgg.js';
 import type { RankRow } from '../texts/abilityDetails.js';
@@ -63,6 +64,12 @@ declare global {
       setShareGames(on: boolean): Promise<boolean>;
       gameTeams(): Promise<Reply<GameTeams | null>>;
       gameProgress(championId: number, fresh?: boolean): Promise<Reply<{ game: number; level?: number; items?: number[] }>>;
+      /** The pick log main keeps for this match (src/main/pickLog.ts): mark or unmark one augment; main records the level and the order. */
+      pickMark(game: number, championId: number, id: number, on: boolean): Promise<Reply<PickSnapshot>>;
+      /** The player's statement that every pick was marked, in order, when taken; main accepts it only when the log allows it. */
+      pickDeclare(game: number, championId: number): Promise<Reply<PickSnapshot>>;
+      /** With wait, the log once marks still being recorded are in (after an F7 reload). */
+      pickLog(game: number, championId: number, wait?: boolean): Promise<Reply<PickSnapshot | null>>;
       /** F7 on the phone: starts or stops the page; its link (with the access key) while on. */
       setWebPage(on: boolean): Promise<Reply<{ url: string | null }>>;
       updateStatus(): Promise<{ version: string; status: UpdateStatus }>;

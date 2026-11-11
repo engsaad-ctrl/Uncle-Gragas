@@ -50,6 +50,8 @@ describe('BEES!!! numbers from the patch file in every path', () => {
     const bees = rows.find((r) => r.id === 3086)!;
     expect(bees.damage).toBeGreaterThan(0);
     expect(bees.missing).toContain('الهدف الرئيسي وحده');
+    // T030: the card's own note shows once, not once with its name and again without it.
+    expect(bees.missing!.split('الهدف الرئيسي وحده').length - 1).toBe(1);
     expect(bees.planError).toBeUndefined();
     expect(bees.plan).toBeDefined();
     const build = await s.mathBuild(103, [3086], [], undefined, undefined, undefined, { level: 11, acquiredLevels: { 3086: 7 } });

@@ -11,7 +11,7 @@ import { CHAMPION_KITS } from './championKits.js';
 import type { GameItem } from '../texts/gameData.js';
 
 export interface PoolItem { id: number; gold: number; boots: boolean; damage?: 'ap' | 'ad' | 'none' | string }
-export interface MathStep { id: number; damage: number; health: number; reason: 'owned' | 'required' | 'mana' | 'stacks' | 'boots' | 'math' }
+export interface MathStep { id: number; damage: number; health: number; reason: 'owned' | 'required' | 'mana' | 'stacks' | 'augment' | 'boots' | 'math' }
 /** A champion's place in a team's fight: his share of the enemy's damage with no items, how fast it grows as he buys health from `health0`, that damage per second, and what a point absorbed for the team is worth in points of damage. */
 export interface TeamPlace { /** More of the enemy damage than his share says (frontline, FRONT_DRAW). */ draw?: number; carriesHealth?: boolean; healWorth?: number; share: number; rise: number; health0: number; maxRatio?: number; enemyDps: number; absorbedWorth: number; window?: number }
 /** A burst champion's damage comes in a few seconds from his abilities and ultimate, then he leaves: the owner's rule (Ahri, Zed). Assumption: the window, tried at 2 to 5 s and chosen on the owner's cases (knowledge/burst-value-plan.md). */
@@ -23,9 +23,9 @@ export const FRONT_DRAW = { value: 1.38 };
 export const FIGHTS = { inARow: 3 };
 const isBurst = (traits: string[] = []) => traits.includes('burst') && !traits.includes('sustained') && !traits.includes('frontline');
 
-const LEVEL_BY_ITEMS = [5, 9, 12, 15, 17, 18, 18];
+export const LEVEL_BY_ITEMS = [5, 9, 12, 15, 17, 18, 18];
 const FULL_BUILD_LEVEL = 15;
-const SLOTS = 6;
+export const SLOTS = 6;
 const BEAM_WIDTH = 3; // 99.7% of width 5's value on 58 champions, at two thirds of the time
 /** Who gets hit: stored games' damage taken follows E^1.24 * range^-0.53 (correlation 0.672 on 5,586 held-out teams), from the file's level 18 numbers. For a champion with too few games. */
 export function targetWeight(bin: Record<string, unknown>): number {
@@ -140,14 +140,38 @@ export function searchSet(o: { start: number[]; candidates: number[]; slots: num
   return best;
 }
 
-export function mathBuild(o: { /** The live level is a floor: a late purchase never takes the champion back to level 5. */ level?: number; /** He can't buy boots (Cassiopeia): six other items. */ noBoots?: boolean; /** A card that needs one item of a kind (Upgrade Sheen: any Spellblade item): one of each group, which one by the whole build. */ requiredAnyOf?: number[][]; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; plannedItem?: number; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number; knownRanks?: KnownRanks; skillPlan?: SkillPlan }): MathStep[] {
+export function mathBuild(o: { /** The live level is a floor: a late purchase never takes the champion back to level 5. */ level?: number; /** He can't buy boots (Cassiopeia): six other items. */ noBoots?: boolean; /** A card that needs one item of a kind (Upgrade Sheen: any Spellblade item): one of each group, which one by the whole build. */ requiredAnyOf?: number[][]; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; plannedItem?: number; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number; knownRanks?: KnownRanks; skillPlan?: SkillPlan; /** His kit and team place made again from fewer cards, for "would another item be best without this augment". */ contextFor?: (cards: CardNumbers[]) => { kit: Kit; place: TeamPlace } }): MathStep[] {
   // The game's own limits on what can be held together, and those its file doesn't name.
   const clashes = (id: number, held: number[]) => ONE_OF.some((g) => g.includes(id % 10000) && held.some((x) => x !== id && g.includes(x % 10000))) || (o.shop[id]?.limits ?? []).some((g) => held.some((x) => x !== id && o.shop[x]?.limits?.includes(g)));
-  // His share of the enemy's damage, so effects on falling below a share of his health come when it gets there (cardMath lowHealthAt).
-  const incomingDps = o.place.share * o.place.enemyDps * (o.place.draw ?? 1);
-  const run = (list: number[], level: number) => fight({ bin: o.bin, shop: o.shop, kit: o.kit, cards: o.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level: Math.max(o.level ?? 1, level), stacks: o.stacks, incomingDps, knownRanks: o.knownRanks, skillPlan: o.skillPlan });
+  // One fight context: the cards and what they make of him (his kit, his place in the team). The build's own is `full`.
+  type Context = { key: string; cards: CardNumbers[]; kit: Kit; place: TeamPlace };
+  const full: Context = { key: 'all', cards: o.cards, kit: o.kit, place: o.place };
+  // Fights already run in this one decision, by context, level and items: never shared across calls, so not across histories or card sets.
+  const fights = new Map<string, FightResult>();
+  const run = (list: number[], level: number, ctx: Context = full) => {
+    const at = Math.max(o.level ?? 1, level), key = `${ctx.key}|${at}|${list.join()}`;
+    let r = fights.get(key);
+    if (!r) {
+      r = fight({ bin: o.bin, shop: o.shop, kit: ctx.kit, cards: ctx.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level: at, stacks: o.stacks, incomingDps: ctx.place.share * ctx.place.enemyDps * (ctx.place.draw ?? 1), knownRanks: o.knownRanks, skillPlan: o.skillPlan });
+      fights.set(key, r);
+    }
+    return r;
+  };
   const allowed = (i: PoolItem, held: number[]) => !held.includes(i.id) && !clashes(i.id, held) && !!o.shop[i.id] && !o.offKind?.(i, held);
-  const gain = (held: number[], id: number, level: number) => { const v = fightValue(run(held, level), o.place); return v > 0 ? fightValue(run([...held, id], level), o.place) / v - 1 : 0; };
+  const gain = (held: number[], id: number, level: number, ctx: Context = full) => { const v = fightValue(run(held, level, ctx), ctx.place); return v > 0 ? fightValue(run([...held, id], level, ctx), ctx.place) / v - 1 : 0; };
+  // What a held augment asks for now: the best next item (gain per gold, as the order reads it) when, without one of his augments, another item
+  // would be best. That augment is why it is best now (Skilled Sniper at level 5: Essence Reaver, which without it trails Infinity Edge), so it
+  // comes before the stacking items. No threshold: it only asks whether the augment changes the best item.
+  // "Without it" is rebuilt whole by the caller (contextFor: his kit and team place from the other cards; Marksmage's attacks go with Marksmage).
+  // With no contextFor the comparison can't be made right, and the rule is off.
+  const perGold = (id: number) => Math.max(o.pool.find((p) => p.id === id)?.gold ?? 3000, 1);
+  const bestOf = (held: number[], ids: number[], level: number, ctx: Context) => ids.map((id) => ({ id, g: gain(held, id, level, ctx) / perGold(id) })).sort((a, b) => b.g - a.g)[0];
+  const without = o.contextFor ? o.cards.map((c, i): Context => { const cards = o.cards.filter((x) => x !== c); return { key: `-${i}`, cards, ...o.contextFor!(cards) }; }) : [];
+  const augmentLed = (held: number[], ids: number[], level: number) => {
+    const best = bestOf(held, ids, level, full);
+    if (!best || best.g <= 0) return undefined;
+    return without.some((ctx) => bestOf(held, ids, level, ctx)?.id !== best.id) ? best.id : undefined;
+  };
 
   // The set: what adds most to the fight at the build's full size.
   const set = [...o.owned];
@@ -202,7 +226,11 @@ export function mathBuild(o: { /** The live level is a floor: a late purchase ne
     if (boots !== undefined && held.length >= 1) { buy(boots, 'boots'); continue; }
     const level = LEVEL_BY_ITEMS[Math.min(held.length, 6)]!;
     // An item that grows with stacks (Heartsteel, Hubris, Rod of Ages) first: the set is valued with the stacks of a whole game, which only buying it first earns (the owner).
-    const next = set.filter((id) => !held.includes(id) && !isBoots(id)).map((id) => ({ id, grows: grows(id), g: gain(held, id, level) / Math.max(o.pool.find((p) => p.id === id)?.gold ?? 3000, 1) })).sort((a, b) => Number(b.grows) - Number(a.grows) || b.g - a.g)[0];
+    // What a held augment asks for now comes before those (augmentLed).
+    const left = set.filter((id) => !held.includes(id) && !isBoots(id));
+    const led = o.cards.length ? augmentLed(held, left, level) : undefined;
+    if (led !== undefined) { buy(led, 'augment'); continue; }
+    const next = left.map((id) => ({ id, grows: grows(id), g: gain(held, id, level) / perGold(id) })).sort((a, b) => Number(b.grows) - Number(a.grows) || b.g - a.g)[0];
     if (!next) { buy(boots!, 'boots'); continue; }
     buy(next.id, next.grows ? 'stacks' : 'math');
   }

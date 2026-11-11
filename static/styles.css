@@ -384,6 +384,9 @@ html.web #ov-close { display: none; }
 .ov-head img { width: 40px; height: 40px; border-radius: 6px; }
 .ov-head button { flex: none; -webkit-app-region: no-drag; font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: border-color .15s ease; }
 .ov-head button:hover { border-color: var(--accent); }
+/* 320 px: the size button wraps its two words instead of pushing ✕ off the panel, and the search box fits a narrow card (T019). */
+.ov-head #ov-size { flex: 0 1 auto; }
+.ov-panel .search { min-width: 0; }
 #ov-size { margin-inline-start: auto; }
 #ov-close { width: 34px; padding: 6px 0; font-size: 15px; }
 .ov-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }

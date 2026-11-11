@@ -1,6 +1,7 @@
 // The game's own Live Client Data API (https://127.0.0.1:2999/liveclientdata), which Riot serves on this machine while a match runs:
 // every player's champion and the items he holds right now. Read-only, no login. The owner, 2026-11-08: the engine reads the enemy's real items.
 import { lcuCaller } from './client.js';
+import { MAYHEM_MAX_LEVEL } from '../ai/augmentProgress.js';
 
 type Json = Record<string, unknown>;
 const obj = (v: unknown): Json | undefined => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Json) : undefined);
@@ -9,7 +10,8 @@ export type LiveTeam = 'ORDER' | 'CHAOS';
 export interface LivePlayer { items: number[]; level?: number; team?: LiveTeam }
 /** The active player's skill ranks (activeplayer.abilities.X.abilityLevel), read only for him. */
 export type LiveRanks = Partial<Record<'Q' | 'W' | 'E' | 'R', number>>;
-export interface LiveSnapshot { players: Record<string, LivePlayer>; active?: LivePlayer & { alias: string; ranks?: LiveRanks }; enemies?: Record<string, LivePlayer> }
+/** belowThree: his live level was 1 or 2, before the first augment offer (the pick log's start). Kept apart from level, which stays 3 to MAYHEM_MAX_LEVEL (21 in Superfans). */
+export interface LiveSnapshot { players: Record<string, LivePlayer>; active?: LivePlayer & { alias: string; ranks?: LiveRanks; belowThree?: true }; enemies?: Record<string, LivePlayer> }
 
 /** Q W E R ranks from activeplayer.abilities; a missing or odd value is left out, never guessed. */
 export function ranksFromLive(abilities: unknown): LiveRanks | undefined {
@@ -49,7 +51,7 @@ export function playersByChampion(playerlist: unknown): Record<string, LivePlaye
     if (Object.hasOwn(out, alias) || duplicates.has(alias)) { delete out[alias]; duplicates.add(alias); continue; }
     const level = p?.level;
     const items = (Array.isArray(p?.items) ? p.items.map(obj) : []).flatMap((it) => typeof it?.itemID === 'number' && Number.isSafeInteger(it.itemID) && it.itemID > 0 ? [it.itemID] : []);
-    out[alias] = { items, ...(typeof level === 'number' && Number.isInteger(level) && level >= 3 && level <= 18 ? { level } : {}), ...(p?.team === 'ORDER' || p?.team === 'CHAOS' ? { team: p.team } : {}) };
+    out[alias] = { items, ...(typeof level === 'number' && Number.isInteger(level) && level >= 3 && level <= MAYHEM_MAX_LEVEL ? { level } : {}), ...(p?.team === 'ORDER' || p?.team === 'CHAOS' ? { team: p.team } : {}) };
   }
   return out;
 }
@@ -72,7 +74,7 @@ export function activeFromLive(active: unknown, playerlist: unknown): LiveSnapsh
     const [alias, player] = entry;
     const level = a.level;
     const ranks = ranksFromLive(a.abilities);
-    return { alias, ...player, ...(typeof level === 'number' && Number.isInteger(level) && level >= 3 && level <= 18 ? { level } : {}), ...(ranks ? { ranks } : {}) };
+    return { alias, ...player, ...(typeof level === 'number' && Number.isInteger(level) && level >= 3 && level <= MAYHEM_MAX_LEVEL ? { level } : {}), ...(level === 1 || level === 2 ? { belowThree: true as const } : {}), ...(ranks ? { ranks } : {}) };
   }
   return undefined;
 }
