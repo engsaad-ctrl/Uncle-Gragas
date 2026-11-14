@@ -8,13 +8,15 @@ import { cardFit, conflictsWith, itemPart, openLines, placesOf, type ChampionDam
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { augmentStage, MAYHEM_MAX_LEVEL, type AugmentProgress } from '../ai/augmentProgress.js';
 import { dominantOffer } from '../app/offerComparison.js';
+import { RANGE_SCENARIO, rangeAccess } from '../ai/rangeAccess.js';
+import { lowHealthText } from './lowHealthView.js';
 import { linksWith, type Link, type Mechanic } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS } from '../ai/mechanicsData.js';
 import { FIT_POINTS, fitOf, gradesFor, healthChain, nextToPicked, outsidePoints, playedOnly, trialScoring } from './fit.js';
 import type { ChampionPage, ItemChoice } from '../app/championPage.js';
 import type { ItemEntry } from '../app/itemList.js';
 import { placeFlash } from '../lcu/apply.js';
-import type { AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, OverlayData } from '../main/services.js';
+import type { AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, OverlayData, PartnersAnswer } from '../main/services.js';
 import type { PickSnapshot } from '../main/pickLog.js';
 import { adviceNodes, AI_HINT, AI_LOADING, EXPERIMENTAL_TITLE, experimentalHint, WHY_AR } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
@@ -24,6 +26,7 @@ import { applyRandomTheme } from './theme.js';
 import { progressRequests } from './progressRequests.js';
 import { calculationNotes } from './calculationNotes.js';
 import { restorePicks } from './pickRestore.js';
+import { OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type OfferGroup } from './offerView.js';
 import { needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 
 applyRandomTheme(); // colours only: the overlay hides the background art
@@ -100,13 +103,13 @@ async function refreshCardMath() {
   cardMathContext = context;
   cardMathLoading = true;
   render();
-  if (tab === 'walk') renderWalk();
-  const r = await window.lolh.cardValues(champion.id, [...picked], held, progress(), plans, buildStyle, stacks);
+  redrawBuild();
+  const r = await window.lolh.cardValues(champion.id, [...picked], held, progress(), plans, buildStyle, stacks).catch((e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }));
   if (cardMathFor !== key) return;
   cardMathLoading = false;
   cardMath = new Map(isError(r) ? [] : r.map((x) => [x.id, x]));
   render();
-  if (tab === 'walk') renderWalk();
+  redrawBuild();
 }
 const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
 const mathValue = (id: number) => cardMath.get(id)?.value;
@@ -134,27 +137,46 @@ const linkInArabic = (l: Link) => {
 let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
-let engine: { key: string; items: { item: ItemEntry; why: string[]; offPath?: boolean; missing?: string[] }[]; dropped?: ItemEntry[]; experimental?: ExperimentalBuild | null; error?: string } | undefined;
+let engine: { key: string; items: { item: ItemEntry; why: string[]; offPath?: boolean; missing?: string[] }[]; dropped?: ItemEntry[]; error?: string } | undefined;
 let engineAsked = '';
+/** Asks made again after a failure, for the state they were spent on; a new state (items, level, champion, match) starts again (T037).
+ * A few at most, from the retry button, never from render. */
+let engineRetries: { key: string; n: number } | undefined;
+const retriesFor = (key: string) => (engineRetries?.key === key ? engineRetries.n : 0);
+const ENGINE_RETRIES = 3;
+/** The experimental build, apart from the engine's: the engine never waits for it (T036). */
+let experimental: { key: string; build: ExperimentalBuild | null } | undefined;
 /** The items the player is walking, kept from augment to augment (src/app/buildPath.ts). */
 let path: BuildPath | undefined;
+/** The engine's build for the known champion, from the first opening: no mark or purchase needed (T036, the owner: the engine is the main page). */
 async function refreshEngine() {
   const key = engineKey();
   const champion = data?.champion;
-  if (!champion || (!picked.size && !owned.length) || engineAsked === key) return;
+  if (!champion || data?.mode !== 'mayhem' || engineAsked === key) return;
   engineAsked = key;
-  const [r, x] = await Promise.all([window.lolh.engineBuild(champion.id, [...picked], trialScoring(), [...owned], buildStyle, stacks, progress()), window.lolh.experimentalBuild(champion.id, [...picked])]);
+  void refreshExperimental();
+  const r = await window.lolh.engineBuild(champion.id, [...picked], trialScoring(), [...owned], buildStyle, stacks, progress())
+    .catch((e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }));
   if (engineKey() !== key) return;
   if (isError(r)) engine = { key, items: [], error: r.error };
   else {
     path = walkedPath(path, [...picked], owned, r.map((e) => e.item.id));
     const onPath = path.items.flatMap((id) => r.find((e) => e.item.id === id) ?? []);
     const dropped = path.dropped.flatMap((id) => engine?.items.find((e) => e.item.id === id)?.item ?? []);
-    engine = { key, items: onPath, dropped, experimental: isError(x) ? null : x };
+    engine = { key, items: onPath, dropped };
   }
-  if (data?.build) renderBuild(data.build);
+  redrawBuild();
   render(); // the percents read the path, which just changed
-  if (tab === 'walk') renderWalk();
+}
+async function refreshExperimental() {
+  const champion = data?.champion;
+  const key = `${loadId}|${champion?.id}|${pickedKey()}`;
+  if (!champion || !picked.size || experimental?.key === key) return;
+  experimental = { key, build: null };
+  const x = await window.lolh.experimentalBuild(champion.id, [...picked]).catch(() => null); // optional: a failure only leaves it out
+  if (experimental?.key !== key) return;
+  experimental = { key, build: !x || isError(x) ? null : x };
+  redrawBuild();
 }
 
 async function refreshFit() {
@@ -174,7 +196,7 @@ function resetRun() {
   comparePartialOffer = false;
   for (const id of Object.keys(acquiredLevels)) delete acquiredLevels[Number(id)];
   for (const id of Object.keys(abilityTargets)) delete abilityTargets[Number(id)];
-  cardMathFor = ''; cardMath.clear(); cardMathLoading = false; engineAsked = ''; engine = undefined;
+  cardMathFor = ''; cardMath.clear(); cardMathLoading = false; engineAsked = ''; engine = undefined; engineRetries = undefined; experimental = undefined;
   pickSnap = undefined; pickNote = undefined; pickRefused = undefined;
 }
 
@@ -187,8 +209,8 @@ async function refreshProgress(update = true, fresh = false) {
     const r = await requestProgress(champion, fresh);
     if (data?.champion?.id !== champion || generation !== loadId || isError(r)) return false;
     const previous = JSON.stringify([data.live?.level, data.live?.items, pickedGame]);
-    // A new match clears the run; the build panel must drop the last match's augments and skills too (refreshEngine skips an empty run).
-    if (pickedGame !== undefined && pickedGame !== r.game) { resetRun(); restoredFor = champion; buildView = undefined; if (data.build) renderBuild(data.build); }
+    // A new match clears the run; the build panel must drop the last match's augments and skills too.
+    if (pickedGame !== undefined && pickedGame !== r.game) { void load(); return false; } // load clears the run and reads this match's log (T037)
     pickedGame = r.game;
     data.game = r.game;
     data.live = r.level === undefined ? undefined : { level: r.level, items: r.items ?? [], game: r.game };
@@ -276,7 +298,6 @@ async function declarePicks() {
   const champion = data?.champion?.id, game = data?.game, generation = loadId;
   if (declaring || champion === undefined || game === undefined) return;
   declaring = true;
-  if (tab === 'walk') renderWalk();
   try {
     const r = await window.lolh.pickDeclare(game, champion);
     if (data?.champion?.id !== champion || generation !== loadId || game !== data?.game) return;
@@ -299,13 +320,11 @@ function pickStatus(): HTMLElement[] {
   return [...refused, line, confirm];
 }
 function afterMarks() {
-  buildView = undefined; // the marks changed: back to the build that follows them
   render();
-  if (data?.build) renderBuild(data.build);
-  void refreshEngine(); // the walk tab needs it even when the champion's page failed to load, as on a weak connection
+  redrawBuild();
+  void refreshEngine(); // the main page needs it even when the champion's page failed to load, as on a weak connection
   void refreshCardMath();
   void refreshFit();
-  if (tab === 'walk') renderWalk();
 }
 
 function render() {
@@ -412,9 +431,8 @@ function render() {
 const tabs = byId('ov-tabs');
 const buildBox = byId('ov-build');
 const augBox = byId('ov-aug');
-let tab: 'build' | 'augments' | 'teams' | 'walk' = 'build';
+let tab: 'build' | 'augments' | 'teams' = 'build';
 const teamsBox = byId('ov-teams');
-const walkBox = byId('ov-walk');
 
 function showTab(t: typeof tab) {
   // Mayhem in the large window: augments and build side by side, so a click on an augment shows its build at once.
@@ -425,9 +443,7 @@ function showTab(t: typeof tab) {
   buildBox.hidden = t !== 'build';
   augBox.hidden = t !== 'augments' && !(both && t === 'build');
   teamsBox.hidden = t !== 'teams';
-  walkBox.hidden = t !== 'walk';
   if (t === 'teams') void renderTeams();
-  if (t === 'walk') renderWalk();
   for (const b of tabs.querySelectorAll<HTMLButtonElement>('button')) {
     b.classList.toggle('active', b.dataset.tab === t);
     if (b.dataset.tab === 'augments') b.hidden = both;
@@ -445,6 +461,40 @@ const ic = (x: Describable) => withTooltip(icon(x.iconUrl, 'ic'), x);
 /** The cards the player typed in for this round. */
 const offer = new Set<number>();
 let comparePartialOffer = false;
+/** T053: the example scenario's distance; the player can change it in the card's details. A display input only: no value or ranking reads it. */
+let rangeDistance: number = RANGE_SCENARIO.distance;
+
+/** T053: a card's range term, beside its value and outside the folded details: the range +N, the declared scenario's window, and its limits. */
+/** T061: why a range term has no number, in the words the player reads; each says the card is not thereby without effect. */
+export const RANGE_UNSUPPORTED: Record<NonNullable<NonNullable<AugmentValue['range']>['reasonKind']>, string> = {
+  ranged: 'مدى الهجوم: نطاق حساب المدى اليوم لأبطال القرب؛ لا رقم له هنا، وهذا لا يعني أنه بلا أثر.',
+  'ranged-at-level': 'مدى الهجوم: مهارته الثابتة تجعله بعيد المدى عند هذا المستوى، فهو خارج سيناريو القرب الحالي؛ لا رقم له هنا، وهذا لا يعني أنه بلا أثر.',
+  'form-unread': 'مدى الهجوم: هيئته الحالية غير مقروءة، فلا رقم للمدى أو لوقت الوصول؛ وهذا لا يعني أنه بلا أثر.',
+  'range-unread': 'مدى الهجوم: مداه غير مقروء؛ لا رقم له هنا، وهذا لا يعني أنه بلا أثر.',
+};
+function rangeLines(range: NonNullable<AugmentValue['range']>, stageValue: number, estimatedLevel?: boolean): HTMLElement[] {
+  if (!range.supported) return [el('small', 'ov-range', RANGE_UNSUPPORTED[range.reasonKind ?? 'ranged'])];
+  // T061: a range read from his passive by level says the level (and when that level is estimated).
+  const at = range.source === 'passive-rank' && range.level !== undefined ? ` (من مهارته الثابتة عند المستوى ${range.level}${estimatedLevel ? '، مقدّر' : ''})` : '';
+  const out = [el('small', 'ov-range', `مدى الهجوم العادي: +${range.delta}، من ${range.before}${at} إلى ${range.after}.`)];
+  if (range.moveSpeed === undefined) out.push(el('small', 'ov-range', 'وقت الوصول غير محسوب: سرعته غير مقروءة.'));
+  else {
+    const a = rangeAccess({ distance: rangeDistance, beforeRange: range.before!, afterRange: range.after!, moveSpeed: range.moveSpeed, windowSeconds: RANGE_SCENARIO.windowSeconds });
+    const when = a.before.travelDistance === 0 ? 'الهدف داخل مداك أصلاً، فلا وقت وصول مستعاد'
+      : !a.after.reachedWithinWindow ? `لا يصل في ${a.windowSeconds}ث حتى بالمدى الجديد` : `نافذة الوصول +${a.recoveredSeconds.toFixed(2)}ث`;
+    out.push(el('small', 'ov-range', `مثال (افتراض، لا قراءة من مباراتك): هدف ثابت على ${a.distance}، مسار مستقيم، سرعتك الأساسية ${a.moveSpeed}؛ ${when}.`));
+  }
+  out.push(el('small', 'ov-range', `أثر المدى على تجنب الضرر والتحكم، وعلى مدى القدرات والاندفاعات، غير محسوب هنا.${Math.round(100 * stageValue) === 0 ? ' نسبة القتال 0% لا تعني بلا أثر: المدى خارج النسبتين.' : ''}`));
+  const more = el('details', 'range-scenario');
+  const input = document.createElement('input');
+  input.type = 'number'; input.min = '0'; input.step = '25'; input.value = String(rangeDistance); input.className = 'range-distance'; input.setAttribute('aria-label', 'مسافة الهدف في المثال');
+  input.addEventListener('change', () => { const v = Number(input.value); if (Number.isFinite(v) && v >= 0) { rangeDistance = v; redrawBuild(); } });
+  const label = el('label', '', 'مسافة الهدف في المثال: ');
+  label.append(input);
+  more.append(el('summary', '', 'افتراض مثال المدى'), label);
+  out.push(more);
+  return out;
+}
 /** Actual finished inventory, read live or entered manually; suggestions never count as purchases. */
 const owned: number[] = [];
 let tearCharged = false;
@@ -456,75 +506,90 @@ const pill = (text: string, onClick: () => void, cls = 'pill') => {
   return b;
 };
 
+/** The main page's build, drawn again after any change of state: the engine shows for a known Mayhem champion even when the site's page failed (T036). */
+const redrawBuild = () => { if (data) renderBuild(data.build ?? undefined); };
 const ownedChanged = () => {
   if (ezrealTearStage(owned, false) !== 'charging') tearCharged = false;
   void refreshEngine();
   void refreshCardMath();
   render();
-  renderWalk();
+  redrawBuild();
 };
 
-/** The walk: type the cards on offer, read their percents, take one, say what you bought, and the rest follows. */
-function renderWalk() {
-  if (!data) return;
-  if (data.mode !== 'mayhem') return void walkBox.replaceChildren(el('p', 'missing', 'هذا التبويب لـMayhem فقط.'));
-  const previousCard = document.getElementById('ov-walk-card') as HTMLInputElement | null;
-  const previousItem = document.getElementById('ov-walk-item') as HTMLInputElement | null;
-  const focused = document.activeElement?.id;
-  const stage = augmentStage([...picked], progress());
-  const levelInput = el('input', '') as HTMLInputElement;
-  levelInput.type = 'number'; levelInput.min = '3'; levelInput.max = String(MAYHEM_MAX_LEVEL); levelInput.step = '1';
-  levelInput.value = String(stage.level); levelInput.disabled = !!data.live;
-  const levelLabel = el('label', 'hint', data.live ? 'مستواك من اللعبة: ' : 'مستواك الحالي (عدّله عند تأخر الاختيار): ');
-  levelLabel.append(levelInput);
-  levelInput.addEventListener('change', () => {
-    const level = levelInput.valueAsNumber;
-    if (!Number.isInteger(level) || level < 3 || level > MAYHEM_MAX_LEVEL || Object.values(acquiredLevels).some((at) => at > level)) { levelInput.value = String(stage.level); return; }
-    manualLevel = level;
-    ownedChanged();
-  });
-  if (!shopItems) {
-    void window.lolh.listItems('mayhem').then((r) => {
-      shopItems = isError(r) ? [] : r.list.filter((i) => i.group === 'legendary' || i.group === 'boots' || i.id % 10000 === TEAR);
-      if (tab === 'walk') renderWalk();
-    });
-  }
-  const pool = playedOnly(data.augments, effects, picked);
+/** Folded parts of the main page keep the player's open or closed choice across redraws. */
+const openFolds = new Set<string>();
+function fold(id: string, summary: string, ...body: (HTMLElement | string)[]) {
+  const d = el('details', 'ov-sec wide ov-fold') as HTMLDetailsElement;
+  d.open = openFolds.has(id);
+  d.addEventListener('toggle', () => (d.open ? openFolds.add(id) : openFolds.delete(id)));
+  d.append(el('summary', '', summary), ...body);
+  return d;
+}
+const finder = (id: string, placeholder: string, results: (q: string) => HTMLElement[]) => {
+  const previous = document.getElementById(id) as HTMLInputElement | null;
+  const input = el('input', '') as HTMLInputElement;
+  input.id = id;
+  input.type = 'search';
+  input.placeholder = placeholder;
+  input.setAttribute('aria-label', placeholder);
+  input.autocomplete = 'off';
+  input.value = previous?.value ?? '';
+  const box = el('div', 'ov-adapted');
+  if (input.value.trim()) box.replaceChildren(...results(input.value));
+  input.addEventListener('input', () => box.replaceChildren(...(input.value.trim() ? results(input.value) : [])));
+  const label = el('label', 'search');
+  label.append(input);
+  return { label, box, input };
+};
+
+/** The cards on offer this round, typed in only when he wants them compared; nothing else on the page waits for it (T036). */
+function offerSection(): HTMLElement {
+  const d = data!;
+  const pool = playedOnly(d.augments, effects, picked);
   const places = mathPlaces(pool);
   const percent = (a: OverlayData['augments'][number]) => percentOf(a, places);
-  const finder = (placeholder: string, results: (q: string) => HTMLElement[], query = '') => {
-    const input = el('input', '') as HTMLInputElement;
-    input.type = 'search';
-    input.placeholder = placeholder;
-    input.autocomplete = 'off';
-    input.value = query;
-    const box = el('div', 'ov-adapted');
-    if (query.trim()) box.replaceChildren(...results(query));
-    input.addEventListener('input', () => box.replaceChildren(...(input.value.trim() ? results(input.value) : [])));
-    const label = el('label', 'search');
-    label.append(input);
-    return { label, box, input };
-  };
-
-  // The cards on offer.
-  const cards = rankOffer(data.augments.filter((a) => offer.has(a.id)), percent, (a) => isOpen(a.id));
+  const cards = rankOffer(d.augments.filter((a) => offer.has(a.id)), percent, (a) => isOpen(a.id));
   const stageComparable = cards.every((a) => cardMath.get(a.id)?.certain === true);
-  const winner = dominantOffer(cards.map((a) => cardMath.get(a.id) ?? { id: a.id, value: NaN }));
+  // T053: a card with a range term (read or not) sits outside both numbers, so no overall winner while one is on offer; the trade-off is said below.
+  const hasRange = cards.some((a) => cardMath.get(a.id)?.range);
+  const winner = hasRange ? undefined : dominantOffer(cards.map((a) => cardMath.get(a.id) ?? { id: a.id, value: NaN }));
   const rows = el('div', 'ov-adapted ov-offers');
+  // T037 b: the stage and the finished plan are two numbers side by side; the relative place is a third, inside its own group.
+  const groupOf = (a: OverlayData['augments'][number]): OfferGroup => (percent(a) === undefined ? 'unmeasured' : isOpen(a.id) ? 'open' : 'settled');
+  const groups = new Set(cards.map(groupOf));
+  let lastGroup: OfferGroup | undefined;
   for (const a of cards) {
+    const g = groupOf(a);
+    if (g !== lastGroup && (groups.size > 1 || g !== 'settled')) rows.append(el('p', 'hint ov-offer-group', OFFER_GROUP_TITLE[g]));
+    lastGroup = g;
     const r = el('div', 'ov-adapted-row');
     const txt = el('div', 'ov-name');
     const p = percent(a);
-    txt.append(el('b', '', shownName(a)), el('small', '', p === undefined ? cardMathLoading ? 'جاري حساب الحالة الحالية…' : 'غير مقاسة: أثرها في حركة أو إيقاف أو هدف آخر، أو شرطها لا ينطبق. هذا لا يعني أنها ضعيفة' : [`ترتيب نسبي ${p}%: ${mathWords(a.id)}${a.id === winner ? ' · يتقدم في متوسط المرحلة والخطة المكتملة حسب الأجزاء المحسوبة' : stageComparable && a === cards[0] && cards.length > 1 ? ' · الأعلى في المرحلة الحالية' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
     const m = cardMath.get(a.id);
+    const planNow = m?.plan ? signed(m.plan.value) : m?.planError ? 'تعذّرت' : cardMathLoading ? 'جاري الحساب…' : 'غير مطلوبة';
+    txt.append(el('b', '', shownName(a)), el('small', '', !m ? cardMathLoading ? 'جاري حساب الحالة الحالية…' : 'غير مقاسة: أثرها في حركة أو إيقاف أو هدف آخر، أو شرطها لا ينطبق. هذا لا يعني أنها ضعيفة'
+      : [`الآن (حتى مستوى ${m.untilLevel}، بأغراضك الحالية): ${signed(m.value)}`, `الخطة المكتملة${m.plan ? ` (مستوى ${m.plan.level}، يُعاد البحث عن الأغراض)` : ''}: ${planNow}`, ...(m.certain ? [] : ['تقديري'])].join(' · ')));
+    if (p !== undefined) txt.append(el('small', '', [`ترتيب نسبي ${p}% بين ${g === 'open' ? 'المشروطة' : 'المحسومة'} من الندرة نفسها${a.id === winner ? ' · يتقدم في المرحلة والخطة معاً حسب الأجزاء المحسوبة' : stageComparable && a === cards[0] && cards.length > 1 ? ' · الأعلى في المرحلة الحالية' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
     if (!m && a.unmeasuredReason) txt.append(el('small', 'missing', `غير محسوب: ${a.unmeasuredReason}`));
-    if (m?.open.length) txt.append(el('small', '', `مشروطة، تُرتَّب بعد المحسومة: ${m.open.join('، ')}. القيمة إن تحقق الشرط، واحتماله غير مقاس.`));
+    if (m?.open.length) txt.append(el('small', '', `الشرط: ${m.open.join('، ')}. احتماله غير مقاس.`));
+    // T048: beside the value, not only in the folded details: part of the gain is attacks the engine assumes, not attacks read from the match.
+    const assumed = m?.attacksAssumed;
+    if (assumed) txt.append(el('small', 'ov-assume', assumed.by === 'offered'
+      ? `يشمل هجمات عادية يفترضها المحرك بسبب هذا التعزيز: ${assumed.before ?? 0} هجمة قبل هذا التعزيز، و${assumed.after} بعده، في ${assumed.seconds}ث عند المستوى ${assumed.level}. هذا العدد افتراض، لا قراءة من مباراتك.`
+      : `يشمل هجمات عادية يفترضها المحرك بسبب ${assumed.names.join('، ')} المختار: ${assumed.before ?? assumed.after} هجمة قبل هذا التعزيز، و${assumed.after} بعده، في ${assumed.seconds}ث عند المستوى ${assumed.level}. هذا العدد افتراض، لا قراءة من مباراتك.`));
+    if (m?.range) txt.append(...rangeLines(m.range, m.value, m.estimatedLevel));
+    // T072: a shield on his own low health, as its condition and amount only: outside the value above, with no chance or use estimated.
+    if (m?.lowHealth) txt.append(el('small', 'ov-lowhealth', lowHealthText(m.lowHealth)));
+    if (m) {
+      const more = el('details', 'plan-reason');
+      more.append(el('summary', '', 'تفاصيل الحساب'), el('small', '', mathWords(a.id)));
+      if (m.plan) more.append(el('small', '', `الخطة المكتملة: ضرر ${signed(m.plan.damage)}، تحمّل ${signed(m.plan.health)}`), el('small', 'en', m.plan.items.map((id) => [...d.items, ...d.boots].find((i) => i.id === id)?.enName ?? String(id)).join(' › ')));
+      txt.append(more);
+    }
     if (m?.plan) {
-      const names = m.plan.items.map((id) => [...data!.items, ...data!.boots].find((i) => i.id === id)?.enName ?? String(id));
-      txt.append(el('small', '', `عند اكتمال البناء في سيناريو مستوى ${m.plan.level}: ضرر ${signed(m.plan.damage)}، تحمّل ${signed(m.plan.health)} · أثر القتال ${signed(m.plan.value)}`), el('small', 'en', names.join(' › ')));
       // The plan with this card against the plan without it, same state and style (T014), past the held items main's search itself kept (T015),
       // never the page's own list; only for an answer to the current state.
-      const itemName = (id: number) => [...data!.items, ...data!.boots].find((i) => i.id === id)?.enName;
+      const itemName = (id: number) => [...d.items, ...d.boots].find((i) => i.id === id)?.enName;
       const verdict = !cardMathLoading && cardMathContext === cardContext() ? pathChange(m.plan.baselineItems, m.plan.items, m.plan.baselineOwned, m.plan.itemsOwned) : undefined;
       const change = pathChangeLine(verdict, itemName);
       if (change) {
@@ -539,28 +604,41 @@ function renderWalk() {
         }
       }
       if (m.plan.missing.length) txt.append(el('small', '', `غير محسوب في الخطة: ${m.plan.missing.join(' · ')}`));
+      if (assumed) txt.append(el('small', 'ov-assume', 'والخطة المكتملة تحمل افتراض الهجمات نفسه؛ عددها فيها غير معروض لأن أغراضها غير أغراضك الآن.'));
     } else if (m?.planError) txt.append(el('small', 'missing', m.planError));
     const targetField = abilityTargetField(a);
     if (targetField) txt.append(targetField);
     r.append(ic(a), txt, pill('اخترته', () => {
       for (const id of offer) if (id !== a.id && !picked.has(id)) delete abilityTargets[id];
-      offer.clear(); comparePartialOffer = false; void toggleMark(a.id); renderWalk();
-    }), pill('✕', () => { offer.delete(a.id); comparePartialOffer = false; delete abilityTargets[a.id]; void refreshCardMath(); renderWalk(); }, 'pill ghost'));
+      offer.clear(); comparePartialOffer = false; void toggleMark(a.id); redrawBuild();
+    }), pill('✕', () => { offer.delete(a.id); comparePartialOffer = false; delete abilityTargets[a.id]; void refreshCardMath(); redrawBuild(); }, 'pill ghost'));
     rows.append(r);
   }
   const availableOffers = pool.filter((a) => !offer.has(a.id) && !picked.has(a.id));
-  const findCard = finder('اختصر الاسم واضغط Enter عند ظهور نتيجة واحدة', (q) =>
-    findOfferMatches(availableOffers, q).slice(0, 6).map((a) => {
-      const b = pill(shownName(a), () => { if (offer.size >= 3) return; offer.add(a.id); comparePartialOffer = false; byId<HTMLInputElement>('ov-walk-card').value = ''; void refreshCardMath(); renderWalk(); byId<HTMLInputElement>('ov-walk-card').focus(); });
-      return b;
-    }), previousCard?.value);
-  findCard.input.id = 'ov-walk-card';
+  const findCard = finder('ov-offer-card', 'اكتب اسم بطاقة معروضة واضغط Enter عند ظهور نتيجة واحدة', (q) =>
+    findOfferMatches(availableOffers, q).slice(0, 6).map((a) => pill(shownName(a), () => {
+      if (offer.size >= 3) return;
+      offer.add(a.id); comparePartialOffer = false;
+      byId<HTMLInputElement>('ov-offer-card').value = '';
+      void refreshCardMath(); redrawBuild();
+      document.getElementById('ov-offer-card')?.focus();
+    })));
+  // T053: range against the computed fight, as a trade-off to read, not a score: never units added together, never a winner overall (rangeComparison).
+  const rc = !cardMathLoading ? rangeComparison(cards.map((a) => ({ id: a.id, group: groupOf(a), stage: cardMath.get(a.id)?.value, range: cardMath.get(a.id)?.range }))) : undefined;
+  if (rc) {
+    const nameOf = (id: number) => shownName(cards.find((a) => a.id === id)!);
+    const fight = rc.fightTop !== undefined ? `${nameOf(rc.fightTop)} أعلى في الأجزاء القتالية المحسوبة${rc.amongSettled ? ' (بين المحسومة)' : ''}`
+      : rc.fightTie.length ? `تعادل في الأجزاء القتالية المحسوبة${rc.amongSettled ? ' (بين المحسومة)' : ''} بين ${rc.fightTie.map(nameOf).join(' و')}` : '';
+    const reach = rc.rangeTop !== undefined ? `${nameOf(rc.rangeTop)} أعلى في المدى` : '';
+    rows.append(el('p', 'hint ov-range-trade', `${[fight, reach].filter(Boolean).join('؛ ')}${fight || reach ? '. ' : ''}لا فائز إجمالي: المدى خارج نسبتي الآن والخطة، ولا يُجمع معهما${rc.rangeUnread ? '، ومقدار المدى غير محسوب لبعض البطاقات' : ''}.`));
+  }
+  const trade = winner === undefined && !cardMathLoading ? offerTradeoff(cards.map((a) => ({ id: a.id, group: groupOf(a), stage: cardMath.get(a.id)?.value, plan: cardMath.get(a.id)?.plan?.value }))) : undefined;
+  if (trade) {
+    const nameOf = (id: number) => shownName(cards.find((a) => a.id === id)!);
+    rows.append(el('p', 'hint ov-tradeoff', `مقايضة محسوبة: ${nameOf(trade.stage)} أعلى الآن بأغراضك الحالية، و${nameOf(trade.plan)} أعلى في الخطة المكتملة. لا فائز محسوم، والخطة ليست أمر شراء.`));
+  }
   if (offer.size > 0 && offer.size < 3 && !comparePartialOffer) {
-    rows.append(pill('قارن الخطط للبطاقات المدخلة', () => {
-      comparePartialOffer = true;
-      void refreshCardMath();
-      renderWalk();
-    }));
+    rows.append(pill('قارن الخطط للبطاقات المدخلة', () => { comparePartialOffer = true; void refreshCardMath(); redrawBuild(); }));
   } else if (offer.size && cardMathLoading) {
     rows.append(el('p', 'hint', 'جاري حساب خطط البناء المكتملة…'));
   }
@@ -569,30 +647,28 @@ function renderWalk() {
     event.preventDefault();
     findCard.box.querySelector('button')?.click();
   });
+  if (offer.size) openFolds.add('offer');
+  return fold('offer', offer.size ? `مقارنة البطاقات المعروضة (${offer.size} من 3)` : 'قارن البطاقات المعروضة عليك (اختياري)',
+    findCard.label, findCard.box, rows,
+    el('p', 'hint', 'الأرقام هنا من حساب المحرك، وليست احتمال فوز. «الآن» بأغراضك الحالية، و«الخطة المكتملة» تعيد البحث عن الأغراض لكل بطاقة بلا تعزيزات قادمة. حرف S–C في قائمة التعزيزات من نتائج المباريات والمواقع، ومنفصل عن هذه الأرقام.'));
+}
 
-  // What he bought, and what's next.
-  const chosen = data.augments.filter((a) => picked.has(a.id));
+/** What he holds and his level: read from the game when a match is read; typed in only without one, folded (T036). */
+function ownedSection(): HTMLElement {
+  const d = data!;
+  if (!shopItems) {
+    shopItems = [];
+    void window.lolh.listItems('mayhem').then((r) => {
+      shopItems = isError(r) ? [] : r.list.filter((i) => i.group === 'legendary' || i.group === 'boots' || i.id % 10000 === TEAR);
+      redrawBuild();
+    });
+  }
   const known = new Map((shopItems ?? []).map((i) => [i.id, i]));
   const advised = engine?.key === engineKey() ? engine.items : [];
-  // The state moved on after the build came (a live level read after a reload): ask for the state now, as renderBuild does, or the walk
-  // would wait on «جاري حساب البناء…» for good (T018). refreshEngine asks once per state (engineAsked).
-  if (engine?.key !== engineKey()) void refreshEngine();
   for (const { item } of advised) known.set(item.id, item);
-  const ezreal = data.champion?.id === EZREAL;
+  const ezreal = d.champion?.id === EZREAL;
   const tear = ezreal ? ezrealTearStage(owned, tearCharged) : undefined;
-  const ids = advised.map((e) => e.item.id);
-  const next = ezreal ? ezrealNextItems(owned, ids, tearCharged) : walkItems(ids, owned).next;
   const tearItem = shopItems?.find((item) => item.id % 10000 === TEAR);
-  const tearControl = el('label', 'hint');
-  const charge = el('input', '') as HTMLInputElement;
-  charge.type = 'checkbox';
-  charge.checked = tearCharged;
-  charge.addEventListener('change', () => {
-    tearCharged = charge.checked;
-    renderWalk();
-    if (data?.build) renderBuild(data.build);
-  });
-  tearControl.append(charge, ' اكتملت تراكمات Tear of the Goddess في اللعبة');
   const offPath = advised.flatMap((e) => (e.offPath ? e.item.id : []));
   const ownedRow = el('div', 'ov-adapted');
   for (const id of owned) {
@@ -603,37 +679,35 @@ function renderWalk() {
     txt.append(el('b', '', item ? shownName(item) : 'Tear of the Goddess'), el('small', '', offPath.includes(id) ? 'لم يكن المحرك ليختاره الآن' : 'مملوك'));
     if (item) r.append(ic(item));
     r.append(txt);
-    if (!data.live) r.append(pill('✕', () => { owned.splice(owned.indexOf(id), 1); ownedChanged(); }, 'pill ghost'));
+    if (!d.live) r.append(pill('✕', () => { owned.splice(owned.indexOf(id), 1); ownedChanged(); }, 'pill ghost'));
     ownedRow.append(r);
   }
-  const findItem = finder('اكتب اسم الغرض الذي اشتريته…', (q) =>
+  const tearControl = el('label', 'hint');
+  const charge = el('input', '') as HTMLInputElement;
+  charge.type = 'checkbox';
+  charge.checked = tearCharged;
+  charge.addEventListener('change', () => { tearCharged = charge.checked; redrawBuild(); });
+  tearControl.append(charge, ' اكتملت تراكمات Tear of the Goddess في اللعبة');
+  const tearRows = tear === 'charging' || tear === 'ready' ? [tearControl] : [];
+  if (d.live) return section('أغراضك', el('p', 'hint', owned.length ? 'تُقرأ من اللعبة.' : 'تُقرأ من اللعبة: لا غرض مكتمل بعد.'), ownedRow, ...tearRows);
+  // No match read (before the game, or the phone page): his level and items can be typed, without being a step the build waits for.
+  const stage = augmentStage([...picked], progress());
+  const levelInput = el('input', '') as HTMLInputElement;
+  levelInput.type = 'number'; levelInput.min = '3'; levelInput.max = String(MAYHEM_MAX_LEVEL); levelInput.step = '1';
+  levelInput.value = String(stage.level);
+  const levelLabel = el('label', 'hint', 'مستواك: ');
+  levelLabel.append(levelInput);
+  levelInput.addEventListener('change', () => {
+    const level = levelInput.valueAsNumber;
+    if (!Number.isInteger(level) || level < 3 || level > MAYHEM_MAX_LEVEL || Object.values(acquiredLevels).some((at) => at > level)) { levelInput.value = String(stage.level); return; }
+    manualLevel = level;
+    ownedChanged();
+  });
+  const findItem = finder('ov-owned-item', 'اكتب اسم الغرض الذي اشتريته…', (q) =>
     (shopItems ?? []).filter((i) => (ezreal || i.id % 10000 !== TEAR) && !owned.includes(i.id) && `${i.name} ${shownName(i)}`.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6).map((i) =>
-      pill(shownName(i), () => { owned.push(i.id); byId<HTMLInputElement>('ov-walk-item').value = ''; ownedChanged(); })), previousItem?.value);
-  findItem.input.id = 'ov-walk-item';
-  const nextRow = el('div', 'ov-adapted');
-  for (const id of next) {
-    const item = id === TEAR ? tearItem : known.get(id);
-    if (id === TEAR && !item) {
-      nextRow.append(el('p', 'hint', 'التالي: Tear of the Goddess وحده لبدء جمع التراكمات.'));
-      continue;
-    }
-    if (!item) continue;
-    const r = el('div', 'ov-adapted-row');
-    const txt = el('div', 'ov-name');
-    const why = id === TEAR ? ['ابدأ بجمع التراكمات'] : engine?.items.find((x) => x.item.id === id)?.why.filter((w) => w !== 'owned') ?? [];
-    txt.append(el('b', '', shownName(item)), el('small', '', [...(id === next[0] ? ['التالي'] : []), ...why].join(' · ')));
-    r.append(ic(item), txt);
-    nextRow.append(r);
-  }
-  walkBox.replaceChildren(
-    section(`الاختيار ${picked.size + 1}: البطاقات المعروضة`, levelLabel, el('p', 'hint', `الاختيارات الأساسية عند المستويات 3، 7، 11، 15. التقييم حتى مستوى ${stage.untilLevel}${stage.estimatedLevel ? '؛ المستوى الحالي افتراضي حتى تحدده أو تُقرأ المباراة' : ''}.`), findCard.label, findCard.box, rows, el('p', 'hint', 'الترتيب نسبي بين تعزيزات الندرة نفسها. متوسط المرحلة يستخدم أغراضك الحالية فقط. الخطة المكتملة تعيد البحث عن الأيتمات لكل تعزيز؛ لا تقدّر الذهب أو وقت الشراء أو تكلفة تغيير المسار، ولا تفترض تعزيزات قادمة. عند اختلاف الأفضل بين المرحلة والخطة، توجد مقايضة. الأرقام ليست احتمال فوز.')),
-    ...(chosen.length ? [section('ما أخذته', chosenChips(chosen), ...chosen.flatMap((a) => abilityTargetField(a) ?? []))] : []),
-    ...(pickSnap || pickNote ? [section('سجل الاختيارات', ...pickStatus())] : []),
-    section('أغراضك', ...(data.live ? [el('p', 'hint', 'تُقرأ الأغراض من اللعبة.')] : [findItem.label, findItem.box, ...(tear === 'start' && !tearItem ? [pill('اشتريت Tear of the Goddess', () => { owned.push(TEAR); ownedChanged(); })] : [])]), ownedRow, ...(tear === 'charging' || tear === 'ready' ? [tearControl] : [])),
-    ...(chosen.length || ezreal ? [section('الأغراض التالية', advised.length || tear === 'start' ? nextRow : el('p', 'hint', 'جاري حساب البناء…'), ...(tear === 'charging' ? [el('p', 'hint', 'أجّل Manamune حتى تكتمل تراكمات Tear of the Goddess.')] : []), ...calculationNotes(advised))] : []),
-  );
-  if (focused === 'ov-walk-card') findCard.input.focus();
-  if (focused === 'ov-walk-item' && !data.live) findItem.input.focus();
+      pill(shownName(i), () => { owned.push(i.id); byId<HTMLInputElement>('ov-owned-item').value = ''; ownedChanged(); document.getElementById('ov-owned-item')?.focus(); })));
+  return fold('owned', owned.length ? `أغراضك (${owned.length}) ومستواك: لا مباراة مقروءة` : 'أغراضك ومستواك: لا مباراة مقروءة، أدخلهما إن أردت',
+    levelLabel, findItem.label, findItem.box, ...(tear === 'start' && !tearItem ? [pill('اشتريت Tear of the Goddess', () => { owned.push(TEAR); ownedChanged(); })] : []), ownedRow, ...tearRows);
 }
 
 function section(title: string, ...body: (HTMLElement | string)[]) {
@@ -678,46 +752,145 @@ function abilityTargetField(a: OverlayData['augments'][number]): HTMLElement | n
     else delete abilityTargets[a.id];
     path = undefined;
     void refreshCardMath();
-    if (data?.build) renderBuild(data.build);
+    redrawBuild();
     void refreshEngine();
-    if (tab === 'walk') renderWalk();
-  });
+    });
   label.append(el('span', '', `المهارة التي يعرضها ${shownName(a)} في اللعبة: `), select);
   return label;
 }
 
-function adaptedSection(): HTMLElement {
-  const chosen = (data?.augments ?? []).filter((a) => picked.has(a.id));
-  if (!chosen.length) return section('البناء حسب تعزيزاتك', el('p', 'hint', NO_PICKS));
-  const targetFields = chosen.flatMap((a) => abilityTargetField(a) ?? []);
-  // The build without AI (services.engineBuild), fetched when the marks change.
-  const rows = el('div', 'ov-adapted');
+/** T052: one held card's partners, asked when the player opens them (one card at a time, never on each render). The answer belongs to one state:
+ * any change of champion, level, picks, items, style, stacks or ranks drops it, and a late answer for another state is refused. */
+let partnersFocus: number | undefined;
+let partners: { key: string; answer?: PartnersAnswer; error?: string } | undefined;
+const partnersKey = () => `${cardContext()}|${buildStyle ?? ''}|${stacks ?? ''}|${partnersFocus ?? ''}`;
+async function refreshPartners() {
+  const champion = data?.champion;
+  if (partnersFocus === undefined || !champion || !picked.has(partnersFocus)) { partners = undefined; return; }
+  const key = partnersKey();
+  if (partners?.key === key) return;
+  partners = { key };
+  redrawBuild();
+  const r = await window.lolh.cardPartners(champion.id, [...picked], data?.live?.items ?? owned, partnersFocus, progress(), buildStyle, stacks).catch((e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }));
+  if (partners?.key !== key || partnersKey() !== key) return; // an answer for an old state
+  partners = isError(r) ? { key, error: r.error } : { key, answer: r };
+  redrawBuild();
+}
+const PARTNERS_LIMIT = 'تقدير للحالة الحالية من الأجزاء المحسوبة، غير مثبت بنتائج المباريات.';
+/** The reason a row gives, from the parts of the fight that grew with the held card; with no such part, an unexplained difference is said so. */
+// T052 v2: only explained rows are listed, so a reason always names the parts of the fight that grew with the held card (five parts, never added).
+const PART_WORDS: [keyof PartnersAnswer['settled'][number]['parts'], string][] = [['damage', 'الضرر'], ['effectiveHp', 'التحمّل'], ['healedHp', 'شفاؤه ودروعه'], ['abilityHealing', 'الشفاء الذي تعطيه قدراته'], ['healingDenied', 'منع شفاء الخصم']];
+const partnerReason = (row: PartnersAnswer['settled'][number], focusName: string) => {
+  const parts = PART_WORDS.filter(([k]) => row.parts[k] > 1e-6).map(([, w]) => w);
+  return [`في حساب القتال الحالي ازداد أثرها مع ${focusName} في: ${parts.join('، ')}`,
+    ...(row.assumedAttacks.length ? [`تشمل هجمات عادية يفترضها المحرك بسبب ${row.assumedAttacks.join('، ')}`] : []),
+    ...(row.conditions.length ? [`الشرط: ${row.conditions.join('، ')}`] : []), ...(row.limits.length ? [`حدود: ${row.limits.join('؛ ')}`] : [])].join(' · ');
+};
+function partnersSection(): HTMLElement | null {
+  const d = data!;
+  const chosen = d.augments.filter((a) => picked.has(a.id));
+  if (!chosen.length || d.mode !== 'mayhem') return null;
+  if (partnersFocus !== undefined && !picked.has(partnersFocus)) { partnersFocus = undefined; partners = undefined; }
+  if (partnersFocus !== undefined && partners?.key !== partnersKey()) void refreshPartners();
+  const nameOf = (id: number) => { const a = d.augments.find((x) => x.ids.includes(id)); return a ? shownName(a) : String(id); };
+  const body: HTMLElement[] = [el('p', 'hint ov-partners-limit', PARTNERS_LIMIT)];
+  const choose = el('div', 'ov-partners-cards');
+  for (const a of chosen) choose.append(pill(shownName(a), () => { partnersFocus = a.id; partners = undefined; openFolds.add('partners'); void refreshPartners(); redrawBuild(); }, a.id === partnersFocus ? 'pill on' : 'pill'));
+  body.push(choose);
+  const p = partners?.key === partnersKey() ? partners : undefined;
+  if (partnersFocus !== undefined) {
+    const focusName = nameOf(partnersFocus);
+    if (!p || (!p.answer && !p.error)) body.push(el('p', 'hint', `جاري حساب شركاء ${focusName}…`));
+    else if (p.error) body.push(el('p', 'missing', `تعذّر حساب الشركاء: ${p.error}`), pill('أعد المحاولة', () => { partners = undefined; void refreshPartners(); }));
+    else {
+      const ans = p.answer!;
+      if (ans.unread) body.push(el('p', 'missing', `لا تكفي الأجزاء المحسوبة لتحديد شركاء لهذه البطاقة: ${ans.unread}.`));
+      else {
+        const list = (rows: PartnersAnswer['settled'], title: string) => {
+          if (!rows.length) return;
+          body.push(el('p', 'hint ov-offer-group', title));
+          for (const r of rows) {
+            const row = el('div', 'ov-adapted-row ov-partner');
+            const txt = el('div', 'ov-name');
+            txt.append(el('b', '', nameOf(r.id)), el('small', '', `أثرها الآن مع بطاقاتك: ${signed(r.gain)}`), el('small', 'ov-partner-why', partnerReason(r, focusName)));
+            row.append(txt);
+            body.push(row);
+          }
+        };
+        if (ans.stateLimits.length) body.push(el('small', 'missing ov-partners-state', `حدود حالتك في هذا الحساب: ${ans.stateLimits.join('؛ ')}.`));
+        list(ans.settled, 'محسوبة');
+        list(ans.open, 'مشروطة: الأثر إن تحقق الشرط');
+        list(ans.limited, 'محدودة: أجزاء محسوبة فقط، وفيها ما لم يُحسب');
+        if (!ans.settled.length && !ans.open.length && !ans.limited.length) body.push(el('p', 'hint', 'لا تكفي الأجزاء المحسوبة لتحديد شركاء لهذه البطاقة.'));
+        const c = ans.coverage;
+        body.push(el('small', 'hint ov-partners-coverage', `من ${c.pool} بطاقة في الحوض عند المستوى ${ans.level}${ans.estimatedLevel ? ' (افتراضي)' : ''}: قورنت ${c.compared} (${c.settled} محسوبة، ${c.open} مشروطة، ${c.limited} محدودة)${c.unexplained ? `، ومنها ${c.unexplained} بفرق لم يُفسَّر فلم تُعرض` : ''}؛ ${c.noNumbers} بلا معادلات، ${c.noLiveEffect} بلا أثر حي، ${c.rangeOnly} بطاقة مدى خارج هذا الحساب، ${c.notApplicable} لا ينطبق شرطها، ${c.notComparable} غير قابلة للمقارنة.`));
+      }
+    }
+  }
+  return fold('partners', 'شركاء بطاقاتك — تقدير المحرك', ...body);
+}
+
+/** The main page (T036, the owner: «its the main page»): his state in one line, the engine's next item and its reason, the rest of the plan;
+ * then the optional parts (cards on offer, items typed in without a match) and how it is computed, folded. */
+function adaptedSection(): HTMLElement[] {
+  const d = data!;
+  const chosen = d.augments.filter((a) => picked.has(a.id));
+  const stage = augmentStage([...picked], progress());
+  const state = el('p', 'ov-state');
+  state.setAttribute('role', 'status');
+  state.append(
+    el('span', '', `المستوى ${stage.level}${d.live ? ' من اللعبة' : stage.estimatedLevel ? ' (افتراضي)' : ''}`),
+    el('span', '', chosen.length ? `تعزيزاتك ${chosen.length} من ${MAX_PICKS}` : 'لا تعزيزات مسجّلة بعد'),
+    el('span', '', d.live ? `أغراضك من اللعبة: ${owned.length}` : `أغراضك: ${owned.length}`),
+  );
+  // T053 v3: the range the held cards give, once, in his state: with or without offers; only from an answer to this state (an old one is dropped).
+  const heldRange = cardMathContext === cardContext() && !cardMathLoading ? [...cardMath.values()].map((r) => r.heldRange).find(Boolean) : undefined;
+  if (heldRange) state.append(el('span', 'ov-range-held', `مدى هجومك العادي ${heldRange.total} (الأساسي ${heldRange.base}، مع ${heldRange.names.join('، ')})`));
+  // With no marks yet one line says what to do; the log's state shows once there is something in it, or a mark was refused.
+  const head: HTMLElement[] = [state, ...(chosen.length ? [chosenChips(chosen), ...chosen.flatMap((a) => abilityTargetField(a) ?? []), ...pickStatus()] : [el('p', 'hint', NO_PICKS), ...(pickRefused ? pickStatus() : [])])];
+  const styleRow = styleSwitch();
+  const stackRow = stacksField(() => { path = undefined; redrawBuild(); });
+  const controls = [...(styleRow ? [styleRow] : []), ...(stackRow ? [stackRow] : [])];
+  const title = 'البناء حسب مباراتك';
   if (engine?.key !== engineKey()) {
     void refreshEngine();
-    return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...targetFields, el('p', 'hint', 'جاري حساب البناء…'));
+    return [section(title, ...head, ...controls, el('p', 'hint', 'جاري حساب البناء…')), offerSection(), ...[partnersSection()].filter((x): x is HTMLElement => !!x), ownedSection()];
   }
-  if (engine.error) return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...targetFields, el('p', 'missing', `تعذّر حساب البناء: ${engine.error}`));
+  if (engine.error) {
+    const key = engineKey(), tries = retriesFor(key);
+    const retry = tries < ENGINE_RETRIES ? [pill('أعد المحاولة', () => { engineRetries = { key, n: tries + 1 }; engineAsked = ''; engine = undefined; redrawBuild(); })] : [el('p', 'hint', 'أعد فتح النافذة (F7) لمحاولة أخرى.')];
+    return [section(title, ...head, ...controls, el('p', 'missing', `تعذّر حساب البناء: ${engine.error}`), ...retry), offerSection(), ...[partnersSection()].filter((x): x is HTMLElement => !!x), ownedSection()];
+  }
+  const rows = el('div', 'ov-adapted');
   const bought = path?.bought ?? 0;
-  const ezreal = data?.champion?.id === EZREAL;
+  const ezreal = d.champion?.id === EZREAL;
   const nextEzreal = ezreal ? ezrealNextItems(owned, engine.items.map(({ item }) => item.id), tearCharged)[0] : undefined;
-  if (nextEzreal === TEAR) rows.append(el('p', 'hint', 'التالي: Tear of the Goddess وحده. تابع شراء الأغراض من «مساري».'));
-  const styleRow = styleSwitch();
-  const stackRow = stacksField(() => { path = undefined; if (data?.build) renderBuild(data.build); });
+  if (nextEzreal === TEAR) rows.append(el('p', 'hint', 'التالي: Tear of the Goddess وحده لبدء جمع التراكمات.'));
   engine.items.forEach(({ item, why }, place) => {
-    const r = el('div', 'ov-adapted-row');
+    const mine = place < bought || why.includes('owned');
+    const next = !mine && (ezreal ? item.id === nextEzreal : place === bought);
+    const r = el('div', `ov-adapted-row${next ? ' next' : ''}`);
     const txt = el('div', 'ov-name');
-    const step = place < bought || why.includes('owned') ? ['تملكه'] : (ezreal ? item.id === nextEzreal : place === bought) ? ['التالي'] : [];
-    txt.append(el('b', '', shownName(item)), el('small', '', [...step, ...why.map((w) => WHY_AR[w] ?? w)].join(' · ')));
+    txt.append(el('b', '', shownName(item)), el('small', '', [...(mine ? ['تملكه'] : next ? ['التالي'] : []), ...why.filter((w) => w !== 'owned').map((w) => WHY_AR[w] ?? w)].join(' · ')));
     r.append(ic(item), txt);
     rows.append(r);
   });
+  if (!engine.items.length) rows.append(el('p', 'missing', 'لم يُرجع المحرك أغراضاً لهذا البطل.'));
   const dropped = engine.dropped ?? [];
-  const explanationHint = el('p', 'hint', 'أثر الغرض هو الفرق عند حذفه من البناء المكتمل. التفاعل يقيس ما يتجاوز جمع الأثرين مع بقاء بقية البناء؛ هذه الأرقام لا تُجمع ولا تمثل احتمال فوز.');
-  const routeHint = el('p', 'hint', 'نثبت أغراضك المملوكة، ونعيد حساب البقية مع كل اختيار أو تحديث للمباراة.');
-  const x = engine.experimental;
   // A magic build buys no crit, so the crit line isn't his road there (the owner: Miss Fortune with Vulnerability).
   const lines = openLines(heldParts(), championDamage()).filter((o) => o.held.some((part) => part > 0) && !((buildStyle === 'ap' || buildStyle === 'aphp') && o.line.id === 'crit')).map((o) => el('p', 'hint', `${o.line.name}: ${o.held.length} أجزاء. يفشل إذا: ${o.line.breaks.join('، ')}.`));
-  return section('البناء حسب تعزيزاتك', chosenChips(chosen), ...targetFields, ...(styleRow ? [styleRow] : []), ...(stackRow ? [stackRow] : []), routeHint, ...lines, explanationHint, ...calculationNotes(engine.items), ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows, ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : []));
+  const x = experimental?.key === `${loadId}|${d.champion?.id}|${pickedKey()}` ? experimental.build : null;
+  return [
+    section(title, ...head, ...controls, ...(dropped.length ? [el('p', 'missing', `لم يعد مناسباً بعد التعزيز الجديد: ${dropped.map(shownName).join('، ')}.`)] : []), rows),
+    offerSection(),
+    ...[partnersSection()].filter((x): x is HTMLElement => !!x),
+    ownedSection(),
+    fold('notes', 'كيف يُحسب هذا البناء',
+      el('p', 'hint', 'نثبت أغراضك المملوكة، ونعيد حساب البقية مع كل اختيار أو تحديث للمباراة.'), ...lines,
+      el('p', 'hint', 'أثر الغرض هو الفرق عند حذفه من البناء المكتمل. التفاعل يقيس ما يتجاوز جمع الأثرين مع بقاء بقية البناء؛ هذه الأرقام لا تُجمع ولا تمثل احتمال فوز.'),
+      ...calculationNotes(engine.items),
+      ...(x ? [el('h3', 'sub-title', EXPERIMENTAL_TITLE), el('p', 'hint', experimentalHint(x)), icons(x.items)] : [])),
+  ];
 }
 
 /** Buttons for his kit's own build and each other style it allows; asks for the styles once per champion and marked cards. */
@@ -746,7 +919,7 @@ function styleSwitch(): HTMLElement | null {
       if (isError(x) || styles?.champion !== champion.id || styles.key !== key) return;
       styles = { champion: champion.id, key, list: x };
       if (buildStyle && !x.includes(buildStyle)) { buildStyle = undefined; void refreshCardMath(); } // the card that opened it was unmarked
-      if (data?.build) renderBuild(data.build);
+      redrawBuild();
     });
   }
   if (!styles.list.length) return null;
@@ -758,18 +931,20 @@ function styleSwitch(): HTMLElement | null {
       buildStyle = v;
       path = undefined; // another way to build: what he walked was for the other one
       void refreshCardMath();
-      if (data?.build) renderBuild(data.build);
-      if (tab === 'walk') renderWalk();
-    });
+      redrawBuild();
+        });
     s.append(b);
   }
   return s;
 }
 
+/** Inside its own fold on the main page (T037): the marks already show above, so only the note and the AI box. */
 function aiSection(): HTMLElement {
   const chosen = (data?.augments ?? []).filter((a) => picked.has(a.id));
-  if (!chosen.length) return section('بناء الذكاء الاصطناعي', el('p', 'hint', NO_PICKS));
-  return section('بناء الذكاء الاصطناعي', chosenChips(chosen), el('p', 'hint', 'رأي إضافي، وقد يختلف عن بناء «حسب تعزيزاتك».'), aiBox(chosen));
+  const box = el('div', '');
+  if (!chosen.length) return box.appendChild(el('p', 'hint', NO_PICKS)), box;
+  box.append(el('p', 'hint', 'رأي إضافي، وقد يختلف عن بناء المحرك أعلاه.'), aiBox(chosen));
+  return box;
 }
 
 /** The finished items of the champion's usual build, by slot. */
@@ -788,23 +963,7 @@ function baseItems(p: ChampionPage): HTMLElement | null {
   return grid.childElementCount ? section('الأيتمات', grid) : null;
 }
 
-/** Mayhem has three builds: one shows at a time, so they don't read as a single confusing list. */
-function viewSwitch(current: BuildView, p: ChampionPage): HTMLElement {
-  const s = el('div', 'ov-tabs');
-  for (const [v, label] of BUILD_VIEWS) {
-    const b = el('button', v === current ? 'active' : '', label);
-    b.type = 'button';
-    b.addEventListener('click', () => ((buildView = v), renderBuild(p)));
-    s.append(b);
-  }
-  return s;
-}
-
-type BuildView = 'base' | 'engine' | 'ai';
-const BUILD_VIEWS: [BuildView, string][] = [['base', 'الأساسي'], ['engine', 'حسب تعزيزاتك'], ['ai', 'الذكاء الاصطناعي']];
-/** The player's choice; until then the build that follows the marks, or the usual one with none. */
-let buildView: BuildView | undefined;
-const NO_PICKS = 'من تبويب التعزيزات اضغط «اخترته» على كل تعزيز تأخذه، فيظهر البناء هنا.';
+const NO_PICKS = 'اضغط «اخترته» على التعزيز الذي تأخذه (تبويب التعزيزات أو مقارنة البطاقات)، فيتبعه البناء. بدونه يُحسب البناء لبطلك بلا تعزيزات.';
 
 /** The AI answer for the augments marked now, kept until they change. */
 let ai: { key: string; state: 'loading' | 'done' | 'error'; advice?: Advice; error?: string } | undefined;
@@ -826,17 +985,17 @@ async function startAi() {
   const champion = data?.champion;
   if (!champion || !picked.size) return;
   const key = pickedKey();
-  buildView = 'ai';
+  openFolds.add('ai'); // the AI build has its own fold on the main page
   showTab('build');
   if (ai?.key !== key) {
     ai = { key, state: 'loading' };
-    if (data?.build) renderBuild(data.build);
+    redrawBuild();
     buildBox.querySelector('.ov-ai')?.scrollIntoView({ block: 'nearest' });
     const r = await window.lolh.aiBuild(champion.id, [...picked]);
     if (ai?.key !== key) return; // the marks changed meanwhile
     ai = isError(r) ? { key, state: 'error', error: r.error } : { key, state: 'done', advice: r };
   }
-  if (data?.build) renderBuild(data.build);
+  redrawBuild();
   buildBox.querySelector('.ov-ai')?.scrollIntoView({ block: 'nearest' });
 }
 
@@ -861,50 +1020,51 @@ function aiBox(chosen: { id: number }[]): HTMLElement {
 }
 
 
-/** Compact build: what to set and buy, in the order the player needs it during the game. */
-function renderBuild(p: ChampionPage) {
-  if (p.buildError) return buildBox.replaceChildren(el('p', 'missing', p.buildError));
+/** Compact build: the engine first for Mayhem (T036), then skills, runes and spells; the site's usual build and AI folded below.
+ * Without the site's page (failed or slow to load) the engine still shows for the known champion. */
+function renderBuild(p?: ChampionPage) {
+  const focused = document.activeElement instanceof HTMLInputElement && document.activeElement.id ? document.activeElement.id : undefined;
   const out: HTMLElement[] = [];
-  const mayhem = p.mode === 'mayhem';
-  const view = buildView ?? (picked.size ? 'engine' : 'base');
-  const stats = p.stats && el('p', 'en', `نسبة الفوز ${pct(p.stats.winRate)} · ${p.stats.games.toLocaleString('en')} مباراة`);
-  const items = baseItems(p);
-  if (mayhem) {
-    out.push(viewSwitch(view, p));
-    if (view === 'engine') out.push(adaptedSection());
-    else if (view === 'ai') out.push(aiSection());
-    else {
+  const mayhem = data?.mode === 'mayhem';
+  if (mayhem && data?.champion) out.push(...adaptedSection(), fold('ai', 'بناء الذكاء الاصطناعي (اختياري)', aiSection()));
+  if (p?.buildError) out.push(el('p', mayhem ? 'hint' : 'missing', mayhem ? `بناء الموقع غير متاح: ${p.buildError}` : p.buildError));
+  else if (p) {
+    const stats = p.stats && el('p', 'en', `نسبة الفوز ${pct(p.stats.winRate)} · ${p.stats.games.toLocaleString('en')} مباراة`);
+    const items = baseItems(p);
+    if (mayhem) {
       // Without the site's Mayhem build the ARAM one is shown: say so, or it looks like a wrong mode.
-      out.push(el('p', 'hint', p.siteBuild ? 'ما يشتريه لاعبو البطل عادةً، ولا يتغير بتعزيزاتك.' : 'لا يتوفر بناء خاص بهذا الطور الآن، فهذا أقرب بناء متاح.'));
-      if (stats) out.push(stats);
-      if (items) out.push(items);
+      out.push(fold('site', 'البناء المعتاد للموقع',
+        el('p', 'hint', p.siteBuild ? 'ما يشتريه لاعبو البطل عادةً، ولا يتغير بتعزيزاتك؛ ليس حساب المحرك.' : 'لا يتوفر بناء خاص بهذا الطور الآن، فهذا أقرب بناء متاح، وليس حساب المحرك.'),
+        ...(stats ? [stats] : []), ...(items ? [items] : [])));
+    } else if (stats) out.push(stats);
+    if (p.skillPriority.length || p.skillOrder.length) {
+      const prio = el('div', 'ov-skills');
+      prio.dir = 'ltr';
+      prio.append(...p.skillPriority.flatMap((k, i) => [...(i ? [el('span', 'arrow', '›')] : []), el('b', `k-${k}`, k)]));
+      const order = el('div', 'ov-order');
+      order.dir = 'ltr';
+      order.append(...p.skillOrder.slice(0, 18).map((k, i) => {
+        const n = el('span', `k-${k}`, k);
+        n.title = `مستوى ${i + 1}`;
+        return n;
+      }));
+      out.push(section('ترتيب المهارات', prio, order));
     }
-  } else if (stats) out.push(stats);
-  if (p.skillPriority.length || p.skillOrder.length) {
-    const prio = el('div', 'ov-skills');
-    prio.dir = 'ltr';
-    prio.append(...p.skillPriority.flatMap((k, i) => [...(i ? [el('span', 'arrow', '›')] : []), el('b', `k-${k}`, k)]));
-    const order = el('div', 'ov-order');
-    order.dir = 'ltr';
-    order.append(...p.skillOrder.slice(0, 18).map((k, i) => {
-      const n = el('span', `k-${k}`, k);
-      n.title = `مستوى ${i + 1}`;
-      return n;
-    }));
-    out.push(section('ترتيب المهارات', prio, order));
+    if (p.runes?.primary) {
+      const chosen = (t: NonNullable<typeof p.runes>['primary']) => (t?.rows ?? []).flatMap((r) => r.options.filter((o) => o.selected));
+      const runes = el('div', 'ov-runes');
+      runes.append(icons(chosen(p.runes.primary)), icons(chosen(p.runes.sub)), icons(p.runes.shards.flatMap((r) => r.options.filter((o) => o.selected))));
+      out.push(section('الرونز', runes));
+    }
+    if (p.spells.length) {
+      const key = getFlashKey();
+      out.push(section('التعاويذ', icons(key && p.spells.length === 2 ? placeFlash([p.spells[0], p.spells[1]], key) : p.spells)));
+    }
+    if (!mayhem && items) out.push(items);
   }
-  if (p.runes?.primary) {
-    const chosen = (t: NonNullable<typeof p.runes>['primary']) => (t?.rows ?? []).flatMap((r) => r.options.filter((o) => o.selected));
-    const runes = el('div', 'ov-runes');
-    runes.append(icons(chosen(p.runes.primary)), icons(chosen(p.runes.sub)), icons(p.runes.shards.flatMap((r) => r.options.filter((o) => o.selected))));
-    out.push(section('الرونز', runes));
-  }
-  if (p.spells.length) {
-    const key = getFlashKey();
-    out.push(section('التعاويذ', icons(key && p.spells.length === 2 ? placeFlash([p.spells[0], p.spells[1]], key) : p.spells)));
-  }
-  if (!mayhem && items) out.push(items);
   buildBox.replaceChildren(...(out.length ? out : [el('p', 'missing', 'لا يوجد بناء لهذا البطل.')]));
+  // A redraw while he types (an answer arriving) keeps him in the field he was typing in.
+  if (focused) { const input = document.getElementById(focused) as HTMLInputElement | null; if (input) { input.focus(); const end = input.value.length; try { input.setSelectionRange(end, end); } catch { /* type=number */ } } }
 }
 
 let loadId = 0;
@@ -927,7 +1087,7 @@ async function load() {
   // The build is asked again each time F7 opens: the enemy team appears once the game is loaded.
   engine = undefined;
   engineAsked = '';
-  buildView = undefined;
+  engineRetries = undefined;
   const newGame = reply.game !== undefined && pickedGame !== undefined && pickedGame !== reply.game;
   if (pickedFor !== reply.champion?.id || newGame) {
     resetRun();
@@ -944,18 +1104,17 @@ async function load() {
   cardMathFor = ''; cardMath.clear();
   // This match's marks come back from main's live log, even an empty one (src/renderer/pickRestore.ts). Only with no live log do the last
   // build's augments come back, as manual marks with no certificate, once per champion.
-  let restored = false;
   if (!picked.size && reply.champion && reply.mode === 'mayhem') {
     const champion = reply.champion.id;
     const plan = await restorePicks(window.lolh, { game: reply.game, championId: champion, known: (a) => reply.augments.some((x) => x.id === a), manualAllowed: restoredFor !== champion });
     if (id !== loadId) return;
     if (plan.source === 'log') {
-      if (plan.snap) { applyPicks(plan.snap); restored = plan.snap.held.length > 0; }
+      if (plan.snap) applyPicks(plan.snap);
       // Marks still being recorded when F7 reloaded: one wait for them, then the log as it ends up (never from an older match or load).
       if (plan.followPending && reply.game !== undefined) void followPending(reply.game, champion, id);
     } else if (plan.source === 'manual') {
       restoredFor = champion;
-      for (const a of plan.ids) (picked.add(a), (restored = true));
+      for (const a of plan.ids) picked.add(a);
       // The marks brought back here are local and their levels estimated: said from load, not only after the next mark (T014).
       if (plan.ids.length) (pickSnap = undefined, pickNote = PICK_LOG_OFF);
     }
@@ -968,14 +1127,18 @@ async function load() {
     ? `${MODE_TITLE[reply.mode]}${reply.build.position ? ` · ${reply.build.position.toUpperCase()}` : ''}${reply.rated ? ' · الأفضل لهذا البطل أولاً' : ''}`
     : reply.rated
     ? 'Mayhem · الأفضل لهذا البطل أولاً'
+    : reply.champion && reply.mode
+    ? MODE_TITLE[reply.mode]
     : reply.mode === 'arena'
       ? 'Arena · ابحث عن التعزيزات التي ظهرت لك'
       : 'اختر بطلاً في شاشة الاختيار ليظهر ترتيبه';
   render();
-  tabs.hidden = !reply.build;
-  if (reply.build) renderBuild(reply.build);
-  showTab(reply.build ? 'build' : 'augments');
-  if (restored) void startAi(); // the app's answer is cached: shown without asking Gemini again
+  // The engine shows for a known Mayhem champion even when the site's build page failed (T036).
+  const buildShown = !!reply.build || (reply.mode === 'mayhem' && !!reply.champion);
+  tabs.hidden = !buildShown;
+  redrawBuild();
+  showTab(buildShown ? 'build' : 'augments');
+  // Restored marks no longer open the AI build on their own (T036): the engine is the page; AI is asked from its button only.
   void refreshCardMath();
   void refreshFit();
   if (reply.mode === 'mayhem') {
@@ -1021,8 +1184,27 @@ window.lolh.onOverlayShow((t) => {
   void load().then(() => t === 'teams' && showTab('teams'));
 });
 void load();
+// On screen or not: main says it for the F7 window (T038: its Page Visibility stays 'visible' while hidden); the phone page uses the browser's.
+const onPhone = document.documentElement.classList.contains('web');
+let windowShown = false;
+const onScreen = () => (onPhone ? document.visibilityState === 'visible' : windowShown);
+let identityStale = false;
+window.lolh.onOverlayState((s) => {
+  const same = (s.championId ?? undefined) === data?.champion?.id && (s.mode ?? undefined) === data?.mode && (s.game ?? undefined) === data?.game;
+  if (same) return;
+  if (!onScreen()) identityStale = true; // hidden: only the latest is kept; nothing is read or computed for it now
+  else void load();
+});
+window.lolh.onOverlayVisible((shown) => {
+  windowShown = shown;
+  if (!shown || onPhone) return;
+  // Every show goes through overlay:show (toggle and show both send it first), whose load reads the latest once: nothing more here.
+  identityStale = false;
+});
+// The phone: coming back to the page is its F7 press (web-bridge onOverlayShow), which loads the latest once.
+if (onPhone) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') identityStale = false; });
 // The desktop overlay and phone can remain open across level-ups. Record a fresh level on a pick as well.
-setInterval(() => { if (!document.hidden) void refreshProgress().catch(() => undefined); }, 10_000);
+setInterval(() => { if (onScreen()) void refreshProgress().catch(() => undefined); }, 10_000);
 
 // The loading screen's view: both teams with ranks, how they compare, and the best augments and full build for the
 // player's champion (the build already answers the enemy team's magic damage).

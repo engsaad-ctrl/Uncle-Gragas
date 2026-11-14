@@ -1,4 +1,5 @@
 import type { AugmentText, Mode, Rarity } from '../texts/augments.js';
+import type { Membership } from '../texts/augmentsLoader.js';
 import { withTooltip, detailPanel, el, getAppMode, icon, isError, MODE_TITLE, nameEl, otherName, pills, searchBox, shownName, getNameLang, stagger } from './dom.js';
 import { filterAugments } from './search.js';
 
@@ -24,6 +25,11 @@ export function augmentChip(a: AugmentText, selected: boolean, onPick: () => voi
   chip.addEventListener('click', onPick);
   return withTooltip(chip, a, { tags: () => augmentTags(a), className: `r-${a.rarity}`, missing: AUGMENT_MISSING });
 }
+
+/** T050: where the modes came from, when it limits them: an old saved copy (old labels), or no Arena pool in this patch's files. */
+export const membershipNote = (m: Membership | undefined) =>
+  !m || m.from === 'old-cache' ? ' · أوضاع التعزيزات من نسخة محفوظة قديمة، لا من قائمة اللعبة'
+  : !(m.pools.cherry?.ids || m.pools.map30?.ids) ? ' · لا قائمة Arena في ملفات هذا الإصدار، فلا يُعرض وضع Arena' : '';
 
 export async function augmentsView(root: HTMLElement, alive: () => boolean, initialMode = 'all') {
   const head = el('div', 'view-head');
@@ -70,7 +76,7 @@ export async function augmentsView(root: HTMLElement, alive: () => boolean, init
       }),
     );
     detail.show(selected, { tags: selected ? augmentTags(selected) : [], className: selected ? `r-${selected.rarity}` : '', missing: AUGMENT_MISSING });
-    status.textContent = `${shown.length} من ${reply.augments.length} تعزيزاً` + (reply.stale ? ' · بيانات محفوظة (تعذّر التحديث)' : '');
+    status.textContent = `${shown.length} من ${reply.augments.length} تعزيزاً` + (reply.stale ? ' · بيانات محفوظة (تعذّر التحديث)' : '') + membershipNote(reply.membership);
   };
 
   filters.append(

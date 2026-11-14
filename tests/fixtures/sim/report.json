@@ -1159,7 +1159,7 @@
    "notModelled": [
     "Ethereal Weapon: توقيت الإصابات المتعددة والنبضات وتعدد الأهداف غير محسوب. التأثير الأصلي للقدرات التي تطبّق on-hit لا يستهلك تبريد التعزيز في المحاكاة؛ تفاعله الفعلي غير مثبت.",
     "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب",
-    "Karthus E: استرداد المانا يتطلب قتلاً يُنسب إلى Karthus؛ هوية القاتل وقتل الوحدات الصغيرة والاستنزاف المستمر للمانا غير محسوبة"
+    "Karthus E: تخصم المحاكاة كلفة المانا مرة عند التفعيل، بينما التفعيل مجاني والكلفة مستمرة؛ الاستنزاف الدوري غير محسوب، ولم تُحسم سياسة توزيع المانا بين E وبقية القدرات. لا يُحسب استرداد المانا من القتل لأن هوية القاتل وقتل الوحدات الصغيرة غير ممثلين؛ قيم القتال المرتبطة بالمانا تقديرية"
    ],
    "variants": [
     {
@@ -1213,7 +1213,7 @@
      "notModelled": [
       "Ethereal Weapon: توقيت الإصابات المتعددة والنبضات وتعدد الأهداف غير محسوب. التأثير الأصلي للقدرات التي تطبّق on-hit لا يستهلك تبريد التعزيز في المحاكاة؛ تفاعله الفعلي غير مثبت.",
       "BEES!!!: يُحسب الهدف الرئيسي وحده؛ الأعداء الآخرون ضمن نصف قطر 425 غير محسوبين، كما في بقية القتال؛ رحلة النحل من الخلية إلى الهدف تُعد صفرًا (أبعد هدف ضمن 425 بسرعة 1800: نحو 0.24ث)؛ كل نبضة في نهاية نصف ثانية بعد الوصول (توقيت أول نبضة غير مثبت)، والضرر بقيم لحظة الإطلاق؛ تأثيرات on-hit: ضررها وحده بنسبة الملف ومرة واحدة لكل خلية، وعدد مرات تطبيقها في اللعبة غير مثبت؛ التكديس والشفاء والمانا وspellblade وlife steal غير مطبقة؛ الإبطاء 20% غير محسوب",
-      "Karthus E: استرداد المانا يتطلب قتلاً يُنسب إلى Karthus؛ هوية القاتل وقتل الوحدات الصغيرة والاستنزاف المستمر للمانا غير محسوبة"
+      "Karthus E: تخصم المحاكاة كلفة المانا مرة عند التفعيل، بينما التفعيل مجاني والكلفة مستمرة؛ الاستنزاف الدوري غير محسوب، ولم تُحسم سياسة توزيع المانا بين E وبقية القدرات. لا يُحسب استرداد المانا من القتل لأن هوية القاتل وقتل الوحدات الصغيرة غير ممثلين؛ قيم القتال المرتبطة بالمانا تقديرية"
      ]
     }
    ]
@@ -1986,13 +1986,13 @@
     "seconds": 15
    },
    "units": {
-    "damage": 7829.59,
+    "damage": 7797.04,
     "fromAbilities": 1889.75,
     "fromAttacks": 2300.69,
-    "fromCards": 3639.16,
+    "fromCards": 3606.6,
     "fromAllies": 0,
     "effectiveHp": 4519.77,
-    "healedHp": 3447.25,
+    "healedHp": 3441.08,
     "abilityHealing": 0,
     "healingDenied": 0,
     "attacks": 23,
@@ -2042,9 +2042,9 @@
     {
      "id": 6672,
      "delta": {
-      "damage": 1908.69,
+      "damage": 1876.13,
       "effectiveHp": 0,
-      "selfSustain": 547.73,
+      "selfSustain": 541.56,
       "abilitySupport": 0,
       "healingDenied": 0
      },
@@ -2053,9 +2053,9 @@
        "kind": "item",
        "id": 3153,
        "delta": {
-        "damage": 22.25,
+        "damage": 20.84,
         "effectiveHp": 0,
-        "selfSustain": 322.32,
+        "selfSustain": 316.14,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2064,9 +2064,9 @@
        "kind": "item",
        "id": 3006,
        "delta": {
-        "damage": -280.75,
+        "damage": -282.16,
         "effectiveHp": 0,
-        "selfSustain": -53.27,
+        "selfSustain": -53.54,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2075,9 +2075,9 @@
        "kind": "item",
        "id": 3115,
        "delta": {
-        "damage": -93.75,
+        "damage": -98,
         "effectiveHp": 0,
-        "selfSustain": -19.57,
+        "selfSustain": -20.37,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2098,9 +2098,9 @@
     {
      "id": 3153,
      "delta": {
-      "damage": 2713.31,
+      "damage": 2711.89,
       "effectiveHp": 0,
-      "selfSustain": 1247.07,
+      "selfSustain": 1240.89,
       "abilitySupport": 0,
       "healingDenied": 0
      },
@@ -2109,9 +2109,9 @@
        "kind": "item",
        "id": 6672,
        "delta": {
-        "damage": 22.25,
+        "damage": 20.84,
         "effectiveHp": 0,
-        "selfSustain": 322.32,
+        "selfSustain": 316.14,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2120,9 +2120,9 @@
        "kind": "item",
        "id": 3006,
        "delta": {
-        "damage": -37.84,
+        "damage": -36.43,
         "effectiveHp": 0,
-        "selfSustain": 45.51,
+        "selfSustain": 45.24,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2131,9 +2131,9 @@
        "kind": "item",
        "id": 3115,
        "delta": {
-        "damage": 202.49,
+        "damage": 203.91,
         "effectiveHp": 0,
-        "selfSustain": 193.45,
+        "selfSustain": 192.64,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2154,9 +2154,9 @@
     {
      "id": 3006,
      "delta": {
-      "damage": 239.84,
+      "damage": 238.43,
       "effectiveHp": 0,
-      "selfSustain": 45.51,
+      "selfSustain": 45.24,
       "abilitySupport": 0,
       "healingDenied": 0
      },
@@ -2165,9 +2165,9 @@
        "kind": "item",
        "id": 6672,
        "delta": {
-        "damage": -280.75,
+        "damage": -282.16,
         "effectiveHp": 0,
-        "selfSustain": -53.27,
+        "selfSustain": -53.54,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2176,9 +2176,9 @@
        "kind": "item",
        "id": 3153,
        "delta": {
-        "damage": -37.84,
+        "damage": -36.43,
         "effectiveHp": 0,
-        "selfSustain": 45.51,
+        "selfSustain": 45.24,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2187,9 +2187,9 @@
        "kind": "item",
        "id": 3115,
        "delta": {
-        "damage": -209.84,
+        "damage": -208.43,
         "effectiveHp": 0,
-        "selfSustain": -39.82,
+        "selfSustain": -39.55,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2210,9 +2210,9 @@
     {
      "id": 3115,
      "delta": {
-      "damage": 1343.97,
+      "damage": 1339.73,
       "effectiveHp": 0,
-      "selfSustain": 448.47,
+      "selfSustain": 447.66,
       "abilitySupport": 0,
       "healingDenied": 0
      },
@@ -2221,9 +2221,9 @@
        "kind": "item",
        "id": 6672,
        "delta": {
-        "damage": -93.75,
+        "damage": -98,
         "effectiveHp": 0,
-        "selfSustain": -19.57,
+        "selfSustain": -20.37,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2232,9 +2232,9 @@
        "kind": "item",
        "id": 3153,
        "delta": {
-        "damage": 202.49,
+        "damage": 203.91,
         "effectiveHp": 0,
-        "selfSustain": 193.45,
+        "selfSustain": 192.64,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2243,9 +2243,9 @@
        "kind": "item",
        "id": 3006,
        "delta": {
-        "damage": -209.84,
+        "damage": -208.43,
         "effectiveHp": 0,
-        "selfSustain": -39.82,
+        "selfSustain": -39.55,
         "abilitySupport": 0,
         "healingDenied": 0
        }
@@ -2284,13 +2284,13 @@
       }
      ],
      "units": {
-      "damage": 7820.81,
+      "damage": 7788.26,
       "fromAbilities": 1880.96,
       "fromAttacks": 2300.69,
-      "fromCards": 3639.16,
+      "fromCards": 3606.6,
       "fromAllies": 0,
       "effectiveHp": 4519.77,
-      "healedHp": 3447.25,
+      "healedHp": 3441.08,
       "abilityHealing": 0,
       "healingDenied": 0,
       "attacks": 23,

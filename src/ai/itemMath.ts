@@ -4,6 +4,7 @@
 
 import { ONE_OF } from '../app/buildEngine.js';
 import { FIGHT, fight, type CardNumbers, type CardOp, type EnemyTeam, type FightResult, type Kit } from './cardMath.js';
+import { itemOpsOf } from './itemIdentity.js';
 import type { KnownRanks, SkillPlan } from './abilityRank.js';
 import { championRecord } from './calculator.js';
 import { DAMAGE_SHARE } from './shareData.js';
@@ -209,7 +210,7 @@ export function mathBuild(o: { /** The live level is a floor: a late purchase ne
   // The order: owned, what a card asks for, then most per gold; boots second.
   // The owner's rule 35: Heartsteel and other stacking items (Hubris, Rod of Ages) first, marksmen too (2026-11-09, «Yes, all»: his rule names no exception); a mage's mana item still comes right after Heartsteel (rule 34).
   const heartsteel = (id: number) => (o.shop[id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0;
-  const grows = (id: number) => heartsteel(id) || (o.itemOps?.[id % 10000] ?? []).some((x) => x.op === 'per_stack' && x.per !== 'attack');
+  const grows = (id: number) => heartsteel(id) || (itemOpsOf(o.itemOps, id) ?? []).some((x) => x.op === 'per_stack' && x.per !== 'attack');
   const steps: MathStep[] = o.owned.map((id) => ({ id, damage: 0, health: 0, reason: 'owned' }));
   const held = [...o.owned];
   const buy = (id: number, reason: MathStep['reason']) => {

@@ -317,6 +317,94 @@ it('gives Jinx\'s minigun its attack speed stacks instead of casting Q', () => {
   expect(r.attacks).toBe(11); // 9 without; 0.6 + 0.6 x 30% = 0.78 a second once three attacks stacked it
   expect(r.perCast.Q).toBeUndefined();
 });
+it('reads Zeri\'s Q as her attack: its own damage replaces the attack\'s AD term', () => {
+  const v = (n: number) => [n, n, n, n, n, n, n];
+  // Her record as the 16.22 file writes it: ActiveDamageThatCanCrit = BaseDamage + ActiveADRatio x AD.
+  const qSpell = (over: Record<string, number[]> = {}, cooldown = 0, calc = false) => ({ __type: 'SpellObject', mSpell: {
+    cooldownTime: v(cooldown),
+    DataValues: [
+      { name: 'ActiveADRatio', values: over.ActiveADRatio ?? v(1) },
+      { name: 'BaseDamage', values: over.BaseDamage ?? v(50) },
+      { name: 'AttackSpeedCap', values: over.AttackSpeedCap ?? v(0.9) },
+      { name: 'ExcessAttackSpeedToADMult', values: over.ExcessAttackSpeedToADMult ?? v(0.6) },
+    ],
+    ...(calc ? { mSpellCalculations: { Damage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 100 }] } } } : {}),
+  } });
+  const binOf = (over?: Record<string, number[]>, cooldown = 0, calc = false) =>
+    ({ rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': qSpell(over, cooldown, calc) });
+  const armor80 = 100 / 180; // the target's 80 armor in FIGHT
+  const at = (cards: CardNumbers[] = [], over?: Record<string, number[]>, level = 1) =>
+    fight({ bin: binOf(over), shop: {}, kit, items: [], cards, level });
+
+  // 1. AD 100 and nothing else: 100 x 1 + 50 = 150 a shot, and no cast of its own.
+  const plain = at();
+  expect(plain.perCast.Q).toBeUndefined();
+  expect(plain.casts.Q).toBeUndefined();
+  expect(plain.fromAttacks / plain.attacks).toBeCloseTo(150 * armor80);
+
+  // 2. +100% bonus attack speed: 0.6 + 0.6 = 1.2 raw, capped at 0.9, and the 50% past the cap gives 30 AD.
+  //    The hit is 130 x 1 + 50 = 180, NOT 130 x 1.5. The flat part never rides on the converted AD.
+  const fast = at([card('as', [{ op: 'add', stat: 'attack_speed', value: 1 }])]);
+  expect(fast.stats.attackSpeed).toBeCloseTo(0.9);
+  expect(fast.fromAttacks / fast.attacks).toBeCloseTo(180 * armor80);
+
+  // 3. +100 AD while she fights: 200 x 1 + 50 = 250.
+  const strong = at([card('ad', [{ op: 'add', stat: 'ad', value: 100 }])]);
+  expect(strong.fromAttacks / strong.attacks).toBeCloseTo(250 * armor80);
+
+  // 4. No AD at all: the flat part still lands. 0 x 1 + 50 = 50.
+  const noAd = at([card('noad', [{ op: 'mult', stat: 'ad', factor: 0 }])]);
+  expect(noAd.fromAttacks / noAd.attacks).toBeCloseTo(50 * armor80);
+
+  // Each rank reads its own row, not rank 1's.
+  const perRank = [10, 10, 20, 30, 40, 50, 60];
+  const r3 = fight({ bin: binOf({ BaseDamage: perRank }), shop: {}, kit, items: [], cards: [], level: 9 });
+  const flatAt = r3.fromAttacks / r3.attacks / armor80 - 100;
+  expect(perRank).toContain(Math.round(flatAt));
+  expect(Math.round(flatAt)).toBeGreaterThan(10); // level 9 is not rank 1
+
+  // Crit multiplies the whole replaced hit, exactly as it multiplies AD without her.
+  const crit = at([card('crit', [{ op: 'add', stat: 'crit', value: 1 }])]);
+  expect(crit.fromAttacks / crit.attacks).toBeCloseTo(150 * 1.75 * armor80); // the engine's own 175% crit damage
+
+  // A softer target changes only the resist term.
+  const soft = fight({ bin: binOf(), shop: {}, kit, items: [], cards: [], level: 1, enemy: { armor: 0, mr: 0, hp: 3500, physicalShare: 1 } });
+  expect(soft.fromAttacks / soft.attacks).toBeCloseTo(150);
+
+  // One on-hit per attack, not one per bolt of the volley.
+  const onHit = at([card('onhit', [{ op: 'proc', trigger: 'on_hit', damage: { flat: 10 }, type: 'true' }])]);
+  expect(onHit.fromCards).toBeCloseTo(onHit.attacks * 10);
+
+  // An ability with a real cooldown is untouched: it still casts, and her cap and conversion do not appear.
+  const normal = fight({ bin: binOf(undefined, 8, true), shop: {}, kit, items: [], cards: [card('as', [{ op: 'add', stat: 'attack_speed', value: 1 }])], level: 1 });
+  expect(normal.casts.Q).toBeGreaterThan(0);
+  expect(normal.stats.attackSpeed).toBeGreaterThan(0.9);
+  expect(normal.fromAttacks / normal.attacks).toBeCloseTo(100 * armor80);
+});
+it('reads Zeri\'s Q from its own active calculation, and stops reading her charged-shot numbers into it', () => {
+  const v = (n: number) => [n, n, n, n, n, n, n];
+  // The shape the 16.22 file has: an active calculation beside the charged-shot rows the old reading picked up instead.
+  const zeri = { rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: {
+    cooldownTime: v(0),
+    DataValues: [
+      { name: 'ActiveADRatio', values: v(1) }, { name: 'BaseDamage', values: v(50) },
+      { name: 'AttackSpeedCap', values: v(0.9) }, { name: 'ExcessAttackSpeedToADMult', values: v(0.6) },
+      { name: 'PassiveMaxChargePercentHealth', values: v(0.0688235) },
+    ],
+    mSpellCalculations: {
+      ActiveDamageThatCanCrit: { mFormulaParts: [{ __type: 'NamedDataValueCalculationPart', mDataValue: 'BaseDamage' }, { __type: 'StatByNamedDataValueCalculationPart', mDataValue: 'ActiveADRatio' }] },
+      PassiveMaxDamage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 125 }] },
+    },
+  } } };
+  const r = fight({ bin: zeri, shop: {}, kit, items: [], cards: [], level: 11 });
+  // Nothing of Q is cast, so none of its calculations — active or charged — is counted as ability damage.
+  expect(r.fromAbilities).toBe(0);
+  expect(r.perCast.Q).toBeUndefined();
+  // Every point of her damage is the attack, with the hit's own numbers in place of AD.
+  expect(r.damage).toBeCloseTo(r.fromAttacks, 6);
+  expect(r.fromAttacks / r.attacks).toBeCloseTo(150 * (100 / 180));
+  expect(r.notModelled.join(' ')).toContain('Zeri Q');
+});
 it('leaves out a stat that comes only at low health', () => {
   const nearDeath = card('bloodmail', [{ op: 'mult', stat: 'ad', factor: 1.12, needs: 'full value only at or below 30% remaining Health' } as CardOp]);
   expect(run([nearDeath]).fromAttacks).toBeCloseTo(run().fromAttacks);

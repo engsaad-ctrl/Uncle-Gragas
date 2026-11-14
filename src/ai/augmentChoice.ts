@@ -1,4 +1,4 @@
-import { fight, type CardNumbers, type Kit } from './cardMath.js';
+import { fight, liveCard, type CardNumbers, type Kit } from './cardMath.js';
 import { fightValue, type TeamPlace } from './itemMath.js';
 
 export interface AugmentPlan {
@@ -13,7 +13,7 @@ export interface AugmentPlan {
 
 /** Keep the same attack-enabling rule in offer evaluation and item search. */
 export function kitWithCards(kit: Kit, cards: CardNumbers[]): Kit {
-  return { ...kit, attacks: kit.attacks || cards.some((c) => c.ops.some((x) => 'trigger' in x && (x.trigger === 'attack' || x.trigger === 'on_hit'))) };
+  return { ...kit, attacks: kit.attacks || cards.some((c) => liveCard(c).ops.some((x) => 'trigger' in x && (x.trigger === 'attack' || x.trigger === 'on_hit'))) }; // T051 v2: live ops only
 }
 
 /** Compare two independently searched complete builds. This is a conditional end-state, not a gold/time forecast. */

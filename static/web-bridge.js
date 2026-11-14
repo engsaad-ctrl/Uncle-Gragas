@@ -28,6 +28,7 @@ if (!window.lolh) {
     stackBase: fail('build:stackBase'),
     buildStyles: fail('build:styles'),
     cardValues: fail('build:cardvalues'),
+    cardPartners: fail('build:partners'),
     gameProgress: fail('game:progress'),
     // The pick log is kept and written only on the game computer; the phone page marks picks as before, without the log.
     pickMark: fail('picks:mark'),
@@ -38,5 +39,9 @@ if (!window.lolh) {
     setOverlayLarge: async () => undefined,
     // Coming back to the page is the phone's F7 press: read the current champion again.
     onOverlayShow: (callback) => document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && callback()),
+    // No push to the phone: it reads the champion, mode and match every 10 s while the page is visible (T037).
+    // On the phone the browser's own visibility is the real one.
+    onOverlayVisible: (callback) => document.addEventListener('visibilitychange', () => callback(document.visibilityState === 'visible')),
+    onOverlayState: (callback) => setInterval(() => { if (document.visibilityState === 'visible') fail('overlay:state')().then((s) => s && !s.error && callback(s)); }, 10_000),
   };
 }

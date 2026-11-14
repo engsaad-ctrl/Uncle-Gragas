@@ -49,6 +49,11 @@ export function overlayWindow(root: string) {
       onTop(w);
       w.moveTop();
     });
+    // With backgroundThrottling off the page's own Page Visibility stays 'visible' while hidden: the window's real state goes to it (T038).
+    const visibility = () => w.webContents.send('overlay:visible', w.isVisible());
+    w.on('show', visibility);
+    w.on('hide', visibility);
+    w.webContents.on('did-finish-load', visibility);
     void w.loadFile(join(root, 'static/overlay.html'));
     w.on('closed', () => (win = undefined));
     return w;
@@ -80,6 +85,10 @@ export function overlayWindow(root: string) {
       place(win);
       win.showInactive(); // the game keeps the focus: F7 or Esc hides it
       onTop(win);
+    },
+    /** The champion, mode and match changed: the page reads its data again only for that (T037). */
+    notify(state: unknown) {
+      win?.webContents.send('overlay:state', state);
     },
     setGame(rect: Rect | null) {
       game = rect;

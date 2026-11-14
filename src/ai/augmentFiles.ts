@@ -93,8 +93,17 @@ function dashing<C extends CardNumbers>(card: C, g: AugmentGameData | undefined)
   };
 }
 
+/** Apex Inventor (ARAM_ApexInventor, Mayhem 1002): ItemHaste item haste, which its text says shortens every item ability's cooldown (T047).
+ *  The fight shortens only the item cooldowns it can prove from the item's own file (cardMath ITEM_HASTE). */
+function apex<C extends CardNumbers>(card: C, g: AugmentGameData | undefined): C {
+  const haste = g && valueOf(g, 'ItemHaste');
+  if (!g || haste === undefined || !(haste > 0)) return { ...card, status: 'partial', ops: [], not_modelled: g ? 'ملف الإصدار لا يحمل ItemHaste بصيغة مقروءة؛ أثر Apex Inventor غير محسوب' : 'بيانات Apex Inventor من ملف الإصدار غير محمّلة؛ أثره غير محسوب' };
+  return { ...card, status: 'partial', ops: [{ op: 'add', stat: 'item_haste', value: haste }], not_modelled: APEX_LIMITS };
+}
+const APEX_LIMITS = 'تسارع العناصر يقصّر هنا تبريد Spellblade (حين يساوي تبريد الأثر SpellbladeCooldown في ملف الغرض) وتبريد قدرة Ravenous Hydra وProfane Hydra النشطة (Cooldown في ملفهما) وحدهما؛ تبريدات بقية الأغراض غير محسوبة، فقيمتها مع أغراض أخرى ناقصة لا صفر';
+
 /** Readers by card id (BEES!!! is 3086 in the Mayhem list; the item 3086 is Zeal, another table). */
-const READERS: Record<number, <C extends CardNumbers>(card: C, g: AugmentGameData | undefined) => C> = { 3086: bees, 2062: echo, 1019: dashing };
+const READERS: Record<number, <C extends CardNumbers>(card: C, g: AugmentGameData | undefined) => C> = { 3086: bees, 2062: echo, 1019: dashing, 1002: apex };
 
 /** The card with the numbers of the loaded patch's file when it has a reader; other cards as they are. */
 export function cardFromFiles<C extends CardNumbers>(card: C, game: AugmentGameData | undefined): C {

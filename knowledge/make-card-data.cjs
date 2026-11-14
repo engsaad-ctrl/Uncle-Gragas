@@ -43,7 +43,21 @@ const cardsRead = [1, 2, 3].flatMap((n) => lines(`knowledge/augment-math-${n}.js
   }
   return { id: c.id, name: c.name, status: file ? file.status : c.status, ops, ...(need ? { need: { class: need.class, items: need.items ?? null, ability_kind: need.ability_kind ?? null } } : {}), ...(c.needs ? { needs: c.needs } : {}), ...(notModelled ? { not_modelled: notModelled } : {}) };
 });
-const cards = mergeRows(cardsRead, overrides.cards, overrides.expectedInputs.cards);
+const cardsMerged = mergeRows(cardsRead, overrides.cards, overrides.expectedInputs.cards);
+// T051: when each op of a card tagged on_death acts (knowledge/card-eligibility.jsonl): live, death or unknown. Each row names every op, in order, by
+// its op and trigger or stat, so a changed card stops the generator instead of marking the wrong op.
+const eligibility = new Map(lines('knowledge/card-eligibility.jsonl').map((r) => [r.id, r]));
+const cards = cardsMerged.map((c) => {
+  const e = eligibility.get(c.id);
+  if (!e) return c;
+  if (e.name !== c.name || e.ops.length !== c.ops.length) throw new Error(`card-eligibility does not match card ${c.id}`);
+  return { ...c, ops: c.ops.map((x, i) => {
+    const m = e.ops[i];
+    if (!['live', 'death', 'unknown'].includes(m.eligibility) || Object.entries(m.match).some(([k, v]) => x[k] !== v)) throw new Error(`card-eligibility op ${i} does not match card ${c.id}`);
+    return { ...x, eligibility: m.eligibility, eligibilityWhy: m.why };
+  }) };
+});
+for (const id of eligibility.keys()) if (!cardsMerged.some((c) => c.id === id)) throw new Error(`card-eligibility names no card ${id}`);
 // Passives read again with the game's calculation records; these replace the first reading.
 const passiveAgain = new Map([1, 2].flatMap((n) => lines(`knowledge/champion-math-file-${n}.jsonl`)).map((p) => [p.id, p]));
 const passivesRead = [1, 2, 3, 4, 5, 6].flatMap((n) => lines(`knowledge/champion-math-${n}.jsonl`)).map((p) => passiveAgain.get(p.id) ?? p).map((p) => ({ id: p.id, ops: p.ops ?? [] }));
@@ -66,7 +80,7 @@ const itemShare = (needs) => {
   if (/energized attacks only/i.test(n)) return 0.09;
   return 1;
 };
-const scaleOp = (x, share) => (x.op === 'damage_amp' || x.op === 'mult' ? { ...x, factor: 1 + (x.factor - 1) * share } : x.op === 'add' && typeof x.value === 'number' ? { ...x, value: x.value * share } : x.op === 'proc' && share < 1 ? { ...x, damage: Object.fromEntries(Object.entries(x.damage).map(([k, v]) => [k, typeof v === 'number' ? v * share : { min: v.min * share, max: v.max * share }])) } : x);
+const scaleOp = (x, share) => (x.op === 'damage_amp' || x.op === 'mult' ? { ...x, factor: 1 + (x.factor - 1) * share } : x.op === 'add' && typeof x.value === 'number' ? { ...x, value: x.value * share } : x.op === 'proc' && share < 1 ? { ...x, damage: Object.fromEntries(Object.entries(x.damage).map(([k, v]) => [k, typeof v === 'number' ? v * share : 'level1' in v ? { ...v, level1: v.level1 * share, per: v.per * share } : { min: v.min * share, max: v.max * share }])) } : x);
 const reread = new Map(lines('knowledge/item-math-3.jsonl').map((p) => [p.id, p]));
 const itemsRead = [1, 2].flatMap((n) => lines(`knowledge/item-math-${n}.jsonl`)).map((p) => reread.get(p.id) ?? p).filter((p) => p.ops?.length).map((p) => ({ id: p.id % 10000, ops: p.ops.flatMap((x) => {
   const share = itemShare(x.needs);
@@ -90,7 +104,7 @@ export const CARD_NUMBERS: (CardNumbers & { need?: CardNeed })[] = ${JSON.string
 
 export const PASSIVE_NUMBERS: { id: number; ops: CardOp[] }[] = ${JSON.stringify(passives)} as { id: number; ops: CardOp[] }[];
 
-export const SPELL_HITS: Record<string, { hits: number; calc?: string; targetBonusHealth?: boolean; notModelled?: string }> = ${JSON.stringify(hits)};
+export const SPELL_HITS: Record<string, { hits: number; calc?: string; targetBonusHealth?: boolean; notModelled?: string; rate?: 'second'; tick?: number; flat?: string; healthUnit?: 'percent' }> = ${JSON.stringify(hits)};
 export const ITEM_NUMBERS: { id: number; ops: CardOp[] }[] = ${JSON.stringify(items)} as { id: number; ops: CardOp[] }[];
 `;
 let output = 'src/ai/cardMathData.ts', check = false;

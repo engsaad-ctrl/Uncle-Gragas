@@ -8,14 +8,17 @@ import { AUGMENT_URLS, loadAugments } from '../../src/texts/augmentsLoader.js';
 let cacheDir: string;
 let calls: string[];
 
-function fakeFetch(version: string) {
+// T050: the sample's kiwi with its augment pool, as the real kiwi.bin has it (an object with an AugmentList of links to its AugmentData).
+const kiwiWithPool = { ...fx.bins.kiwi, '{51c6c2b4}': { __type: '{eb5adb26}', AugmentList: Object.keys(fx.bins.kiwi) } };
+
+function fakeFetch(version: string, kiwi: unknown = kiwiWithPool) {
   const bodies = new Map<string, unknown>([
     [AUGMENT_URLS.version, { version }],
     [AUGMENT_URLS.listAr, fx.listAr],
     [AUGMENT_URLS.listEn, fx.listEn],
     [AUGMENT_URLS.strings, { entries: fx.strings }],
     [AUGMENT_URLS.bins[0], fx.bins.cherry],
-    [AUGMENT_URLS.bins[1], fx.bins.kiwi],
+    [AUGMENT_URLS.bins[1], kiwi],
     [AUGMENT_URLS.bins[2], fx.bins.kiwi_jade],
     [AUGMENT_URLS.bins[3], fx.bins.map30],
   ]);

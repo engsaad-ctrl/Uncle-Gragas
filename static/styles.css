@@ -498,12 +498,22 @@ body.overlay.large .ov-main.both .ov-list { grid-template-columns: repeat(2, min
 .ov-sec h3 { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--text); }
 .ov-icons { gap: 6px; }
 .ov-icons .ic { width: 40px; height: 40px; }
-.ov-adapted { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin-top: 8px; }
+.ov-adapted { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 8px; margin-top: 8px; }
 .ov-adapted-row { grid-template-columns: 44px 1fr; padding: 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; }
 .ov-adapted-row .ic { width: 44px; height: 44px; }
 .ov-adapted-row b { font-size: 14px; }
 .ov-adapted-row small { font-size: 11.5px; line-height: 1.5; }
-#ov-walk .ov-offers { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.ov-offers { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+/* T036: the engine on the main page; what is optional folds under a summary line. */
+.ov-fold > summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); padding: 2px 0; }
+.ov-fold > summary:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 2px; }
+.ov-fold[open] > summary { margin-bottom: 8px; }
+.ov-state { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+.ov-adapted-row.next { border-color: var(--accent, var(--line)); }
+.ov-offer-group { grid-column: 1 / -1; margin: 6px 0 0; font-weight: 700; }
+.ov-tradeoff { grid-column: 1 / -1; margin: 4px 0 0; color: var(--text); }
+.ov-adapted-row .ov-name { min-width: 0; overflow-wrap: anywhere; }
+.ov-build .search input { width: 100%; min-width: 0; box-sizing: border-box; }
 .ov-ability-target { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .ov-ability-target select { font: inherit; max-width: 100%; }
 .stack-field { display: flex; align-items: center; gap: 8px; margin: 6px 0; } .stack-field input { width: 90px; padding: 4px 6px; font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; }

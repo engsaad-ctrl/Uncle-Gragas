@@ -1,0 +1,663 @@
+{
+  "version": "16.22",
+  "sourceSha256": "577921766e39b737ef275bac97ca3ea5eefabeb1decea475203cc31c41ad4d8b",
+  "path": "Characters/Galio/Spells/GalioWAbility/GalioW",
+  "bin": {
+    "rec": {
+      "baseHPModifiable": {
+        "baseValue": 600,
+        "__type": "ModifiableFloat"
+      },
+      "hpPerLevelModifiable": {
+        "baseValue": 126,
+        "__type": "ModifiableFloat"
+      },
+      "baseStaticHPRegenModifiable": {
+        "baseValue": 1.600000023841858,
+        "__type": "ModifiableFloat"
+      },
+      "hpRegenPerLevelModifiable": {
+        "baseValue": 0.1599999964237213,
+        "__type": "ModifiableFloat"
+      },
+      "primaryAbilityResource": {
+        "arType": 0,
+        "{726ee5cd}": {
+          "baseValue": 410,
+          "__type": "ModifiableFloat"
+        },
+        "{6216bf7b}": {
+          "baseValue": 40,
+          "__type": "ModifiableFloat"
+        },
+        "{c4ab3550}": {
+          "baseValue": 1.899999976158142,
+          "__type": "ModifiableFloat"
+        },
+        "{3a509002}": {
+          "baseValue": 0.14000000059604645,
+          "__type": "ModifiableFloat"
+        },
+        "__type": "AbilityResourceSlotInfo"
+      },
+      "baseDamageModifiable": {
+        "baseValue": 59,
+        "__type": "ModifiableFloat"
+      },
+      "damagePerLevelModifiable": {
+        "baseValue": 3.5,
+        "__type": "ModifiableFloat"
+      },
+      "baseArmorModifiable": {
+        "baseValue": 24,
+        "__type": "ModifiableFloat"
+      },
+      "armorPerLevelModifiable": {
+        "baseValue": 4.699999809265137,
+        "__type": "ModifiableFloat"
+      },
+      "baseMR": {
+        "baseValue": 32,
+        "__type": "ModifiableFloat"
+      },
+      "mrPerLevel": {
+        "baseValue": 2.049999952316284,
+        "__type": "ModifiableFloat"
+      },
+      "baseMoveSpeedModifiable": {
+        "baseValue": 340,
+        "__type": "ModifiableFloat"
+      },
+      "attackRangeModifiable": {
+        "baseValue": 150,
+        "__type": "ModifiableFloat"
+      },
+      "attackSpeedModifiable": {
+        "baseValue": 0.625,
+        "__type": "ModifiableFloat"
+      },
+      "attackSpeedRatioModifiable": {
+        "baseValue": 0.625,
+        "__type": "ModifiableFloat"
+      },
+      "attackSpeedPerLevelModifiable": {
+        "baseValue": 1.5,
+        "__type": "ModifiableFloat"
+      },
+      "basicAttack": {
+        "mAttackTotalTime": 1.600000023841858,
+        "mAttackCastTime": 0.33000001311302185,
+        "mAttackProbability": 1,
+        "__type": "AttackSlotData"
+      },
+      "extraAttacks": [
+        {
+          "__type": "AttackSlotData"
+        }
+      ],
+      "critAttacks": [
+        {
+          "mAttackTotalTime": 1.600000023841858,
+          "mAttackCastTime": 0.33000001311302185,
+          "mAttackName": "GalioCritAttack",
+          "__type": "AttackSlotData"
+        }
+      ],
+      "spells": [
+        "Characters/Galio/Spells/GalioQAbility/GalioQ",
+        "Characters/Galio/Spells/GalioWAbility/GalioW",
+        "Characters/Galio/Spells/GalioEAbility/GalioE",
+        "Characters/Galio/Spells/GalioRAbility/GalioR"
+      ],
+      "__type": "CharacterRecord"
+    },
+    "Characters/Galio/Spells/GalioWAbility/GalioW": {
+      "__type": "SpellObject",
+      "mSpell": {
+        "mAffectsTypeFlags": 6666,
+        "mSpellTags": [
+          "Trait_ImmobilizingCCSpell",
+          "Trait_DamageAbility",
+          "Trait_RecastOrReplaceSpell",
+          "Trait_PassiveShield",
+          "Trait_Parry",
+          "Trait_SignatureSpell",
+          "Trait_Low_Damage",
+          "Trait_AoE"
+        ],
+        "DataValues": [
+          {
+            "name": "MinimumWBaseDamage",
+            "values": [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60,
+              70
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "MaximumWBaseDamage",
+            "values": [
+              30,
+              60,
+              90,
+              120,
+              150,
+              180,
+              210
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "PassiveShieldHealthRatio",
+            "values": [
+              0.05999999865889549,
+              0.07500000298023224,
+              0.09000000357627869,
+              0.10499999672174454,
+              0.11999999731779099,
+              0.13500000536441803,
+              0.15000000596046448
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "MRRatio",
+            "values": [
+              0.0007999999797903001,
+              0.0007999999797903001,
+              0.0007999999797903001,
+              0.0007999999797903001,
+              0.0007999999797903001,
+              0.0007999999797903001,
+              0.0007999999797903001
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "PhysicalDRPercent",
+            "values": [
+              0.5,
+              0.5,
+              0.5,
+              0.5,
+              0.5,
+              0.5,
+              0.5
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "DamageReductionBase",
+            "values": [
+              0.20000000298023224,
+              0.25,
+              0.30000001192092896,
+              0.3499999940395355,
+              0.4000000059604645,
+              0.44999998807907104,
+              0.5
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "MaxChargeDuration",
+            "values": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "SelfSlowPercent",
+            "values": [
+              15,
+              15,
+              15,
+              15,
+              15,
+              15,
+              15
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "CCDurationMin",
+            "values": [
+              0.5,
+              0.5,
+              0.5,
+              0.5,
+              0.5,
+              0.5,
+              0.5
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "HpRatio",
+            "values": [
+              0.00009999999747378752,
+              0.00009999999747378752,
+              0.00009999999747378752,
+              0.00009999999747378752,
+              0.00009999999747378752,
+              0.00009999999747378752,
+              0.00009999999747378752
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "CCDurationMax",
+            "values": [
+              1.5,
+              1.5,
+              1.5,
+              1.5,
+              1.5,
+              1.5,
+              1.5
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "DRLingerDuration",
+            "values": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "__type": "SpellDataValue"
+          },
+          {
+            "name": "ApRatio",
+            "values": [
+              0.00039999998989515007,
+              0.00039999998989515007,
+              0.00039999998989515007,
+              0.00039999998989515007,
+              0.00039999998989515007,
+              0.00039999998989515007,
+              0.00039999998989515007
+            ],
+            "__type": "SpellDataValue"
+          }
+        ],
+        "DataValuesModeOverride": {
+          "cherry": {
+            "SpellDataValues": [
+              {
+                "name": "PassiveShieldHealthRatio",
+                "values": [
+                  0.05000000074505806,
+                  0.05999999865889549,
+                  0.07000000029802322,
+                  0.07999999821186066,
+                  0.09000000357627869,
+                  0.10000000149011612,
+                  0.10999999940395355
+                ],
+                "__type": "SpellDataValue"
+              },
+              {
+                "name": "CCDurationMax",
+                "values": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "__type": "SpellDataValue"
+              }
+            ],
+            "__type": "SpellDataValueVector"
+          }
+        },
+        "mSpellCalculations": {
+          "TotalPassiveShield": {
+            "mFormulaParts": [
+              {
+                "mStat": 12,
+                "mDataValue": "PassiveShieldHealthRatio",
+                "__type": "StatByNamedDataValueCalculationPart"
+              }
+            ],
+            "__type": "GameCalculation"
+          },
+          "MagicDamageReduction": {
+            "mMultiplier": {
+              "mNumber": 1,
+              "__type": "NumberCalculationPart"
+            },
+            "mFormulaParts": [
+              {
+                "mDataValue": "DamageReductionBase",
+                "__type": "NamedDataValueCalculationPart"
+              },
+              {
+                "mDataValue": "APRatio",
+                "__type": "StatByNamedDataValueCalculationPart"
+              },
+              {
+                "mStat": 6,
+                "mStatFormula": 2,
+                "mDataValue": "MRRatio",
+                "__type": "StatByNamedDataValueCalculationPart"
+              },
+              {
+                "mStat": 12,
+                "mStatFormula": 2,
+                "mDataValue": "HPRatio",
+                "__type": "StatByNamedDataValueCalculationPart"
+              }
+            ],
+            "mDisplayAsPercent": true,
+            "__type": "GameCalculation"
+          },
+          "PhysicalDamageReduction": {
+            "mMultiplier": {
+              "mDataValue": "PhysicalDRPercent",
+              "__type": "NamedDataValueCalculationPart"
+            },
+            "mModifiedGameCalculation": "MagicDamageReduction",
+            "__type": "GameCalculationModified"
+          },
+          "MinTotalDamage": {
+            "mFormulaParts": [
+              {
+                "mDataValue": "MinimumWBaseDamage",
+                "__type": "NamedDataValueCalculationPart"
+              },
+              {
+                "mCoefficient": 0.30000001192092896,
+                "__type": "StatByCoefficientCalculationPart"
+              }
+            ],
+            "__type": "GameCalculation"
+          },
+          "MaxTotalDamage": {
+            "mMultiplier": {
+              "mNumber": 3,
+              "__type": "NumberCalculationPart"
+            },
+            "mModifiedGameCalculation": "MinTotalDamage",
+            "__type": "GameCalculationModified"
+          },
+          "PassiveShieldOOCTimer": {
+            "mSimpleTooltipCalculationDisplay": 6,
+            "mFormulaParts": [
+              {
+                "mLevel1Value": 12,
+                "mBreakpoints": [
+                  {
+                    "mLevel": 6,
+                    "mAdditionalBonusAtThisLevel": -1,
+                    "__type": "Breakpoint"
+                  },
+                  {
+                    "mLevel": 11,
+                    "mAdditionalBonusAtThisLevel": -3,
+                    "__type": "Breakpoint"
+                  }
+                ],
+                "__type": "ByCharLevelBreakpointsCalculationPart"
+              }
+            ],
+            "__type": "GameCalculation"
+          },
+          "{7a7521c1}": {
+            "mMultiplier": {
+              "mNumber": 100,
+              "__type": "NumberCalculationPart"
+            },
+            "tooltipOnly": true,
+            "mModifiedGameCalculation": "MagicDamageReduction",
+            "__type": "GameCalculationModified"
+          },
+          "{c9a870dd}": {
+            "mMultiplier": {
+              "mNumber": 50,
+              "__type": "NumberCalculationPart"
+            },
+            "tooltipOnly": true,
+            "mModifiedGameCalculation": "MagicDamageReduction",
+            "__type": "GameCalculationModified"
+          }
+        },
+        "mAnimationName": "",
+        "mImgIconName": [
+          "ASSETS/Characters/Galio/HUD/Icons2D/Galio_W.dds"
+        ],
+        "spellCastTime": 0,
+        "spellTotalTime": 0,
+        "mChannelDuration": [
+          1.25,
+          1.25,
+          1.25,
+          1.25,
+          1.25,
+          1.25,
+          1.25
+        ],
+        "cooldownTime": [
+          18,
+          18,
+          17,
+          16,
+          15,
+          14,
+          14
+        ],
+        "Cooldown": {
+          "values": [
+            18,
+            18,
+            17,
+            16,
+            15,
+            14,
+            14
+          ],
+          "__type": "{0a0eddc9}"
+        },
+        "mCastRangeGrowthMax": [
+          450,
+          450,
+          450,
+          450,
+          450,
+          450,
+          450
+        ],
+        "mCastRangeGrowthDuration": [
+          1.25,
+          1.25,
+          1.25,
+          1.25,
+          1.25,
+          1.25,
+          1.25
+        ],
+        "mSpellPassives": [
+          {
+            "mBuff": "Characters/Galio/Spells/GalioWAbility/GalioWPassive",
+            "mRemoveWhenOnCooldown": false,
+            "mDisplayFlags": 0,
+            "__type": "SpellPassiveData"
+          }
+        ],
+        "mCanTriggerChargeSpellWhileDisabled": true,
+        "mCantCancelWhileWindingUp": true,
+        "mUseChargeChanneling": true,
+        "mCanMoveWhileChanneling": true,
+        "mDisableCastBar": true,
+        "alwaysSnapFacing": true,
+        "bIsToggleSpell": true,
+        "mDoNotNeedToFaceTarget": true,
+        "mHideRangeIndicatorWhenCasting": true,
+        "castRange": [
+          275,
+          275,
+          275,
+          275,
+          275,
+          275,
+          275
+        ],
+        "castRangeValues": {
+          "values": [
+            275,
+            275,
+            275,
+            275,
+            275,
+            275,
+            275
+          ],
+          "{0a3e0478}": 275,
+          "__type": "{0a0eddc9}"
+        },
+        "castConeAngle": 0,
+        "castConeDistance": 0,
+        "missileSpeed": 0,
+        "mFloatVarsDecimals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mana": [
+          50,
+          50,
+          50,
+          50,
+          50,
+          50
+        ],
+        "manaValues": {
+          "values": [
+            50,
+            50,
+            50,
+            50,
+            50,
+            50
+          ],
+          "{0a3e0478}": 50,
+          "__type": "{630af303}"
+        },
+        "mTargetingTypeData": {
+          "__type": "SelfAoe"
+        },
+        "{8958fee2}": {
+          "__type": "{8958fee2}"
+        },
+        "mDimensionBehavior": 1,
+        "mCastingBreaksStealth": true,
+        "mClientData": {
+          "mTooltipData": {
+            "mObjectName": "GalioW",
+            "mFormat": "{d7c27163}",
+            "mLocKeys": {
+              "keyName": "Spell_GalioW_Name",
+              "keySummary": "Spell_GalioW_Summary",
+              "keyTooltip": "Spell_GalioW_Tooltip"
+            },
+            "mLists": {
+              "LevelUp": {
+                "levelCount": 5,
+                "Elements": [
+                  {
+                    "type": "PassiveShieldHealthRatio",
+                    "typeIndex": 5,
+                    "multiplier": 100,
+                    "nameOverride": "Spell_ListType_ShieldHealthRatio",
+                    "Style": 1,
+                    "__type": "TooltipInstanceListElement"
+                  },
+                  {
+                    "type": "DamageReductionBase",
+                    "typeIndex": 1,
+                    "multiplier": 100,
+                    "nameOverride": "Spell_ListType_MagicDamageReduction",
+                    "Style": 1,
+                    "__type": "TooltipInstanceListElement"
+                  },
+                  {
+                    "type": "DamageReductionBase",
+                    "typeIndex": 1,
+                    "multiplier": 50,
+                    "nameOverride": "Spell_ListType_PhysicalDamageReduction",
+                    "Style": 1,
+                    "__type": "TooltipInstanceListElement"
+                  },
+                  {
+                    "type": "MaximumWBaseDamage",
+                    "nameOverride": "Spell_ListType_MaximumDamage",
+                    "__type": "TooltipInstanceListElement"
+                  },
+                  {
+                    "type": "Cooldown",
+                    "__type": "TooltipInstanceListElement"
+                  }
+                ],
+                "__type": "TooltipInstanceList"
+              }
+            },
+            "__type": "TooltipInstanceSpell"
+          },
+          "mTargeterDefinitions": [
+            {
+              "hasMaxGrowRange": true,
+              "rangeGrowthMax": {
+                "mPerLevelValues": [
+                  450,
+                  450,
+                  450,
+                  450,
+                  450,
+                  450
+                ],
+                "mValueType": 1,
+                "__type": "FloatPerSpellLevel"
+              },
+              "__type": "TargeterDefinitionRange"
+            }
+          ],
+          "mLeftClickSpellAction": 0,
+          "mRightClickSpellAction": 0,
+          "__type": "SpellDataResourceClient"
+        },
+        "__type": "SpellDataResource"
+      }
+    }
+  }
+}

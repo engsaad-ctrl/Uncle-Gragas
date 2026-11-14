@@ -1,0 +1,693 @@
+{
+ "note": "T047: these items' DataValues, cut unchanged from the frozen cache %APPDATA%/LOL_helper/game/items-v6.json (key 16.22.8348910+branch.releases-16-22.content.release)",
+ "items": {
+  "2510": {
+   "DataValues": [
+    {
+     "name": "SpellbladeCooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "AbilityHasteMod",
+     "values": [
+      20
+     ]
+    },
+    {
+     "name": "FlatHPPoolMod",
+     "values": [
+      300
+     ]
+    },
+    {
+     "name": "FlatMagicDamageMod",
+     "values": [
+      60
+     ]
+    },
+    {
+     "name": "PercentAttackSpeedMod",
+     "values": [
+      0.20000000298023224
+     ]
+    }
+   ]
+  },
+  "3053": {
+   "DataValues": [
+    {
+     "name": "LowHealthThreshold",
+     "values": [
+      0.30000001192092896
+     ]
+    },
+    {
+     "name": "ShieldDuration",
+     "values": [
+      4.5
+     ]
+    },
+    {
+     "name": "HealthPercent",
+     "values": [
+      0.10000000149011612
+     ]
+    },
+    {
+     "name": "HealPercent",
+     "values": [
+      0.019999999552965164
+     ]
+    },
+    {
+     "name": "RangedEffectiveness",
+     "values": [
+      0.6000000238418579
+     ]
+    },
+    {
+     "name": "ReductionAmount",
+     "values": [
+      0.5
+     ]
+    },
+    {
+     "name": "BaseShieldRatio",
+     "values": [
+      0.699999988079071
+     ]
+    },
+    {
+     "name": "HealDuration",
+     "values": [
+      5
+     ]
+    },
+    {
+     "name": "ADtoAD",
+     "values": [
+      0.5
+     ]
+    },
+    {
+     "name": "TimeBeforeDecay",
+     "values": [
+      0.75
+     ]
+    },
+    {
+     "name": "TenacityDuration",
+     "values": [
+      8
+     ]
+    },
+    {
+     "name": "SizeIncrease",
+     "values": [
+      0.10000000149011612
+     ]
+    },
+    {
+     "name": "TenacityAmount",
+     "values": [
+      0
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      60
+     ]
+    },
+    {
+     "name": "FlatHPPoolMod",
+     "values": [
+      400
+     ]
+    },
+    {
+     "name": "PercentTenacityItemMod",
+     "values": [
+      0.20000000298023224
+     ]
+    }
+   ]
+  },
+  "3074": {
+   "DataValues": [
+    {
+     "name": "CleaveRadius",
+     "values": [
+      350
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      10
+     ]
+    },
+    {
+     "name": "Radius",
+     "values": [
+      450
+     ]
+    },
+    {
+     "name": "ActiveADRatio",
+     "values": [
+      1
+     ]
+    },
+    {
+     "name": "VampAmp",
+     "values": [
+      1
+     ]
+    },
+    {
+     "name": "MaxProcPerAuto",
+     "values": [
+      10
+     ]
+    },
+    {
+     "name": "AbilityHasteMod",
+     "values": [
+      15
+     ]
+    },
+    {
+     "name": "FlatPhysicalDamageMod",
+     "values": [
+      65
+     ]
+    },
+    {
+     "name": "PercentLifeStealMod",
+     "values": [
+      0.11999999731779099
+     ]
+    }
+   ]
+  },
+  "3078": {
+   "DataValues": [
+    {
+     "name": "SpellbladeMultiplier",
+     "values": [
+      2
+     ]
+    },
+    {
+     "name": "MoveSpeedBonus",
+     "values": [
+      20
+     ]
+    },
+    {
+     "name": "MSDuration",
+     "values": [
+      2
+     ]
+    },
+    {
+     "name": "SpellbladeCooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "AbilityHasteMod",
+     "values": [
+      15
+     ]
+    },
+    {
+     "name": "FlatHPPoolMod",
+     "values": [
+      333
+     ]
+    },
+    {
+     "name": "FlatPhysicalDamageMod",
+     "values": [
+      36
+     ]
+    },
+    {
+     "name": "PercentAttackSpeedMod",
+     "values": [
+      0.30000001192092896
+     ]
+    }
+   ]
+  },
+  "3084": {
+   "DataValues": [
+    {
+     "name": "PerTargetCooldown",
+     "values": [
+      30
+     ]
+    },
+    {
+     "name": "BaseDamage",
+     "values": [
+      70
+     ]
+    },
+    {
+     "name": "HPRatio",
+     "values": [
+      0.05999999865889549
+     ]
+    },
+    {
+     "name": "DamageToMaxHealthRatio",
+     "values": [
+      0.05000000074505806
+     ]
+    },
+    {
+     "name": "DistanceToChampion",
+     "values": [
+      700
+     ]
+    },
+    {
+     "name": "NumTicksToTrigger",
+     "values": [
+      6
+     ]
+    },
+    {
+     "name": "RangeTrackingBuffDuration",
+     "values": [
+      5
+     ]
+    },
+    {
+     "name": "TrackerTickRate",
+     "values": [
+      0.5
+     ]
+    },
+    {
+     "name": "MaxHPRatio",
+     "values": [
+      0.05999999865889549
+     ]
+    },
+    {
+     "name": "HealthSizeThreshold",
+     "values": [
+      1000
+     ]
+    },
+    {
+     "name": "SizeAmount",
+     "values": [
+      0.029999999329447746
+     ]
+    },
+    {
+     "name": "SizeCap",
+     "values": [
+      0.30000001192092896
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      30
+     ]
+    },
+    {
+     "name": "FlatHPPoolMod",
+     "values": [
+      900
+     ]
+    },
+    {
+     "name": "PercentBaseHPRegenMod",
+     "values": [
+      1
+     ]
+    }
+   ]
+  },
+  "3100": {
+   "DataValues": [
+    {
+     "name": "SpellbladeCooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "LichBaneAPValue",
+     "values": [
+      0.44999998807907104
+     ]
+    },
+    {
+     "name": "SpellbladeADRatio",
+     "values": [
+      0.75
+     ]
+    },
+    {
+     "name": "SheenASBuff",
+     "values": [
+      0.5
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "SpellBladeDuration",
+     "values": [
+      10
+     ]
+    },
+    {
+     "name": "AbilityHasteMod",
+     "values": [
+      10
+     ]
+    },
+    {
+     "name": "PercentMovementSpeedMod",
+     "values": [
+      0.05999999865889549
+     ]
+    },
+    {
+     "name": "FlatMagicDamageMod",
+     "values": [
+      100
+     ]
+    }
+   ]
+  },
+  "3508": {
+   "DataValues": [
+    {
+     "name": "FlatManaRefund",
+     "values": [
+      15
+     ]
+    },
+    {
+     "name": "ManaRefundRatio",
+     "values": [
+      0.15000000596046448
+     ]
+    },
+    {
+     "name": "BaseADRatio",
+     "values": [
+      1.25
+     ]
+    },
+    {
+     "name": "CritChanceMultiplier",
+     "values": [
+      50
+     ]
+    },
+    {
+     "name": "SpellbladeCooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "AbilityHasteMod",
+     "values": [
+      20
+     ]
+    },
+    {
+     "name": "FlatCritChanceMod",
+     "values": [
+      0.25
+     ]
+    },
+    {
+     "name": "FlatPhysicalDamageMod",
+     "values": [
+      50
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      0,
+      0,
+      60,
+      60,
+      60,
+      60,
+      0
+     ]
+    }
+   ]
+  },
+  "3742": {
+   "DataValues": [
+    {
+     "name": "MaxMovementSpeed",
+     "values": [
+      20
+     ]
+    },
+    {
+     "name": "MaxStacks",
+     "values": [
+      100
+     ]
+    },
+    {
+     "name": "BonusDamagePerStack",
+     "values": [
+      0.4000000059604645
+     ]
+    },
+    {
+     "name": "MaxStackSlowAmount",
+     "values": [
+      0
+     ]
+    },
+    {
+     "name": "MaxStackSlowDuration",
+     "values": [
+      0
+     ]
+    },
+    {
+     "name": "MaxStacksADRatio",
+     "values": [
+      1
+     ]
+    },
+    {
+     "name": "DurationToMaxStack",
+     "values": [
+      4
+     ]
+    },
+    {
+     "name": "SlowResistTooltip",
+     "values": [
+      0.15000000596046448
+     ]
+    },
+    {
+     "name": "FlatHPPoolMod",
+     "values": [
+      350
+     ]
+    },
+    {
+     "name": "PercentSlowResistMod",
+     "values": [
+      0.15000000596046448
+     ]
+    },
+    {
+     "name": "PercentMovementSpeedMod",
+     "values": [
+      0.03999999910593033
+     ]
+    },
+    {
+     "name": "FlatArmorMod",
+     "values": [
+      55
+     ]
+    }
+   ]
+  },
+  "6662": {
+   "DataValues": [
+    {
+     "name": "SlowAmount",
+     "values": [
+      0.25
+     ]
+    },
+    {
+     "name": "SlowFieldDuration",
+     "values": [
+      2
+     ]
+    },
+    {
+     "name": "AoERadius",
+     "values": [
+      300
+     ]
+    },
+    {
+     "name": "MonsterMod",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "AuraDuration",
+     "values": [
+      3
+     ]
+    },
+    {
+     "name": "RangedSlowAmount",
+     "values": [
+      0.125
+     ]
+    },
+    {
+     "name": "SpellbladeMultiplier",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "SpellbladeCooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      1.5
+     ]
+    },
+    {
+     "name": "AbilityHasteMod",
+     "values": [
+      15
+     ]
+    },
+    {
+     "name": "FlatHPPoolMod",
+     "values": [
+      300
+     ]
+    },
+    {
+     "name": "FlatArmorMod",
+     "values": [
+      50
+     ]
+    }
+   ]
+  },
+  "6698": {
+   "DataValues": [
+    {
+     "name": "LethalityAmount",
+     "values": [
+      18
+     ]
+    },
+    {
+     "name": "Cooldown",
+     "values": [
+      10
+     ]
+    },
+    {
+     "name": "CleaveRadius",
+     "values": [
+      350
+     ]
+    },
+    {
+     "name": "ActiveRadius",
+     "values": [
+      450
+     ]
+    },
+    {
+     "name": "HealthThreshold",
+     "values": [
+      0.5
+     ]
+    },
+    {
+     "name": "MaxProcPerAuto",
+     "values": [
+      10
+     ]
+    },
+    {
+     "name": "AbilityHasteMod",
+     "values": [
+      10
+     ]
+    },
+    {
+     "name": "FlatPhysicalDamageMod",
+     "values": [
+      55
+     ]
+    },
+    {
+     "name": "PhysicalLethality",
+     "values": [
+      18
+     ]
+    }
+   ]
+  }
+ }
+}

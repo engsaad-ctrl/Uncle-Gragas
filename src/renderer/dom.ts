@@ -8,7 +8,7 @@ import type { Suggestion } from '../app/suggestions.js';
 import type { ApplyResult, FlashKey } from '../lcu/apply.js';
 import type { LcuState } from '../lcu/state.js';
 import type { Advice } from '../ai/advisor.js';
-import type { AppMode, AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, Listed, OverlayData } from '../main/services.js';
+import type { AppMode, AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, Listed, OverlayData, PartnersAnswer } from '../main/services.js';
 import type { AugmentProgress } from '../ai/augmentProgress.js';
 import type { PickSnapshot } from '../main/pickLog.js';
 import type { UpdateStatus } from '../main/updater.js';
@@ -50,6 +50,8 @@ declare global {
       /** The other ways this champion's kit can be built (magic, physical, tank), besides his kit's own. */
       buildStyles(championId: number, augmentIds?: number[], progress?: AugmentProgress): Promise<Reply<('ap' | 'ad' | 'tank' | 'aphp')[]>>;
       cardValues(championId: number, augmentIds: number[], itemIds: number[], progress?: AugmentProgress, offered?: number[], style?: 'ap' | 'ad' | 'tank' | 'aphp', stacks?: number): Promise<Reply<AugmentValue[]>>;
+      /** T052: the partners of one held card in the current state (four fight readings), asked when the player opens that card's partners. */
+      cardPartners(championId: number, augmentIds: number[], itemIds: number[], focusId: number, progress?: AugmentProgress, style?: 'ap' | 'ad' | 'tank' | 'aphp', stacks?: number): Promise<Reply<PartnersAnswer>>;
       /** A labelled second build no test vouches for, when there is one. */
       experimentalBuild(championId: number, augmentIds: number[]): Promise<Reply<ExperimentalBuild | null>>;
       hasAiKey(): Promise<boolean>;
@@ -60,6 +62,10 @@ declare global {
       gameWindowMode(): Promise<Reply<number | null>>;
       setBorderless(): Promise<Reply<number | null>>;
       onOverlayShow(callback: (tab?: string) => void): void;
+      /** Main's champion, mode and match changed: the open F7 page reads its data again (T037). */
+      /** Whether the F7 window is on screen, from main (the page's own visibility stays 'visible' in the app); the browser's on the phone. */
+      onOverlayVisible(callback: (shown: boolean) => void): void;
+      onOverlayState(callback: (state: { championId: number | null; mode: 'mayhem' | 'arena' | 'aram' | null; game: number | null }) => void): void;
       /** Both teams once the game is loaded, with ranks and how they compare; null before. */
       setShareGames(on: boolean): Promise<boolean>;
       gameTeams(): Promise<Reply<GameTeams | null>>;

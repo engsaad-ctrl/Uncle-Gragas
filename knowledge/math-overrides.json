@@ -191,7 +191,7 @@
         "ability_kind": null
       },
       "needs": "10 stacks from hitting champions, each lasting 6s; 90s cooldown; only on death",
-      "not_modelled": "Needs a death at 10 stacks (each stack lasts 6s): no death trigger, so always stands in with the 90s cooldown and overcounts. Speed is only toward enemies. Revive over 4s for 35-75% max health. 25-200 adaptive force: no stat."
+      "not_modelled": "The revive and its speed and omnivamp are not counted: all three stored ops require death, which the fight does not simulate. The text requires death at 10 stacks (each stack lasts 6s), with a 90s cooldown. Speed is only toward enemies. Revive over 4s for 35-75% max health; 25-200 adaptive force has no stat representation."
     }
   ],
   "passives": [
@@ -588,6 +588,14 @@
     "Characters/Sett/Spells/SettRAbility/SettR": {
       "hits": 1,
       "targetBonusHealth": true
+    },
+    "Characters/Amumu/Spells/AuraofDespairAbility/AuraofDespair": {
+      "hits": 1,
+      "rate": "second",
+      "tick": 0.5,
+      "flat": "BaseDamage",
+      "healthUnit": "percent",
+      "notModelled": "Amumu W: يُحسب الضرر نبضةً كل نصف ثانية مدة التفعيل؛ موعد النبضة الأولى بعد التفعيل غير موجود في ملف اللعبة، وافتُرض بعد نصف ثانية"
     }
   },
   "items": [
@@ -1093,7 +1101,10 @@
       "950": null
     },
     "spellHits": {
-      "Characters/Sett/Spells/SettRAbility/SettR": null
+      "Characters/Sett/Spells/SettRAbility/SettR": null,
+      "Characters/Amumu/Spells/AuraofDespairAbility/AuraofDespair": {
+        "hits": 14
+      }
     },
     "items": {
       "3004": {

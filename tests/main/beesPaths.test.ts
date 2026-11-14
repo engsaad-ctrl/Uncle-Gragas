@@ -32,7 +32,9 @@ vi.mock('../../src/texts/augmentsLoader.js', async () => {
   const entry = { id: 3086, augmentNameId: 'BEES', nameTRA: 'BEES!!!', augmentSmallIconPath: 'x.png', rarity: 'kGold' };
   return {
     loadAugments: async () => {
-      const [text] = await buildAugmentTexts({ listAr: [entry], listEn: [entry], bins: [augmentDataOnly(bin)], strings: {} });
+      // The fixture cuts BEES's records, not the file's pool; its Mayhem membership (kiwi pool, T050) is given as the loader keeps it.
+      const pool = { __type: 'AugmentPool' as const, source: 'kiwi' as const, ids: [3086], unresolved: 0 };
+      const [text] = await buildAugmentTexts({ listAr: [entry], listEn: [entry], bins: [augmentDataOnly(bin), [pool]], strings: {} });
       return { version: 'test', stale: false, augments: [{ ...text!, game: fixture.withGame ? text!.game : undefined }] };
     },
   };

@@ -15,6 +15,7 @@ import { enemiesInGame } from '../lcu/state.js';
 import { liveSnapshot, MatchEpoch, type LiveSnapshot } from '../lcu/liveGame.js';
 import { parseAugmentProgress } from '../ai/augmentProgress.js';
 import { createPickDesk, readActive, withPickLog } from './pickLog.js';
+import { markableInMayhem } from '../texts/augments.js';
 import type { Position } from '../stats/opgg.js';
 import { errorLog } from './errorLog.js';
 import { gameWindowRect } from './gameWindow.js';
@@ -134,8 +135,17 @@ const watcher = new LcuWatcher({ find: findClient, connect: (c) => lcuGetter(c),
   if (started) void followGame();
   else if (state.phase !== 'InProgress') overlay.setGame(null);
   mainWindow?.webContents.send('lcu:state', state);
+  // The open F7 page follows a new champion, mode or match without a reload (T037); level and items keep their own 10 s read.
+  const now = overlayIdentity();
+  if (now.key !== sentIdentity) { sentIdentity = now.key; overlay.notify(now.state); }
 });
 handle('lcu:state', () => watcher.state);
+let sentIdentity = '';
+function overlayIdentity() {
+  const state = { championId: lastPick?.championId ?? null, mode: watcher.state.mode ?? lastPick?.mode ?? null, game: matchEpoch.value ?? null };
+  return { state, key: JSON.stringify(state) };
+}
+handle('overlay:state', () => overlayIdentity().state);
 // The window only names the page (champion, mode, lane); the build sent to the client is composed here.
 // One write at a time: two overlapping applies would both delete and re-create the rune page.
 let applying: Promise<unknown> = Promise.resolve();
@@ -246,7 +256,7 @@ const picks = createPickDesk({
   champion: () => lastPick?.championId,
   active: activeMayhem,
   readLive: async (id) => { const p = await playerNow(id, true); return p && { level: p.level, belowThree: p.belowThree }; },
-  knownAugment: async (id) => (await services.augments()).augments.some((a) => a.ids.includes(id) && a.modes.includes('mayhem')),
+  knownAugment: async (id) => markableInMayhem((await services.augments()).augments, id), // T050: by its pools, not its id's size
 });
 handle('picks:mark', (_e, game: unknown, championId: unknown, id: unknown, on: unknown) => reply(() => picks.mark(game, championId, id, on)));
 handle('picks:declare', (_e, game: unknown, championId: unknown) => reply(async () => picks.declare(game, championId)));
@@ -290,6 +300,16 @@ handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemId
     const parsed = parseAugmentProgress(progress), player = await playerNow(id);
     const timing = withLog(id, parseIds(augmentIds), player?.level === undefined ? parsed : { ...parsed, level: player.level, ...(player.ranks ? { abilityRanks: player.ranks } : {}) });
     return services.cardValues(id, parseIds(augmentIds), player?.items ?? (Array.isArray(itemIds) ? parseIds(itemIds) : []), await teamsNow(), timing, offered === undefined ? [] : parseIds(offered, 3), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
+  }),
+);
+// T052: one held card's partners, for the same state the card values read (the live level, ranks and items when the game is running).
+handle('build:partners', (_e, championId: unknown, augmentIds: unknown, itemIds: unknown, focusId: unknown, progress: unknown, style: unknown, stacks: unknown) =>
+  reply(async () => {
+    const [id] = parseIds([championId]);
+    const [focus] = parseIds([focusId]);
+    const parsed = parseAugmentProgress(progress), player = await playerNow(id);
+    const timing = withLog(id, parseIds(augmentIds), player?.level === undefined ? parsed : { ...parsed, level: player.level, ...(player.ranks ? { abilityRanks: player.ranks } : {}) });
+    return services.cardPartners(id, parseIds(augmentIds), player?.items ?? (Array.isArray(itemIds) ? parseIds(itemIds) : []), focus, await teamsNow(), timing, style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
   }),
 );
 handle('build:experimental', (_e, championId: unknown, augmentIds: unknown) =>

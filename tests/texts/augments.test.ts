@@ -55,11 +55,12 @@ describe('buildAugmentTexts', () => {
     expect(a.rarity).toBe('prismatic');
   });
 
-  it('labels ids >= 1000 as Mayhem', () => {
-    expect(byId.get(1327)!.modes).toEqual(['mayhem']);
+  it('gives no mode to an id >= 1000 that no loaded pool lists: unknown, not Mayhem by its size (T050; these raw bins carry no pool)', () => {
+    expect(byId.get(1327)!.modes).toEqual([]);
+    expect(byId.get(1327)!.pools).toEqual({});
   });
 
-  it('labels ids < 1000 as Arena, merges identical twins and drops "???" placeholders', async () => {
+  it('labels modes from the pools (kiwi Mayhem, cherry Arena), merges identical twins with each id keeping its own pools, and drops "???" placeholders', async () => {
     const entry = (id: number, augmentNameId: string, nameTRA: string): AugmentListEntry => ({
       id, augmentNameId, nameTRA, augmentSmallIconPath: '/lol-game-data/assets/x.png', rarity: 'kGold',
     });
@@ -73,10 +74,11 @@ describe('buildAugmentTexts', () => {
         entry(3176, 'GoH_PentakillAug', 'GoH_PentakillAug_Generic_BlankName'),
       ],
       listEn: [entry(3176, 'GoH_PentakillAug', '   ')],
-      bins: [{ a: data(54, 'same'), b: data(1054, 'same'), c: data(87, 'arena'), d: data(1087, 'mayhem') }],
+      bins: [{ a: data(54, 'same'), b: data(1054, 'same'), c: data(87, 'arena'), d: data(1087, 'mayhem') },
+        [{ __type: 'AugmentPool', source: 'kiwi', ids: [1054, 1087, 3176], unresolved: 0 }, { __type: 'AugmentPool', source: 'cherry', ids: [54, 87], unresolved: 0 }]],
       strings: { same: 'نص واحد', arena: 'نص الأرينا', mayhem: 'نص مايهم' },
     });
-    expect(r.filter((a) => a.name === 'أستاذ').map((a) => [a.modes, a.ids])).toEqual([[['arena', 'mayhem'], [54, 1054]]]);
+    expect(r.filter((a) => a.name === 'أستاذ').map((a) => [a.id, a.modes, a.ids, a.pools])).toEqual([[1054, ['arena', 'mayhem'], [1054, 54], { 54: ['cherry'], 1054: ['kiwi'] }]]); // T050 v4: the Mayhem id leads
     expect(r.filter((a) => a.name === 'إعصار').map((a) => a.modes).sort()).toEqual([['arena'], ['mayhem']]);
     expect(r.some((a) => a.name === '???')).toBe(false);
     expect(r.some((a) => a.id === 3176)).toBe(false); // the game's blank-named placeholder

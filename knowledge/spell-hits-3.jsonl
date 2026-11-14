@@ -28,3 +28,4 @@
 {"path":"Characters/Zac/Spells/ZacQAbility/ZacQ","hits":1,"calc":"TotalDamage","why":"360 needs a second enemy thrown into the first; one target takes 180"}
 {"path":"Characters/Zoe/Spells/ZoeQAbility/ZoeQ","hits":1,"calc":"TotalDamageTooltip","why":"largest number needs a long straight flight"}
 {"path":"Characters/Zoe/Spells/ZoeEAbility/ZoeE","hits":2,"why":"the hit plus the doubled break damage, both 230"}
+{"path":"Characters/Galio/Spells/GalioWAbility/GalioW","hits":1,"calc":"MinTotalDamage","why":"Codex's Min/Max decision (2026-11-13): a declared scenario of releasing without extra charge. MaxTotalDamage (180 at rank 5) needs the full 2 s channel (MaxChargeDuration); MinTotalDamage (60) is the release with no extra charge. The engine's own Math.max was taking the charged number for every cast.","notModelled":"Galio W: يفترض المحرك تحرير الدرع بأدنى شحن؛ زيادة الضرر بالشحن الكامل ومدة الصمود وتقليل الضرر التابعين لها غير ممثلة"}

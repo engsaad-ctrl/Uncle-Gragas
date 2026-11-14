@@ -13,8 +13,8 @@ export const WEB_PORT = 7317;
 /** The overlay's calls only: no keys, no settings, nothing sent to the game client. */
 export const WEB_CHANNELS = new Set([
   'overlay:data', 'ai:build', 'ai:last', 'mayhem:fit', 'mayhem:effects', 'mayhem:open', 'items:list', 'champions:list', 'game:teams',
-  'build:engine', 'build:stackBase', 'build:styles', 'build:cardvalues', 'build:experimental',
-  'game:progress',
+  'build:engine', 'build:stackBase', 'build:styles', 'build:cardvalues', 'build:partners', 'build:experimental',
+  'game:progress', 'overlay:state',
 ]);
 
 const TYPES: Record<string, string> = {

@@ -1,0 +1,77 @@
+{
+ "note": "T047: ARAM_ApexInventor and its root spell, cut unchanged from kiwi.bin.json",
+ "source": "https://raw.communitydragon.org/16.22/game/maps/modespecificdata/kiwi.bin.json",
+ "version": "16.22.8348910+branch.releases-16-22.content.release",
+ "sha256": "d6422cef83eedad4da8f782d1eb1351482558a70265970f7db0d59cc05d67eb5",
+ "fetched": "2026-11-12T04:44:22Z",
+ "bin": {
+  "Maps/ModeSpecificData/Augments/ARAM_ApexInventor": {
+   "AugmentNameId": "ARAM_ApexInventor",
+   "NameTra": "Kiwi_ARAM_ApexInventor_Name",
+   "DescriptionTra": "Cherry_ApexInventor_Tooltip",
+   "AugmentTooltipTra": "Cherry_ApexInventor_Tooltip",
+   "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_ApexInventor/Augment_ARAM_ApexInventor",
+   "AugmentLargeIconPath": "assets/ux/cherry/augments/icons/apexinventor_large.tex",
+   "AugmentSmallIconPath": "assets/ux/cherry/augments/icons/apexinventor_small.tex",
+   "AugmentDisplayTags": [
+    4,
+    5
+   ],
+   "rarity": 1,
+   "AugmentPlatformId": 1002,
+   "__type": "AugmentData"
+  },
+  "Maps/ModeSpecificData/Augments/ARAM_ApexInventor/Augment_ARAM_ApexInventor": {
+   "ObjectName": "Augment_ARAM_ApexInventor",
+   "objectPath": "Maps/ModeSpecificData/Augments/ARAM_ApexInventor/Augment_ARAM_ApexInventor",
+   "mScriptName": "Augment_ARAM_ApexInventor",
+   "mSpell": {
+    "DataValues": [
+     {
+      "name": "ItemHaste",
+      "values": [
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "TooltipCDR",
+      "values": [
+       50,
+       50,
+       50,
+       50,
+       50,
+       50,
+       50
+      ],
+      "__type": "SpellDataValue"
+     }
+    ],
+    "mImgIconName": [
+     "ASSETS/Spells/Icons2D/Terrify.dds"
+    ],
+    "mClientData": {
+     "mTooltipData": {
+      "mObjectName": "Augment_ARAM_ApexInventor",
+      "mFormat": "{d7c27163}",
+      "mLocKeys": {
+       "keyName": "CHERRY_ApexInventor_Name",
+       "keySummary": "Cherry_ApexInventor_Tooltip"
+      },
+      "__type": "TooltipInstanceSpell"
+     },
+     "__type": "SpellDataResourceClient"
+    },
+    "__type": "SpellDataResource"
+   },
+   "__type": "SpellObject"
+  }
+ }
+}

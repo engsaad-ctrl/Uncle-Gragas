@@ -4,7 +4,11 @@ import { explainLink, linksWith } from '../ai/mechanics.js';
 import { AUGMENT_MECHANICS, ITEM_MECHANICS } from '../ai/mechanicsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 import { championRecord, compareBuilds } from '../ai/calculator.js';
-import { ATTACK_PACE, fight, needHolds, questItems, spellTraits, STACKS_AT_15 } from '../ai/cardMath.js';
+import { ATTACK_PACE, FIGHT, fight, liveCard, needHolds, questItems, spellTraits, STACKS_AT_15, type CardNumbers } from '../ai/cardMath.js';
+import { lowHealthTermOf, type LowHealthTerm } from '../ai/conditionalEffect.js';
+import { RANGE_SCENARIO, rangeAccess, type RangeAccess } from '../ai/rangeAccess.js';
+import { OWNED_FINAL_ONLY } from '../ai/itemIdentity.js';
+import { rangeState, type RangeState } from '../ai/rangeState.js';
 import { RETIRED_AUGMENTS } from '../ai/retiredAugments.js';
 import { AUGMENT_TAGS } from '../ai/augmentTags.js';
 import { tagWeight } from '../ai/tagWeight.js';
@@ -15,6 +19,7 @@ import { skillPlanOf, type KnownRanks, type SkillPlan } from '../ai/abilityRank.
 import { compareAugmentPlan, kitWithCards, type AugmentPlan } from '../ai/augmentChoice.js';
 import { explainBuild } from '../ai/buildExplanation.js';
 import { itemExplanationWords } from '../app/buildExplanation.js';
+import { partInteraction, partnerTerms, recommend } from '../ai/partners.js';
 import { enemyDpsAt, enemyTeam, fightValue, LEVEL_BY_ITEMS, mathBuild as itemsByMath, SLOTS, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
@@ -37,7 +42,7 @@ import { augmentLift, augmentLink, heroEdge, liftPoints, openStats } from '../st
 import { mcpCaller, OpggStats, type CallTool, type ChampionBuild, type Counter, type Fetched, type Pick, type MayhemAugmentStat, type ItemMap, type LanePosition, type Position } from '../stats/opgg.js';
 import { join } from 'node:path';
 import { buildAbilityDetails } from '../texts/abilityDetails.js';
-import type { AugmentGameData, AugmentText } from '../texts/augments.js';
+import { mayhemIdOf, type AugmentGameData, type AugmentText } from '../texts/augments.js';
 import { loadAugments, type AugmentsResult } from '../texts/augmentsLoader.js';
 import { withDamageTypes } from '../texts/damageTypes.js';
 import { loadCdragonJson, type Locale } from '../texts/cdragon.js';
@@ -79,6 +84,46 @@ export interface OverlayData {
   augments: (AugmentText & { rank?: number; popularity?: number; tierLabel?: string; unmeasuredReason?: string })[];
 }
 
+/** T053: a card's basic attack range +N, before and after (held cards first), and the declared example scenario's in-range window (rangeAccess).
+ * Today for melee champions only (decided before any range gain); otherwise `supported` is false with the reason, and no number is made up. */
+export interface RangeTerm {
+  supported: boolean; reason?: string;
+  /** T061: why there is no number (src/ai/rangeState.ts): ranged by his base range, ranged at this level (his passive), his form not read, or his range not read. */
+  reasonKind?: 'ranged' | 'ranged-at-level' | 'form-unread' | 'range-unread';
+  /** T061: where his range now comes from, and the level it was read at (the row says when that level is estimated). */
+  source?: Extract<RangeState, { known: true }>['source']; level?: number;
+  before?: number; after?: number; delta?: number;
+  /** The base move speed from the champion's file: the scenario's declared speed, not his speed in the match. */
+  moveSpeed?: number;
+  access?: RangeAccess;
+}
+
+/** T052: the smallest part interaction read as a reason (fight numbers are in hundreds or thousands; below this is rounding). */
+export const PART_EPS = 1e-6;
+/** T052: one partner row. G (this card's gain in the full state, the offer's value at this level) and I (the extra effect tied to the focused card,
+ * in fight-value units, never shown to the player); the same extra effect per part of the fight (damage, effective health, his own healing and
+ * shields, the healing his abilities give, enemy healing denied), never added up; whether a part explains it; the class of the pair from the whole
+ * state: settled, open (conditions to hold) or limited (partial, unknown or not-modelled parts, or estimates), with its reasons; and the attacks
+ * the engine assumes in these readings, from any card (T048). */
+export interface PartnerRow {
+  id: number; group: 'settled' | 'open' | 'limited'; gain: number; interaction: number; explained: boolean;
+  conditions: string[]; limits: string[];
+  parts: { damage: number; effectiveHp: number; healedHp: number; abilityHealing: number; healingDenied: number };
+  assumedAttacks: string[]; attacksFromFocus: boolean;
+}
+/** T052: the partners of one held card in the current state. `unread`: the focused card has no live effect, so no list is made up. One pool
+ * (the Mayhem cards the offers could show) is counted once: pool = noNumbers + notApplicable + noLiveEffect + rangeOnly + notComparable + compared,
+ * and compared = settled + open + limited; unexplained counts the compared rows with G and I above zero that no part explains (never listed). */
+export interface PartnersAnswer {
+  focus: number; focusName: string; level: number; estimatedLevel: boolean; unread?: string;
+  settled: PartnerRow[]; open: PartnerRow[]; limited: PartnerRow[];
+  /** The state's own limits (estimates, and the held cards' partial or unknown parts), said once above the lists. */
+  stateLimits: string[];
+  coverage: { pool: number; noNumbers: number; notApplicable: number; noLiveEffect: number; rangeOnly: number; notComparable: number; compared: number; settled: number; open: number; limited: number; unexplained: number };
+  /** The fights this answer ran, and the milliseconds it took (the contract's cost record). */
+  fights: number; ms: number;
+}
+
 export interface AugmentValue {
   id: number; damage: number; health: number; value: number; currentValue: number;
   certain: boolean; missing: string | null;
@@ -87,6 +132,17 @@ export interface AugmentValue {
   level: number; untilLevel: number; estimatedLevel: boolean; estimatedHistory: boolean;
   plan?: AugmentPlan & PlanOwned & PlanReasons;
   planError?: string;
+  /** T048: the value counts attacks the fight assumes, not attacks read from the match. A card on attacks or on-hit makes a champion whose kit
+   *  doesn't attack in the fight attack (kitWithCards). 'offered': this card does it; before/after are the attacks at the stage's first level
+   *  in the two fights already run for the value. 'held': a held card already does it, so every value here counts them; after is that count. */
+  attacksAssumed?: { by: 'offered' | 'held'; names: string[]; level: number; seconds: number; before?: number; after: number }; // before/after: attacks at the stage's first level, without and with this card
+  /** T053: this card's attack range term, shown beside the fight value and never folded into it (melee today; see RangeTerm). */
+  range?: RangeTerm;
+  /** T053: the range the held cards already give, the same on every row: the page shows it once, in the state summary. */
+  heldRange?: { base: number; total: number; names: string[] };
+  /** T072: a shield that waits for his own health to fall (Escape Plan), said as a declared condition beside the value and never folded into it,
+   *  value, currentValue, plan or certain; read from the card's ops (src/ai/conditionalEffect.ts), with no extra fight. */
+  lowHealth?: LowHealthTerm;
 }
 /** The held items each of a card's two searches kept, in its order: mathBuild's 'owned' rows, which open its result (T015). It describes the
  *  search's input as main used it (the live items, mapped by mathBuild), so the page compares the upcoming items past it, not past its own list.
@@ -670,7 +726,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const v = await gameVersion();
     const [all, bin, shop, shopNames] = await Promise.all([augments(), fightBin(v, entry.alias), loadGameItems(game, v), items('mayhem')]);
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
-    const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined;
+    const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number }; baseMoveSpeedModifiable?: { baseValue?: number } } | undefined;
     const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id] } : undefined; };
     const stage = augmentStage(augmentIds, progress);
     const held = augmentIds.flatMap((id) => { const card = numbersOf(id); return card ? [{ ...card, acquiredLevel: stage.acquiredLevels[id], pickPlace: pickPlaceOf(id, augmentIds, progress) }] : []; });
@@ -683,8 +739,40 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     // His kit's traits, and what his own files and kit say: a moving skill (dash), an immobilizing one, heals or shields on allies (needHolds ability_kind).
     const facts = { owned: knownItems.flatMap((id) => shopNames.list.find((i) => i.id === id)?.enName ?? []), ranged: (record?.attackRangeModifiable?.baseValue ?? 0) >= 300, traits: [...(kit?.traits ?? []), ...spellTraits(bin), ...(base.kit.buffsAllies ? ['heal_ally', 'shield_ally'] : [])] };
     const facts2 = await teamFacts(teams, shop);
-    const place = { ...teamPlace({ championId, bin, shop, kit: base.kit, passive: base.passive, enemy: facts2.enemy, allies: facts2.allies, style }), enemyDps: enemyDpsAt(base.level) };
+    // T078: a card is valued over the whole fight, never the burst window (the owner, 2026-11-13: «No, full fight»). teamPlace gives a burst kit a
+    // 3-second window, chosen on his item cases; a card differs because what it buys is a second rotation of abilities, which lands outside those
+    // three seconds. Items and the build search keep the window — this place is only for the card values below.
+    const withWindow = { ...teamPlace({ championId, bin, shop, kit: base.kit, passive: base.passive, enemy: facts2.enemy, allies: facts2.allies, style }), enemyDps: enemyDpsAt(base.level) };
+    const place = { ...withWindow, window: undefined };
     // Keep inventory fixed until the player actually buys. No future augment is assumed to arrive.
+    // T048: does a card make him attack only because it is on attacks (kitWithCards)? Not for a kit with its own pace (ATTACK_PACE).
+    const ownKit = fightKitOf(championId);
+    const assumes = (kit: { attacks: boolean }, withCards: { attacks: boolean }) => ownKit.attackPace === undefined && !kit.attacks && withCards.attacks;
+    const heldAttacking = assumes(ownKit, base.kit) ? held.filter((c) => kitWithCards(ownKit, [c]).attacks).map((c) => c.name) : [];
+    // T053: attack range, from the cards' live `add range` ops (T051: a death or unknown op gives no range or melee) (the melee values the files give). Melee is decided before any range gain: his own
+    // range under 300, or a held card that makes him melee (its range is then the engine's 200). Held range comes first, so an offer adds to it.
+    const rangeAdd = (c: CardNumbers) => liveCard(c).ops.reduce((n, x) => (x.op === 'add' && x.stat === 'range' && typeof x.value === 'number' ? n + x.value : n), 0);
+    const heldMelee = held.some((c) => liveCard(c).ops.some((x) => x.op === 'melee'));
+    // T061: his range state from one reader (held melee card, an unread form, a passive that raises range by level, or the base), at the level
+    // settled once for this answer. Display only: the fight, attackUptime, the search and facts.ranged keep the base range.
+    const rState = rangeState({ bin, strings: await tooltipStrings().catch(() => ({})), level: stage.level, heldMelee });
+    const ownRange = rState.known ? rState.range : undefined;
+    const meleeNow = rState.known && rState.melee;
+    const heldRangeNames = held.filter((c) => rangeAdd(c) > 0).map((c) => c.name);
+    const rangeNow = meleeNow && ownRange !== undefined ? ownRange + held.reduce((n, c) => n + rangeAdd(c), 0) : undefined;
+    const heldRange = heldRangeNames.length && rangeNow !== undefined ? { base: ownRange!, total: rangeNow, names: heldRangeNames } : undefined;
+    const speed = record?.baseMoveSpeedModifiable?.baseValue;
+    const rangeOf = (c: CardNumbers): RangeTerm | undefined => {
+      const add = rangeAdd(c);
+      if (!add) return undefined;
+      if (rangeNow === undefined) {
+        const reasonKind = !rState.known ? (rState.reason === 'form-unread' ? 'form-unread' : 'range-unread') : rState.source === 'passive-rank' ? 'ranged-at-level' : 'ranged';
+        const reason = { 'form-unread': 'his form changes and his current form is not read', 'range-unread': 'his attack range is not read', 'ranged-at-level': 'ranged at this level (his passive): outside the melee scenario', ranged: 'ranged: today the range term is for melee champions' }[reasonKind];
+        return { supported: false, reason, reasonKind, level: rState.level, ...(rState.known ? { source: rState.source } : {}) };
+      }
+      const after = rangeNow + add;
+      return { supported: true, before: rangeNow, after, delta: add, source: (rState as Extract<RangeState, { known: true }>).source, level: rState.level, ...(speed !== undefined ? { moveSpeed: speed, access: rangeAccess({ ...RANGE_SCENARIO, beforeRange: rangeNow, afterRange: after, moveSpeed: speed }) } : {}) };
+    };
     const before = stage.levels.map((level) => {
       const at = { ...place, enemyDps: enemyDpsAt(level) };
       const input = { ...base, level, enemy: facts2.enemy, incomingDps: at.share * at.enemyDps * (at.draw ?? 1) };
@@ -692,15 +780,21 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       return { input, result, place: at, value: fightValue(result, at) };
     });
     const rows: AugmentValue[] = all.augments.flatMap((a) => {
-      const card = numbersOf(a.id);
-      if (!card?.ops.length || augmentIds.includes(a.id) || a.ids.some((id) => RETIRED_AUGMENTS.has(id))) return []; // out of Mayhem: nobody picks it (src/ai/retiredAugments.ts)
+      // T050: the candidate is the entry's Mayhem id (mayhemIdOf), not the merged entry's first id: a twin's Arena id never stands for it, and
+      // its numbers and the policy are that id's own. Held: any id of the entry is held, so the merged name is not offered again.
+      const cid = mayhemIdOf(a);
+      if (cid === undefined) return [];
+      const card = numbersOf(cid);
+      // Apart from membership, the policy: a pool member nobody picks is still out (src/ai/retiredAugments.ts), by its own id. A held card is read
+      // by id (held), member or not.
+      if (!card?.ops.length || a.ids.some((id) => augmentIds.includes(id)) || RETIRED_AUGMENTS.has(cid)) return [];
       const holds = needHolds(card.need, facts);
       if (holds === 'no') return [];
       // The offered card as a possibility: taken now, it would come after every logged pick. Nothing of this goes into the log.
-      const candidate = { ...card, acquiredLevel: stage.level, pickPlace: pickPlaceOf(a.id, [...augmentIds, a.id], progress && { ...progress, acquiredLevels: { ...progress.acquiredLevels, [a.id]: stage.level }, ...(progress.pickOrder ? { pickOrder: [...progress.pickOrder, a.id] } : {}) }) };
+      const candidate = { ...card, acquiredLevel: stage.level, pickPlace: pickPlaceOf(cid, [...augmentIds, cid], progress && { ...progress, acquiredLevels: { ...progress.acquiredLevels, [cid]: stage.level }, ...(progress.pickOrder ? { pickOrder: [...progress.pickOrder, cid] } : {}) }) };
       const after = before.map((b) => fight({ ...b.input, kit: kitWithCards(base.kit, [candidate]), cards: [...held, candidate] }));
       // Its tags (src/ai/augmentTags.ts) weigh its value (src/ai/tagWeight.ts); a card with a condition the fight doesn't check is never certain.
-      const tags = a.ids.map((id) => AUGMENT_TAGS[id]).find(Boolean);
+      const tags = AUGMENT_TAGS[cid]; // T050 v4: the candidate id's own tags
       const { weight, unread, open } = tagWeight(tags, card.ops, card.need?.class === 'ability_kind' ? holds : undefined);
       const gains = after.map((r, i) => weight * (fightValue(r, before[i]!.place) / Math.max(before[i]!.value, 1e-9) - 1));
       const first = before[0]!.result, now = after[0]!;
@@ -710,7 +804,11 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         if (!heldCard?.ops.length) return ['تعزيز مختار لا يملك معادلات؛ أثره وروابطه غير محسوبة'];
         return heldCard.not_modelled ? [`${heldCard.name}: ${heldCard.not_modelled}`] : heldCard.status !== 'computed' ? [`${heldCard.name}: أثره المختار جزئي أو مشروط`] : [];
       }), ...(card.ops.some((x) => x.op === 'per_stack') || held.some((c) => c.ops.some((x) => x.op === 'per_stack')) ? ['التكديس مقدّر حسب المستويات منذ الاختيار، وليس عددًا مقروءًا من اللعبة؛ زيادته أثناء القتال الحالي غير محسوبة'] : []), ...(stage.level > FIGHT_READ_LEVEL ? ['فوق المستوى 18 (حد Superfans 21): نمو البطل وأرقام القتال بعد 18 غير مقروءة؛ الحساب تقديري وناقص'] : [])].filter(Boolean).join(' · ') || null;
-      return [{ id: a.id, damage: first.damage ? now.damage / first.damage - 1 : 0, health: first.effectiveHp ? now.effectiveHp / first.effectiveHp - 1 : 0, currentValue: gains[0]!, value: gains.reduce((sum, n) => sum + n, 0) / gains.length, open, certain: !stage.estimatedLevel && !stage.estimatedHistory && !missing && !unread && tags?.sure !== false && holds === 'yes' && card.status === 'computed' && card.ops.every((x) => x.op === 'add' || x.op === 'mult'), missing, level: stage.level, untilLevel: stage.untilLevel, estimatedLevel: stage.estimatedLevel, estimatedHistory: stage.estimatedHistory }];
+      const attacksAssumed = assumes(base.kit, kitWithCards(base.kit, [candidate]))
+        ? { by: 'offered' as const, names: [card.name], level: before[0]!.input.level, seconds: FIGHT.seconds, before: first.attacks, after: now.attacks }
+        : heldAttacking.length ? { by: 'held' as const, names: heldAttacking, level: before[0]!.input.level, seconds: FIGHT.seconds, before: first.attacks, after: now.attacks } : undefined; // T048 v2: held: before this card and after it (it may change attack speed)
+      const range = rangeOf(candidate), lowHealth = lowHealthTermOf(card);
+      return [{ ...(attacksAssumed ? { attacksAssumed } : {}), ...(range ? { range } : {}), ...(lowHealth ? { lowHealth } : {}), ...(heldRange ? { heldRange } : {}), id: cid, damage: first.damage ? now.damage / first.damage - 1 : 0, health: first.effectiveHp ? now.effectiveHp / first.effectiveHp - 1 : 0, currentValue: gains[0]!, value: gains.reduce((sum, n) => sum + n, 0) / gains.length, open, certain: !stage.estimatedLevel && !stage.estimatedHistory && !missing && !unread && tags?.sure !== false && holds === 'yes' && card.status === 'computed' && card.ops.every((x) => x.op === 'add' || x.op === 'mult'), missing, level: stage.level, untilLevel: stage.untilLevel, estimatedLevel: stage.estimatedLevel, estimatedHistory: stage.estimatedHistory }];
     });
     if (!offeredIds.length) return rows;
     // Full searches only for the actual offer (at most three), never for the entire augment catalogue.
@@ -718,7 +816,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const finished = new Set(shopNames.list.filter((i) => i.group === 'legendary' || i.group === 'boots').map((i) => i.id));
     // A held Mayhem copy (22xxxx) is kept when the catalog knows it or its base item; mathBuild then holds it as the catalog's own id (the copy
     // when sold, else its base), so the plans don't buy it again (T016). The fight above keeps the shop's own copy stats (knownItems).
-    const owned = [...knownItems.filter((id) => finished.has(id) || finished.has(id % 10000)), ...(championId === EZREAL ? itemIds.filter((id) => id % 10000 === MURAMANA && !finished.has(id) && !finished.has(id % 10000)) : [])];
+    // T065: a held owned-only final item (Void Immolation 223069) is kept too, by its own id; it is never offered to buy.
+    const owned = [...knownItems.filter((id) => finished.has(id) || finished.has(id % 10000) || OWNED_FINAL_ONLY.has(id)), ...(championId === EZREAL ? itemIds.filter((id) => id % 10000 === MURAMANA && !finished.has(id) && !finished.has(id % 10000)) : [])];
     // Estimated levels fill the gaps here, so the order among his augments is proven only when none was estimated.
     const timing = { ...progress, level: stage.level, acquiredLevels: stage.acquiredLevels, unknownPicks: progress?.unknownPicks || stage.estimatedHistory };
     let baselineItems: number[], baselineOwned: number[];
@@ -733,10 +832,10 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         const items = rows.map((r) => r.item.id);
         if (!baselineItems.length || !items.length) { row.planError = 'لا تتوفر أيتمات كافية لحساب خطة البناء'; continue; }
         const level = Math.max(15, stage.level);
-        const at = { ...place, enemyDps: enemyDpsAt(level) };
+        const at = { ...withWindow, enemyDps: enemyDpsAt(level) }; // T078: the plan is a build, so it keeps the burst window the items were chosen on
         row.plan = { ...compareAugmentPlan({ base: { ...base, level, enemy: facts2.enemy, incomingDps: at.share * at.enemyDps * (at.draw ?? 1) }, candidate, baselineItems, items, place: at }), baselineOwned, itemsOwned: ownedRows(rows), itemsWhy: rows.filter((r) => !r.why.includes('owned')).map((r) => ({ id: r.item.id, why: r.why })) };
         const a = all.augments.find((a) => a.id === row.id)!;
-        row.plan.value *= tagWeight(a.ids.map((id) => AUGMENT_TAGS[id]).find(Boolean), card.ops, card.need?.class === 'ability_kind' ? needHolds(card.need, facts) : undefined).weight;
+        row.plan.value *= tagWeight(AUGMENT_TAGS[row.id], card.ops, card.need?.class === 'ability_kind' ? needHolds(card.need, facts) : undefined).weight;
       } catch { row.planError = 'تعذّر حساب خطة هذا التعزيز؛ التقييم الحالي وحده متاح'; }
     }
     return rows;
@@ -746,7 +845,102 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   const builds = new Map<string, Promise<{ item: ItemEntry; why: string[]; missing: string[] }[]>>();
   /** The next items by arithmetic (src/ai/itemMath.ts). No pick, buy or win rates. */
   // The one lookup every path takes (offer, plan, build, styles, explanation), so an augment read from the patch's file (src/ai/augmentFiles.ts) has one set of numbers.
-  const cardsOf = (list: { id: number; ids?: number[]; game?: AugmentGameData }[], augmentIds: number[]) => augmentIds.flatMap((id) => { const entry = list.find((a) => a.id === id); const ids = entry?.ids ?? [id]; const card = CARD_NUMBERS.find((c) => ids.includes(c.id)); return card ? [cardFromFiles(card, entry?.game)] : []; });
+  /** T052: the partners of one held card A in the current state, from four fight readings (src/ai/partners.ts): F(C), F(C+B), F(R), F(R+B), where C
+   * is every held card and R the same state with only A's effect off (its pick place, the levels and the other cards unchanged). One level (the
+   * current one, settled once for all four), the current items, team and style; no item search and no level average. The kit is rebuilt from his
+   * own for each reading, so attacks A opened are not kept once A is off. The offer rows and their order are untouched: this is an explanation.
+   * v2 (Codex's T052 review): each pair is classed from the whole state (A, the other held cards, B and the four readings), not from B alone; a row
+   * is recommended only with a reason read from the fight's parts; and every pool card is counted once, under one reason. */
+  async function cardPartners(championId: number, augmentIds: number[], itemIds: number[], focusId: number, teams?: Teams, progress?: AugmentProgress, style?: BuildStyle, stacks?: number): Promise<PartnersAnswer> {
+    const t0 = Date.now();
+    const entry = (await champions()).find((c) => c.id === championId);
+    if (!entry) throw new Error(`unknown champion ${championId}`);
+    if (!augmentIds.includes(focusId)) throw new Error('the focused card is not held');
+    const v = await gameVersion();
+    const [all, bin, shop, shopNames] = await Promise.all([augments(), fightBin(v, entry.alias), loadGameItems(game, v), items('mayhem')]);
+    const kit = CHAMPION_KITS.find((k) => k.id === championId);
+    const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined;
+    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id] } : undefined; };
+    const stage = augmentStage(augmentIds, progress); // settled once: every reading uses this level and these pick places
+    const held = augmentIds.flatMap((id) => { const card = numbersOf(id); return card ? [{ ...card, acquiredLevel: stage.acquiredLevels[id], pickPlace: pickPlaceOf(id, augmentIds, progress) }] : []; });
+    const focus = held.find((c) => c.id === focusId);
+    const focusName = all.augments.find((a) => a.ids.includes(focusId))?.name ?? String(focusId);
+    const emptyCoverage = { pool: 0, noNumbers: 0, notApplicable: 0, noLiveEffect: 0, rangeOnly: 0, notComparable: 0, compared: 0, settled: 0, open: 0, limited: 0, unexplained: 0 };
+    const answer = (rest: Partial<PartnersAnswer>): PartnersAnswer => ({ focus: focusId, focusName, level: stage.level, estimatedLevel: !!stage.estimatedLevel, settled: [], open: [], limited: [], stateLimits: [], coverage: emptyCoverage, fights: 0, ms: Date.now() - t0, ...rest });
+    // A card with no effect to turn off has no partners to tell. No row, or a row with no ops at all (1361), has no equations (T064 follow-up);
+    // a row whose ops are all death or unknown (T051) is a different reason, and a range-only card (T053) another, below.
+    if (!focus || !focus.ops.length) return answer({ unread: 'لا معادلات لهذه البطاقة' });
+    if (!liveCard(focus).ops.length) return answer({ unread: 'أجزاؤها المحسوبة لا تعمل في القتال (عند الموت أو حالتها غير معروفة)' });
+    if (liveCard(focus).ops.every((x) => x.op === 'add' && x.stat === 'range')) return answer({ unread: 'أثر هذه البطاقة مدى هجوم فقط؛ المدى ونافذة الوصول خارج قيمة القتال هنا، فلا يمكن تحديد شركائها بهذا الحساب' });
+    const knownItems = itemIds.flatMap((id) => shop[id] ? [id] : shop[id % 10000] ? [id % 10000] : []);
+    const ownKit = fightKitOf(championId);
+    const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
+    const kitC = kitWithCards(ownKit, held);
+    const facts = { owned: knownItems.flatMap((id) => shopNames.list.find((i) => i.id === id)?.enName ?? []), ranged: (record?.attackRangeModifiable?.baseValue ?? 0) >= 300, traits: [...(kit?.traits ?? []), ...spellTraits(bin), ...(kitC.buffsAllies ? ['heal_ally', 'shield_ally'] : [])] };
+    const facts2 = await teamFacts(teams, shop);
+    const place = { ...teamPlace({ championId, bin, shop, kit: kitC, passive, enemy: facts2.enemy, allies: facts2.allies, style }), enemyDps: enemyDpsAt(stage.level), window: undefined }; // Cards and partners use the same full-fight value; item plans keep their own window.
+    const input = { bin, shop, level: stage.level, items: knownItems, itemOps: ITEM_OPS, stacks, knownRanks: knownRanksOf(progress), skillPlan: await skillPlanFor(championId), passive, enemy: facts2.enemy, incomingDps: place.share * place.enemyDps * (place.draw ?? 1) };
+    let fights = 0;
+    const run = (cards: typeof held) => { fights++; const r = fight({ ...input, kit: kitWithCards(ownKit, cards), cards }); return { r, f: fightValue(r, place) }; };
+    const R = held.map((c) => (c.id === focusId ? { ...c, ops: [] } : c)); // only A's effect off
+    const fC = run(held), fR = run(R);
+    // The state's limits, settled once (partnerState): the level and history estimates, and each held card's partial status, unknown parts and
+    // open conditions. They class every pair of this state.
+    const cardState = (c: CardNumbers, holds?: 'yes' | 'no' | 'unknown') => {
+      const tags = AUGMENT_TAGS[c.id];
+      const { open } = tagWeight(tags, c.ops, holds);
+      return {
+        limits: [...(!c.ops.length ? [`${c.name}: لا توجد معادلات لهذا التعزيز المختار؛ أثره وروابطه غير محسوبة`] : []), ...(c.status !== 'computed' ? [`${c.name}: أثرها مقروء جزئياً`] : []), ...(c.ops.some((x) => x.eligibility === 'unknown') ? [`${c.name}: جزء حالته غير معروفة`] : []), ...(tags?.sure === false ? [`${c.name}: وسومها غير مؤكدة`] : [])],
+        conditions: [...open.map((o) => `${c.name}: ${o}`), ...(holds === 'unknown' ? [`${c.name}: شرط القدرة غير محسوم`] : [])],
+      };
+    };
+    const heldStates = held.map((c) => cardState(c));
+    // A held id without a numeric row remains part of the state when another card is focused.
+    const unreadHeld = augmentIds.filter((id) => !held.some((c) => c.id === id)).map((id) => `${all.augments.find((a) => a.ids.includes(id))?.name ?? id}: لا توجد معادلات لهذا التعزيز المختار؛ أثره وروابطه غير محسوبة`);
+    const stateLimits = [...unreadHeld, ...(stage.estimatedLevel ? ['المستوى مقدّر'] : []), ...(stage.estimatedHistory ? ['توقيت الاختيارات السابقة مقدّر'] : []), ...heldStates.flatMap((s) => s.limits)];
+    const stateConditions = heldStates.flatMap((s) => s.conditions);
+    // Attacks the engine assumes (T048): the cards that make him attack when his own kit doesn't, in the readings with B (held cards or B).
+    const assumedBy = (cards: typeof held) => (ownKit.attackPace === undefined && !ownKit.attacks ? cards.filter((c) => kitWithCards(ownKit, [c]).attacks).map((c) => c.name) : []);
+    const coverage = { ...emptyCoverage };
+    const rows: PartnerRow[] = [];
+    // One pool: the Mayhem cards the offers could show (T050 id, not held, not retired); each is counted under exactly one reason.
+    for (const a of all.augments) {
+      const cid = mayhemIdOf(a);
+      if (cid === undefined || a.ids.some((id) => augmentIds.includes(id)) || RETIRED_AUGMENTS.has(cid)) continue;
+      coverage.pool++;
+      const card = numbersOf(cid);
+      if (!card?.ops.length) { coverage.noNumbers++; continue; }
+      const holds = needHolds(card.need, facts);
+      if (holds === 'no') { coverage.notApplicable++; continue; } // its condition is known not to hold for him (declared, as in the offers)
+      const live = liveCard(card).ops;
+      if (!live.length) { coverage.noLiveEffect++; continue; } // only death or unknown parts (T051): no effect in this fight to compare
+      if (live.every((x) => x.op === 'add' && x.stat === 'range')) { coverage.rangeOnly++; continue; } // range is outside F (T053)
+      const candidate = { ...card, acquiredLevel: stage.level, pickPlace: pickPlaceOf(cid, [...augmentIds, cid], progress && { ...progress, acquiredLevels: { ...progress.acquiredLevels, [cid]: stage.level }, ...(progress.pickOrder ? { pickOrder: [...progress.pickOrder, cid] } : {}) }) };
+      const { weight } = tagWeight(AUGMENT_TAGS[cid], card.ops, card.need?.class === 'ability_kind' ? holds : undefined);
+      const cb = run([...held, candidate]), rb = run([...R, candidate]);
+      const terms = partnerTerms({ C: fC.f, CB: cb.f, R: fR.f, RB: rb.f }, weight);
+      if (!terms) { coverage.notComparable++; continue; }
+      coverage.compared++;
+      const b = cardState(card, card.need?.class === 'ability_kind' ? holds : undefined);
+      const readNotes = [...new Set([...fC.r.notModelled, ...cb.r.notModelled, ...fR.r.notModelled, ...rb.r.notModelled])];
+      const limits = [...stateLimits, ...b.limits, ...readNotes];
+      const conditions = [...stateConditions, ...b.conditions];
+      const group = limits.length ? 'limited' : conditions.length ? 'open' : 'settled';
+      const part = (k: 'damage' | 'effectiveHp' | 'healedHp' | 'abilityHealing' | 'healingDenied') => partInteraction(fC.r[k], cb.r[k], fR.r[k], rb.r[k]);
+      const parts = { damage: part('damage'), effectiveHp: part('effectiveHp'), healedHp: part('healedHp'), abilityHealing: part('abilityHealing'), healingDenied: part('healingDenied') };
+      const explained = Object.values(parts).some((x) => x > PART_EPS);
+      coverage[group]++;
+      if (terms.gain > 0 && terms.interaction > 0 && !explained) coverage.unexplained++;
+      rows.push({ id: cid, group, gain: terms.gain, interaction: terms.interaction, explained, conditions, limits, parts, assumedAttacks: assumedBy([...held, candidate]),
+        // T048: B's attacks come only from A (with A off, B alone would not make him attack).
+        attacksFromFocus: ownKit.attackPace === undefined && !ownKit.attacks && kitWithCards(ownKit, [...held, candidate]).attacks && !kitWithCards(ownKit, [...R, candidate]).attacks && kitWithCards(ownKit, [focus]).attacks });
+    }
+    // Recommended: explained rows only (a part of the fight grew with A); an unexplained difference is counted, never listed.
+    const shown = (g: PartnerRow['group']) => recommend(rows.filter((r) => r.group === g));
+    return answer({ settled: shown('settled'), open: shown('open'), limited: shown('limited'), stateLimits, coverage, fights, ms: Date.now() - t0 });
+  }
+  // T050 v4: an id's own numbers only, never its twin's; the entry's file data only when the entry is led by that id (it is that id's own).
+  const cardsOf = (list: { id: number; ids?: number[]; game?: AugmentGameData }[], augmentIds: number[]) => augmentIds.flatMap((id) => { const entry = list.find((a) => a.id === id); const card = CARD_NUMBERS.find((c) => c.id === id); return card ? [cardFromFiles(card, entry?.game)] : []; });
   /** The ways his kit can be built besides its own: magic or physical when his damage grows with that stat at least half as much as with the other (100 of each, no items), and tank for everyone (the owner: Katarina has all three). */
   /** Magic also when a held card works on AP or on damage over time (the owner: Miss Fortune with Vulnerability builds AP and burns). */
   async function buildStyles(championId: number, augmentIds: number[] = [], progress?: AugmentProgress): Promise<BuildStyle[]> {
@@ -763,7 +957,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const skillPlan = await skillPlanFor(championId);
     const damage = (stat?: string) => fight({ bin, shop, kit: fightKit, passive, items: [], level: 13, skillPlan, cards: [...held, ...(stat ? [{ id: 0, name: stat, status: 'computed', ops: [{ op: 'add' as const, stat, value: 100 }] }] : [])] }).damage;
     const base = damage(), ap = damage('ap') - base, ad = damage('ad') - base;
-    const magicCard = held.some((c) => c.ops.some((x) => x.op === 'crit_dot' || (x.op === 'convert' && (x.from === 'ap' || x.to === 'ap')) || ((x.op === 'add' || x.op === 'mult' || x.op === 'per_stack') && x.stat === 'ap')));
+    const magicCard = held.some((c) => liveCard(c).ops.some((x) => x.op === 'crit_dot' || (x.op === 'convert' && (x.from === 'ap' || x.to === 'ap')) || ((x.op === 'add' || x.op === 'mult' || x.op === 'per_stack') && x.stat === 'ap')));
     const magic = (ap >= 0.5 * Math.max(ap, ad) && ap > 0) || magicCard;
     // A magic frontline champion also builds magic with health (the owner: Galio has three builds).
     return [...(magic ? ['ap' as const] : []), ...(magic && kit?.traits.includes('frontline') ? ['aphp' as const] : []), ...(ad >= 0.5 * Math.max(ap, ad) && ad > 0 ? ['ad' as const] : []), 'tank'];
@@ -789,33 +983,38 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       // Live inventory may contain mode copies and components; only finished shop items occupy fixed build slots.
       const soldIds = new Set(sold.map((i) => i.id));
       const manamune = championId === EZREAL ? sold.find((i) => i.id % 10000 === MANAMUNE && shop[i.id])?.id : undefined;
+      // T065: an owned-only final item (Void Immolation) keeps its exact id and one slot; it is not sold, so it never joins the buy candidates.
+      const keptOnly = list.list.filter((i) => OWNED_FINAL_ONLY.has(i.id) && owned.includes(i.id) && shop[i.id]);
+      const keptIds = new Set(keptOnly.map((i) => i.id));
+      const entryOf = (id: number) => sold.find((i) => i.id === id) ?? keptOnly.find((i) => i.id === id);
       const ownedItems = [...new Set(owned.map((id) => {
         const base = id % 10000;
+        if (keptIds.has(id)) return id;
         if (soldIds.has(id)) return id;
         if (soldIds.has(base)) return base;
         if (base === MURAMANA && manamune !== undefined) return manamune;
         return base;
-      }).filter((id) => soldIds.has(id)))];
+      }).filter((id) => soldIds.has(id) || keptIds.has(id)))];
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
       const stage = augmentStage(augmentIds, progress);
       const cards = progress ? augmentIds.flatMap((id) => cardsOf(all.augments, [id]).map((c) => ({ ...c, acquiredLevel: stage.acquiredLevels[id], abilityKey: progress.abilityTargets?.[id], pickPlace: pickPlaceOf(id, augmentIds, progress) }))) : cardsOf(all.augments, augmentIds);
       // A frontline mage holding a card that makes his AP pay in crits (Jeweled Gauntlet: abilities crit, AP into crit chance) builds as a damage dealer, all magic:
       // the owner's Swain (2026-11-08, «نعم صحيح»: Zwag's Zhonya's, Blackfire, Rite of Ruin, Rabadon's, Liandry's, Void).
-      if (!style && kit?.damage === 'magic' && kit.traits.includes('frontline') && cards.some((c) => c.ops.some((x) => x.op === 'crit_abilities' || (x.op === 'convert' && x.from === 'ap')))) style = 'ap';
+      if (!style && kit?.damage === 'magic' && kit.traits.includes('frontline') && cards.some((c) => liveCard(c).ops.some((x) => x.op === 'crit_abilities' || (x.op === 'convert' && x.from === 'ap')))) style = 'ap';
       // An augment named "Upgrade X" works only through item X (Upgrade Collector, Hubris, Ravenous Hydra, Sundered Sky, Zhonya's): it asks for that item, whether or not its card names it.
       const upgraded = all.augments.filter((a) => augmentIds.some((x) => a.ids.includes(x))).flatMap((a) => { const name = /^Upgrade (.+)$/.exec(a.enName)?.[1]; const item = name ? sold.find((i) => i.enName === name || i.enName === `The ${name}` || i.enName.startsWith(`${name} `)) : undefined; return item ? [item.id] : []; });
       // Upgrade Sheen upgrades every Spellblade item, and Sheen itself isn't sold: it asks for one Spellblade item (an item whose effect fires on the next attack after an ability), which one by the build (the owner's Nasus tree, 2026-11-09).
       const spellblade = sold.filter((i) => (ITEM_NUMBERS.find((x) => x.id === i.id % 10000)?.ops ?? []).some((x) => 'trigger' in x && x.trigger === 'next_attack')).map((i) => i.id);
       const requiredAnyOf = all.augments.some((a) => augmentIds.some((x) => a.ids.includes(x)) && a.enName === 'Upgrade Sheen') && spellblade.length ? [spellblade] : [];
       // A quest card that asks for items (Ultra Hydra, Wooglet's Witchcap) gets them, since its reward counts only once they're all held.
-      const quests = cards.filter((c) => c.ops.some((x) => x.after_quest)).flatMap((c) => questItems(c.id)).flatMap((id) => sold.find((i) => i.id % 10000 === id)?.id ?? []);
+      const quests = cards.filter((c) => liveCard(c).ops.some((x) => x.after_quest)).flatMap((c) => questItems(c.id)).flatMap((id) => sold.find((i) => i.id % 10000 === id)?.id ?? []);
       // The owner's Tear-then-Manamune path is for his normal and AD builds; tank, AP and AP-health buttons stay free of it (strict rules).
       const plannedItem = ownedItems.some((id) => id % 10000 === MURAMANA) || (style !== undefined && style !== 'ad') ? undefined : manamune;
       const required = [...new Set([...cards.flatMap((c) => (c.need?.class === 'item' ? (c.need.items ?? []).slice(0, 1) : [])).flatMap((n) => sold.find((i) => i.enName === n)?.id ?? []), ...upgraded, ...quests])];
       const damageKind = kit?.damage === 'magic' ? 'ap' : kit?.damage === 'physical' ? 'ad' : 'mixed';
       const switched = cards.some((c) => switchesDamage([c.id]));
       // A held card that repeats on-hit effects (Dual Wield) opens on-hit items of the other damage kind: the owner's Teemo with Dual Wield builds BotRK and Terminus (2026-11-08).
-      const onHitCard = cards.some((c) => c.ops.some((x) => x.op === 'on_hit_repeat'));
+      const onHitCard = cards.some((c) => liveCard(c).ops.some((x) => x.op === 'on_hit_repeat'));
       const onHitItem = (id: number) => (ITEM_NUMBERS.find((x) => x.id === id % 10000)?.ops ?? []).some((x) => 'trigger' in x && x.trigger === 'on_hit');
       // A held card that adds damage to his attacks (Marksmage) makes a non-attacker fight with attacks too: the owner's Gragas with Marksmage, Lich Bane and Dusk and Dawn (2026-11-05).
       const fightKit = kitWithCards(fightKitOf(championId), cards);
@@ -834,14 +1033,14 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       // The owner (2026-11-05, Gragas full tank): a frontline champion who doesn't guard allies and whose kit scales with no armor or magic resist
       // builds damage with health by his kit, one item with no damage besides boots at most; full tank is his tank button.
       // A held card that multiplies health (Tank Engine, Goliath, Growth Spurt) lifts that limit: Jayell's Renekton with Tank Engine built Heartsteel, Unending Despair, Bloodmail.
-      const healthCard = cards.some((c) => c.ops.some((x) => (x.op === 'mult' || (x.op === 'per_stack' && x.mode === 'mult')) && x.stat === 'hp'));
+      const healthCard = cards.some((c) => liveCard(c).ops.some((x) => (x.op === 'mult' || (x.op === 'per_stack' && x.mode === 'mult')) && x.stat === 'hp'));
       const fighter = !style && !healthCard && !!kit?.traits.includes('frontline') && !kit.traits.includes('peel') && !kit.scales.some((x) => x === 'armor' || x === 'mr');
       // Runaan's Hurricane is sold to ranged champions only: none of 75,278 melee players held it but Kayle and Gnar, who fight at range (2026-11-05).
       // A held card that makes him melee (Draw Your Sword) rules out ranged-only items too.
-      const melee = cards.some((c) => c.ops.some((x) => x.op === 'melee')) || ((championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined)?.attackRangeModifiable?.baseValue ?? 0) < 300;
+      const melee = cards.some((c) => liveCard(c).ops.some((x) => x.op === 'melee')) || ((championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined)?.attackRangeModifiable?.baseValue ?? 0) < 300;
       // A magic champion who doesn't fight with attacks gets no attack-speed or on-hit item, nor Dusk and Dawn, unless a card makes his abilities apply on-hit
       // (the owner's no-attack-items rule, checked in scripts/checks/strict.mjs; Ethereal Weapon is the exception, 2026-11-06). Ardent Censer serves the ally he heals.
-      const noAttacks = kit?.damage === 'magic' && !fightKit.attacks && style !== 'tank' && !cards.some((c) => c.ops.some((x) => x.op === 'abilities_on_hit'));
+      const noAttacks = kit?.damage === 'magic' && !fightKit.attacks && style !== 'tank' && !cards.some((c) => liveCard(c).ops.some((x) => x.op === 'abilities_on_hit'));
       const attackItem = (id: number) => id % 10000 === DUSK_AND_DAWN || (id % 10000 !== ARDENT_CENSER && (ITEM_MECHANICS.find((m) => m.id === id) ?? ITEM_MECHANICS.find((m) => m.id === id % 10000))?.gives.some((g) => g.stat === 'attack_speed') === true) || (ITEM_NUMBERS.find((x) => x.id === id % 10000)?.ops ?? []).some((x) => 'trigger' in x && x.trigger === 'on_hit'); // not 'attack': Heartsteel's proc is one
       // Heartsteel charges only standing near enemy champions: not for a ranged champion who doesn't stand in front (the owner, 2026-11-06: Sona doesn't start it; 0 of 993 of her players hold it).
       // Nor for one who can't keep bonus health (Pyke turns it into AD: the owner, 2026-11-06, «لا، خطأ»; 1% of his players hold it).
@@ -849,7 +1048,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       const rangedOnly = (id: number) => id % 10000 === RUNAANS; // Statikk Shiv also carries a bolts op now, and melee champions build it
       const tankOnly = (i?: { id: number; group?: string; boots?: boolean }) => !!i && !i.boots && i.group !== 'boots' && itemDamage(i.id) === 'none';
       const skillPlan = await skillPlanFor(championId);
-      const steps = itemsByMath({ bin, shop, level: progress?.level, knownRanks: knownRanksOf(progress), skillPlan, enemy: facts.enemy, place, offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(sold.find((x) => x.id === h)))) : style === 'tank' ? i.damage !== 'none' || hybrid(i.id) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style && !switched : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(sold.find((x) => x.id === h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.filter((i) => championId !== EZREAL || i.id % 10000 !== MURAMANA).map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned: ownedItems, required, plannedItem, noBoots: championId === CASSIOPEIA, requiredAnyOf, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks,
+      const steps = itemsByMath({ bin, shop, level: progress?.level, knownRanks: knownRanksOf(progress), skillPlan, enemy: facts.enemy, place, offKind: (i, held) => (style === 'aphp' ? i.damage === 'ad' || (pureTank(i) && held.some((h) => pureTank(entryOf(h)))) : style === 'tank' ? i.damage !== 'none' || hybrid(i.id) : style === 'ap' || style === 'ad' ? i.damage !== 'none' && i.damage !== style && !switched : (!switched && damageKind !== 'mixed' && i.damage !== 'none' && i.damage !== damageKind && !(onHitCard && onHitItem(i.id))) || (fighter && tankOnly(i) && held.some((h) => tankOnly(entryOf(h))))) || (noMana && shop[i.id]?.DataValues?.some((d) => d.name === 'FlatMPPoolMod') === true) || (melee && rangedOnly(i.id)) || ((!melee && !kit?.traits.includes('frontline') || keepsNoHealth) && (shop[i.id]?.DataValues?.find((d) => d.name === 'DamageToMaxHealthRatio')?.values?.[0] ?? 0) > 0) || (noAttacks && attackItem(i.id)), kit: fightKit, cards, passive: PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [], itemOps: ITEM_OPS, pool: sold.filter((i) => championId !== EZREAL || i.id % 10000 !== MURAMANA).map((i) => ({ id: i.id, gold: i.gold, boots: i.group === 'boots', damage: itemDamage(i.id) })), owned: ownedItems, required, plannedItem, noBoots: championId === CASSIOPEIA, requiredAnyOf, manaFirst: mage && (style === 'ap' || (!style && damageKind === 'ap')) /* a card that switches damage (ADAPt) keeps the rule: the owner, 2026-11-08, Brand «لازم ايتم مانا في البدايه» */, stacks,
         // "Without this augment" is a whole context: his kit and team place made again from the other cards, as for the build itself.
         contextFor: (others) => { const k = kitWithCards(fightKitOf(championId), others); return { kit: k, place: teamPlace({ championId, bin, shop, kit: k, passive, enemy: facts.enemy, allies: facts.allies, style }) }; } });
       const explanation = explainBuild({ bin, shop, kit: fightKitOf(championId), cards, passive, itemOps: ITEM_OPS, items: steps.map((s) => s.id), level: Math.max(15, stage.level), enemy: facts.enemy, stacks, knownRanks: knownRanksOf(progress), skillPlan, incomingDps: place.share * place.enemyDps * (place.draw ?? 1) });
@@ -866,9 +1065,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         ...(explanation.total.healingDenied > 0 ? ['وصول مضاد العلاج إلى مصادر الشفاء ومدة تطبيقه مقدّران'] : []),
         ...(stage.level > FIGHT_READ_LEVEL ? ['فوق المستوى 18 (حد Superfans 21): نمو البطل وأرقام القتال بعد 18 غير مقروءة؛ الحساب تقديري وناقص'] : []),
       ])];
-      const partName = (kind: 'item' | 'augment', id: number) => kind === 'item' ? sold.find((i) => i.id === id)?.enName ?? String(id) : cards.find((c) => c.id === id)?.name ?? String(id);
+      const partName = (kind: 'item' | 'augment', id: number) => kind === 'item' ? entryOf(id)?.enName ?? String(id) : cards.find((c) => c.id === id)?.name ?? String(id);
       const signed = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(100 * x)}%`;
-      return steps.flatMap((s) => { const item = sold.find((i) => i.id === s.id); return item ? [{ item, missing, why: [...(s.reason === 'owned' ? ['owned'] : [s.id === manamune ? 'أكمل Manamune بعد اكتمال تراكمات Tear of the Goddess' : s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'augment' ? 'تعزيز مكتسب يجعله الأفضل الآن: يُشترى قبل أغراض التراكمات' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean)), ...itemExplanationWords(explanation, s.id, partName)] }] : []; });
+      return steps.flatMap((s) => { const item = entryOf(s.id); return item ? [{ item, missing, why: [...(s.reason === 'owned' ? ['owned'] : [s.id === manamune ? 'أكمل Manamune بعد اكتمال تراكمات Tear of the Goddess' : s.reason === 'required' ? 'تطلبه بطاقتك' : s.reason === 'mana' ? 'غرض مانا أولاً: المانا تنفد بسرعة بدونه' : s.reason === 'stacks' ? 'يكبر بالتراكمات: يُشترى أولاً ليجمعها طوال اللعبة' : s.reason === 'augment' ? 'تعزيز مكتسب يجعله الأفضل الآن: يُشترى قبل أغراض التراكمات' : s.reason === 'boots' ? 'حذاء: سرعة الحركة لا تدخل في حساب القتال' : '', `ضرر ${signed(s.damage)}، تحمّل ${signed(s.health)}`].filter(Boolean)), ...itemExplanationWords(explanation, s.id, partName)] }] : []; });
     })();
     builds.set(key, work);
     work.catch(() => builds.delete(key));
@@ -973,5 +1172,5 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return { side: diff > 0.15 ? 'stronger' : diff < -0.15 ? 'weaker' : 'even', magic: { mine: magic(mine), enemy: magic(enemy) } };
   }
 
-  return { augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, mathBuild, decisionAt, projectBuild, stackBase, buildStyles, cardValues, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
+  return { cardPartners, augments, champions, championPage, items, tierList, suggestions, profilePage, overlayData, aiBuild, mayhemFile, augmentFit, augmentEffect, engineBuild, mathBuild, decisionAt, projectBuild, stackBase, buildStyles, cardValues, experimentalBuild, championStrengths, openAugments, teamSummary, warm };
 }
