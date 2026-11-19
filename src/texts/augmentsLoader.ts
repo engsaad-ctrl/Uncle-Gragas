@@ -32,7 +32,8 @@ export interface AugmentsResult {
 // Bump when AugmentText changes shape or what it keeps, so old caches are rebuilt.
 // 18 (T050): keeps each id's mode pools. 17 is T047's (Apex Inventor's file values), kept apart until both are reviewed. An older copy is rebuilt
 // online; offline or after a failed refresh diskCache still returns it, stale, and its modes are marked as from an old copy (membership).
-const CACHE_SCHEMA = 18;
+// 19: retains a readable identity for the recorded Pentakill generic; older catalogues omitted it.
+const CACHE_SCHEMA = 19;
 
 type MissileSpell = { mScriptName?: string; mSpell?: { mMissileSpec?: { movementComponent?: { mTravelTime?: number; mSpeed?: number } } } };
 

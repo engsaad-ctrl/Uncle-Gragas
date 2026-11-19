@@ -28,7 +28,8 @@ for (const block of readFileSync(notesPath, 'utf8').split(/\n(?=### )/)) {
 }
 let hit = 0, total = 0; const missed = new Map(), extra = new Map(); const L = [];
 for (const c of cases) {
-  let b; try { b = (await services.mathBuild(c.champ.id, c.augs.map((x) => x.id))).map((s) => s.item); } catch { continue; }
+  // T167: the final build: a merge row takes its ingredients out (Ultra Hydra), so they are not counted beside it.
+  let b; try { const rows = await services.mathBuild(c.champ.id, c.augs.map((x) => x.id)); const inv = rows.reduce((acc, r) => [...(r.consumes ? acc.filter((id) => !r.consumes.includes(id)) : acc), r.item.id], []); b = rows.filter((r, i) => inv.includes(r.item.id) && rows.findIndex((x) => x.item.id === r.item.id) === i).map((r) => r.item); } catch { continue; }
   const ids = new Set(b.map((i) => i.id % 10000)); const got = c.items.filter((i) => ids.has(i.id % 10000));
   hit += got.length; total += c.items.length;
   for (const i of c.items) if (!ids.has(i.id % 10000)) missed.set(i.enName, (missed.get(i.enName) ?? 0) + 1);

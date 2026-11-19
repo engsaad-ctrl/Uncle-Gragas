@@ -86,6 +86,10 @@ function fallbackKeys(nameId: string | undefined): string[] {
   return ['kiwi_', 'kiwi_augment_', 'cherry_', 'augment_'].flatMap((p) => [`${p}${n}_tooltip`, `${p}${n}_summary`]);
 }
 
+/** A generic family entry recorded in match history can lack a readable name. This narrow title fallback
+ *  supplies catalogue identity only, not equations or selection semantics; other blank-name exclusions stay intact. */
+const NAMED_GENERICS: Record<string, string> = { GoH_PentakillAug_Generic: 'kiwi_goh_pentakill_title' };
+
 const RARITY: Record<string, Rarity> = { kSilver: 'silver', kGold: 'gold', kPrismatic: 'prismatic', kEventChoice: 'event' };
 
 export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentText[]> {
@@ -130,14 +134,19 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
       candidates.reduce<(typeof candidates)[number] | undefined>((b, c) => (!b || c.unresolved <= b.unresolved ? c : b), undefined);
     const html = best ? cleanText(best.text) : '';
     const enName = enNames.get(a.id) ?? '';
+    // A usable name: not blank or whitespace, not an untranslated key, not "???", and not an internal _BlankName token.
+    const readable = (s: string | undefined) => { const t = (s ?? '').trim(); return !t || isUntranslated(t) || /^[?؟\s]+$/.test(t) || /_BlankName$/i.test(t) ? '' : t; };
+    const genericTitle = readable(await lookup(NAMED_GENERICS[a.augmentNameId ?? '']));
     const name = isUntranslated(a.nameTRA) ? enName : a.nameTRA;
     // "???" = unreleased test augment; a blank English name = the game's internal placeholder (GoH_PentakillAug_Generic_BlankName).
-    if (!name || /^[?؟\s]+$/.test(name) || (enNames.has(a.id) && !enName.trim())) continue;
+    if (!genericTitle && (!name || /^[?؟\s]+$/.test(name) || (enNames.has(a.id) && !enName.trim()))) continue;
     out.push({
       id: a.id,
       ids: [a.id],
-      name,
-      enName,
+      // The recognized generic carries no readable name of its own, so the validated title stands in for BOTH languages:
+      // shownName picks enName in English mode, and a whitespace enName would otherwise display as blank.
+      name: genericTitle ? readable(name) || genericTitle : name,
+      enName: genericTitle ? readable(enName) || genericTitle : enName,
       html,
       described: html !== '',
       rarity: RARITY[a.rarity] ?? 'event',

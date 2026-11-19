@@ -1,0 +1,238 @@
+{
+ "source": "knowledge/codex-claude/T045/raw/kiwi.bin.json",
+ "sha256": "d6422cef83eedad4da8f782d1eb1351482558a70265970f7db0d59cc05d67eb5",
+ "version": "16.22.8348910+branch.releases-16-22.content.release",
+ "records": {
+  "Maps/ModeSpecificData/Augments/Salvation": {
+   "AugmentNameId": "Salvation",
+   "NameTra": "Kiwi_Augment_Salvation_Name",
+   "DescriptionTra": "Kiwi_Augment_Salvation_Description",
+   "AugmentTooltipTra": "Kiwi_Augment_Salvation_Tooltip",
+   "RootSpell": "Maps/ModeSpecificData/Augments/Salvation/Augment_Salvation",
+   "AdditionalSpells": [
+    "{2a802518}"
+   ],
+   "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/salvation_large.tex",
+   "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/salvation_small.tex",
+   "AugmentDisplayTags": [
+    5
+   ],
+   "rarity": 1,
+   "AugmentPlatformId": 3039,
+   "ResourceResolver": "{df0bf94b}",
+   "__type": "AugmentData"
+  },
+  "Maps/ModeSpecificData/Augments/Salvation/Augment_Salvation": {
+   "ObjectName": "Augment_Salvation",
+   "objectPath": "Maps/ModeSpecificData/Augments/Salvation/Augment_Salvation",
+   "mScriptName": "Augment_Salvation",
+   "mSpell": {
+    "DataValues": [
+     {
+      "name": "Increment",
+      "values": [
+       2,
+       2,
+       2,
+       2,
+       2,
+       2,
+       2
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "BaseDamage",
+      "values": [
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "KnockbackDistanceMin",
+      "values": [
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "KnockbackDistanceMax",
+      "values": [
+       450,
+       450,
+       450,
+       450,
+       450,
+       450,
+       450
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "KnockbackRange",
+      "values": [
+       600,
+       600,
+       600,
+       600,
+       600,
+       600,
+       600
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "HealAPRatio",
+      "values": [
+       1.2000000476837158,
+       1.2000000476837158,
+       1.2000000476837158,
+       1.2000000476837158,
+       1.2000000476837158,
+       1.2000000476837158,
+       1.2000000476837158
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "HealHealthRatio",
+      "values": [
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "HealRange",
+      "values": [
+       1200,
+       1200,
+       1200,
+       1200,
+       1200,
+       1200,
+       1200
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "MaxRangeHealPercent",
+      "values": [
+       0.5,
+       0.5,
+       0.5,
+       0.5,
+       0.5,
+       0.5,
+       0.5
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "HealthPercentTrigger",
+      "values": [
+       0.5,
+       0.5,
+       0.5,
+       0.5,
+       0.5,
+       0.5,
+       0.5
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "AuraCooldown",
+      "values": [
+       90,
+       90,
+       90,
+       90,
+       90,
+       90,
+       90
+      ],
+      "__type": "SpellDataValue"
+     }
+    ],
+    "mSpellCalculations": {
+     "Damage": {
+      "mFormulaParts": [
+       {
+        "mStartValue": 100,
+        "mEndValue": 500,
+        "__type": "ByCharLevelInterpolationCalculationPart"
+       },
+       {
+        "mStat": 2,
+        "mStatFormula": 2,
+        "mCoefficient": 1.25,
+        "__type": "StatByCoefficientCalculationPart"
+       },
+       {
+        "mCoefficient": 0.75,
+        "__type": "StatByCoefficientCalculationPart"
+       }
+      ],
+      "__type": "GameCalculation"
+     },
+     "TotalHeal": {
+      "mFormulaParts": [
+       {
+        "mStartValue": 200,
+        "mEndValue": 550,
+        "__type": "ByCharLevelInterpolationCalculationPart"
+       },
+       {
+        "mStat": 2,
+        "mStatFormula": 2,
+        "mCoefficient": 2,
+        "__type": "StatByCoefficientCalculationPart"
+       },
+       {
+        "mDataValue": "HealAPRatio",
+        "__type": "StatByNamedDataValueCalculationPart"
+       }
+      ],
+      "__type": "GameCalculation"
+     },
+     "{77ad423e}": {
+      "mMultiplier": {
+       "mNumber": 100,
+       "__type": "NumberCalculationPart"
+      },
+      "mSimpleTooltipCalculationDisplay": 5,
+      "mExpandedTooltipCalculationDisplay": 5,
+      "tooltipOnly": true,
+      "mFormulaParts": [
+       {
+        "mDataValue": "HealthPercentTrigger",
+        "__type": "NamedDataValueCalculationPart"
+       }
+      ],
+      "__type": "GameCalculation"
+     }
+    },
+    "__type": "SpellDataResource"
+   },
+   "__type": "SpellObject"
+  }
+ }
+}

@@ -1,0 +1,83 @@
+{
+ "source": "knowledge/codex-claude/T045/raw/kiwi.bin.json",
+ "sha256": "d6422cef83eedad4da8f782d1eb1351482558a70265970f7db0d59cc05d67eb5",
+ "version": "16.22.8348910+branch.releases-16-22.content.release",
+ "records": {
+  "Maps/ModeSpecificData/Augments/ARAM_Overflow": {
+   "AugmentNameId": "ARAM_Overflow",
+   "NameTra": "Kiwi_ARAM_Overflow_Name",
+   "DescriptionTra": "Cherry_Overflow_Summary",
+   "AugmentTooltipTra": "Cherry_Overflow_Tooltip",
+   "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_Overflow/Augment_ARAM_Overflow",
+   "mAugmentTags": 8,
+   "mBuildTags": 2096,
+   "AugmentLargeIconPath": "assets/ux/cherry/augments/icons/overflow_large.tex",
+   "AugmentSmallIconPath": "assets/ux/cherry/augments/icons/overflow_small.tex",
+   "AugmentDisplayTags": [
+    1
+   ],
+   "rarity": 1,
+   "AugmentPlatformId": 1311,
+   "__type": "AugmentData"
+  },
+  "Maps/ModeSpecificData/Augments/ARAM_Overflow/Augment_ARAM_Overflow": {
+   "ObjectName": "Augment_ARAM_Overflow",
+   "objectPath": "Maps/ModeSpecificData/Augments/ARAM_Overflow/Augment_ARAM_Overflow",
+   "mScriptName": "Augment_ARAM_Overflow",
+   "mSpell": {
+    "DataValues": [
+     {
+      "name": "InitialAmpPercent",
+      "values": [
+       10,
+       10,
+       10,
+       10,
+       10,
+       10,
+       10
+      ],
+      "__type": "SpellDataValue"
+     }
+    ],
+    "mSpellCalculations": {
+     "ManaCalc": {
+      "mMultiplier": {
+       "mNumber": 0.009999999776482582,
+       "__type": "NumberCalculationPart"
+      },
+      "mFormulaParts": [
+       {
+        "mDataValue": "InitialAmpPercent",
+        "__type": "NamedDataValueCalculationPart"
+       },
+       {
+        "mCoefficient": 0.004999999888241291,
+        "__type": "AbilityResourceByCoefficientCalculationPart"
+       }
+      ],
+      "mDisplayAsPercent": true,
+      "__type": "GameCalculation"
+     }
+    },
+    "mImgIconName": [
+     "ASSETS/Spells/Icons2D/Terrify.dds"
+    ],
+    "mClientData": {
+     "mTooltipData": {
+      "mObjectName": "Augment_ARAM_Overflow",
+      "mFormat": "{d7c27163}",
+      "mLocKeys": {
+       "keyName": "Cherry_Overflow_Name",
+       "keySummary": "Cherry_Overflow_Tooltip"
+      },
+      "__type": "TooltipInstanceSpell"
+     },
+     "__type": "SpellDataResourceClient"
+    },
+    "__type": "SpellDataResource"
+   },
+   "__type": "SpellObject"
+  }
+ }
+}

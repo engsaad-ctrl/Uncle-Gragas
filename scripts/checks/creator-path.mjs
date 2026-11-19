@@ -187,7 +187,11 @@ async function judge(championId, held, owned, level, ids) {
   return { stage, dom, rowOf, why, planFields: ids.some((id) => rowOf(id)?.plan !== undefined || rowOf(id)?.planError !== undefined) };
 }
 const legendary = (ids) => ids.map((id) => id % 10000).filter((id) => !boots.has(id));
-async function plan(championId, held, owned, level) { const { progress, refused } = appProgress(level); if (refused) return null; calls.mathBuild++; return (await s.mathBuild(championId, held, owned, undefined, undefined, undefined, progress)).map((r) => r.item.id); }
+// T167: a plan's purchase order (a merge row is not a buy) and its final inventory (a merge takes its ingredients out). Rows with no merge give the same list twice.
+const inventory = (rows) => rows.reduce((inv, r) => [...(r.consumes ? inv.filter((id) => !r.consumes.includes(id)) : inv), r.item.id], []);
+async function planRows(championId, held, owned, level) { const { progress, refused } = appProgress(level); if (refused) return null; calls.mathBuild++; return s.mathBuild(championId, held, owned, undefined, undefined, undefined, progress); }
+async function plan(championId, held, owned, level) { const rows = await planRows(championId, held, owned, level); return rows && rows.filter((r) => !r.consumes).map((r) => r.item.id); }
+async function planFinal(championId, held, owned, level) { const rows = await planRows(championId, held, owned, level); return rows && inventory(rows); }
 
 const out = [], detail = { games: [] };
 const T = { a: { all: 0, refused: 0, top: 0, tie: 0, none: 0, place: {}, dom: {}, trusted: { n: 0, top: 0, tie: 0 }, said: { n: 0, top: 0, tie: 0 }, conditional: { n: 0, top: 0 }, excluded: [] }, pre: { n: 0, topRerolled: 0, topKept: 0, none: 0 } };
@@ -252,7 +256,7 @@ for (const g of games) {
   const lastOwned = g.purchases.filter((p) => p.status === 'bought').map((p) => p.item_id);
   // The last round's level, or the last level the app accepts when that one is refused (said in the line).
   const lastLevel = [...g.rounds].reverse().find((x) => !appProgress(x.level).refused)?.level;
-  const fin = legendary((await plan(g.id, finalHeld, lastOwned, lastLevel)) ?? []);
+  const fin = legendary((await planFinal(g.id, finalHeld, lastOwned, lastLevel)) ?? []);
   const hit = known.filter((id) => fin.includes(id));
   out.push(`items, his known (bought or named, legendary, folded): ${known.map(itemName).join(', ') || 'none'}; engine plan with his augments at level ${lastLevel}: ${fin.map(itemName).join(', ')}; recall ${hit.length}/${known.length}; full-set and first-item likeness not counted (his final six are unknown)`);
   G.items = { known, plan: fin, hit, stages: stagesItems };

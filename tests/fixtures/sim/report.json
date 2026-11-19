@@ -1439,29 +1439,29 @@
    ],
    "variants": [
     {
-     "label": "Bread And Butter with no target skill given",
+     "label": "Bread And Butter with no target skill given (its fixed key Q is used, T133)",
      "change": {
-      "damage": -1073.6,
+      "damage": 0,
       "fromCards": 0,
       "effectiveHp": 0,
-      "healedHp": -278.26
+      "healedHp": 0
      },
      "hits": [],
      "units": {
-      "damage": 4483.31,
-      "fromAbilities": 2975.11,
+      "damage": 5556.91,
+      "fromAbilities": 4048.71,
       "fromAttacks": 954.2,
       "fromCards": 554,
       "fromAllies": 0,
       "effectiveHp": 9932.38,
-      "healedHp": 2516.36,
+      "healedHp": 2794.62,
       "abilityHealing": 0,
       "healingDenied": 0,
       "attacks": 13,
       "casts": {
        "R": 1,
-       "Q": 6,
-       "W": 2,
+       "Q": 10,
+       "W": 1,
        "E": 1
       },
       "perCast": {
@@ -1482,7 +1482,6 @@
       }
      },
      "notModelled": [
-      "Bread And Butter: المهارة المستهدفة غير محددة؛ أثر التسارع غير محسوب",
       "Nasus R: يفترض بقاء الهدف قرب Nasus؛ توقيت النبضات وتفعيل آثار الإصابة غير محسوبين",
       "Nasus R: الصحة والمقاومات المؤقتة محسوبة بمتوسط مدة نشاطها؛ مسار الصحة الفعلي عند البدء والانتهاء غير محسوب",
       "Nasus R: خفض تبريد Q يُحسب للإلقاءات الجديدة أثناء R؛ تغيير تبريد بدأ قبل R غير محسوب"

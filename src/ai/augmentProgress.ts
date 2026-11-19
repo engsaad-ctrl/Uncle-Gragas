@@ -8,6 +8,9 @@ export const AUGMENT_LEVELS = [3, 7, 11, 15] as const;
 export const MAYHEM_MAX_LEVEL = 21;
 /** Past this level the fight's champion growth and level numbers are not read (they stop or run on unchecked), so values there are partial. */
 export const FIGHT_READ_LEVEL = 18;
+/** T134: quest cards counted in hits or takedowns (Urf's Champion, From Downtown, Pursuit of Power). The match files hold no live count,
+ * so their reward counts only when the player marks the quest finished. Item quests complete from the items held (cardMath questItems). */
+export const HIT_QUEST_AUGMENTS = [1154, 2103, 2116, 2100] as const;
 
 export interface AugmentProgress {
   level?: number;
@@ -15,6 +18,14 @@ export interface AugmentProgress {
   acquiredLevels?: Record<number, number>;
   /** The skill shown by a targeted augment in this match. Unset means unknown. */
   abilityTargets?: Record<number, TargetAbility>;
+  /** Hit or takedown quest cards the player marked finished in this match (HIT_QUEST_AUGMENTS). Unset means not finished. */
+  questsDone?: number[];
+  /** T150: Mad Scientist's state since his last respawn, as the player sets it in F7 (grow or shrink). Unset means unknown: neither counts. */
+  madScientist?: 'grow' | 'shrink';
+  /** T153: Heartsteel's stacks (the permanent health its procs gave) as the player reads them in game and types in F7. Unset means unknown. */
+  heartsteelStacks?: number;
+  /** T155: that reading already holds Steel Your Heart's tripling (he ticked its quest done). Kept with the reading, not the card. */
+  heartsteelRewarded?: boolean;
   /** Some augment he took has no known level (the engine's own callers set this, never the page): no order among them is proven. */
   unknownPicks?: boolean;
   /** The caller vouches that acquiredLevels and otherPicks hold every augment taken (engine callers only, never the page). Without it no place in the order is proven. */
@@ -33,7 +44,7 @@ export interface AugmentProgress {
 export function parseAugmentProgress(value: unknown): AugmentProgress | undefined {
   if (value === undefined || value === null) return undefined;
   if (typeof value !== 'object' || Array.isArray(value)) throw new Error('bad augment progress');
-  const { level, acquiredLevels, abilityTargets } = value as Record<string, unknown>;
+  const { level, acquiredLevels, abilityTargets, questsDone, madScientist, heartsteelStacks, heartsteelRewarded } = value as Record<string, unknown>;
   const validLevel = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 3 && n <= MAYHEM_MAX_LEVEL;
   if (level !== undefined && !validLevel(level)) throw new Error('bad augment level');
   const history: Record<number, number> = {};
@@ -56,7 +67,11 @@ export function parseAugmentProgress(value: unknown): AugmentProgress | undefine
       targets[Number(id)] = key;
     }
   }
-  return { ...(level === undefined ? {} : { level }), acquiredLevels: history, ...(abilityTargets === undefined ? {} : { abilityTargets: targets }) };
+  if (questsDone !== undefined && (!Array.isArray(questsDone) || questsDone.length > 6 || new Set(questsDone).size !== questsDone.length || !questsDone.every((id) => Number.isSafeInteger(id) && id > 0))) throw new Error('bad augment quests');
+  if (madScientist !== undefined && madScientist !== 'grow' && madScientist !== 'shrink') throw new Error('bad augment state');
+  if (heartsteelRewarded !== undefined && heartsteelRewarded !== true) throw new Error('bad heartsteel stacks');
+  if (heartsteelStacks !== undefined && (typeof heartsteelStacks !== 'number' || !Number.isInteger(heartsteelStacks) || heartsteelStacks < 0 || heartsteelStacks > 20000)) throw new Error('bad heartsteel stacks');
+  return { ...(level === undefined ? {} : { level }), acquiredLevels: history, ...(abilityTargets === undefined ? {} : { abilityTargets: targets }), ...(questsDone === undefined ? {} : { questsDone: [...questsDone] as number[] }), ...(madScientist === undefined ? {} : { madScientist }), ...(heartsteelStacks === undefined ? {} : { heartsteelStacks }), ...(heartsteelRewarded ? { heartsteelRewarded } : {}) };
 }
 
 export function augmentStage(held: number[], progress?: AugmentProgress) {

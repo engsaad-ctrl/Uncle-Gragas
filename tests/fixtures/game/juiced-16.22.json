@@ -1,0 +1,219 @@
+{
+ "source": "knowledge/codex-claude/T045/raw/kiwi.bin.json",
+ "sha256": "d6422cef83eedad4da8f782d1eb1351482558a70265970f7db0d59cc05d67eb5",
+ "version": "16.22.8348910+branch.releases-16-22.content.release",
+ "records": {
+  "Maps/ModeSpecificData/Augments/ARAM_Juiced": {
+   "AugmentNameId": "ARAM_Juiced",
+   "NameTra": "Kiwi_Juiced_Name",
+   "DescriptionTra": "Kiwi_Juiced_Summary",
+   "AugmentTooltipTra": "Kiwi_Juiced_Tooltip",
+   "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_Juiced/Augment_ARAM_Juiced",
+   "mAugmentTags": 8,
+   "mBuildTags": 512,
+   "AugmentLargeIconPath": "assets/ux/kiwi/augments/icons/juiced_large.tex",
+   "AugmentSmallIconPath": "assets/ux/kiwi/augments/icons/juiced_small.tex",
+   "AugmentDisplayTags": [
+    2
+   ],
+   "AugmentPlatformId": 2016,
+   "__type": "AugmentData"
+  },
+  "Maps/ModeSpecificData/Augments/ARAM_Juiced/Augment_ARAM_Juiced": {
+   "ObjectName": "Augment_ARAM_Juiced",
+   "objectPath": "Maps/ModeSpecificData/Augments/ARAM_Juiced/Augment_ARAM_Juiced",
+   "mScriptName": "Augment_ARAM_Juiced",
+   "mSpell": {
+    "DataValues": [
+     {
+      "name": "ManaPercentDamagePercent",
+      "values": [
+       0.07000000029802322,
+       0.07000000029802322,
+       0.07000000029802322,
+       0.07000000029802322,
+       0.07000000029802322,
+       0.07000000029802322,
+       0.07000000029802322
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "MaxLevel",
+      "values": [
+       1,
+       1,
+       1,
+       1,
+       1,
+       1,
+       1
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "MaxLevelManaSpendThreshold",
+      "values": [
+       300,
+       300,
+       300,
+       300,
+       300,
+       300,
+       300
+      ],
+      "__type": "SpellDataValue"
+     },
+     {
+      "name": "MaxLevelPerTriggerDamageAmp",
+      "values": [
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612,
+       0.10000000149011612
+      ],
+      "__type": "SpellDataValue"
+     }
+    ],
+    "DataValuesModeOverride": {
+     "cherry": {
+      "SpellDataValues": [
+       {
+        "name": "ManaPercentDamagePercent",
+        "values": [
+         0.09000000357627869,
+         0.09000000357627869,
+         0.09000000357627869,
+         0.09000000357627869,
+         0.09000000357627869,
+         0.09000000357627869,
+         0.09000000357627869
+        ],
+        "__type": "SpellDataValue"
+       }
+      ],
+      "__type": "SpellDataValueVector"
+     }
+    },
+    "mSpellCalculations": {
+     "Calc_Damage": {
+      "mFormulaParts": [
+       {
+        "DataValue": "ManaPercentDamagePercent",
+        "__type": "{2b25a73a}"
+       }
+      ],
+      "mRangedMultiplier": {
+       "mNumber": 0.800000011920929,
+       "__type": "NumberCalculationPart"
+      },
+      "__type": "{e9a3c91d}"
+     },
+     "{89615869}": {
+      "mMultiplier": {
+       "mStat": 9,
+       "mCoefficient": 1,
+       "__type": "StatByCoefficientCalculationPart"
+      },
+      "mModifiedGameCalculation": "Calc_Damage",
+      "__type": "GameCalculationModified"
+     }
+    },
+    "mAnimationName": "",
+    "mImgIconName": [
+     "ASSETS/Spells/Icons2D/Icon_SummonerSpell_Augment_BannerOfCommand.dds"
+    ],
+    "spellCastTime": 0,
+    "spellTotalTime": 0,
+    "cooldownTime": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "Cooldown": {
+     "values": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "{0a3e0478}": 0,
+     "__type": "{0a0eddc9}"
+    },
+    "mSpellPassives": [
+     {
+      "mBuff": "Maps/ModeSpecificData/Augments/ARAM_Juiced/Augment_ARAM_Juiced",
+      "mRemoveWhenOnCooldown": false,
+      "__type": "SpellPassiveData"
+     }
+    ],
+    "castRange": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "castRangeValues": {
+     "values": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "{0a3e0478}": 0,
+     "__type": "{0a0eddc9}"
+    },
+    "castConeAngle": 0,
+    "castConeDistance": 0,
+    "missileSpeed": 0,
+    "mResourceResolvers": [
+     "Maps/ModeSpecificData/Augments/ARAM_Dropkick/Resources"
+    ],
+    "mClientData": {
+     "mTooltipData": {
+      "mObjectName": "Augment_ARAM_Juiced",
+      "mFormat": "{d7c27163}",
+      "mLocKeys": {
+       "keyName": "Kiwi_Juiced_Name",
+       "keySummary": "Kiwi_Juiced_Tooltip"
+      },
+      "mLists": {
+       "LevelUp": {
+        "Elements": [
+         {
+          "type": "ManaPercentDamagePercent",
+          "multiplier": 100,
+          "nameOverride": "Spell_ListType_AdditionalDamage",
+          "Style": 1,
+          "__type": "TooltipInstanceListElement"
+         }
+        ],
+        "__type": "TooltipInstanceList"
+       }
+      },
+      "__type": "TooltipInstanceSpell"
+     },
+     "__type": "SpellDataResourceClient"
+    },
+    "__type": "SpellDataResource"
+   },
+   "__type": "SpellObject"
+  }
+ }
+}

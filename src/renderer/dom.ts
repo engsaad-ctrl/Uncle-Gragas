@@ -44,7 +44,7 @@ declare global {
       augmentEffects(): Promise<Reply<AugmentEffect[]>>;
       /** The build without AI for a champion and the augments taken, each item with why it is in. */
       engineBuild(championId: number, augmentIds: number[], followLines?: boolean, owned?: number[], style?: 'ap' | 'ad' | 'tank' | 'aphp', stacks?: number, progress?: AugmentProgress):
-      Promise<Reply<{ item: ItemEntry; why: string[]; offPath?: boolean; missing?: string[] }[]>>;
+      Promise<Reply<{ item: ItemEntry; why: string[]; offPath?: boolean; missing?: string[]; consumes?: number[] }[]>>;
       /** His stacks by level 15 when his abilities grow with stacks, or null. */
       stackBase(championId: number): Promise<Reply<number | null>>;
       /** The other ways this champion's kit can be built (magic, physical, tank), besides his kit's own. */

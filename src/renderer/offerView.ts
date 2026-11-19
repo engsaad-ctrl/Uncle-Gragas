@@ -41,3 +41,10 @@ export function rangeComparison(cards: RangeCompareCard[]): RangeComparison | un
     ...(ranged.length === 1 ? { rangeTop: ranged[0]!.id } : {}), rangeUnread: cards.some((c) => c.range && !c.range.supported),
   };
 }
+
+/** T137: the stored games' win lift for a card the fight cannot value (src/ai/gameLift.ts). Its own line, never ranked or added to the fight. */
+export function gameLiftLine(lift: { points: number; players: number; stable: boolean } | undefined): string | undefined {
+  if (!lift) return undefined;
+  // T138 Codex wording. No card today has a rule that proves it cannot act on a champion (needHolds 'no' needs a melee/ranged need, none exists), so the line is never hidden by champion.
+  return `من المباريات، مجمّع عبر الأبطال: ⁦${lift.points > 0 ? '+' : ''}${lift.points.toFixed(1)}⁩ نقطة مئوية في الفوز (${lift.players.toLocaleString('en')} مشاركة). فرق معدّل حسب البطل ومقلّص نحو الصفر؛ ارتباط لا سبب، وخارج نسبة القتال.${lift.stable ? '' : ' اتجاه الفرق يختلف بين نصفي المباريات.'}`;
+}

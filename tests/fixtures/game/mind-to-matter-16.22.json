@@ -1,0 +1,61 @@
+{
+ "source": "knowledge/codex-claude/T045/raw/kiwi.bin.json",
+ "sha256": "d6422cef83eedad4da8f782d1eb1351482558a70265970f7db0d59cc05d67eb5",
+ "version": "16.22.8348910+branch.releases-16-22.content.release",
+ "records": {
+  "Maps/ModeSpecificData/Augments/ARAM_MindtoMatter": {
+   "AugmentNameId": "ARAM_MindtoMatter",
+   "NameTra": "Kiwi_ARAM_MindtoMatter_Name",
+   "DescriptionTra": "Cherry_MindtoMatter_Summary",
+   "AugmentTooltipTra": "Cherry_MindToMatter_Tooltip",
+   "RootSpell": "Maps/ModeSpecificData/Augments/ARAM_MindtoMatter/Augment_ARAM_MindtoMatter",
+   "mAugmentTags": 8,
+   "mBuildTags": 2080,
+   "AugmentLargeIconPath": "assets/ux/cherry/augments/icons/mindtomatter_large.tex",
+   "AugmentSmallIconPath": "assets/ux/cherry/augments/icons/mindtomatter_small.tex",
+   "AugmentDisplayTags": [
+    3
+   ],
+   "AugmentPlatformId": 1056,
+   "__type": "AugmentData"
+  },
+  "Maps/ModeSpecificData/Augments/ARAM_MindtoMatter/Augment_ARAM_MindtoMatter": {
+   "ObjectName": "Augment_ARAM_MindtoMatter",
+   "objectPath": "Maps/ModeSpecificData/Augments/ARAM_MindtoMatter/Augment_ARAM_MindtoMatter",
+   "mScriptName": "Augment_ARAM_MindtoMatter",
+   "mSpell": {
+    "DataValues": [
+     {
+      "name": "ConvertCap",
+      "values": [
+       99999,
+       99999,
+       99999,
+       99999,
+       99999,
+       99999,
+       99999
+      ],
+      "__type": "SpellDataValue"
+     }
+    ],
+    "mSpellCalculations": {
+     "ManaToHealthCalc": {
+      "mFormulaParts": [
+       {
+        "mCoefficient": 0.5,
+        "__type": "AbilityResourceByCoefficientCalculationPart"
+       }
+      ],
+      "__type": "GameCalculation"
+     }
+    },
+    "mImgIconName": [
+     "ASSETS/Spells/Icons2D/Terrify.dds"
+    ],
+    "__type": "SpellDataResource"
+   },
+   "__type": "SpellObject"
+  }
+ }
+}

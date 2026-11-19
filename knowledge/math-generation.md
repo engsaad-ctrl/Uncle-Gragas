@@ -92,3 +92,19 @@ Not modelled: whether the fight is "in champion combat" from its first second (t
 Consequence to know: an open-condition card's value is now its value if the condition holds, about twice what it showed, so a plain list sorted by value can put it above certain cards; its note and "not certain" say why.
 
 Open conditions are ranked apart (the owner, 2026-11-09, «Yes, separate them»): each row carries `open` (the conditions), the relative place among a rarity is computed among settled cards and among open ones separately (overlay `mathPlaces`), an open card's tag reads "N% مشروط" with its conditions in the tooltip, and an offer lists settled cards first, then open ones, then those with no value (`rankOffer`). The overlay was not opened to look at it (no Electron start); the ranking is tested in tests/app/walk.test.ts.
+
+## Mind to Matter (1056), T121 (2026-11-16)
+
+The 16.22 kiwi file (`knowledge/codex-claude/T045/raw/kiwi.bin.json`, sha256 `d6422cef…67eb5`, version `16.22.8348910+branch.releases-16-22.content.release`) gives `ManaToHealthCalc` as one `AbilityResourceByCoefficientCalculationPart` with coefficient 0.5, pinned in `tests/fixtures/game/mind-to-matter-16.22.json`. The row in `augment-math-file.jsonl` is now one `convert` op, mana to health at 0.5, read from total modeled maximum mana (champion, level growth, item mana); manaless and energy champions get nothing. It stays `partial`: `ConvertCap=99999` is in the file, but whether it caps the mana read or the health added is not established, so only the linear part is modeled. The old note ("no mana in the fight forms") was stale: the fight already models mana.
+
+## Juiced (2016), T122a (2026-11-16)
+
+The 16.22 kiwi `Augment_ARAM_Juiced` `Calc_Damage` (pinned in `tests/fixtures/game/juiced-16.22.json`) is `ManaPercentDamagePercent` 0.07 of maximum mana with `mRangedMultiplier` 0.8. The active definition is the `math-overrides.json` card row (its `expectedInputs` guard is unchanged): two on-hit procs, 0.07 of mana for melee and 0.056 for ranged, chosen by the existing `needs` attack-type filter. It stays `partial`: its critical strike and the `MaxLevel*` fields are not modeled.
+
+## Overflow (1311), T122b (2026-11-16)
+
+The 16.22 kiwi `Augment_ARAM_Overflow` `ManaCalc` (pinned in `tests/fixtures/game/overflow-16.22.json`) is 0.01 x (`InitialAmpPercent` 10 + 0.005 x maximum mana): one ability-damage bonus, 1.10 + 0.00005 x mana. The row in `card-fixes-3.jsonl` now gives it as one `mana_amp` with `base: 0.1` (a new optional field: the factor is 1 + base + per100 x mana / 100, the mana part only when he has mana), replacing a `damage_amp` 1.1 times the mana part (1.155 at 1,000 mana, now 1.15). Doubled mana costs and the heal and shield power terms are unchanged.
+
+## Salvation (3039), T122c (2026-11-16)
+
+New rows in `augment-math-3.jsonl`, `augment-math-file.jsonl` and `card-needs.jsonl` (class other). The 16.22 kiwi `Augment_Salvation` `Damage` (pinned in `tests/fixtures/game/salvation-16.22.json`) is 100-500 by level + 1.25 bonus AD + 0.75 AP; `HealthPercentTrigger` 0.5, `KnockbackRange` 600, `AuraCooldown` 90. Only the wave's damage on the main enemy is modeled, as one magic proc after the existing low-health estimate, within the attack-range proxy, at most once a fight. `HealHealthRatio` 0.1 is not in the stored `TotalHeal` calculation; the ally heal and the knockback are not modeled.

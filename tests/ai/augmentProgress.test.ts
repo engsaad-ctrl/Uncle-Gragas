@@ -41,6 +41,11 @@ describe('progress input from a renderer or phone', () => {
     expect(parseAugmentProgress({ level: 9, abilityTargets: { 1103: 'W', 1150: 'Q' } })).toEqual({ level: 9, acquiredLevels: {}, abilityTargets: { 1103: 'W', 1150: 'Q' } });
     expect(parseAugmentProgress({ abilityTargets: Object.fromEntries(Array.from({ length: 9 }, (_, i) => [i + 1, 'E'])) })?.abilityTargets).toHaveProperty('9', 'E');
   });
+  it('keeps the quests the player marked finished, and refuses a malformed list (T134)', () => {
+    expect(parseAugmentProgress({ level: 9, questsDone: [1154] })).toEqual({ level: 9, acquiredLevels: {}, questsDone: [1154] });
+    expect(parseAugmentProgress({ level: 9 })).not.toHaveProperty('questsDone');
+    for (const questsDone of [null, {}, '1154', [0], [1.5], [-1], ['1154'], [1154, 1154], [1, 2, 3, 4, 5, 6, 7]]) expect(() => parseAugmentProgress({ questsDone })).toThrow('bad augment quests');
+  });
   it.each([null, [], 'Q', { 1103: 'P' }, { 1103: 'q' }, { 1103: 1 }, { 0: 'Q' }, { '1.5': 'Q' }, { '9007199254740992': 'Q' }, Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, 'Q']))])('rejects invalid ability target maps %j', (abilityTargets) => {
     expect(() => parseAugmentProgress({ abilityTargets })).toThrow(/bad augment ability targets/);
   });

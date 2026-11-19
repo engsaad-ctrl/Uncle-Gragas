@@ -3,7 +3,7 @@
 // move speed is worth nothing in a fight model, yet a champion has to reach the fight, so one pair comes second and the fight chooses which.
 
 import { ONE_OF } from '../app/buildEngine.js';
-import { FIGHT, fight, type CardNumbers, type CardOp, type EnemyTeam, type FightResult, type Kit } from './cardMath.js';
+import { FIGHT, fight, type CardNumbers, type CardOp, type EnemyTeam, type FightResult, type Kit, type AttackAccess } from './cardMath.js';
 import { itemOpsOf } from './itemIdentity.js';
 import type { KnownRanks, SkillPlan } from './abilityRank.js';
 import { championRecord } from './calculator.js';
@@ -12,7 +12,9 @@ import { CHAMPION_KITS } from './championKits.js';
 import type { GameItem } from '../texts/gameData.js';
 
 export interface PoolItem { id: number; gold: number; boots: boolean; damage?: 'ap' | 'ad' | 'none' | string }
-export interface MathStep { id: number; damage: number; health: number; reason: 'owned' | 'required' | 'mana' | 'stacks' | 'augment' | 'boots' | 'math' }
+export interface MathStep { id: number; damage: number; health: number; reason: 'owned' | 'required' | 'mana' | 'stacks' | 'augment' | 'boots' | 'math' | 'merge'; /** T166: a merge step: the items it takes out of the inventory (Ultra Hydra: the three Hydras). It costs no gold and is never a purchase. */ consumes?: number[] }
+/** T166: the items held after the steps, in order: each step adds its item, and a merge step first takes out what it consumes. */
+export const inventoryOf = (steps: readonly { id: number; consumes?: readonly number[] }[]) => steps.reduce<number[]>((inv, x) => [...(x.consumes ? inv.filter((id) => !x.consumes!.includes(id)) : inv), x.id], []);
 /** A champion's place in a team's fight: his share of the enemy's damage with no items, how fast it grows as he buys health from `health0`, that damage per second, and what a point absorbed for the team is worth in points of damage. */
 export interface TeamPlace { /** More of the enemy damage than his share says (frontline, FRONT_DRAW). */ draw?: number; carriesHealth?: boolean; healWorth?: number; share: number; rise: number; health0: number; maxRatio?: number; enemyDps: number; absorbedWorth: number; window?: number }
 /** A burst champion's damage comes in a few seconds from his abilities and ultimate, then he leaves: the owner's rule (Ahri, Zed). Assumption: the window, tried at 2 to 5 s and chosen on the owner's cases (knowledge/burst-value-plan.md). */
@@ -141,7 +143,7 @@ export function searchSet(o: { start: number[]; candidates: number[]; slots: num
   return best;
 }
 
-export function mathBuild(o: { /** The live level is a floor: a late purchase never takes the champion back to level 5. */ level?: number; /** He can't buy boots (Cassiopeia): six other items. */ noBoots?: boolean; /** A card that needs one item of a kind (Upgrade Sheen: any Spellblade item): one of each group, which one by the whole build. */ requiredAnyOf?: number[][]; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; plannedItem?: number; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number; knownRanks?: KnownRanks; skillPlan?: SkillPlan; /** His kit and team place made again from fewer cards, for "would another item be best without this augment". */ contextFor?: (cards: CardNumbers[]) => { kit: Kit; place: TeamPlace } }): MathStep[] {
+export function mathBuild(o: { /** The live level is a floor: a late purchase never takes the champion back to level 5. */ level?: number; /** He can't buy boots (Cassiopeia): six other items. */ noBoots?: boolean; /** A card that needs one item of a kind (Upgrade Sheen: any Spellblade item): one of each group, which one by the whole build. */ requiredAnyOf?: number[][]; /** T166: quests that merge held items into one item (Ultra Hydra: its three Hydras into 226668). */ merges?: { from: number[]; into: number }[]; bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; cards: CardNumbers[]; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; pool: PoolItem[]; owned: number[]; required: number[]; plannedItem?: number; place: TeamPlace; enemy?: EnemyTeam; offKind?: (i: PoolItem, held: number[]) => boolean; manaFirst?: boolean; stacks?: number; /** T153: Heartsteel's stacks as he reads them (F7). */ heartsteelStacks?: number; heartsteelRewarded?: boolean; knownRanks?: KnownRanks; skillPlan?: SkillPlan; /** T120b: an explicit approach scenario for every fight of this search; omitted, the default. */ attackAccess?: AttackAccess; /** His kit and team place made again from fewer cards, for "would another item be best without this augment". */ contextFor?: (cards: CardNumbers[]) => { kit: Kit; place: TeamPlace } }): MathStep[] {
   // The game's own limits on what can be held together, and those its file doesn't name.
   const clashes = (id: number, held: number[]) => ONE_OF.some((g) => g.includes(id % 10000) && held.some((x) => x !== id && g.includes(x % 10000))) || (o.shop[id]?.limits ?? []).some((g) => held.some((x) => x !== id && o.shop[x]?.limits?.includes(g)));
   // One fight context: the cards and what they make of him (his kit, his place in the team). The build's own is `full`.
@@ -153,7 +155,7 @@ export function mathBuild(o: { /** The live level is a floor: a late purchase ne
     const at = Math.max(o.level ?? 1, level), key = `${ctx.key}|${at}|${list.join()}`;
     let r = fights.get(key);
     if (!r) {
-      r = fight({ bin: o.bin, shop: o.shop, kit: ctx.kit, cards: ctx.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level: at, stacks: o.stacks, incomingDps: ctx.place.share * ctx.place.enemyDps * (ctx.place.draw ?? 1), knownRanks: o.knownRanks, skillPlan: o.skillPlan });
+      r = fight({ bin: o.bin, shop: o.shop, kit: ctx.kit, cards: ctx.cards, passive: o.passive, itemOps: o.itemOps, enemy: o.enemy, items: list, level: at, stacks: o.stacks, ...(o.heartsteelStacks === undefined ? {} : { heartsteelStacks: o.heartsteelStacks }), ...(o.heartsteelRewarded ? { heartsteelRewarded: true } : {}), incomingDps: ctx.place.share * ctx.place.enemyDps * (ctx.place.draw ?? 1), knownRanks: o.knownRanks, skillPlan: o.skillPlan, ...(o.attackAccess ? { attackAccess: o.attackAccess } : {}) });
       fights.set(key, r);
     }
     return r;
@@ -176,11 +178,17 @@ export function mathBuild(o: { /** The live level is a floor: a late purchase ne
 
   // The set: what adds most to the fight at the build's full size.
   const set = [...o.owned];
+  // T166: a merge the build can reach: its reward not owned, its ingredients asked for, its item read, and room to hold the ingredients at once.
+  // An owned reward (226668 held) asks for no ingredients. The final set holds the merged item in one slot; the search fills the slots it frees.
+  const merges = (o.merges ?? []).filter((m) => !o.owned.includes(m.into) && m.from.every((id) => o.required.includes(id)) && !!o.shop[m.into] && o.owned.filter((id) => !m.from.includes(id)).length + m.from.length <= SLOTS);
+  const spent = new Set([...merges.flatMap((m) => m.from), ...(o.merges ?? []).filter((m) => o.owned.includes(m.into)).flatMap((m) => m.from)]);
+  const required = o.required.filter((id) => !spent.has(id));
+  for (const m of merges) { for (const id of m.from) { const i = set.indexOf(id); if (i >= 0) set.splice(i, 1); } set.push(m.into); }
   // Reserve the finished item for a staged purchase, without moving it to the front of the buy order.
   const planned = o.plannedItem;
   if (planned !== undefined && set.length < SLOTS && !set.includes(planned) && !clashes(planned, set) && o.shop[planned]) set.push(planned);
   // What a card asks for passes the one-of limits among themselves: Ultra Hydra's quest is to hold all three Hydras, which the shop otherwise allows one at a time.
-  for (const id of o.required) if (set.length < SLOTS && !set.includes(id) && !clashes(id, set.filter((x) => !o.required.includes(x))) && o.shop[id]) set.push(id);
+  for (const id of required) if (set.length < SLOTS && !set.includes(id) && !clashes(id, set.filter((x) => !required.includes(x))) && o.shop[id]) set.push(id);
   const isBoots = (id: number) => o.pool.find((p) => p.id === id)?.boots;
   // The owner's rule: a mage starts with a mana item (Luden's, Blackfire Torch), as his mana runs out fast without one; which one, by the full build.
   const mana = (id: number) => (o.shop[id]?.DataValues?.find((d) => d.name === 'FlatMPPoolMod')?.values?.[0] ?? 0) > 0;
@@ -213,19 +221,38 @@ export function mathBuild(o: { /** The live level is a floor: a late purchase ne
   const grows = (id: number) => heartsteel(id) || (itemOpsOf(o.itemOps, id) ?? []).some((x) => x.op === 'per_stack' && x.per !== 'attack');
   const steps: MathStep[] = o.owned.map((id) => ({ id, damage: 0, health: 0, reason: 'owned' }));
   const held = [...o.owned];
+  // T166: the level never goes back when a merge frees slots: it is the highest the item count has reached.
+  let reached = LEVEL_BY_ITEMS[Math.min(held.length, 6)]!; // T167: from what he owns, before any merge takes items out
+  const levelAt = () => (reached = Math.max(reached, LEVEL_BY_ITEMS[Math.min(held.length, 6)]!));
   const buy = (id: number, reason: MathStep['reason']) => {
-    const level = LEVEL_BY_ITEMS[Math.min(held.length, 6)]!;
+    const level = levelAt();
     const a = run(held, level), b = run([...held, id], level);
     steps.push({ id, damage: a.damage ? b.damage / a.damage - 1 : 0, health: a.effectiveHp ? b.effectiveHp / a.effectiveHp - 1 : 0, reason });
     held.push(id);
   };
+  // T166: the missing ingredients, the last one straight to the merged inventory (no fight stage holds all of them), then the merge row.
+  for (const m of merges) {
+    const mergeNow = (from: number[]) => { const after = [...held.filter((x) => !m.from.includes(x)), m.into]; held.splice(0, held.length, ...after); steps.push({ id: m.into, damage: 0, health: 0, reason: 'merge', consumes: [...from] }); };
+    for (const id of m.from) {
+      if (held.includes(id)) continue;
+      if (!m.from.every((x) => x === id || held.includes(x))) { buy(id, 'required'); continue; }
+      const level = levelAt(), after = [...held.filter((x) => !m.from.includes(x)), m.into];
+      const a = run(held, level), b = run(after, level);
+      steps.push({ id, damage: a.damage ? b.damage / a.damage - 1 : 0, health: a.effectiveHp ? b.effectiveHp / a.effectiveHp - 1 : 0, reason: 'required' });
+      held.push(id);
+      mergeNow(m.from);
+    }
+    if (m.from.every((x) => held.includes(x))) mergeNow(m.from); // all owned already: merged at once
+  }
+  // T167: the merges come first (a ready one at once), so a stacking item bought before them can never leave no room for the last ingredient.
+  // An intended exception to the stacking-first rule (35), only while a merge is active: Heartsteel then waits for the quest even when it would fit (Codex T168).
   for (const id of set) if (heartsteel(id) && !held.includes(id)) buy(id, 'stacks');
-  for (const id of [...o.required, ...fromGroups]) if (set.includes(id) && !held.includes(id)) buy(id, 'required');
+  for (const id of [...required, ...fromGroups]) if (set.includes(id) && !held.includes(id)) buy(id, 'required');
   if (manaItem !== undefined && !held.includes(manaItem)) buy(manaItem, 'mana');
   while (held.length < set.length) {
     const boots = set.find((id) => isBoots(id) && !held.includes(id));
     if (boots !== undefined && held.length >= 1) { buy(boots, 'boots'); continue; }
-    const level = LEVEL_BY_ITEMS[Math.min(held.length, 6)]!;
+    const level = levelAt();
     // An item that grows with stacks (Heartsteel, Hubris, Rod of Ages) first: the set is valued with the stacks of a whole game, which only buying it first earns (the owner).
     // What a held augment asks for now comes before those (augmentLed).
     const left = set.filter((id) => !held.includes(id) && !isBoots(id));

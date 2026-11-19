@@ -13,8 +13,11 @@ describe('the real card rows', () => {
     const card = CARD_NUMBERS.find((c) => c.id === 1333)!;
     expect(lowHealthTermOf(card)).toEqual({ kind: 'shield', below: 0.35, maxHealthShare: 0.65, decays: false });
   });
+  it('Salvation (3039, T122c): below 50%, a wave that is not a shield: named, with no shield or heal amount', () => {
+    expect(lowHealthTermOf(CARD_NUMBERS.find((c) => c.id === 3039)!)).toEqual({ kind: 'unread', below: 0.5, reason: 'not-a-shield' });
+  });
   it('no other card row gives a low-health term', () => {
-    expect(CARD_NUMBERS.filter((c) => lowHealthTermOf(c)).map((c) => c.id)).toEqual([1333]);
+    expect(CARD_NUMBERS.filter((c) => lowHealthTermOf(c)).map((c) => c.id)).toEqual([1333, 3039]);
   });
 });
 

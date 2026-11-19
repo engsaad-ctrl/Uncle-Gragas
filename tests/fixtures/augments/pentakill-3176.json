@@ -1,0 +1,22 @@
+{
+ "entry": {
+  "id": 3176,
+  "augmentNameId": "GoH_PentakillAug_Generic",
+  "nameTRA": "   ",
+  "simpleNameTRA": "",
+  "summaryDescription": "",
+  "augmentSmallIconPath": "/lol-game-data/assets/ASSETS/UX/Kiwi/Augments/Icons/Pentakill_small.png",
+  "rarity": "kGold"
+ },
+ "strings": {
+  "kiwi_goh_pentakill_title": "بنتاكيل"
+ },
+ "provenance": {
+  "from": "knowledge/match-review/augment-3176-fixture.json",
+  "entrySha256": "5a26ef620b540784bbcd540f3196b138210a88e589e126127a9eddef8eb4d451",
+  "wholeFileSha256": "b59b66e71751276ad913fc8028bea9851a4e6f5c3ed44c7afc70422082c5af88",
+  "wholeFileBytes": 140416,
+  "titleKey": "kiwi_goh_pentakill_title",
+  "titleFrom": "cached game string table"
+ }
+}

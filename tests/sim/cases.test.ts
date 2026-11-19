@@ -147,6 +147,29 @@ describe('fixed fight cases on pinned 16.22 files', () => {
     expect(r.damageBySecond[0]! - base.damageBySecond[0]!).toBeCloseTo(30);
     expect(r.notModelled.join(' ')).toContain('Nasus R');
   });
+  it('T142: Pursuit of Power bound to R raises the Nasus R storm by 30% once; bound to Q it leaves the storm as it was', async () => {
+    const rawBin = await loadChampionBin(opts, manifest.contentVersion, 'nasus');
+    const pursuit = (abilityKey: TargetAbility): CardNumbers => ({ ...CARD_NUMBERS.find((c) => c.id === 2116)!, abilityKey, questDone: true });
+    const cast = (cards: CardNumbers[]) => fight({
+      bin: withDamageTypes(rawBin, TOOLTIPS), shop: {}, kit: { damage: 'physical', attacks: false },
+      items: [], cards, level: 6, knownRanks: { level: 6, ranks: { Q: 0, W: 0, E: 0, R: 1 } },
+      enemy: { armor: 0, mr: 100, physicalShare: 0.5, hp: 2000 },
+    });
+    const base = cast([]);
+    expect(cast([pursuit('R')]).fromAbilities).toBeCloseTo(base.fromAbilities * 1.3);
+    expect(cast([pursuit('Q')]).fromAbilities).toBeCloseTo(base.fromAbilities);
+  });
+  it('T146: Forged By The Master leaves the Nasus R storm (his ability dot) as it was', async () => {
+    const rawBin = await loadChampionBin(opts, manifest.contentVersion, 'nasus');
+    const cast = (cards: CardNumbers[]) => fight({
+      bin: withDamageTypes(rawBin, TOOLTIPS), shop: {}, kit: { damage: 'physical', attacks: false },
+      items: [], cards, level: 6, knownRanks: { level: 6, ranks: { Q: 0, W: 0, E: 0, R: 1 } },
+      enemy: { armor: 0, mr: 100, physicalShare: 0.5, hp: 2000 },
+    });
+    const base = cast([]);
+    expect(base.fromAbilities).toBeCloseTo(450);
+    expect(cast([CARD_NUMBERS.find((c) => c.id === 2127)!]).fromAbilities).toBeCloseTo(base.fromAbilities);
+  });
   it('shortens only the cooldown of a landed Gragas E using the pinned refund', async () => {
     const rawBin = await loadChampionBin(opts, manifest.contentVersion, 'gragas');
     const bin = withDamageTypes(rawBin, TOOLTIPS);

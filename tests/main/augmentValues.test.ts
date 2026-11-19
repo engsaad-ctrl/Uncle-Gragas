@@ -25,8 +25,11 @@ vi.mock('../../src/ai/cardMathData.js', () => ({ SPELL_HITS: {}, ITEM_NUMBERS: [
   { id: 90003, name: 'Unreadable', status: 'unreadable', ops: [] },
   { id: 3086, name: 'BEES!!!', status: 'computed', ops: [] },
   { id: 1103, name: 'Bread And Butter', status: 'computed', ops: [{ op: 'add', stat: 'haste', value: 100, scope: 'chosen_ability' }] },
+  { id: 90004, name: 'Targeted haste', status: 'computed', ops: [{ op: 'add', stat: 'haste', value: 100, scope: 'chosen_ability' }] },
+  // A hit quest under a real hit-quest id: only HIT_QUEST_AUGMENTS take the player's mark (T134).
+  { id: 1154, name: 'Hit quest', status: 'partial', ops: [{ op: 'add', stat: 'hp', value: 500, after_quest: true }] },
 ] }));
-vi.mock('../../src/texts/augmentsLoader.js', () => ({ loadAugments: async () => ({ version: 'test', stale: false, augments: [90001, 90002, 90003, 1103, 3086].map((id) => ({ id, ids: [id], enName: String(id), rarity: 'gold', modes: ['mayhem'] })) }) }));
+vi.mock('../../src/texts/augmentsLoader.js', () => ({ loadAugments: async () => ({ version: 'test', stale: false, augments: [90001, 90002, 90003, 1103, 3086, 90004, 1154].map((id) => ({ id, ids: [id], enName: String(id), rarity: 'gold', modes: ['mayhem'] })) }) }));
 
 import { createServices } from '../../src/main/services.js';
 import { enemyTeam } from '../../src/ai/itemMath.js';
@@ -43,7 +46,7 @@ describe('augment values across separate offers', () => {
   });
   it('evaluates the actual delayed level through the levels before the next offer', async () => {
     const rows = await services().cardValues(103, [90003], [], undefined, { level: 9, acquiredLevels: { 90003: 3 } });
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(5); // 90001, 90002, 1103, 90004 (the targeted card with no fixed key) and the hit quest 1154
     expect(rows[0]).toMatchObject({ level: 9, untilLevel: 10, estimatedLevel: false, certain: false });
     expect(rows[0]!.missing).toContain('لا يملك معادلات');
   });
@@ -193,8 +196,8 @@ describe('augment values across separate offers', () => {
     b.q = { __type: 'SpellObject', mSpell: { cooldownTime: [12, 12, 12, 12, 12, 12], mSpellCalculations: { Damage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 100 }] } } } };
     try {
       const s = services();
-      const unknown = (await s.cardValues(103, [], [], undefined, { level: 11 }, [1103])).find((r) => r.id === 1103)!;
-      const selected = (await s.cardValues(103, [], [], undefined, { level: 11, abilityTargets: { 1103: 'Q' } }, [1103])).find((r) => r.id === 1103)!;
+      const unknown = (await s.cardValues(103, [], [], undefined, { level: 11 }, [90004])).find((r) => r.id === 90004)!;
+      const selected = (await s.cardValues(103, [], [], undefined, { level: 11, abilityTargets: { 90004: 'Q' } }, [90004])).find((r) => r.id === 90004)!;
       expect(unknown).toMatchObject({ certain: false, currentValue: 0 });
       expect(unknown.missing).toContain('غير محددة');
       expect(unknown.plan!.missing.join(' ')).toContain('غير محددة');
@@ -203,14 +206,36 @@ describe('augment values across separate offers', () => {
       expect(selected.currentValue).toBeGreaterThan(unknown.currentValue);
       expect(selected.plan!.value).toBeGreaterThan(unknown.plan!.value);
       expect(selected.plan!.missing).toEqual([]);
-      const unknownBuild = await s.mathBuild(103, [1103], [], undefined, undefined, undefined, { level: 11, acquiredLevels: { 1103: 7 } });
-      const selectedBuild = await s.mathBuild(103, [1103], [], undefined, undefined, undefined, { level: 11, acquiredLevels: { 1103: 7 }, abilityTargets: { 1103: 'Q' } });
+      const unknownBuild = await s.mathBuild(103, [90004], [], undefined, undefined, undefined, { level: 11, acquiredLevels: { 90004: 7 } });
+      const selectedBuild = await s.mathBuild(103, [90004], [], undefined, undefined, undefined, { level: 11, acquiredLevels: { 90004: 7 }, abilityTargets: { 90004: 'Q' } });
       expect(unknownBuild[0]!.missing.join(' ')).toContain('غير محددة');
       expect(selectedBuild[0]!.missing).toEqual(['رتب المهارات توزيع قانوني متساوٍ للنقاط، لا قراءة من المباراة']);
       // Ranks read from the live game (set by the main process) replace the even allocation and its note.
-      const readBuild = await s.mathBuild(103, [1103], [], undefined, undefined, undefined, { level: 11, acquiredLevels: { 1103: 7 }, abilityTargets: { 1103: 'Q' }, abilityRanks: { Q: 5, W: 1, E: 1, R: 2 } });
+      const readBuild = await s.mathBuild(103, [90004], [], undefined, undefined, undefined, { level: 11, acquiredLevels: { 90004: 7 }, abilityTargets: { 90004: 'Q' }, abilityRanks: { Q: 5, W: 1, E: 1, R: 2 } });
       expect('missing' in readBuild[0]! ? readBuild[0].missing : null).toEqual([]);
     } finally { b.rec = previous; delete b.q; }
+  });
+  it('values Bread And Butter on its fixed key Q when no key is set (T133)', async () => {
+    const b = fixture.bin as Record<string, unknown>, previous = b.rec;
+    b.rec = { ...(previous as object), spells: ['q'] };
+    b.q = { __type: 'SpellObject', mSpell: { cooldownTime: [12, 12, 12, 12, 12, 12], mSpellCalculations: { Damage: { mFormulaParts: [{ __type: 'NumberCalculationPart', mNumber: 100 }] } } } };
+    try {
+      const s = services();
+      const unset = (await s.cardValues(103, [], [], undefined, { level: 11 }, [1103])).find((r) => r.id === 1103)!;
+      const q = (await s.cardValues(103, [], [], undefined, { level: 11, abilityTargets: { 1103: 'Q' } }, [1103])).find((r) => r.id === 1103)!;
+      expect(unset.missing).toBeNull();
+      expect(unset.currentValue).toBeGreaterThan(0);
+      expect(unset.currentValue).toBe(q.currentValue);
+      expect(unset.plan!.value).toBe(q.plan!.value);
+      expect(await s.buildStyles(103, [1103])).toEqual(await s.buildStyles(103, [1103], { abilityTargets: { 1103: 'Q' } }));
+    } finally { b.rec = previous; delete b.q; }
+  });
+  it('counts a held hit quest reward only when the player marks it finished (T134)', async () => {
+    // The held quest's +500 health is the base the offered +100 health is measured on: marked finished, that base is larger.
+    const s = services();
+    const value = async (questsDone?: number[]) => (await s.cardValues(103, [1154], [], undefined, { level: 11, acquiredLevels: { 1154: 3 }, ...(questsDone ? { questsDone } : {}) }, [90001])).find((r) => r.id === 90001)!.currentValue;
+    expect(await value([1154])).not.toBe(await value());
+    expect(await value([])).toBe(await value());
   });
   it('re-evaluates available build roles when targeted haste changes AP scaling', async () => {
     const b = fixture.bin as Record<string, unknown>, previous = b.rec;
@@ -218,8 +243,8 @@ describe('augment values across separate offers', () => {
     b.q = { __type: 'SpellObject', mSpell: { cooldownTime: [12, 12, 12, 12, 12, 12], mSpellCalculations: { Damage: { mFormulaParts: [{ __type: 'StatByCoefficientCalculationPart', mStat: 0, mCoefficient: 1.4 }] } } } };
     try {
       const s = services();
-      expect(await s.buildStyles(103, [1103])).not.toContain('ap');
-      expect(await s.buildStyles(103, [1103], { abilityTargets: { 1103: 'Q' } })).toContain('ap');
+      expect(await s.buildStyles(103, [90004])).not.toContain('ap');
+      expect(await s.buildStyles(103, [90004], { abilityTargets: { 90004: 'Q' } })).toContain('ap');
     } finally { b.rec = previous; delete b.q; }
   });
 });

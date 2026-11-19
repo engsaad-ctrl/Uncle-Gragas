@@ -166,7 +166,7 @@
    },
    "variants": [
     {
-     "label": "Bread And Butter with no target skill given",
+     "label": "Bread And Butter with no target skill given (its fixed key Q is used, T133)",
      "abilityKey": null
     },
     {

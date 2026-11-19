@@ -533,6 +533,22 @@ describe('effects that wait seconds of champion combat (timing)', () => {
   });
 });
 
+// T139b (Codex T138): asked per call (card values), the waited share of the next cast counts in his damage, in his damage by second and in
+// his own damage by second alike, so a Riftmaker-style omnivamp that waits 14.5 s heals from what comes after 14.5 s, the share included.
+it('partialLastCast per call: the share of the next cast is in his own seconds too, and the default keeps whole casts', () => {
+  // A Q of 1 x his armor every 4 s (0, 4, 8, 12 s; ready again at 16 s), magic kit, no attacks: three quarters of a fifth cast are waited out.
+  const q4 = { rec: { ...bin.rec, spells: ['x/q'] }, 'x/q': { __type: 'SpellObject', mSpell: { cooldownTime: [4, 4, 4, 4, 4, 4], mSpellCalculations: { TotalDamage: { mFormulaParts: [{ __type: 'StatByCoefficientCalculationPart', mStat: 1, mCoefficient: 1 }] } } } } };
+  const vamp = card('rift', [{ op: 'add', stat: 'omnivamp', value: 0.1 * 0.5 / 15, needs: '14.5 seconds in champion combat' } as CardOp]);
+  const go = (partialLastCast?: boolean) => fight({ bin: q4, shop: {}, kit: { damage: 'magic', attacks: false }, items: [], cards: [vamp], level: 1, ...(partialLastCast === undefined ? {} : { partialLastCast }) });
+  const on = go(true), off = go(false), unset = go();
+  expect(on.fromAbilities - off.fromAbilities).toBeGreaterThan(0); // a share of the fifth cast is credited…
+  expect(on.fromAbilities - off.fromAbilities).toBeLessThan(off.fromAbilities / 4); // …and less than one whole cast
+  expect(unset.fromAbilities).toBe(off.fromAbilities); // FIGHT.partialLastCast is off: the default is whole casts
+  const own = on.fromAbilities + on.fromAttacks + on.fromCards, by = on.damageBySecond;
+  expect(by.at(-1)).toBeCloseTo(own);
+  expect(on.healParts!.omnivamp).toBeCloseTo(0.1 * (own - (by[13]! + (by[14]! - by[13]!) * 0.5)));
+});
+
 it('gates The Boom and the Bass on a cast and consumes its six-second charge once', () => {
   const boom = CARD_NUMBERS.find((c) => c.id === 3078)!;
   expect(run([boom]).fromCards).toBe(0);

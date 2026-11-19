@@ -34,10 +34,10 @@ describe('death and unknown parts in the offers', () => {
     expect(r.open.join(' ')).toContain('behind');
     expect(r.open.join(' ')).toContain('Deceive');
   });
-  it('Mad Scientist: its unknown state is not run, so 0, and the card is open with the reason, not a settled 0', async () => {
+  it('Mad Scientist: with no state set in F7 (T150) nothing runs, so 0, and the row says the state is unset, not a settled 0', async () => {
     const r = (await rows()).find((x) => x.id === 1053)!;
     expect(r.value).toBeCloseTo(0, 12);
-    expect(r.open.join(' ')).toContain('respawn');
+    expect(r.missing).toContain('غير محددة في F7');
   });
   it('Shark Bait: its death op does not run, so 0, and the note says it is on his death', async () => {
     const r = (await rows()).find((x) => x.id === 2032)!;

@@ -6,7 +6,7 @@ import { walkedPath, type BuildPath } from '../app/buildPath.js';
 import { offerPlanIds, pathChange, pathChangeLine, planReason, rankOffer, walkItems } from '../app/walk.js';
 import { cardFit, conflictsWith, itemPart, openLines, placesOf, type ChampionDamage } from '../ai/lines.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
-import { augmentStage, MAYHEM_MAX_LEVEL, type AugmentProgress } from '../ai/augmentProgress.js';
+import { augmentStage, HIT_QUEST_AUGMENTS, MAYHEM_MAX_LEVEL, type AugmentProgress } from '../ai/augmentProgress.js';
 import { dominantOffer } from '../app/offerComparison.js';
 import { RANGE_SCENARIO, rangeAccess } from '../ai/rangeAccess.js';
 import { lowHealthText } from './lowHealthView.js';
@@ -26,8 +26,9 @@ import { applyRandomTheme } from './theme.js';
 import { progressRequests } from './progressRequests.js';
 import { calculationNotes } from './calculationNotes.js';
 import { restorePicks } from './pickRestore.js';
-import { OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type OfferGroup } from './offerView.js';
-import { needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
+import { gameLiftLine, OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type OfferGroup } from './offerView.js';
+import { GAME_LIFT } from '../ai/gameLift.js';
+import { FIXED_ABILITY_KEY, needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 
 applyRandomTheme(); // colours only: the overlay hides the background art
 const search = byId<HTMLInputElement>('ov-search');
@@ -51,7 +52,16 @@ let pickedGame: number | undefined;
 let manualLevel: number | undefined;
 const acquiredLevels: Record<number, number> = {};
 const abilityTargets: Record<number, TargetAbility> = {};
-const progress = (): AugmentProgress => ({ level: data?.live?.level ?? manualLevel, acquiredLevels: { ...acquiredLevels }, abilityTargets: { ...abilityTargets } });
+const questsDone = new Set<number>();
+/** T150: Mad Scientist's state since his last respawn, as he sets it; unset means unknown. */
+const MAD_SCIENTIST = 1053;
+let madScientist: 'grow' | 'shrink' | undefined;
+/** T153: Heartsteel's stacks as he reads them in game, for Steel Your Heart; unset means unknown. */
+const STEEL_YOUR_HEART = 1152, HEARTSTEEL = 3084;
+let heartsteelStacks: number | undefined;
+/** T155: that reading already holds Steel Your Heart's tripling (its quest ticked done). It stays with the reading when the card is unpicked. */
+let heartsteelRewarded = false;
+const progress = (): AugmentProgress => ({ level: data?.live?.level ?? manualLevel, acquiredLevels: { ...acquiredLevels }, abilityTargets: { ...abilityTargets }, ...(questsDone.size ? { questsDone: [...questsDone] } : {}), ...(madScientist && picked.has(MAD_SCIENTIST) ? { madScientist } : {}), ...(heartsteelStacks !== undefined ? { heartsteelStacks } : {}), ...(heartsteelRewarded ? { heartsteelRewarded } : {}) });
 const liveFinished = (items: number[], finished: Set<number>, champion?: number) => [...new Set(items.map((id) => finished.has(id) ? id : id % 10000).filter((id) => finished.has(id) || (champion === EZREAL && [TEAR, MANAMUNE, MURAMANA].includes(id % 10000))))];
 let restoredFor: number | undefined;
 const MAX_PICKS = 6;
@@ -137,7 +147,7 @@ const linkInArabic = (l: Link) => {
 let fit = new Map<number, { games: number; lift: number }>();
 let fitFor = '';
 /** The engine's build for the champion and the marked augments; key: the marks it was made for. */
-let engine: { key: string; items: { item: ItemEntry; why: string[]; offPath?: boolean; missing?: string[] }[]; dropped?: ItemEntry[]; error?: string } | undefined;
+let engine: { key: string; items: { item: ItemEntry; why: string[]; offPath?: boolean; missing?: string[]; consumes?: number[] }[]; dropped?: ItemEntry[]; error?: string } | undefined;
 let engineAsked = '';
 /** Asks made again after a failure, for the state they were spent on; a new state (items, level, champion, match) starts again (T037).
  * A few at most, from the retry button, never from render. */
@@ -196,6 +206,10 @@ function resetRun() {
   comparePartialOffer = false;
   for (const id of Object.keys(acquiredLevels)) delete acquiredLevels[Number(id)];
   for (const id of Object.keys(abilityTargets)) delete abilityTargets[Number(id)];
+  questsDone.clear();
+  madScientist = undefined;
+  heartsteelStacks = undefined;
+  heartsteelRewarded = false;
   cardMathFor = ''; cardMath.clear(); cardMathLoading = false; engineAsked = ''; engine = undefined; engineRetries = undefined; experimental = undefined;
   pickSnap = undefined; pickNote = undefined; pickRefused = undefined;
 }
@@ -244,10 +258,12 @@ function applyPicks(snap: PickSnapshot) {
   for (const id of Object.keys(acquiredLevels)) delete acquiredLevels[Number(id)];
   for (const h of snap.held) { picked.add(h.id); if (h.recordedLevel !== undefined) acquiredLevels[h.id] = h.recordedLevel; }
   for (const id of Object.keys(abilityTargets)) if (!picked.has(Number(id))) delete abilityTargets[Number(id)];
+  for (const id of [...questsDone]) if (!picked.has(id)) questsDone.delete(id);
+  if (!picked.has(MAD_SCIENTIST)) madScientist = undefined;
 }
 /** No log to write to: the marks stay on this page as before, the level from the game when just read, or typed in. */
 function markLocally(id: number, fresh: boolean) {
-  if (picked.has(id)) { picked.delete(id); delete acquiredLevels[id]; delete abilityTargets[id]; }
+  if (picked.has(id)) { picked.delete(id); delete acquiredLevels[id]; delete abilityTargets[id]; questsDone.delete(id); if (id === MAD_SCIENTIST) madScientist = undefined; }
   else if (picked.size < MAX_PICKS) {
     // Without a live/manual level leave history unknown; the calculator labels the unlock-level fallback as estimated.
     const level = fresh ? data?.live?.level : data?.live ? undefined : manualLevel;
@@ -571,6 +587,8 @@ function offerSection(): HTMLElement {
       : [`الآن (حتى مستوى ${m.untilLevel}، بأغراضك الحالية): ${signed(m.value)}`, `الخطة المكتملة${m.plan ? ` (مستوى ${m.plan.level}، يُعاد البحث عن الأغراض)` : ''}: ${planNow}`, ...(m.certain ? [] : ['تقديري'])].join(' · ')));
     if (p !== undefined) txt.append(el('small', '', [`ترتيب نسبي ${p}% بين ${g === 'open' ? 'المشروطة' : 'المحسومة'} من الندرة نفسها${a.id === winner ? ' · يتقدم في المرحلة والخطة معاً حسب الأجزاء المحسوبة' : stageComparable && a === cards[0] && cards.length > 1 ? ' · الأعلى في المرحلة الحالية' : ''}`, ...conflictsWith(heldParts(), mechOf(a)?.id).map((c) => `تعارض: ${c}`)].join(' · ')));
     if (!m && a.unmeasuredReason) txt.append(el('small', 'missing', `غير محسوب: ${a.unmeasuredReason}`));
+    const fromGames = gameLiftLine(GAME_LIFT[a.id]);
+    if (fromGames) txt.append(el('small', 'ov-games', fromGames));
     if (m?.open.length) txt.append(el('small', '', `الشرط: ${m.open.join('، ')}. احتماله غير مقاس.`));
     // T048: beside the value, not only in the folded details: part of the gain is attacks the engine assumes, not attacks read from the match.
     const assumed = m?.attacksAssumed;
@@ -590,12 +608,12 @@ function offerSection(): HTMLElement {
       // The plan with this card against the plan without it, same state and style (T014), past the held items main's search itself kept (T015),
       // never the page's own list; only for an answer to the current state.
       const itemName = (id: number) => [...d.items, ...d.boots].find((i) => i.id === id)?.enName;
-      const verdict = !cardMathLoading && cardMathContext === cardContext() ? pathChange(m.plan.baselineItems, m.plan.items, m.plan.baselineOwned, m.plan.itemsOwned) : undefined;
+      const verdict = !cardMathLoading && cardMathContext === cardContext() ? pathChange(m.plan.baselineBuys, m.plan.buys, m.plan.baselineOwned, m.plan.itemsOwned) : undefined;
       const change = pathChangeLine(verdict, itemName);
       if (change) {
         txt.append(el('small', 'path-change', change));
         // The card plan's own reason for the item the line names (T017), folded: the search's words, not a claim that the card alone caused it.
-        const reason = planReason(verdict, m.plan.items, m.plan.itemsOwned, m.plan.itemsWhy);
+        const reason = planReason(verdict, m.plan.buys, m.plan.itemsOwned, m.plan.itemsWhy);
         const reasonName = reason && itemName(reason.id);
         if (reason && reasonName) {
           const more = el('details', 'plan-reason');
@@ -739,7 +757,9 @@ function abilityTargetField(a: OverlayData['augments'][number]): HTMLElement | n
   if (!needsAbilityTarget(a.ids)) return null;
   const label = el('label', 'hint ov-ability-target');
   const select = el('select', '') as HTMLSelectElement;
-  const options: [string, string][] = [['', 'غير محددة'], ['Q', 'Q'], ['W', 'W'], ['E', 'E'], ['R', 'R']];
+  // T133: Bread's key is fixed by its name; unset means that key, not an unknown one.
+  const fixed = a.ids.map((id) => FIXED_ABILITY_KEY[id]).find(Boolean);
+  const options: [string, string][] = [['', fixed ? `${fixed} (ثابتة)` : 'غير محددة'], ['Q', 'Q'], ['W', 'W'], ['E', 'E'], ['R', 'R']];
   for (const [value, text] of options) {
     const option = el('option', '', text) as HTMLOptionElement;
     option.value = value;
@@ -756,6 +776,70 @@ function abilityTargetField(a: OverlayData['augments'][number]): HTMLElement | n
     void refreshEngine();
     });
   label.append(el('span', '', `المهارة التي يعرضها ${shownName(a)} في اللعبة: `), select);
+  return label;
+}
+
+/** T150: Mad Scientist held: he says whether he is grown or shrunk since his last respawn; only that state counts, and unset counts neither. */
+function madScientistField(a: OverlayData['augments'][number]): HTMLElement | null {
+  if (!a.ids.includes(MAD_SCIENTIST)) return null;
+  const label = el('label', 'hint ov-quest-done');
+  const select = el('select', '') as HTMLSelectElement;
+  for (const [value, text] of [['', 'غير محددة'], ['grow', 'كبير (صحة وقوة متكيفة)'], ['shrink', 'صغير (تسارع وسرعة حركة)']] as const) {
+    const option = el('option', '', text) as HTMLOptionElement;
+    option.value = value;
+    option.selected = (madScientist ?? '') === value;
+    select.append(option);
+  }
+  select.addEventListener('change', () => {
+    madScientist = select.value === 'grow' || select.value === 'shrink' ? select.value : undefined;
+    path = undefined;
+    void refreshCardMath();
+    redrawBuild();
+    void refreshEngine();
+  });
+  label.append(el('span', '', `حالة ${shownName(a)} الآن (تتبدّل بعد كل موت): `), select);
+  return label;
+}
+
+/** T153/T154: Heartsteel's stacks as the game shows them, whenever he holds Heartsteel or Steel Your Heart: they replace the engine's estimate of
+ * Heartsteel's health. Steel Your Heart triples them from 300 until its quest is ticked done (then the game's number already holds it). Empty means unknown. */
+function heartsteelStacksField(): HTMLElement | null {
+  const items = data?.live?.items ?? owned;
+  if (!picked.has(STEEL_YOUR_HEART) && !items.some((id) => id % 10000 === HEARTSTEEL)) return null;
+  const label = el('label', 'hint ov-quest-done');
+  const input = el('input', '') as HTMLInputElement;
+  input.type = 'number'; input.min = '0'; input.max = '20000'; input.step = '1'; input.inputMode = 'numeric';
+  input.value = heartsteelStacks === undefined ? '' : String(heartsteelStacks);
+  input.addEventListener('change', () => {
+    const n = Number(input.value);
+    heartsteelStacks = input.value.trim() === '' || !Number.isInteger(n) || n < 0 || n > 20000 ? undefined : n;
+    if (heartsteelStacks === undefined) input.value = '';
+    path = undefined;
+    void refreshCardMath();
+    redrawBuild();
+    void refreshEngine();
+  });
+  label.append(el('span', '', 'تكدسات Heartsteel الآن كما تظهر في اللعبة (فارغة: يقدّرها المحرك): '), input);
+  return label;
+}
+
+/** T134: a held hit or takedown quest card: the player says when its quest is finished, and only then does its reward count. */
+function questDoneField(a: OverlayData['augments'][number]): HTMLElement | null {
+  if (!HIT_QUEST_AUGMENTS.some((id) => a.ids.includes(id)) && !a.ids.includes(STEEL_YOUR_HEART)) return null;
+  const label = el('label', 'hint ov-quest-done');
+  const box = el('input', '') as HTMLInputElement;
+  box.type = 'checkbox';
+  const steel = a.ids.includes(STEEL_YOUR_HEART);
+  box.checked = steel ? heartsteelRewarded : questsDone.has(a.id);
+  box.addEventListener('change', () => {
+    if (steel) heartsteelRewarded = box.checked; // T155: kept with the Heartsteel reading, not the card
+    else if (box.checked) questsDone.add(a.id); else questsDone.delete(a.id);
+    path = undefined;
+    void refreshCardMath();
+    redrawBuild();
+    void refreshEngine();
+  });
+  label.append(box, el('span', '', a.ids.includes(STEEL_YOUR_HEART) ? ` اكتملت مهمة ${shownName(a)} (رقم التكدسات في اللعبة صار يشمل مضاعفتها)` : ` اكتملت مهمة ${shownName(a)} (مكافأتها لا تُحسب قبل ذلك)`));
   return label;
 }
 
@@ -847,7 +931,7 @@ function adaptedSection(): HTMLElement[] {
   const heldRange = cardMathContext === cardContext() && !cardMathLoading ? [...cardMath.values()].map((r) => r.heldRange).find(Boolean) : undefined;
   if (heldRange) state.append(el('span', 'ov-range-held', `مدى هجومك العادي ${heldRange.total} (الأساسي ${heldRange.base}، مع ${heldRange.names.join('، ')})`));
   // With no marks yet one line says what to do; the log's state shows once there is something in it, or a mark was refused.
-  const head: HTMLElement[] = [state, ...(chosen.length ? [chosenChips(chosen), ...chosen.flatMap((a) => abilityTargetField(a) ?? []), ...pickStatus()] : [el('p', 'hint', NO_PICKS), ...(pickRefused ? pickStatus() : [])])];
+  const head: HTMLElement[] = [state, ...(chosen.length ? [chosenChips(chosen), ...chosen.flatMap((a) => abilityTargetField(a) ?? []), ...chosen.flatMap((a) => questDoneField(a) ?? []), ...chosen.flatMap((a) => madScientistField(a) ?? []), ...pickStatus()] : [el('p', 'hint', NO_PICKS), ...(pickRefused ? pickStatus() : [])]), ...[heartsteelStacksField()].filter((x): x is HTMLElement => x !== null)];
   const styleRow = styleSwitch();
   const stackRow = stacksField(() => { path = undefined; redrawBuild(); });
   const controls = [...(styleRow ? [styleRow] : []), ...(stackRow ? [stackRow] : [])];
@@ -864,11 +948,13 @@ function adaptedSection(): HTMLElement[] {
   const rows = el('div', 'ov-adapted');
   const bought = path?.bought ?? 0;
   const ezreal = d.champion?.id === EZREAL;
-  const nextEzreal = ezreal ? ezrealNextItems(owned, engine.items.map(({ item }) => item.id), tearCharged)[0] : undefined;
+  const nextEzreal = ezreal ? ezrealNextItems(owned, engine.items.filter((e) => !e.consumes).map(({ item }) => item.id), tearCharged)[0] : undefined;
   if (nextEzreal === TEAR) rows.append(el('p', 'hint', 'التالي: Tear of the Goddess وحده لبدء جمع التراكمات.'));
+  // T166: a merge row (Ultra Hydra taking in the three Hydras) is never the next purchase; the next is the first row after the bought ones that is not one.
+  const nextPlace = engine.items.findIndex((e, place) => place >= bought && !e.consumes);
   engine.items.forEach(({ item, why }, place) => {
     const mine = place < bought || why.includes('owned');
-    const next = !mine && (ezreal ? item.id === nextEzreal : place === bought);
+    const next = !mine && (ezreal ? item.id === nextEzreal : place === nextPlace);
     const r = el('div', `ov-adapted-row${next ? ' next' : ''}`);
     const txt = el('div', 'ov-name');
     txt.append(el('b', '', shownName(item)), el('small', '', [...(mine ? ['تملكه'] : next ? ['التالي'] : []), ...why.filter((w) => w !== 'owned').map((w) => WHY_AR[w] ?? w)].join(' · ')));
@@ -912,7 +998,7 @@ function stacksField(redraw: () => void): HTMLElement | null {
 function styleSwitch(): HTMLElement | null {
   const champion = data?.champion;
   if (!champion) return null;
-  const key = `${loadId}|${data?.game}|${pickedKey()}|${JSON.stringify(abilityTargets)}`;
+  const key = `${loadId}|${data?.game}|${pickedKey()}|${JSON.stringify(abilityTargets)}|${[...questsDone].join()}|${madScientist ?? ''}|${heartsteelStacks ?? ''}|${heartsteelRewarded}`;
   if (styles?.champion !== champion.id || styles.key !== key) {
     styles = { champion: champion.id, key, list: styles?.champion === champion.id ? styles.list : [] };
     void window.lolh.buildStyles(champion.id, [...picked], progress()).then((x) => {

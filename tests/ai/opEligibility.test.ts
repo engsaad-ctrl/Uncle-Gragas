@@ -55,7 +55,11 @@ describe('the card weight, per op', () => {
 describe('the generated data (knowledge/card-eligibility.jsonl)', () => {
   const of = (id: number) => CARD_NUMBERS.find((c) => c.id === id)!.ops.map((x) => x.eligibility);
   it('Clown College: Backstab live, the attack after Deceive unknown', () => expect(of(1310)).toEqual(['live', 'unknown']));
-  it("Mad Scientist: every op unknown (the respawn's state is not read)", () => expect(of(1053)).toEqual(['unknown', 'unknown', 'unknown']));
+  // T150: Mad Scientist's state is the player's F7 switch now, so its ops carry a state (grow/shrink), not an unknown eligibility.
+  it('Mad Scientist: no eligibility row; its ops carry their state instead', () => {
+    expect(of(1053)).toEqual([undefined, undefined, undefined]);
+    expect(CARD_NUMBERS.find((c) => c.id === 1053)!.ops.map((x) => x.state)).toEqual(['grow', 'shrink', 'shrink']);
+  });
   it('Shark Bait, DropBear, Hellbent: death ops only', () => {
     expect(of(2032)).toEqual(['death']);
     expect(of(2031)).toEqual(['death']);

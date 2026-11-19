@@ -120,10 +120,21 @@
           "damage": {
             "mana": 0.07
           },
-          "type": "magic"
+          "type": "magic",
+          "needs": "melee"
+        },
+        {
+          "op": "proc",
+          "trigger": "on_hit",
+          "internal_cooldown": null,
+          "damage": {
+            "mana": 0.056
+          },
+          "type": "magic",
+          "needs": "ranged"
         }
       ],
-      "not_modelled": "Wiki text (Module:MayhemAugmentData, 2026-11-07, patch 16.22): 7% of maximum mana as on-hit magic damage; its critical strike is not counted."
+      "not_modelled": "16.22 kiwi Augment_ARAM_Juiced Calc_Damage (pinned in tests/fixtures/game/juiced-16.22.json): ManaPercentDamagePercent 0.07 of maximum mana (stat 9) as on-hit magic damage; ranged x0.8 (mRangedMultiplier), so 0.056. Not modelled: its critical strike, and MaxLevel, MaxLevelManaSpendThreshold=300 and MaxLevelPerTriggerDamageAmp=0.1, whose behaviour is not established."
     },
     {
       "id": 2087,

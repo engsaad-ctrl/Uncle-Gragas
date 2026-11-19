@@ -100,5 +100,5 @@
 {"id":3053,"name":"Mosh Monster","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Health only during the chosen ability."}
 {"id":2135,"name":"Pin Cushion","class":"chosen_ability","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Only attacks during the chosen ability."}
 {"id":1005,"name":"Wee Woo Wee Woo","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Full value only on targets with high missing health."}
-
 {"id":3150,"name":"Upgrade Stormsurge","class":"item","items":["Stormsurge"],"ability_kind":null,"window":null,"ops_fix":null,"why":"Upgrades Stormsurge (2026-11-05, Codex: it named no item, so the engine never bought Stormsurge for it)."}
+{"id":3039,"name":"Salvation","class":"other","items":null,"ability_kind":null,"window":null,"ops_fix":null,"why":"Fires when own health falls below 50%, on enemies within 600 range."}

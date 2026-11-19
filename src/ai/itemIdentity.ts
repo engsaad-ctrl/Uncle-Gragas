@@ -4,8 +4,14 @@ import type { CardOp } from './cardMath.js';
 /** Void Immolation: the mode file names it on its own (Item_223069_Name «إحراق الفويد», Icathia's Fall's aura Item223069Aura), and the map list
  * carries it with no recipe (T064). Whether it can be bought in Mayhem is not read, so it is never a candidate to buy. */
 export const VOID_IMMOLATION = 223069;
+/** T161: Urf's Champion's reward, the Golden Spatula: held by 5,750 of its 6,888 takers in the stored NA games; the map list carries it as a
+ * starter, so without this it lost its slot and its stats in the plans (Codex T158/T160). Never bought. */
+export const URF_SPATULA = 994403;
+/** T163: Ultra Hydra's reward, the merged item: held by 8,069 of its 8,727 takers in the stored NA games (none keeps the three Hydras); a starter
+ * in the map list, so it lost its slot and its stats the same way. Never bought. */
+export const ULTRA_HYDRA_ITEM = 226668;
 /** Held, these count as one finished item each and keep their exact id and slot, though they are not in the sold list. */
-export const OWNED_FINAL_ONLY: ReadonlySet<number> = new Set([VOID_IMMOLATION]);
+export const OWNED_FINAL_ONLY: ReadonlySet<number> = new Set([VOID_IMMOLATION, URF_SPATULA, ULTRA_HYDRA_ITEM]);
 /** Mode ids that are a different item from their base id, not a copy of it: they never take the base's ops (223069 is not 3069, whose row is a
  * move speed on ability cast). Every other mode copy (22xxxx) keeps its base's ops, as before. */
 export const DISTINCT_ITEM_IDS: ReadonlySet<number> = new Set([VOID_IMMOLATION]);

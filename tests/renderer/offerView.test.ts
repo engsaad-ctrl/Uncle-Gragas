@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { offerTradeoff, type OfferCard } from '../../src/renderer/offerView.js';
+import { gameLiftLine, offerTradeoff, type OfferCard } from '../../src/renderer/offerView.js';
 
 // T037 b: the stage and the finished plan disagreeing is shown as a trade-off between settled cards only.
 describe('offerTradeoff', () => {
@@ -17,5 +17,15 @@ describe('offerTradeoff', () => {
   });
   it('a real zero and a negative are numbers like any other', () => {
     expect(offerTradeoff([{ id: 1, group: 'settled', stage: 0, plan: 0.3 }, { id: 2, group: 'settled', stage: 0.2, plan: -0.36 }])).toEqual({ stage: 2, plan: 1 });
+  });
+});
+
+// T137: the games' number (signed number isolated LTR so the sign stays in front in Arabic) for a card the fight cannot value: its own line, signed, with the players behind it; nothing when there is none.
+describe('gameLiftLine', () => {
+  it('signs the points, names the players and says when the halves disagree', () => {
+    expect(gameLiftLine({ points: 2.6, players: 19967, stable: true })).toBe('من المباريات، مجمّع عبر الأبطال: ⁦+2.6⁩ نقطة مئوية في الفوز (19,967 مشاركة). فرق معدّل حسب البطل ومقلّص نحو الصفر؛ ارتباط لا سبب، وخارج نسبة القتال.');
+    expect(gameLiftLine({ points: -1.3, players: 1500, stable: false })).toContain('⁦-1.3⁩ نقطة مئوية في الفوز');
+    expect(gameLiftLine({ points: -1.3, players: 1500, stable: false })).toContain('اتجاه الفرق يختلف بين نصفي المباريات.');
+    expect(gameLiftLine(undefined)).toBeUndefined();
   });
 });

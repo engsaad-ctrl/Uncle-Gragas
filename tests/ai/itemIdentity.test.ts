@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { fight, type CardOp } from '../../src/ai/cardMath.js';
 import { ITEM_NUMBERS } from '../../src/ai/cardMathData.js';
-import { DISTINCT_ITEM_IDS, itemOpsOf, OWNED_FINAL_ONLY, VOID_IMMOLATION } from '../../src/ai/itemIdentity.js';
+import { DISTINCT_ITEM_IDS, itemOpsOf, OWNED_FINAL_ONLY, ULTRA_HYDRA_ITEM, URF_SPATULA, VOID_IMMOLATION } from '../../src/ai/itemIdentity.js';
 
 // T065: Void Immolation 223069 is its own item, not a copy of 3069, in the ops the fight reads; every other mode copy keeps its base's ops.
 // Stats are read from the real 16.22 item rows (tests/fixtures/game/owned-void-16.22.json); the expected +1000 HP, +100 armor, +80 MR and +25 haste
@@ -17,7 +17,7 @@ const run = (items: number[], itemOps: Record<number, CardOp[]> = ITEM_OPS) => f
 describe('item identity', () => {
   it('Void is distinct and owned-only; nothing else is', () => {
     expect([...DISTINCT_ITEM_IDS]).toEqual([VOID_IMMOLATION]);
-    expect([...OWNED_FINAL_ONLY]).toEqual([VOID_IMMOLATION]);
+    expect([...OWNED_FINAL_ONLY]).toEqual([VOID_IMMOLATION, URF_SPATULA, ULTRA_HYDRA_ITEM]);
   });
   it('the real rows: 223069 has none of its own and does not take 3069\'s; 3069 keeps its own; a mode copy (223084) keeps its base\'s (3084)', () => {
     expect(ITEM_OPS[3069]).toBeDefined();

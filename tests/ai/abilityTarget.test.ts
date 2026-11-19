@@ -48,11 +48,25 @@ describe('targeted ability haste', () => {
   });
 
   it('omits an unknown target and reports it rather than giving every basic skill one third', () => {
-    const result = at([targeted(1103)]);
+    // A targeted card with no fixed key (Bread now has one, T133).
+    const unfixed: CardNumbers = { id: 99998, name: 'Targeted haste', status: 'computed', ops: [{ op: 'add', stat: 'haste', value: 100, scope: 'chosen_ability' }] };
+    const result = at([unfixed]);
     expect(result.casts).toEqual(at([]).casts);
     expect(result.damage).toBe(at([]).damage);
     expect(result.notModelled).toHaveLength(1);
     expect(result.notModelled[0]).toContain('غير محددة');
+  });
+
+  it('gives each Bread card its fixed key when none is set, and a set key still wins (T133)', () => {
+    expect(at([targeted(1103)]).casts).toEqual(at([targeted(1103, 'Q')]).casts);
+    expect(at([targeted(1150)]).casts).toEqual(at([targeted(1150, 'W')]).casts);
+    expect(at([targeted(1103)]).notModelled).toEqual([]);
+    expect(at([targeted(1103, 'W')]).casts).toEqual({ R: 2, Q: 2, W: 3 });
+    // Cheese is E, which this file lacks: reported as missing, not moved to another key.
+    const cheese = at([targeted(1151)]);
+    expect(cheese.casts).toEqual(at([]).casts);
+    expect(cheese.notModelled[0]).toContain('E');
+    expect(cheese.notModelled[0]).toContain('غير موجودة');
   });
 
   it('reports a selected skill missing from the character file', () => {

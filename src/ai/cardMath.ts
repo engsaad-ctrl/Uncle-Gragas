@@ -10,10 +10,20 @@ import { SPELL_HITS } from './cardMathData.js';
 import { itemOpsOf, VOID_IMMOLATION, VOID_NOT_MODELLED } from './itemIdentity.js';
 import { AUGMENT_MECHANICS } from './mechanicsData.js';
 import { allocateAbilityRanks, estimatedAbilityRank, type KnownRanks, type SkillPlan } from './abilityRank.js';
-import type { TargetAbility } from './abilityTarget.js';
+import { FIXED_ABILITY_KEY, type TargetAbility } from './abilityTarget.js';
+import { HIT_QUEST_AUGMENTS } from './augmentProgress.js';
 import type { SpellDamageTypes } from '../texts/damageTypes.js';
+import { rangeAccess, type RangeAccess } from './rangeAccess.js';
+import { rangeState } from './rangeState.js';
+
+/** T120b: an explicit approach scenario (one straight approach to a stationary target, constant speed), never a default. `strings` are the
+ * tooltip strings rangeState reads a level-dependent range from. Replacement targets at the kill times stand where the first stood. */
+export interface AttackAccess { distance: number; moveSpeed: number; strings: Record<string, string> }
 
 /** The items a quest card asks to be held, read from its text (mechanicsData needs); empty for quests counted in takedowns or hits. */
+/** T159: a quest whose reward is an item the game puts in his inventory (Urf's Champion: the Golden Spatula 994403, held by 5,750 of its 6,888
+ * takers in the stored NA games; the row's stats are that item's record). Held, the item already counts, so the card's reward parts do not. */
+export const REWARD_ITEM: Readonly<Record<number, number>> = { 1154: 994403, 2141: 226668 }; // T163: Ultra Hydra's merged item (8,069 of 8,727 takers)
 export const questItems = (cardId: number): number[] => (AUGMENT_MECHANICS.find((m) => m.id === cardId)?.needs ?? []).filter((n): n is number => typeof n === 'number');
 
 /**
@@ -28,14 +38,17 @@ export interface DamageFormula { flat?: Amount; mana?: number; ap?: number; ad?:
 /** T051: when an op of a card can act in the fight. 'live': while he lives (the default); 'death': only on his death, which this fight has none of;
  * 'unknown': its state, event or target is not proven. Only live ops run. A card tagged on_death counts only when each of its ops says which. */
 export type OpEligibility = 'live' | 'death' | 'unknown';
-export type CardOp = { eligibility?: OpEligibility; eligibilityWhy?: string } & (
+export type CardOp = { eligibility?: OpEligibility; eligibilityWhy?: string; /** T150: counts only while the card is in this state (Mad Scientist: grow or shrink). */ state?: 'grow' | 'shrink' } & (
   /** scope chosen_ability: haste on the skill the player names (Bread); movement_abilities: on each of his skills the files tag as moving him (Dashing, MOVEMENT_TAGS). */
   | { op: 'add'; stat: string; value: Amount; scope?: 'chosen_ability' | 'movement_abilities'; after_quest?: boolean; /** Only if this card was the Nth augment taken (Soul Eater's 300 health as the second). */ if_pick?: number }
   | { op: 'mult'; stat: string; factor: number; scope?: string; after_quest?: boolean }
   /** A stat raised by a share that grows with his level and with other stats, after all items (Jhin's passive: AD +4-44% by level, +0.35 x crit chance, +0.30 x bonus attack speed). byLevel: levels 1 to 18. */
   | { op: 'mult_from'; stat: string; byLevel: number[]; per: { stat: string; ratio: number }[]; after_quest?: boolean }
-  | { op: 'damage_amp'; scope: string; factor: number; after_quest?: boolean }
-  | { op: 'mana_amp'; scope: string; per100: number; after_quest?: boolean }
+  /** T153: Steel Your Heart's reward: once Heartsteel's stacks reach `threshold`, they count `factor` times (kiwi StackThreshold 300, StackMultiplication 3).
+   * Applied to the stacks he reads (fight input heartsteelStacks) while the quest is not marked done; once marked, the reading already holds it. */
+  | { op: 'heartsteel_stacks'; threshold: number; factor: number; after_quest?: boolean }
+  | { op: 'damage_amp'; scope: string; factor: number; after_quest?: boolean; /** scope chosen_ability: the key it binds to, filled from the card's abilityKey (Pursuit of Power, T142). */ key?: string }
+  | { op: 'mana_amp'; scope: string; /** A flat share added beside the mana part (Overflow: 10% + 0.5% per 100 mana, one bonus, T122b). */ base?: number; per100: number; after_quest?: boolean }
   | { op: 'mana_cost'; factor: number; after_quest?: boolean }
   /** replace: the source is given up, not kept (Pyke turns bonus health into AD and gains none). */
   /** ratio may grow with his level (Hecarim: 12-24% of bonus move speed as AD). from 'bonus_move_speed': above his base move speed, read each moment. */
@@ -47,9 +60,10 @@ export type CardOp = { eligibility?: OpEligibility; eligibilityWhy?: string } & 
   /** The chosen ability's damage rises per100 per 100 ability haste, and that ability no longer gets ability haste (One Hit Wonder). `key` is filled from the card's abilityKey. */
   | { op: 'haste_to_damage'; per100: number; scope: 'chosen_ability'; key?: string; after_quest?: boolean }
   | { op: 'cooldown'; scope: string; factor: number; after_quest?: boolean }
-  | { op: 'refund'; scope: string; amount: Amount; unit: string; trigger: string; internal_cooldown?: number | null; periodicAmount?: Amount; minHitRange?: number; after_quest?: boolean }
+  /** scope chosen_ability: another ability's cast takes this share of the chosen ability's remaining cooldown (Overloaded: all of it). `key` is filled from the card's abilityKey. */
+  | { op: 'refund'; scope: string; amount: Amount; unit: string; trigger: string; internal_cooldown?: number | null; periodicAmount?: Amount; minHitRange?: number; key?: string; after_quest?: boolean }
   | { op: 'recast'; key: string; internal_cooldown?: number | null; after_quest?: boolean }
-  | { op: 'proc'; trigger: string; afterCastWindow?: number; internal_cooldown?: number | null; damage: DamageFormula; type: string; after_quest?: boolean }
+  | { op: 'proc'; trigger: string; afterCastWindow?: number; internal_cooldown?: number | null; damage: DamageFormula; type: string; after_quest?: boolean; /** T169: an ability hit counts only from an ability that reaches beyond this (From Downtown: SnipeDistance 600). */ minHitRange?: number }
   | { op: 'dot'; per_second: DamageFormula; duration: number; type: string; stacks_max?: number | null; trigger?: string; after_quest?: boolean }
   /** Sent on the trigger once per cooldown (by his level), it lands `delay` s later and deals `damage` in even ticks over `duration` s, a tick at the end of each 1/ticksPerSecond;
    * ticks past the fight's end are lost. On landing it applies on-hit damage at `onHitEfficacy`, once. BEES!!!, read from the patch's file (src/ai/augmentFiles.ts). */
@@ -74,9 +88,13 @@ export type CardOp = { eligibility?: OpEligibility; eligibilityWhy?: string } & 
 /** T051 v2: an op acts in the fight only while he lives (no eligibility means live). */
 export const isLiveOp = (x: CardOp) => x.eligibility === undefined || x.eligibility === 'live';
 /** The card as the fight and every behavioural read see it: its live ops only. */
-export const liveCard = <C extends { ops: CardOp[] }>(c: C): C => (c.ops.every(isLiveOp) ? c : { ...c, ops: c.ops.filter(isLiveOp) });
+/** T155: a card that multiplies his health, for the planner's one-tank-item limit (Tank Engine, Goliath, Steel Your Heart's tripling). */
+export const multipliesHealth = (c: CardNumbers) => liveCard(c).ops.some((x) => ((x.op === 'mult' || (x.op === 'per_stack' && x.mode === 'mult')) && x.stat === 'hp') || x.op === 'heartsteel_stacks');
+/** T151: the same filter for every reader (fight, planner, styles): a part with a state counts only in that state (Mad Scientist), none while unset. */
+const inState = (c: { state?: 'grow' | 'shrink' }) => (x: CardOp) => isLiveOp(x) && (!x.state || x.state === c.state);
+export const liveCard = <C extends { ops: CardOp[]; state?: 'grow' | 'shrink' }>(c: C): C => (c.ops.every(inState(c)) ? c : { ...c, ops: c.ops.filter(inState(c)) });
 
-export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null; /** Actual or explicitly estimated choice level; only this card's lifetime stacks start here. */ acquiredLevel?: number; abilityKey?: TargetAbility; /** Which augment this was in the order taken (1 = first), only when the order is proven; unset when it isn't. */ pickPlace?: number }
+export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null; /** Actual or explicitly estimated choice level; only this card's lifetime stacks start here. */ acquiredLevel?: number; abilityKey?: TargetAbility; /** T134: the player marked this card's hit or takedown quest finished. */ questDone?: boolean; /** T150: the card's state as the player set it (Mad Scientist). */ state?: 'grow' | 'shrink'; /** Which augment this was in the order taken (1 = first), only when the order is proven; unset when it isn't. */ pickPlace?: number }
 
 /** The fixed fight. Assumptions, all visible: changing them changes every card alike, not who is popular. */
 /** incomingDps: the enemies' damage a second on him before his resists, when the caller doesn't pass his own (itemMath passes his share of the enemy's damage): a typical share 0.2 of ENEMY_DPS 2530 in itemMath.ts. It says when his health falls below a mark (Sterak's, Maw, Escape Plan). */
@@ -161,6 +179,8 @@ export interface FightResult {
   perCast: Record<string, number>;
   stats: Pick<BuildStats, 'ad' | 'ap' | 'hp' | 'armor' | 'mr' | 'attackSpeed' | 'crit' | 'haste'>;
   notModelled: string[];
+  /** T120b: the approach geometry when the caller gave an explicit attack-access scenario and his range state supports it (melee, read). */
+  access?: RangeAccess;
   /** Instances of ability damage on champions in this fight: each hit of a cast, and a tick every half second of a burn an ability or its item started. */
   abilityInstances: number;
   /** Immobilizes his landed ability hits put on the fight target: only abilities checked one by one (IMMOBILIZE_ON_HIT). */
@@ -244,10 +264,12 @@ const STAT_ADD: Record<string, (s: BuildStats, v: number) => void> = {
 const statValue = (s: BuildStats, k: string) => ({ move_speed: s.moveSpeed, ap: s.ap, ad: s.ad, bonus_ad: s.bonusAd, hp: s.hp, bonus_hp: s.bonusHp, armor: s.armor, mr: s.mr, attack_speed: s.bonusAttackSpeed, crit: s.crit, haste: s.haste, mana: s.mana }[k] ?? NaN);
 
 /** One fight, second by second, with these items and cards at this level, so anything that feeds itself shows up. Cards apply in order: flat stats, then conversions, then multipliers; then the fight runs. */
-export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam; ampStack?: 'add'; mana?: number; cooldowns?: Record<string, number>; /** Health this simulation's earlier fights gave for good (permanent timed gains); nothing from before the chain. */ gainedHp?: number; stacks?: number; noStackScale?: boolean; incomingDps?: number; /** His ranks read from the game at a level; else a legal even allocation (abilityRank.ts). */ knownRanks?: KnownRanks; /** How he levels his skills when his ranks aren't read (the build page's order). */ skillPlan?: SkillPlan }): FightResult {
+export function fight(o: { bin: Record<string, unknown>; shop: Record<number, GameItem>; kit: Kit; items: number[]; cards: CardNumbers[]; level: number; /** T139b: credit the waited share of the next cast for this call only (card values); unset, FIGHT.partialLastCast decides. */ partialLastCast?: boolean; /** T153: Heartsteel's stacks as he reads them in game (F7); they replace the estimate of its permanent health. */ heartsteelStacks?: number; /** T155: the reading already holds Steel Your Heart's tripling. */ heartsteelRewarded?: boolean; passive?: CardOp[]; itemOps?: Record<number, CardOp[]>; enemy?: EnemyTeam; ampStack?: 'add'; mana?: number; cooldowns?: Record<string, number>; /** Health this simulation's earlier fights gave for good (permanent timed gains); nothing from before the chain. */ gainedHp?: number; stacks?: number; noStackScale?: boolean; incomingDps?: number; /** His ranks read from the game at a level; else a legal even allocation (abilityRank.ts). */ knownRanks?: KnownRanks; /** How he levels his skills when his ranks aren't read (the build page's order). */ skillPlan?: SkillPlan; /** T120b: an explicit approach scenario; omitted, attacks keep attackUptime. */ attackAccess?: AttackAccess }): FightResult {
   // T051 v2: one source for every behavioural read below (melee, the ult lock, attacks, the ops that run): the cards' live ops only. The ops left
   // out are named once here; the caller's cards keep them for missing/open and the generator.
   const leftOut = o.cards.flatMap((c) => c.ops.filter((x) => !isLiveOp(x)).map((x) => `${c.name}: ${x.eligibility === 'death' ? 'جزء يقع عند موته لا يُحسب، فالقتال بلا موت' : 'جزء لم تثبت حالته أو حدثه أو هدفه فلا يُحسب'}${x.eligibilityWhy ? ` (${x.eligibilityWhy})` : ''}`));
+  // T150: a card whose parts hang on a state the player has not set (Mad Scientist: grown or shrunk) counts none of them, and says so.
+  const stateUnset = o.cards.filter((c) => !c.state && c.ops.some((x) => x.state)).map((c) => `${c.name}: حالته الآن (كبير أو صغير) غير محددة في F7؛ أثره غير محسوب`);
   // T074: the items as given when this fight was made; again() and stored results must not read the caller's array after it changes.
   o = { ...o, items: [...o.items], cards: o.cards.map(liveCard) };
   const record = championRecord(o.bin);
@@ -304,17 +326,25 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const reach = Math.max(0, ...(record.spells ?? []).slice(0, 3).map((path) => spellReach(path, 1)));
   const inRange = (n: string) => { const beyond = /beyond (\d+) range/i.exec(n), within = /within (\d+)(?: range|$|[;,)])/i.exec(n); return (!beyond || reach > +beyond[1]!) && (!within || attackRange <= +within[1]!); };
   const applies = (x: CardOp) => { const n = String((x as { needs?: string }).needs ?? ''); const atStacks = /at (\d+) (stacks|glory)/i.exec(n); return inRange(n) && !(melee ? /^ranged/ : /^melee/).test(n) && !(/item active|active item/.test(n) && x.op !== 'proc') && !(atStacks && 0.6 * o.level < +atStacks[1]!) && !((x.op === 'mult' || x.op === 'add') && /below \d+% remaining health/i.test(n)); };
-  // A quest card's reward counts once its quest items are all held (Ultra Hydra: the three Hydras; Wooglet's Witchcap: Rabadon's and Zhonya's). Quests counted in takedowns or hits never complete here.
+  // A quest card's reward counts once its quest items are all held (Ultra Hydra: the three Hydras; Wooglet's Witchcap: Rabadon's and Zhonya's). Quests counted in takedowns or hits complete only when the player marks them finished (T134, progress.questsDone).
   // shortcut: the reward is added on top of the quest items, not in their place, and frees no slot; model the swap if a quest build looks a slot short.
-  const questDone = (c: CardNumbers) => { const need = questItems(c.id); return need.length > 0 && need.every((id) => held.some((h) => h % 10000 === id)); };
+  // The player's mark counts only for hit or takedown quests; an item quest still needs its items (Codex T135).
+  const questDone = (c: CardNumbers) => { if (c.questDone === true && (HIT_QUEST_AUGMENTS as readonly number[]).includes(c.id)) return true; const need = questItems(c.id); return need.length > 0 && need.every((id) => held.some((h) => h % 10000 === id)); };
   const noQuest = (x: CardOp) => !x.after_quest;
   // An ultimate-dependent augment cannot activate before R is available or while it is locked.
   const ultLocked = [...(o.passive ?? []), ...o.cards.flatMap((c) => c.ops)].some((x) => x.op === 'lock' && x.key === 'R');
   const ultimate = (o.bin as Bin)[record.spells?.[3] ?? '']?.mSpell;
   const ultUnavailable = ultLocked || !ultimate || estimatedAbilityRank(record, 'R', o.level, ultimate.mClientData?.mTooltipData?.mLists?.LevelUp?.levelCount).rank === 0;
   const needsUlt = (c: CardNumbers) => ultUnavailable && /ultimate cast|after (?:an|your) ultimate|cast(?:ing)? (?:an|your) ultimate/i.test(String(c.needs ?? ''));
-  const targetMissing: string[] = [...new Set(leftOut)];
-  const cardOps = (card: CardNumbers) => card.ops.filter((x) => noQuest(x) || questDone(card)).flatMap((x): CardOp[] => {
+  const targetMissing: string[] = [...new Set([...leftOut, ...stateUnset])];
+  const rewardHeld = (card: CardNumbers) => REWARD_ITEM[card.id] !== undefined && o.items.some((id) => id === REWARD_ITEM[card.id]);
+  const cardOps = (card: CardNumbers) => card.ops.filter((x) => (noQuest(x) || (questDone(card) && !rewardHeld(card))) && (!x.state || x.state === card.state)).flatMap((x): CardOp[] => {
+    // T153: Steel Your Heart's reward waits on the stacks he reads in game; marked done, the reading already holds it. Unread: nothing, said.
+    if (x.op === 'heartsteel_stacks') {
+      if (o.heartsteelRewarded) return [];
+      if (o.heartsteelStacks === undefined) { targetMissing.push(`${card.name}: تكدسات Heartsteel غير مكتوبة في F7؛ أثره غير محسوب`); return []; }
+      return [x];
+    }
     // A reward for being the Nth augment taken counts only when the order is proven; an unknown order gives nothing and says so.
     if (x.op === 'add' && x.if_pick !== undefined) {
       if (card.pickPlace === undefined) { targetMissing.push(`${card.name}: ترتيب اختياره غير مثبت، فمكافأة كونه الاختيار ${x.if_pick} غير محسوبة`); return []; }
@@ -325,17 +355,22 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (!keys.length) targetMissing.push(`${card.name}: لا مهارة عليها وسم حركة في ملف الشخصية؛ لا أثر`);
       return keys.map((k): CardOp => ({ op: 'add', stat: `${k}_haste`, value: x.value }));
     }
-    if (x.op !== 'echo' && x.op !== 'haste_to_damage' && (x.op !== 'add' || x.scope !== 'chosen_ability')) return [x];
-    const path = card.abilityKey ? record.spells?.['QWER'.indexOf(card.abilityKey)] : undefined;
+    if (x.op !== 'echo' && x.op !== 'haste_to_damage' && ((x.op !== 'add' && x.op !== 'refund' && x.op !== 'damage_amp') || x.scope !== 'chosen_ability')) return [x];
+    const key = card.abilityKey ?? FIXED_ABILITY_KEY[card.id];
+    const path = key ? record.spells?.['QWER'.indexOf(key)] : undefined;
     if (!path || !(o.bin as Bin)[path]?.mSpell) {
-      targetMissing.push(`${card.name}: ${card.abilityKey ? `المهارة ${card.abilityKey} غير موجودة في ملف الشخصية` : 'المهارة المستهدفة غير محددة'}؛ ${x.op === 'echo' ? 'أثر النسخة' : x.op === 'haste_to_damage' ? 'تحويل التسارع إلى ضرر' : 'أثر التسارع'} غير محسوب`);
+      targetMissing.push(`${card.name}: ${key ? `المهارة ${key} غير موجودة في ملف الشخصية` : 'المهارة المستهدفة غير محددة'}؛ ${x.op === 'echo' ? 'أثر النسخة' : x.op === 'haste_to_damage' ? 'تحويل التسارع إلى ضرر' : x.op === 'refund' ? 'إعادة ضبط التبريد' : x.op === 'damage_amp' ? 'زيادة ضرر القدرة' : 'أثر التسارع'} غير محسوب`);
       return [];
     }
-    if (x.op === 'echo' || x.op === 'haste_to_damage') return [{ ...x, key: card.abilityKey }];
+    if (x.op === 'echo' || x.op === 'haste_to_damage' || x.op === 'refund' || x.op === 'damage_amp') return [{ ...x, key }];
     // Slot haste never enters global stats. Each augment keeps its own selected skill.
-    return [{ ...x, stat: `${card.abilityKey}_haste` }];
+    return [{ ...x, stat: `${key}_haste` }];
   });
-  const ops = [...(o.passive ?? []).filter(noQuest), ...o.cards.filter((c) => !needsUlt(c)).flatMap(cardOps).filter(applies), ...held.flatMap((id) => itemOpsOf(o.itemOps, id) ?? []).filter(applies).filter(noQuest), ...fromFile.filter(noQuest)];
+  const cardOpsHeld = o.cards.filter((c) => !needsUlt(c)).flatMap(cardOps).filter(applies), itemOpsHeld = held.flatMap((id) => itemOpsOf(o.itemOps, id) ?? []).filter(applies).filter(noQuest), fileOps = fromFile.filter(noQuest);
+  const ops = [...(o.passive ?? []).filter(noQuest), ...cardOpsHeld, ...itemOpsHeld, ...fileOps];
+  // T146: the damage his items and augments deal themselves (procs, burns, delayed hits), not his champion's own (passive, abilities, attacks): Forged By The Master.
+  const gear = new Set<CardOp>([...cardOpsHeld, ...itemOpsHeld, ...fileOps]);
+  const gearAmp = (x: CardOp, t: number) => (gear.has(x) ? ops.reduce((m, y) => (y.op === 'damage_amp' && y.scope === 'items_and_augments' && t >= combatSeconds(y) ? m * fullFactor(y) : m), 1) : 1);
   const notModelled = [...o.cards.flatMap((c) => (c.not_modelled ? [`${c.name}: ${c.not_modelled}`] : [])), ...targetMissing];
   // T065: a held Void Immolation counts by its stats only; say so wherever its fight is read (build, plan, explanation, card values).
   if (held.includes(VOID_IMMOLATION)) notModelled.push(VOID_NOT_MODELLED);
@@ -406,7 +441,15 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   for (const it of owned) {
     const dv = (n: string) => it.DataValues?.find((d) => d.name === n)?.values?.[0] ?? 0;
     const keep = dv('DamageToMaxHealthRatio');
-    if (keep) for (let i = 0; i < Math.round(FIGHT.growthProcsPerLevel * o.level); i++) add(s, 'hp', keep * (dv('BaseDamage') + dv('HPRatio') * s.hp));
+    // T153: his stacks as read in game are Heartsteel's health, with or without Steel Your Heart (they replace the estimate). The card's reward,
+    // not yet in the reading, makes them count `factor` times once they reach `threshold`. Before the health multipliers, as before.
+    const reward = ops.find((x): x is Extract<CardOp, { op: 'heartsteel_stacks' }> => x.op === 'heartsteel_stacks');
+    const read = o.heartsteelStacks;
+    // T155: a reading that already holds the tripling, in a fight without Steel Your Heart (a comparison taking it out): what Heartsteel held before
+    // the reward is not read, so the card's share cannot be split out; the reading stays and the fight says so.
+    if (keep && read !== undefined && o.heartsteelRewarded && !o.cards.some((c) => c.ops.some((x) => x.op === 'heartsteel_stacks'))) notModelled.push('Steel Your Heart: الرقم المكتوب يشمل مضاعفتها، وما قبلها غير مقروء؛ حصتها من صحة Heartsteel غير قابلة للفصل');
+    if (keep && read !== undefined) add(s, 'hp', reward && read >= reward.threshold ? read * reward.factor : read);
+    else if (keep) for (let i = 0; i < Math.round(FIGHT.growthProcsPerLevel * o.level); i++) add(s, 'hp', keep * (dv('BaseDamage') + dv('HPRatio') * s.hp));
   }
   const multiply = (t: BuildStats, stat: string, factor: number) => {
     if (stat === 'ap') t.ap *= factor;
@@ -450,7 +493,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   multiplyAll(true);
   // A conversion with scope 'bonus' reads the bonus part of its source (Riftmaker: 2% of bonus health; Vladimir: bonus health).
   const bonusOf: Record<string, keyof BuildStats> = { hp: 'bonusHp', armor: 'bonusArmor', mr: 'bonusMr', ad: 'bonusAd' };
-  for (const x of ops) if (x.op === 'convert' && !/move_speed/.test(x.from)) { const key = x.scope === 'bonus' ? bonusOf[x.from] : undefined; const from = key ? (s[key] as number) : statValue(s, x.from); if (!Number.isNaN(from)) add(s, x.to, from * scaled(x.ratio, o.level)); if (x.replace && x.from === 'bonus_hp') { s.hp -= s.bonusHp; s.bonusHp = 0; } }
+  // T144: item_mana is the mana his items give (FlatMPPoolMod, the same sum as his pool above); with replace it leaves his pool (No Mana, No Problem). Tear stacks are not in it.
+  for (const x of ops) if (x.op === 'convert' && !/move_speed/.test(x.from)) { const key = x.scope === 'bonus' ? bonusOf[x.from] : undefined; const from = x.from === 'item_mana' ? itemMana : key ? (s[key] as number) : statValue(s, x.from); if (!Number.isNaN(from)) add(s, x.to, from * scaled(x.ratio, o.level)); if (x.replace && x.from === 'bonus_hp') { s.hp -= s.bonusHp; s.bonusHp = 0; } if (x.replace && x.from === 'item_mana' && s.mana !== undefined) s.mana -= itemMana; }
   multiplyAll(false);
   for (const x of ops) if (x.op === 'mult_from') multiply(s, x.stat, 1 + (x.byLevel[Math.min(Math.max(o.level, 1), 18) - 1] ?? 0) + x.per.reduce((m, p) => m + p.ratio * (statValue(s, p.stat) || 0), 0));
   // share 1: the stored average; FIGHT.seconds / (FIGHT.seconds - wait): the full value once its seconds have passed.
@@ -475,7 +519,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // An item's amp that waits seconds of combat comes averaged over the fight from knowledge/make-card-data.cjs (Riftmaker 8% read as 5.9%); the fight counts
   // the seconds itself, so once they have passed the full amp applies: (factor - 1) x 15 / (15 - seconds). Counting both halved it twice.
   const fullFactor = (x: Extract<CardOp, { op: 'damage_amp' }>) => { const w = combatSeconds(x); return w > 0 && w < FIGHT.seconds ? 1 + ((x.factor - 1) * FIGHT.seconds) / (FIGHT.seconds - w) : x.factor; };
-  const amp = (scope: string, t = Infinity, withAll = true) => { const fs = ops.flatMap((x) => (x.op !== 'damage_amp' || t < combatSeconds(x) ? [] : (withAll && x.scope === 'all') || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical') ? [fullFactor(x)] : x.scope === 'one_ability' && scope === 'abilities' ? [1 + (fullFactor(x) - 1) / 3] : [])); const byMana = ops.reduce((m, x) => (x.op === 'mana_amp' && ((withAll && x.scope === 'all') || x.scope === scope) && Number.isFinite(fullMana) ? m * (1 + (x.per100 * fullMana) / 100) : m), 1); return byMana * (o.ampStack === 'add' ? 1 + fs.reduce((m, f) => m + f - 1, 0) : fs.reduce((m, f) => m * f, 1)); };
+  const amp = (scope: string, t = Infinity, withAll = true) => { const fs = ops.flatMap((x) => (x.op !== 'damage_amp' || t < combatSeconds(x) ? [] : (withAll && x.scope === 'all') || x.scope === scope || (x.scope === 'magic' && scope === 'abilities' && o.kit.damage !== 'physical') ? [fullFactor(x)] : x.scope === 'one_ability' && scope === 'abilities' ? [1 + (fullFactor(x) - 1) / 3] : [])); const byMana = ops.reduce((m, x) => (x.op === 'mana_amp' && ((withAll && x.scope === 'all') || x.scope === scope) ? m * (1 + (x.base ?? 0) + (Number.isFinite(fullMana) ? (x.per100 * fullMana) / 100 : 0)) : m), 1); return byMana * (o.ampStack === 'add' ? 1 + fs.reduce((m, f) => m + f - 1, 0) : fs.reduce((m, f) => m * f, 1)); };
   const cdFactor = (scope: string) => ops.reduce((m, x) => (x.op === 'cooldown' && (x.scope === 'all' || x.scope === scope) ? m * x.factor : m), 1);
   const locked = new Set(ops.flatMap((x) => (x.op === 'lock' ? [x.key] : [])));
   const critExtra = ops.reduce((m, x) => (x.op === 'crit_abilities' ? m + x.extra : m), 0);
@@ -607,6 +651,21 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   let abilityHealingOnly = 0;
   let abilityInstances = 0, armed = false, repeatCarry = 0, abilityHealing = 0, fromAbilities = 0, fromAttacks = 0, fromCards = 0, attacks = 0, nextAttack = o.kit.attacks || o.kit.damage !== 'magic' || passiveOnAttack ? 0 : Infinity, nextCast = 0, peakMs = 0, peakAs = 0, critCarry = 0;
   let critRepeatCarry = 0;
+  // T120b: with an explicit approach, a read melee state (decided before any range bonus) waits for contact before its first basic attack, then
+  // attacks without the aggregate attackUptime (the scenario's access replaces it; never both). Unsupported states keep the default and say so.
+  let access: RangeAccess | undefined;
+  if (o.attackAccess) {
+    const { distance, moveSpeed } = o.attackAccess;
+    if (!Number.isFinite(distance) || distance < 0 || !Number.isFinite(moveSpeed) || moveSpeed < 0) throw new RangeError('attack access needs a finite non-negative distance and speed');
+    const rs = rangeState({ bin: o.bin, strings: o.attackAccess.strings, level: o.level, heldMelee: becomesMelee });
+    if (rs.known && rs.melee) {
+      const bonus = ops.reduce((n, x) => (x.op === 'add' && x.stat === 'range' && typeof x.value === 'number' ? n + x.value : n), 0);
+      access = rangeAccess({ distance, moveSpeed, beforeRange: rs.range, afterRange: rs.range + bonus, windowSeconds: FIGHT.seconds });
+      const contact = access.after.contactSeconds;
+      if (Number.isFinite(nextAttack)) nextAttack = contact === null ? Infinity : Math.max(nextAttack, contact);
+    } else notModelled.push(`سيناريو الوصول إلى الهدف لا ينطبق: ${rs.known ? 'بطل بعيد المدى، والسيناريو للمشاة فقط' : `مداه غير مقروء (${rs.reason})`}؛ الضربات تبقى على نسبة الالتحام الافتراضية`);
+  }
+  const uptime = access ? 1 : melee ? FIGHT.attackUptime.melee : FIGHT.attackUptime.ranged;
   const casts: Record<string, number> = {}, perCast: Record<string, number> = {};
   const ccEvents: CcEvent[] = [];
   const unreadCc = new Set<string>();
@@ -660,7 +719,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const healShieldPower = healPower + ops.reduce((m, x) => (x.op === 'add' && x.stat === 'heal_shield_power' ? m + scaled(x.value, o.level) : m), 0);
   let healed = 0, shielded = 0, fromAllies = 0, fromAttackProcs = 0;
   // Circle of Death (heal_damage): a share of each heal turned into magic damage when the heal lands, so the timeline and fightValue see it (T035).
-  const healToDamage = ops.reduce((m, x) => (x.op === 'heal_damage' ? m + x.ratio : m), 0);
+  // T147: each converter keeps its own origin, so Forged By The Master raises Circle of Death's damage (an augment's), never the heal itself.
+  const healToDamageAt = (t: number) => ops.reduce((m, x) => (x.op === 'heal_damage' ? m + x.ratio * gearAmp(x, t) : m), 0);
   // T073: does this fight hold a periodic driver at all? The same set the step used to allow, read once instead of every step; the event it raises
   // reaches every listener it reached before (the card 1308 timed op among them), each gated by its own period and condition inside fire.
   const hasPeriodicDriver = ops.some((x) => (x.op === 'proc' || x.op === 'heal' || x.op === 'shield') && x.trigger === 'periodic');
@@ -680,11 +740,13 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (t < lowHealthAt(x)) continue; // an effect on falling below a share of his health waits until the enemies' damage takes him there
       if (t < combatSeconds(x)) continue; // it waits its seconds of fighting before the first time (knowledge/fight-rules.md, conditions)
       // A shield that blocks one kind of damage (Kaenic Rookern: magic only) counts for the share of the enemy's damage of that kind (knowledge/fight-rules.md, shields).
-      if (x.op === 'heal' || x.op === 'shield') { const only = x.op === 'shield' ? /blocks (magic|physical) damage only/i.exec(String((x as { needs?: string }).needs ?? ''))?.[1]?.toLowerCase() : undefined; const physicalShare = o.enemy?.physicalShare ?? 0.5; const amount = formula(x.amount, c, o.level, targetHp) * (only === 'magic' ? 1 - physicalShare : only === 'physical' ? physicalShare : 1) * (1 + healShieldPower); healed += amount; if (x.op === 'shield') shielded += amount; else fromCards += amount * healToDamage * taken.magic; lastProc.set(x, t); }
+      if (x.op === 'heal' || x.op === 'shield') { const only = x.op === 'shield' ? /blocks (magic|physical) damage only/i.exec(String((x as { needs?: string }).needs ?? ''))?.[1]?.toLowerCase() : undefined; const physicalShare = o.enemy?.physicalShare ?? 0.5; const amount = formula(x.amount, c, o.level, targetHp) * (only === 'magic' ? 1 - physicalShare : only === 'physical' ? physicalShare : 1) * (1 + healShieldPower); healed += amount; if (x.op === 'shield') shielded += amount; else fromCards += amount * healToDamageAt(t) * taken.magic; lastProc.set(x, t); }
       // An extra on-hit on the attack after an ability (Dusk and Dawn), not on every attack.
       if (x.op === 'on_hit_repeat' && trigger === 'next_attack') { for (let k = 0; k < x.extra_hits; k++) fire('on_hit', t, c); lastProc.set(x, t); }
       if (x.op === 'proc') {
-        const dealt = formula(x.damage, c, o.level, targetHp) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all', t);
+        // T169: a snipe needs an ability that reaches beyond its distance; a hit with no known ability (an echo) does not count.
+        if (x.minHitRange !== undefined && (!hitSlot || spellReach(hitSlot.path, hitSlot.rank) <= x.minHitRange)) continue;
+        const dealt = formula(x.damage, c, o.level, targetHp) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all', t) * gearAmp(x, t);
         fromCards += dealt;
         if (ON_ATTACK.has(trigger)) fromAttackProcs += dealt; // life steal heals from on-hit damage too (Typhoon's bolt, Blade of the Ruined King)
         lastProc.set(x, t);
@@ -700,6 +762,11 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
           if (!hitSlot || hitSlot.key === 'R' || spellReach(hitSlot.path, hitSlot.rank) <= (x.minHitRange ?? 0) || hitSlot.ready <= t) continue;
           const amount = hitSlot.overTime ? x.periodicAmount ?? x.amount : x.amount;
           hitSlot.ready -= (hitSlot.ready - t) * scaled(amount, o.level);
+        } else if (x.scope === 'chosen_ability') {
+          // Only another ability's cast (castNow is set around the 'ability_cast' event), and only while the chosen one waits.
+          const chosen = castNow && castNow.key !== x.key ? slots.find((sl) => sl.key === x.key) : undefined;
+          if (!chosen || chosen.ready <= t) continue;
+          chosen.ready -= (chosen.ready - t) * Math.min(1, scaled(x.amount, o.level));
         } else reduce(x.scope, x.amount, x.unit, t);
         lastProc.set(x, t);
       }
@@ -722,14 +789,15 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     for (const x of ops) {
       if (x.op !== 'proc' || x.trigger !== 'on_hit' || t < lowHealthAt(x) || t < combatSeconds(x)) continue;
       if (x.internal_cooldown && t - (lastProc.get(x) ?? -Infinity) < cooldownOf(x, x.internal_cooldown)) continue;
-      fromCards += formula(x.damage, c, o.level, targetHp) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all', t) * share;
+      fromCards += formula(x.damage, c, o.level, targetHp) * (taken[x.type as keyof typeof taken] ?? taken.adaptive) * amp('all', t) * gearAmp(x, t) * share;
       lastProc.set(x, t);
     }
   };
   for (const x of ops) if (x.op === 'timed' && x.trigger === 'always') { const at = lowHealthAt(x); stateOf.set(x, at > 0 ? { stacks: 1, until: at + (x.duration ?? FIGHT.seconds), start: at } : { stacks: 1, until: Infinity, start: 0 }); }
   // Bolts at other enemies: their damage in shares of an attack's, and their on-hits, both counted as damage dealt.
   const boltHits = ops.reduce((n, x) => (x.op === 'bolts' ? n + (melee ? x.melee : x.ranged) * FIGHT.boltHitShare : n), 0);
-  const boltAd = ops.reduce((n, x) => (x.op === 'bolts' ? n + (melee ? x.melee : x.ranged) * FIGHT.boltHitShare * x.ad : n), 0);
+  // T147: the bolts are the item's damage (Runaan's), so Forged By The Master raises them, not the main attack.
+  const boltAdAt = (t: number) => ops.reduce((n, x) => (x.op === 'bolts' ? n + (melee ? x.melee : x.ranged) * FIGHT.boltHitShare * x.ad * gearAmp(x, t) : n), 0);
   const repeatOnAttack = ops.reduce((n, x) => x.op === 'on_hit_repeat' && x.trigger !== 'next_attack' && x.trigger !== 'crit' ? n + x.extra_hits : n, 0);
   const repeatOnCrit = ops.reduce((n, x) => x.op === 'on_hit_repeat' && x.trigger === 'crit' ? n + x.extra_hits : n, 0);
   const stackedRepeats = ops.filter((x): x is Extract<CardOp, { op: 'timed' }> => x.op === 'timed' && x.trigger === 'attack' && (x.repeatOnHitEvery ?? 0) > 0);
@@ -762,10 +830,10 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     // A mage or support who doesn't fight with attacks makes none (the owner: Ahri, Soraka); a physical non-attacker attacks between casts only, an assumption.
     if (t >= nextAttack) {
       attacks++;
-      nextAttack = t + 1 / (c.attackSpeed * (o.kit.attackPace ?? (o.kit.attacks ? 1 : o.kit.damage === 'magic' && !passiveOnAttack ? 0 : 0.25)) * (melee ? FIGHT.attackUptime.melee : FIGHT.attackUptime.ranged));
+      nextAttack = t + 1 / (c.attackSpeed * (o.kit.attackPace ?? (o.kit.attacks ? 1 : o.kit.damage === 'magic' && !passiveOnAttack ? 0 : 0.25)) * uptime);
       // The AD term of the hit, replaced by the ability's own hit damage when her record says the attack is that ability (Zeri's Q).
       const hitBase = attackHit ? attackHit.flat + attackHit.ratio * c.ad : c.ad;
-      fromAttacks += hitBase * (1 + c.crit * (c.critDamage - 1)) * amp('attacks', t) * taken.physical * (1 + boltAd);
+      fromAttacks += hitBase * (1 + c.crit * (c.critDamage - 1)) * amp('attacks', t) * taken.physical * (1 + boltAdAt(t));
       critCarry += c.crit;
       const critical = critCarry >= 1;
       if (critical) {
@@ -836,7 +904,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         const critGain = !sl.crits ? 0 : critHit > base && each > 0 ? (critHit - base) / each : c.critDamage - 1;
         // One Hit Wonder's gain on the chosen ability, used once on every damage path this cast builds: the hit, and Nasus R's storm built apart from it (T032).
         const hasteGain = 1 + (hasteToDamage(sl.key) * c.haste) / 100;
-        const hit = one * amp('abilities', t) * amp(scope, t, false) * hasteGain * overTime * (1 + c.crit * (critExtra + critGain)); // shortcut without a crit version: a crit raises the whole hit, not only its AD part
+        // T142: a damage rise bound to one chosen ability (Pursuit of Power) multiplies that ability's casts only, never the others (it was averaged over all).
+        const keyAmp = ops.reduce((m, x) => (x.op === 'damage_amp' && x.scope === 'chosen_ability' && x.key === sl.key && t >= combatSeconds(x) ? m * fullFactor(x) : m), 1);
+        const hit = keyAmp * one * amp('abilities', t) * amp(scope, t, false) * hasteGain * overTime * (1 + c.crit * (critExtra + critGain)); // shortcut without a crit version: a crit raises the whole hit, not only its AD part
         perCast[sl.key] = Math.round(hit);
         casts[sl.key] = (casts[sl.key] ?? 0) + 1;
         if (one > 0) abilityInstances += sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1;
@@ -876,7 +946,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
                 : 'Nasus R: خفض تبريد Q أو مدة تأثيره غير متاح من ملف اللعبة');
             }
             if (validStorm) {
-              const dps = ratio * targetHp * amp('abilities', t) * amp(scope, t, false) * hasteGain;
+              const dps = keyAmp * ratio * targetHp * amp('abilities', t) * amp(scope, t, false) * hasteGain; // T142/T143: the storm is R's damage, so a rise bound to R reaches it once
               const storm = { op: { op: 'dot' as const, trigger: 'nasus_storm', per_second: { flat: dps }, duration, type: 'magic' }, until: t + duration, stacks: 1, fromAbility: true };
               const previous = dots.findIndex((d) => d.op.trigger === 'nasus_storm');
               if (previous < 0) dots.push(storm);
@@ -942,7 +1012,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (d.tick && !ticks) continue;
       const each = formula(d.op.per_second, c, o.level, targetHp) * (d.tick ? d.tick * ticks : dt) * d.stacks * spread * (taken[d.op.type as keyof typeof taken] ?? taken.adaptive) * (1 + c.crit * dotCrit);
       if (d.fromAbility) fromAbilities += each;
-      else fromCards += each;
+      else fromCards += each * gearAmp(d.op, t);
       if (each > 0 && (d.fromAbility || d.op.trigger === 'ability_hit')) abilityInstances += (d.tick ? ticks : dt / 0.5) * d.stacks * spread;
     }
     for (const e of echoes) {
@@ -953,7 +1023,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     }
     for (const h of landing) {
       if (!h.landed && t >= h.at - 1e-9) { h.landed = true; if (h.op.onHitEfficacy) onHitShare(h.op.onHitEfficacy, t, c); }
-      for (; h.done < h.ticks && t >= h.at + (h.done + 1) / h.op.ticksPerSecond - 1e-9; h.done++) fromCards += h.each * amp('all', t);
+      for (; h.done < h.ticks && t >= h.at + (h.done + 1) / h.op.ticksPerSecond - 1e-9; h.done++) fromCards += h.each * amp('all', t) * gearAmp(h.op, t);
     }
     for (const b of allyBuffs) if (t < b.until) fromAllies += b.perSecond * dt;
     if (t + dt >= damageBySecond.length + 1) { damageBySecond.push(fromAbilities + fromAttacks + fromCards + fromAllies); ownBySecond.push(fromAbilities + fromAttacks + fromCards); }
@@ -961,10 +1031,11 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // Whole casts make a cooldown cut count only when it fits one more in 15 s (25 haste added nothing for 46 champions); the share of the
   // next cast already waited out counts instead, when the mana for it is there. Off: tried 2026-11-04, owner cases 11 of 13 either way, first
   // item changed for 20 of 172, DeepSeek's core items in the first three 268 -> 261, its "never" items 4 -> 2; no proven gain, the owner decides.
-  if (FIGHT.partialLastCast) for (const sl of slots) if (sl.dealt && sl.last !== undefined && sl.ready > FIGHT.seconds && mana >= sl.cost) {
+  if (o.partialLastCast ?? FIGHT.partialLastCast) for (const sl of slots) if (sl.dealt && sl.last !== undefined && sl.ready > FIGHT.seconds && mana >= sl.cost) {
     const part = (sl.dealt * (FIGHT.seconds - sl.last)) / (sl.ready - sl.last);
     fromAbilities += part;
     if (damageBySecond.length) damageBySecond[damageBySecond.length - 1]! += part;
+    if (ownBySecond.length) ownBySecond[ownBySecond.length - 1]! += part; // T138: delayed omnivamp reads his own damage by second too
   }
   // An anti-heal item prevents healing; this is not damage and cannot generate omnivamp.
   // Includes healing on allies and assumes the healing is reached; per-enemy hit and debuff uptime remain unmodelled. Shields are excluded in enemyTeam.
@@ -1019,6 +1090,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     perCast,
     stats: { ad: sAvg.ad, ap: sAvg.ap, hp: sAvg.hp, armor: sAvg.armor, mr: sAvg.mr, attackSpeed: Math.min(asCap, as0 + asRatio * sAvg.bonusAttackSpeed), crit: sAvg.crit, haste: sAvg.haste },
     notModelled,
+    ...(access ? { access } : {}),
     abilityInstances,
     ccEvents,
   };
