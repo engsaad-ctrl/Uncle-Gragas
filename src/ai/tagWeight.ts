@@ -6,6 +6,8 @@ import type { CardOp } from './cardMath.js';
 // Conditions the fight runs as events, when the card's ops hang on that event: takedowns at its kill times, attacks at his attack pace.
 const TAKEDOWN = /^condition:(takedown|score takedowns|after a takedown)$/;
 const ATTACKS = /^condition:(attack enemy champions|keep attacking within 5 s|champion basic attacks often)$/;
+// T185: an attack after an ability is the fight's own next_attack event (cardMath arms it on each cast, an attack or an attack-flagged hit spends it).
+const AFTER_CAST = /^condition:attack after casting$/;
 export function tagWeight(tags: { tags: string[] } | undefined, ops: CardOp[], holds?: 'yes' | 'no' | 'unknown'): { weight: number; unread: boolean; open: string[] } {
   // A selected skill's cooldown is simulated directly, and Dashing's "has a dash or blink" is checked per skill (movement_abilities).
   const targetedHaste = ops.some((x) => x.op === 'add' && x.stat === 'haste' && x.scope === 'chosen_ability');
@@ -16,7 +18,8 @@ export function tagWeight(tags: { tags: string[] } | undefined, ops: CardOp[], h
     || (targetedHaste && /^condition:[QWER] is a main ability$/.test(t))
     || (movementHaste && t === 'condition:ability has a dash or blink')
     || (TAKEDOWN.test(t) && on(/^(takedown|kill)$/))
-    || (ATTACKS.test(t) && on(/^(attack|on_hit)$/));
+    || (ATTACKS.test(t) && on(/^(attack|on_hit)$/))
+    || (AFTER_CAST.test(t) && on(/^next_attack$/));
   const open = (tags?.tags ?? []).filter((t) => t.startsWith('condition:') && !settled(t)).map((t) => t.slice('condition:'.length));
   // T051: an op whose state, event or target is not proven is not run (cardMath); the card is then open, never a settled number.
   for (const x of ops) if (x.eligibility === 'unknown') open.push(x.eligibilityWhy ?? 'state or event not proven');

@@ -25,9 +25,9 @@ const TRUSTED = new Set(['screen']), SAID = new Set(['screen', 'said']);
 export function seconds(t) {
   if (!t) return undefined;
   const last = String(t).replace(/^by\s+/, '').split('-').pop().trim();
-  const m = /^(\d+):(\d+(?:\.\d+)?)$/.exec(last);
+  const m = /^(?:(\d+):)?(\d+):(\d+(?:\.\d+)?)$/.exec(last); // T177: the 11-19 notes write h:mm:ss
   if (!m) throw new Error(`bad time "${t}"`);
-  return Number(m[1]) * 60 + Number(m[2]);
+  return Number(m[1] ?? 0) * 3600 + Number(m[2]) * 60 + Number(m[3]);
 }
 
 /** One id for a name: exactly one Mayhem augment with that normalized name, and the id the file stored. Anything else is a data error. */
@@ -45,6 +45,28 @@ export function contextAt(game, r) {
   const owned = game.purchases.filter((p) => p.status === 'bought' && p.time && seconds(p.time) <= at).map((p) => p.item_id);
   const unsureBefore = game.rounds.slice(0, r).filter((x) => !SAID.has(x.taken_evidence)).map((x) => `${x.round}:${x.taken_evidence}`);
   return { held, owned: [...new Set(owned)], unsureBefore };
+}
+
+/** T178 v3: the ability each targeted card showed on screen (the offers file's ability_key; One Hit Wonder, Pursuit of Power and the like
+ * act on one ability, and the app asks the player which). A held card keeps the key it showed where it was acquired, else none:
+ * - his path (`his`): the round he took it from the offer (taken_aug_id); a card he got by a transmute has no observed key (Codex T186);
+ * - the engine's walk: the last earlier round that offered it (the walk takes only from offers and stops on a held card's re-offer or a transmute).
+ * Only when `withCurrent`, the cards offered in round r add theirs. A key seen on a skipped card never carries (Codex T182, T186). */
+export function keysFor(game, r, held, withCurrent, his = true) {
+  const keys = {};
+  for (const id of held) for (let x = Math.min(r, game.rounds.length) - 1; x >= 0; x--) {
+    const round = game.rounds[x];
+    if (his) {
+      if (round.transmute?.into?.some((t) => t.aug_id === id)) break; // got by a transmute: no observed key
+      if (round.transmute || round.taken_aug_id !== id) continue;
+    }
+    const c = round.offered.find((o) => o.aug_id === id);
+    if (!c) continue;
+    if (c.ability_key) keys[id] = c.ability_key;
+    break;
+  }
+  if (withCurrent) for (const c of game.rounds[r].offered) if (c.ability_key && !held.includes(c.aug_id)) keys[c.aug_id] = c.ability_key;
+  return keys;
 }
 
 /** The walk's order (rankOffer) by each card's stage value, its group (0 settled, 1 open condition, 2 not measured) and the first card's verdict. */
@@ -120,6 +142,27 @@ function selfCheck() {
   ok(contextAt(g, 1).held.join() === '10' && contextAt(g, 1).owned.join() === '100', 'round 2: earlier pick, item bought by 5:00 only, no planned item');
   ok(contextAt(g, 2).held.join() === '10,30', 'round 3: the transmute counts as what it became, never as the card');
   ok(contextAt(g, 2).unsureBefore.join() === '2:inferred', 'a round after an inferred pick is marked conditional');
+  // T178 v2: keys reach the app for held picks (from the round taken) and, when asked, this round's offer; a skipped card's key never carries.
+  const k = { rounds: [
+    { round: 1, taken_aug_id: 2116, offered: [{ aug_id: 3060, ability_key: 'R' }, { aug_id: 2116, ability_key: 'W' }, { aug_id: 5 }] },
+    { round: 2, taken_aug_id: 6, offered: [{ aug_id: 6 }, { aug_id: 3060 }, { aug_id: 2100, ability_key: 'E' }] },
+    { round: 3, taken_aug_id: 7, offered: [{ aug_id: 7 }, { aug_id: 8 }, { aug_id: 9 }] },
+  ] };
+  const kf = (r, held, cur) => JSON.stringify(keysFor(k, r, held, cur));
+  ok(kf(0, [], true) === JSON.stringify({ 2116: 'W', 3060: 'R' }), `round 1 offer keys (${kf(0, [], true)})`);
+  ok(kf(1, [2116], true) === JSON.stringify({ 2116: 'W', 2100: 'E' }), `skipped 3060/R does not reach its keyless re-offer; held 2116 keeps W (${kf(1, [2116], true)})`);
+  ok(kf(1, [2116], false) === JSON.stringify({ 2116: 'W' }), `without the current offer only held keys (${kf(1, [2116], false)})`);
+  ok(kf(2, [2116, 3060], false) === JSON.stringify({ 2116: 'W' }), `a held card taken from a keyless offer has no key, whatever an earlier skipped offer showed (${kf(2, [2116, 3060], false)})`);
+  const kw = (r, held, cur) => JSON.stringify(keysFor(k, r, held, cur, false));
+  ok(kw(2, [2100], false) === JSON.stringify({ 2100: 'E' }), `the engine's own pick keeps the key of the round it was offered (${kw(2, [2100], false)})`);
+  ok(kf(2, [2116, 2100], false) === JSON.stringify({ 2116: 'W' }), `his path: a card he skipped is no key of his (${kf(2, [2116, 2100], false)})`);
+  // T186 regression: skip 3060/R, then get 3060 by a transmute: no key.
+  const kt = { rounds: [
+    { round: 1, taken_aug_id: 2116, offered: [{ aug_id: 3060, ability_key: 'R' }, { aug_id: 2116, ability_key: 'W' }, { aug_id: 5 }] },
+    { round: 2, taken_aug_id: 20, offered: [{ aug_id: 20 }, { aug_id: 21 }, { aug_id: 22 }], transmute: { into: [{ aug_id: 3060 }] } },
+    { round: 3, taken_aug_id: 7, offered: [{ aug_id: 7 }, { aug_id: 8 }, { aug_id: 9 }] },
+  ] };
+  ok(JSON.stringify(keysFor(kt, 2, [2116, 3060], false)) === JSON.stringify({ 2116: 'W' }), `a transmuted card keeps no skipped key (${JSON.stringify(keysFor(kt, 2, [2116, 3060], false))})`);
   return (async () => {
     // The engine's walk: an offer with a card it holds stops it; a transmute pick stops it; no decision stops it.
     const w1 = await walkEngine(g, async ({ round }) => ({ id: round.offered[0].aug_id }));
@@ -145,7 +188,7 @@ const { rankOffer } = await imp('app/walk.js');
 const { dominantOffer } = await imp('app/offerComparison.js');
 // The app's own boundary for a level (main's IPC parses every progress with it): a level it refuses is refused here too, as the app would.
 const { parseAugmentProgress } = await imp('ai/augmentProgress.js');
-const appProgress = (level) => { try { return { progress: parseAugmentProgress({ level }) }; } catch (e) { return { refused: `the app refuses level ${level} (${e.message})` }; } };
+const appProgress = (level, abilityTargets = {}) => { try { return { progress: parseAugmentProgress({ level, ...(Object.keys(abilityTargets).length ? { abilityTargets } : {}) }) }; } catch (e) { return { refused: `the app refuses level ${level} (${e.message})` }; } };
 const s = createServices({ cacheDir: `${process.env.APPDATA}/LOL_helper`, fetchImpl: fetch });
 const augs = (await s.augments()).augments, champs = await s.champions(), list = (await s.items('mayhem')).list;
 const boots = new Set(list.filter((i) => i.group === 'boots').map((i) => i.id % 10000));
@@ -175,8 +218,8 @@ for (const rec of gameRecs) {
 }
 
 const calls = { cardValues: 0, mathBuild: 0 };
-async function judge(championId, held, owned, level, ids) {
-  const { progress, refused } = appProgress(level);
+async function judge(championId, held, owned, level, ids, keys) {
+  const { progress, refused } = appProgress(level, keys);
   if (refused) return { refused };
   calls.cardValues++;
   const rows = await s.cardValues(championId, held, owned, undefined, progress, ids);
@@ -189,9 +232,9 @@ async function judge(championId, held, owned, level, ids) {
 const legendary = (ids) => ids.map((id) => id % 10000).filter((id) => !boots.has(id));
 // T167: a plan's purchase order (a merge row is not a buy) and its final inventory (a merge takes its ingredients out). Rows with no merge give the same list twice.
 const inventory = (rows) => rows.reduce((inv, r) => [...(r.consumes ? inv.filter((id) => !r.consumes.includes(id)) : inv), r.item.id], []);
-async function planRows(championId, held, owned, level) { const { progress, refused } = appProgress(level); if (refused) return null; calls.mathBuild++; return s.mathBuild(championId, held, owned, undefined, undefined, undefined, progress); }
-async function plan(championId, held, owned, level) { const rows = await planRows(championId, held, owned, level); return rows && rows.filter((r) => !r.consumes).map((r) => r.item.id); }
-async function planFinal(championId, held, owned, level) { const rows = await planRows(championId, held, owned, level); return rows && inventory(rows); }
+async function planRows(championId, held, owned, level, keys) { const { progress, refused } = appProgress(level, keys); if (refused) return null; calls.mathBuild++; return s.mathBuild(championId, held, owned, undefined, undefined, undefined, progress); }
+async function plan(championId, held, owned, level, keys) { const rows = await planRows(championId, held, owned, level, keys); return rows && rows.filter((r) => !r.consumes).map((r) => r.item.id); }
+async function planFinal(championId, held, owned, level, keys) { const rows = await planRows(championId, held, owned, level, keys); return rows && inventory(rows); }
 
 const out = [], detail = { games: [] };
 const T = { a: { all: 0, refused: 0, top: 0, tie: 0, none: 0, place: {}, dom: {}, trusted: { n: 0, top: 0, tie: 0 }, said: { n: 0, top: 0, tie: 0 }, conditional: { n: 0, top: 0 }, excluded: [] }, pre: { n: 0, topRerolled: 0, topKept: 0, none: 0 } };
@@ -204,7 +247,7 @@ for (const g of games) {
   // (a) on his history
   for (let r = 0; r < g.rounds.length; r++) {
     const round = g.rounds[r], ctx = contextAt(g, r), ids = round.offered.map((c) => c.aug_id);
-    const j = await judge(g.id, ctx.held, ctx.owned, round.level, ids);
+    const j = await judge(g.id, ctx.held, ctx.owned, round.level, ids, keysFor(g, r, ctx.held, true));
     if (j.refused) { T.a.all++; T.a.excluded.push(`${g.champion} R${round.round}: ${j.refused}`); out.push(`a R${round.round} L${round.level}: not judged: ${j.refused}`); G.rounds.push({ round: round.round, level: round.level, refused: j.refused }); continue; }
     const taken = round.taken_aug_id, place = j.stage.place(taken);
     const flags = [round.taken_evidence !== 'screen' ? `taken ${round.taken_evidence}` : '', ctx.unsureBefore.length ? `after ${ctx.unsureBefore.join(',')}` : '', round.level_conflict ? 'level contradicted' : '', round.superfans_extra ? 'Superfans extra' : '', round.transmute ? 'transmute' : '', round.reroll_order_known === false ? 'reroll order unknown' : ''].filter(Boolean);
@@ -228,7 +271,7 @@ for (const g of games) {
     G.rounds.push({ round: round.round, level: round.level, order: j.stage.order, values: Object.fromEntries(ids.map((id) => [id, j.rowOf(id)?.value ?? null])), verdict: j.stage.verdict, top: j.stage.top, taken, place, dominance: j.dom, flags, planFields: j.planFields });
     // The first set, before his rerolls, apart: did he reroll away the card the walk would have shown first?
     for (const first of round.rerolled_offers ?? []) {
-      const fids = first.map((n) => checkAugment(augs, n).id), fj = await judge(g.id, ctx.held, ctx.owned, round.level, fids);
+      const fids = first.map((n) => checkAugment(augs, n).id), fj = await judge(g.id, ctx.held, ctx.owned, round.level, fids, keysFor(g, r, ctx.held, false)); // the set before his rerolls: held keys only, the final offer's keys are not proven for it
       T.pre.n++;
       if (fj.stage.verdict !== 'first') { T.pre.none++; out.push(`  before rerolls: ${first.join(', ')}: first ${fj.stage.verdict}`); continue; }
       const gone = !ids.includes(fj.stage.top);
@@ -245,7 +288,7 @@ for (const g of games) {
     const his = g.purchases.filter((p) => (p.status === 'bought' || p.status === 'named') && p.time && seconds(p.time) > from && seconds(p.time) <= to).sort((a, b) => seconds(a.time) - seconds(b.time)).map((p) => p.item_id % 10000).filter((id) => !boots.has(id));
     if (!his.length) continue;
     const heldAfter = r + 1 < g.rounds.length ? after.held : [...ctx.held, ...(g.rounds[r].transmute ? g.rounds[r].transmute.into.map((t) => t.aug_id) : [g.rounds[r].taken_aug_id])];
-    const raw = await plan(g.id, heldAfter, ctx.owned, g.rounds[r].level);
+    const raw = await plan(g.id, heldAfter, ctx.owned, g.rounds[r].level, keysFor(g, r + 1, heldAfter, false));
     if (!raw) { out.push(`items after R${g.rounds[r].round}: not judged (the app refuses level ${g.rounds[r].level})`); continue; }
     const p = legendary(raw).filter((id) => !ctx.owned.map((x) => x % 10000).includes(id));
     stagesItems.push({ round: g.rounds[r].round, next: p[0], his: his[0], same: p[0] === his[0], hisInPlan: p.includes(his[0]) });
@@ -256,13 +299,13 @@ for (const g of games) {
   const lastOwned = g.purchases.filter((p) => p.status === 'bought').map((p) => p.item_id);
   // The last round's level, or the last level the app accepts when that one is refused (said in the line).
   const lastLevel = [...g.rounds].reverse().find((x) => !appProgress(x.level).refused)?.level;
-  const fin = legendary((await planFinal(g.id, finalHeld, lastOwned, lastLevel)) ?? []);
+  const fin = legendary((await planFinal(g.id, finalHeld, lastOwned, lastLevel, keysFor(g, last + 1, finalHeld, false))) ?? []);
   const hit = known.filter((id) => fin.includes(id));
   out.push(`items, his known (bought or named, legendary, folded): ${known.map(itemName).join(', ') || 'none'}; engine plan with his augments at level ${lastLevel}: ${fin.map(itemName).join(', ')}; recall ${hit.length}/${known.length}; full-set and first-item likeness not counted (his final six are unknown)`);
   G.items = { known, plan: fin, hit, stages: stagesItems };
   // (b) the engine's own path, two branches.
   const branch = async (label, decide) => {
-    const w = await walkEngine(g, async ({ held, owned, round }) => { const j = await judge(g.id, held, owned, round.level, round.offered.map((c) => c.aug_id)); return j.refused ? { stop: j.refused } : decide(j); });
+    const w = await walkEngine(g, async ({ held, owned, round, r }) => { const j = await judge(g.id, held, owned, round.level, round.offered.map((c) => c.aug_id), keysFor(g, r, held, true, false)); return j.refused ? { stop: j.refused } : decide(j); });
     const same = w.steps.filter((x) => x.same).length;
     const union = new Set([...w.held, ...g.rounds.slice(0, w.prefix).map((x) => x.taken_aug_id)]), inter = w.held.filter((id) => g.rounds.slice(0, w.prefix).some((x) => x.taken_aug_id === id));
     out.push(`b ${label}: ${w.steps.map((x) => `R${x.round} ${nameOf(x.engine)}${x.same ? ' =' : ` (his ${nameOf(x.creator)})`}`).join(', ') || 'no step'}; ${w.stop ? `stopped: ${w.stop}, valid prefix ${w.prefix}/${g.rounds.length}` : 'complete'}; same place ${same}/${w.steps.length}; set ${inter.length}/${union.size}${w.diverged >= 0 ? `; first difference R${g.rounds[w.diverged].round}` : ''}`);

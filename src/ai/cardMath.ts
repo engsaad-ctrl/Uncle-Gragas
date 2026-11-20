@@ -63,7 +63,7 @@ export type CardOp = { eligibility?: OpEligibility; eligibilityWhy?: string; /**
   /** scope chosen_ability: another ability's cast takes this share of the chosen ability's remaining cooldown (Overloaded: all of it). `key` is filled from the card's abilityKey. */
   | { op: 'refund'; scope: string; amount: Amount; unit: string; trigger: string; internal_cooldown?: number | null; periodicAmount?: Amount; minHitRange?: number; key?: string; after_quest?: boolean }
   | { op: 'recast'; key: string; internal_cooldown?: number | null; after_quest?: boolean }
-  | { op: 'proc'; trigger: string; afterCastWindow?: number; internal_cooldown?: number | null; damage: DamageFormula; type: string; after_quest?: boolean; /** T169: an ability hit counts only from an ability that reaches beyond this (From Downtown: SnipeDistance 600). */ minHitRange?: number }
+  | { op: 'proc'; trigger: string; afterCastWindow?: number; internal_cooldown?: number | null; damage: DamageFormula; type: string; after_quest?: boolean; /** T169: an ability hit counts only from an ability that reaches beyond this (From Downtown: SnipeDistance 600). */ minHitRange?: number; /** T171: with trigger ability_pair, the seconds in which another ability must have hit (Double Time: DamageWindowSeconds 4). */ pairWindow?: number }
   | { op: 'dot'; per_second: DamageFormula; duration: number; type: string; stacks_max?: number | null; trigger?: string; after_quest?: boolean }
   /** Sent on the trigger once per cooldown (by his level), it lands `delay` s later and deals `damage` in even ticks over `duration` s, a tick at the end of each 1/ticksPerSecond;
    * ticks past the fight's end are lost. On landing it applies on-hit damage at `onHitEfficacy`, once. BEES!!!, read from the patch's file (src/ai/augmentFiles.ts). */
@@ -643,6 +643,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   let nasusQBuff: { until: number; factor: number } | undefined;
   let nasusDefenseUntil = 0, nasusDefenseSeconds = 0;
   const lastProc = new Map<CardOp, number>();
+  // T171: the last hit time of each ability, for an effect on two different abilities hitting within a window (Double Time). One target, so its per-target lock is one lock.
+  const lastHitBy = new Map<string, number>();
+  const pairWindow = ops.reduce((m, x) => (x.op === 'proc' && x.trigger === 'ability_pair' ? Math.max(m, x.pairWindow ?? 0) : m), 0);
   const landing: { op: Extract<CardOp, { op: 'delayed_dot' }>; at: number; each: number; ticks: number; done: number; landed: boolean }[] = [];
   const echoes: { at: number; dealt: number; hits: number; events: boolean; onHit: boolean }[] = [];
   const kitHeals = ops.some((x) => (x.op === 'heal' || x.op === 'shield') && x.kit);
@@ -685,6 +688,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       else if (x.mode === 'percent' && x.stat !== 'attack_speed') multiply(c, x.stat, 1 + v);
       else add(c, x.stat, v);
     }
+    // T173 (Codex T140): a conversion into move speed reads his live stat, so haste gained during the fight moves it too (With Haste); the start value is already in s.
+    for (const x of ops) if (x.op === 'convert' && x.to === 'move_speed' && !/move_speed/.test(x.from) && x.scope !== 'bonus' && x.from !== 'item_mana') { const d = statValue(c, x.from) - statValue(s, x.from); if (d) flatMs += d * scaled(x.ratio, o.level); }
     const ms = softSpeed((c.moveSpeed + flatMs) * (1 + pctMs));
     const baseMs = Number((record as { baseMoveSpeedModifiable?: { baseValue?: number } }).baseMoveSpeedModifiable?.baseValue) || ms;
     for (const x of ops) if (x.op === 'convert' && /move_speed/.test(x.from)) add(c, x.to, (x.from === 'bonus_move_speed' ? Math.max(0, ms - baseMs) : ms) * scaled(x.ratio, o.level));
@@ -972,12 +977,14 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         if (one > 0 && refund) reduce('all', refund, 'seconds', t);
         // The file's flag for an ability that hits as an attack (Ezreal's Q): on-hit effects, and the spellblade an earlier ability armed.
         const asAttack = (sl.spell as { mApplyAttackEffect?: boolean }).mApplyAttackEffect === true;
-        if (one > 0 && asAttack && armed) { armed = false; fire('next_attack', t, c); }
+        // T184: an attack-flagged hit spends the charge its own cast makes (the game arms Spellblade on the cast; Ezreal's Q procs Sheen, Bouncing Bees bounces), one charge whatever armed it.
+        if (one > 0 && asAttack) { armed = false; fire('next_attack', t, c); }
         // Abilities that apply on-hit (Ethereal Weapon) also set off spellblade, its own cooldown kept: the owner's Karthus with Lich Bane (2026-11-06), seen on screen.
         const etherealHit = one > 0 && !asAttack && abilityOnHit !== undefined && t + 1e-9 >= nextAbilityOnHit;
         if (etherealHit) nextAbilityOnHit = t + (abilityOnHit.internal_cooldown ?? 0);
         // Echo Cast: the same hit again after its delay, read from his stats now; no mana, no cooldown, no healing (knowledge/math-generation.md).
         if (one > 0 && !sl.toggle) for (const x of ops) if (x.op === 'echo' && x.key === sl.key) echoes.push({ at: t + x.delay, dealt: hit * abilityTaken * x.ratio, hits: reading?.hits ?? 1, events: !!x.events, onHit: asAttack || etherealHit });
+        if (one > 0 && pairWindow > 0) { if ([...lastHitBy].some(([k, at]) => k !== sl.key && t - at <= pairWindow)) fire('ability_pair', t, c, sl); lastHitBy.set(sl.key, t); }
         if (one > 0) { fire('ability_hit', t, c, sl); if (asAttack || etherealHit) fire('on_hit', t, c); if (etherealHit && !asAttack) fire('next_attack', t, c); }
         // A landed hit of a checked immobilizing ability roots the fight target: one event per cast on him, its duration from the file at this rank.
         const cc = IMMOBILIZE_ON_HIT[sl.path];
@@ -986,7 +993,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         // event is guessed and the limit is said (unreadCc, below) when a card waits on it.
         if (one > 0 && !sl.toggle && cc && !(typeof ccFor === 'number' && Number.isFinite(ccFor) && ccFor >= 0)) unreadCc.add(sl.key);
         if (one > 0 && !sl.toggle && cc && typeof ccFor === 'number' && Number.isFinite(ccFor) && ccFor > 0) { ccEvents.push({ source: 'ability', key: sl.key, path: sl.path, target: 'main', at: t, kind: cc.kind, duration: ccFor }); fire('immobilize_hit', t, c, sl); }
-        armed = true;
+        armed = !(one > 0 && (asAttack || etherealHit)); // T184: that hit already spent this cast's charge; T187: so did an ability on-hit (Ethereal Weapon), which fired next_attack above
         lastCast = t;
         castNow = { key: sl.key, cooldown: Math.max(0, sl.ready - t) };
         fire('ability_cast', t, c);

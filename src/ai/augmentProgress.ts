@@ -8,9 +8,9 @@ export const AUGMENT_LEVELS = [3, 7, 11, 15] as const;
 export const MAYHEM_MAX_LEVEL = 21;
 /** Past this level the fight's champion growth and level numbers are not read (they stop or run on unchecked), so values there are partial. */
 export const FIGHT_READ_LEVEL = 18;
-/** T134: quest cards counted in hits or takedowns (Urf's Champion, From Downtown, Pursuit of Power). The match files hold no live count,
+/** T134: quest cards counted in hits or takedowns (Urf's Champion, From Downtown, Pursuit of Power and of Haste, Bouncing Bees). The match files hold no live count,
  * so their reward counts only when the player marks the quest finished. Item quests complete from the items held (cardMath questItems). */
-export const HIT_QUEST_AUGMENTS = [1154, 2103, 2116, 2100] as const;
+export const HIT_QUEST_AUGMENTS = [1154, 2103, 2116, 2100, 3048] as const; // T179: 3048 Bouncing Bees, quest: bounce attacks onto enemy champions 10 times
 
 export interface AugmentProgress {
   level?: number;

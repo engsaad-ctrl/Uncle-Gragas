@@ -16,6 +16,10 @@ describe('tag weight (knowledge/fight-rules.md, conditions)', () => {
     expect(tagWeight({ tags: ['condition:takedown'] }, [onTakedown]).open).toEqual([]);
     expect(tagWeight({ tags: ['condition:takedown within 5s'] }, [onTakedown]).open).toEqual(['takedown within 5s']); // the window is not run
     expect(tagWeight({ tags: ['condition:keep attacking within 5 s'] }, [{ op: 'proc', trigger: 'attack', damage: { flat: 1 }, type: 'true' } as CardOp]).open).toEqual([]);
+    // T185: an attack after an ability is the next_attack event (Armored Impact, Bouncing Bees); a card on every attack does not settle it (The Boom and the Bass).
+    const afterCast = { op: 'proc', trigger: 'next_attack', damage: { flat: 1 }, type: 'true' } as CardOp;
+    expect(tagWeight({ tags: ['condition:attack after casting'] }, [afterCast]).open).toEqual([]);
+    expect(tagWeight({ tags: ['condition:attack after casting'] }, [{ op: 'proc', trigger: 'attack', damage: { flat: 1 }, type: 'true' } as CardOp]).open).toEqual(['attack after casting']);
     expect(tagWeight({ tags: ['condition:dash or blink'] }, [proc()], 'yes').open).toEqual([]);
     expect(tagWeight({ tags: ['condition:dash or blink'] }, [proc()], 'unknown').open).toEqual(['dash or blink']);
     expect(tagWeight({ tags: ['on_death'] }, [proc()]).weight).toBe(0);
