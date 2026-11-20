@@ -893,12 +893,14 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
           notModelled.push('Jayce E: الإطاحة وتغيير موضع الهدف غير محسوبين');
           if (!validPercHp) notModelled.push('Jayce E: نسبة ضرر الصحة القصوى غير متاحة من ملف اللعبة');
         }
-        const healthShare = jayceMeleeE ? (validPercHp ? percHp : 0) : Math.max(0, ...read.filter((v) => HEALTH_SHARE_NAME.test(v.name) && !NOT_HEALTH_SHARE.test(v.name)).map((v) => (reading?.healthUnit === 'percent' ? Math.max(0, v.value) / 100 : v.value <= 1 ? v.value : v.value <= 100 ? v.value / 100 : 0))); // healthUnit 'percent': points, whatever the size (T042); else the size rule, unreviewed
+        // T192: a reading may name a data value as the share (Dr. Mundo Q's CurrentHealthDamage, Evelynn E's BasePercentHealth), read at this rank.
+        const shareValue = reading?.share ? sl.spell.DataValues?.find((v) => v.name === reading.share)?.values?.[sl.rank] : undefined;
+        const healthShare = jayceMeleeE ? (validPercHp ? percHp : 0) : Math.max(0, ...[...read, ...(shareValue === undefined ? [] : [{ name: reading!.share!, value: shareValue }])].filter((v) => v.name === reading?.share || (HEALTH_SHARE_NAME.test(v.name) && !NOT_HEALTH_SHARE.test(v.name))).map((v) => (reading?.healthUnit === 'percent' ? Math.max(0, v.value) / 100 : v.value <= 1 ? v.value : v.value <= 100 ? v.value / 100 : 0))); // healthUnit 'percent': points, whatever the size (T042); else the size rule, unreviewed
         const healing = Math.max(0, ...read.filter((v) => HEALING_NAME.test(v.name) && !/monster|minion/i.test(v.name)).map((v) => v.value));
         if (!kitHeals) abilityHealing += healing; // read per ability as his own healing instead (knowledge/champion-heal-*.jsonl)
         if (!kitHeals) abilityHealingOnly += Math.max(0, ...read.filter((v) => /heal/i.test(v.name) && !/shield|monster|minion/i.test(v.name)).map((v) => v.value));
         if (healing > 0) for (const b of allyBuffs) b.until = t + b.seconds;
-        const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * targetHp * (reading?.targetBonusHealth ? TARGET_BONUS_SHARE : 1)) + fromPassive.reduce((t, v) => t + v.value, 0)
+        const each = (values.length ? Math.max(...values.map((v) => v.value)) : 0) + (chosen.length ? 0 : healthShare * targetHp * (reading?.targetBonusHealth ? TARGET_BONUS_SHARE : 1) * (reading?.current ? 0.5 : 1)) + fromPassive.reduce((t, v) => t + v.value, 0)
           + (reading?.flat ? sl.spell.DataValues?.find((v) => v.name === reading.flat)?.values?.[sl.rank] ?? 0 : 0); // a flat part the reading names (T041: Amumu W's BaseDamage a second)
         const nasusStorm = sl.path === NASUS_STORM;
         const one = nasusStorm ? 0 : each * (sl.toggle && sl.perSecond ? 1 : reading?.hits ?? 1); // a damage-per-second toggle already counts its seconds
