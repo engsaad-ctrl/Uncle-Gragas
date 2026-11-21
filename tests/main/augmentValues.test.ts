@@ -147,8 +147,12 @@ describe('augment values across separate offers', () => {
     const alongside = await s.cardValues(103, [], [], undefined, { level: 11 }, [90001, 90002]);
     expect(alongside.find((r) => r.id === 90001)).toEqual(alone.find((r) => r.id === 90001));
   });
+  it('takes a four-card round (T196d)', async () => {
+    const rows = await services().cardValues(103, [], [], undefined, { level: 11 }, [90001, 90002, 1, 2]);
+    expect(rows.find((r) => r.id === 90001)).toBeDefined();
+  });
   it('refuses an unbounded offer search', async () => {
-    await expect(services().cardValues(103, [], [], undefined, { level: 7 }, [1, 2, 3, 4])).rejects.toThrow('bad augment offer');
+    await expect(services().cardValues(103, [], [], undefined, { level: 7 }, [1, 2, 3, 4, 5])).rejects.toThrow('bad augment offer'); // T196d: four is a real round
   });
   it('fixes a live mode copy as its finished shop item and leaves components out of full-build slots', async () => {
     const rows = await services().mathBuild(103, [], [10001, 1, 999], undefined, undefined, undefined, { level: 11 });

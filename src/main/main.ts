@@ -299,7 +299,7 @@ handle('build:cardvalues', (_e, championId: unknown, augmentIds: unknown, itemId
     const [id] = parseIds([championId]);
     const parsed = parseAugmentProgress(progress), player = await playerNow(id);
     const timing = withLog(id, parseIds(augmentIds), player?.level === undefined ? parsed : { ...parsed, level: player.level, ...(player.ranks ? { abilityRanks: player.ranks } : {}) });
-    return services.cardValues(id, parseIds(augmentIds), player?.items ?? (Array.isArray(itemIds) ? parseIds(itemIds) : []), await teamsNow(), timing, offered === undefined ? [] : parseIds(offered, 3), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
+    return services.cardValues(id, parseIds(augmentIds), player?.items ?? (Array.isArray(itemIds) ? parseIds(itemIds) : []), await teamsNow(), timing, offered === undefined ? [] : parseIds(offered, 4), style === 'ap' || style === 'ad' || style === 'tank' || style === 'aphp' ? style : undefined, typeof stacks === 'number' && Number.isFinite(stacks) && stacks >= 0 && stacks <= 100000 ? stacks : undefined);
   }),
 );
 // T052: one held card's partners, for the same state the card values read (the live level, ranks and items when the game is running).

@@ -6,6 +6,7 @@ describe('offerPlanIds', () => {
     expect(offerPlanIds(new Set([10]), false)).toEqual([]);
     expect(offerPlanIds(new Set([10, 20]), false)).toEqual([]);
     expect(offerPlanIds(new Set([10, 20, 30]), false)).toEqual([10, 20, 30]);
+    expect(offerPlanIds(new Set([10, 20, 30, 40]), false)).toEqual([10, 20, 30, 40]); // T196d: a four-card round
     expect(offerPlanIds(new Set([10, 20]), true)).toEqual([10, 20]);
     expect(offerPlanIds(new Set(), true)).toEqual([]);
   });

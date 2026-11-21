@@ -731,7 +731,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
   const rankNote = (progress: AugmentProgress | undefined, plan: SkillPlan | undefined) => knownRanksOf(progress) ? [] : [plan ? 'رتب المهارات حسب ترتيب صفحة البناء الأشهر، لا قراءة من المباراة' : 'رتب المهارات توزيع قانوني متساوٍ للنقاط، لا قراءة من المباراة'];
 
   async function cardValues(championId: number, augmentIds: number[], itemIds: number[], teams?: Teams, progress?: AugmentProgress, offeredIds: number[] = [], style?: BuildStyle, stacks?: number, scenario?: AccessScenario): Promise<AugmentValue[]> {
-    if (offeredIds.length > 3) throw new Error('bad augment offer');
+    if (offeredIds.length > 4) throw new Error('bad augment offer'); // T196d: four-card rounds exist on some maps
     checkScenario(scenario);
     const entry = (await champions()).find((c) => c.id === championId);
     if (!entry) throw new Error(`unknown champion ${championId}`);
@@ -827,7 +827,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       return [{ ...(attacksAssumed ? { attacksAssumed } : {}), ...(range ? { range } : {}), ...(lowHealth ? { lowHealth } : {}), ...(heldRange ? { heldRange } : {}), id: cid, damage: first.damage ? now.damage / first.damage - 1 : 0, health: first.effectiveHp ? now.effectiveHp / first.effectiveHp - 1 : 0, currentValue: gains[0]!, value: gains.reduce((sum, n) => sum + n, 0) / gains.length, open, certain: !stage.estimatedLevel && !stage.estimatedHistory && !missing && !unread && tags?.sure !== false && holds === 'yes' && card.status === 'computed' && card.ops.every((x) => x.op === 'add' || x.op === 'mult'), missing, level: stage.level, untilLevel: stage.untilLevel, estimatedLevel: stage.estimatedLevel, estimatedHistory: stage.estimatedHistory }];
     });
     if (!offeredIds.length) return rows;
-    // Full searches only for the actual offer (at most three), never for the entire augment catalogue.
+    // Full searches only for the actual offer (at most four: T196d, some maps offer four cards), never for the entire augment catalogue.
     // Finished items keep their slots. Components are retained in the current fight but their future upgrade cost is unknown.
     const finished = new Set(shopNames.list.filter((i) => i.group === 'legendary' || i.group === 'boots').map((i) => i.id));
     // A held Mayhem copy (22xxxx) is kept when the catalog knows it or its base item; mathBuild then holds it as the catalog's own id (the copy

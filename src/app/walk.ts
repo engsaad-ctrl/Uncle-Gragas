@@ -1,8 +1,8 @@
 // The player's own walk: the cards on offer and the items he really bought, typed in by him, since the engine can't see them.
 
-/** Search complete builds after all three cards are entered or the player requests a partial comparison. */
+/** Search complete builds once three cards are entered (a four-card round recomputes on the fourth) or the player requests a partial comparison. */
 export const offerPlanIds = (offer: ReadonlySet<number>, comparePartial: boolean): number[] =>
-  offer.size === 3 || comparePartial ? [...offer] : [];
+  offer.size >= 3 || comparePartial ? [...offer] : [];
 
 /** Settled cards first by percent, then cards with an open condition by percent (the owner, 2026-11-09: kept apart), then unknown. */
 export const rankOffer = <T>(cards: T[], percent: (card: T) => number | undefined, open: (card: T) => boolean = () => false): T[] =>

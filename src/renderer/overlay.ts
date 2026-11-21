@@ -483,6 +483,8 @@ const ic = (x: Describable) => withTooltip(icon(x.iconUrl, 'ic'), x);
 /** The cards the player typed in for this round. */
 const offer = new Set<number>();
 let comparePartialOffer = false;
+/** T196d: some maps offer four cards a round (creator VODs, 2026-11-21); three is still the usual round. */
+const MAX_OFFER = 4;
 /** T053: the example scenario's distance; the player can change it in the card's details. A display input only: no value or ranking reads it. */
 let rangeDistance: number = RANGE_SCENARIO.distance;
 
@@ -641,7 +643,7 @@ function offerSection(): HTMLElement {
   const availableOffers = pool.filter((a) => !offer.has(a.id) && !picked.has(a.id));
   const findCard = finder('ov-offer-card', 'اكتب اسم بطاقة معروضة واضغط Enter عند ظهور نتيجة واحدة', (q) =>
     findOfferMatches(availableOffers, q).slice(0, 6).map((a) => pill(shownName(a), () => {
-      if (offer.size >= 3) return;
+      if (offer.size >= MAX_OFFER) return;
       offer.add(a.id); comparePartialOffer = false;
       byId<HTMLInputElement>('ov-offer-card').value = '';
       void refreshCardMath(); redrawBuild();
@@ -672,7 +674,7 @@ function offerSection(): HTMLElement {
     findCard.box.querySelector('button')?.click();
   });
   if (offer.size) openFolds.add('offer');
-  return fold('offer', offer.size ? `مقارنة البطاقات المعروضة (${offer.size} من 3)` : 'قارن البطاقات المعروضة عليك (اختياري)',
+  return fold('offer', offer.size ? `مقارنة البطاقات المعروضة (${offer.size})` : 'قارن البطاقات المعروضة عليك (اختياري)',
     findCard.label, findCard.box, rows,
     el('p', 'hint', 'الأرقام هنا من حساب المحرك، وليست احتمال فوز. «الآن» بأغراضك الحالية، و«الخطة المكتملة» تعيد البحث عن الأغراض لكل بطاقة بلا تعزيزات قادمة. حرف S–C في قائمة التعزيزات من نتائج المباريات والمواقع، ومنفصل عن هذه الأرقام.'));
 }
