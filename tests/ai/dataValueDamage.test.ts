@@ -36,10 +36,10 @@ it.each([[3, 1], [9, 3], [13, 5]])('Evelynn E at level %s rank %s deals BaseDama
   expect(Math.abs(r.perCast.E - (dv(f, 'BaseDamage', rank) + (dv(f, 'BasePercentHealth', rank) / 100) * HP))).toBeLessThanOrEqual(0.5); // perCast is rounded to a whole number
 });
 
-it.each([[6, 1], [11, 2], [16, 3]])('Garen R at level %s rank %s deals its BaseDamage', (level, rank) => {
+it.each([[6, 1], [11, 2], [16, 3]])('Garen R at level %s rank %s deals BaseDamage plus ExecuteDamage of half the target health (missing health)', (level, rank) => {
   const f = load('garen-r');
   const r = run(f, 'R', level, rank);
   expect(r.casts.R).toBeGreaterThan(0);
-  expect(Math.abs(r.perCast.R - (dv(f, 'BaseDamage', rank)))).toBeLessThanOrEqual(0.5); // perCast is rounded to a whole number
-  expect(SPELL_HITS[f.path]!.notModelled).toMatch(/ExecuteDamage/); // the missing-health part is said, not guessed
+  expect(SPELL_HITS[f.path]).toMatchObject({ flat: 'BaseDamage', share: 'ExecuteDamage', missing: true }); // T200
+  expect(Math.abs(r.perCast.R - (dv(f, 'BaseDamage', rank) + dv(f, 'ExecuteDamage', rank) * HP * 0.5))).toBeLessThanOrEqual(0.5); // perCast is rounded to a whole number
 });

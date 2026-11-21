@@ -13,7 +13,11 @@ export interface AugmentPlan {
 
 /** Keep the same attack-enabling rule in offer evaluation and item search. */
 export function kitWithCards(kit: Kit, cards: CardNumbers[]): Kit {
-  return { ...kit, attacks: kit.attacks || cards.some((c) => liveCard(c).ops.some((x) => 'trigger' in x && (x.trigger === 'attack' || x.trigger === 'on_hit'))) }; // T051 v2: live ops only
+  const on = (...t: string[]) => cards.some((c) => liveCard(c).ops.some((x) => 'trigger' in x && x.trigger !== undefined && t.includes(x.trigger)));
+  const attacks = kit.attacks || on('attack', 'on_hit'); // T051 v2: live ops only
+  // T196b: an after-cast card (Armored Impact, Bouncing Bees) on a kit that does not attack: attacks only to spend its charge, not at an attacker's pace.
+  // T196c (Codex T206): attacks a card turned on (not his own, no attackPace of his own) are made in cast downtime only; kept once set.
+  return { ...kit, attacks, ...(!kit.attacks && attacks && kit.attackPace === undefined ? { cardAttacks: true } : {}), ...(!attacks && on('next_attack') ? { chargeAttacks: true } : {}) };
 }
 
 /** Compare two independently searched complete builds. This is a conditional end-state, not a gold/time forecast. */

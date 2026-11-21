@@ -26,6 +26,8 @@ export interface AugmentProgress {
   heartsteelStacks?: number;
   /** T155: that reading already holds Steel Your Heart's tripling (he ticked its quest done). Kept with the reading, not the card. */
   heartsteelRewarded?: boolean;
+  /** T193: the item Weapon of Destiny made his weapon (his first completed legendary), as the player names it. Unset means unknown: its growth is not counted. */
+  destinyItem?: number;
   /** Some augment he took has no known level (the engine's own callers set this, never the page): no order among them is proven. */
   unknownPicks?: boolean;
   /** The caller vouches that acquiredLevels and otherPicks hold every augment taken (engine callers only, never the page). Without it no place in the order is proven. */
@@ -44,7 +46,7 @@ export interface AugmentProgress {
 export function parseAugmentProgress(value: unknown): AugmentProgress | undefined {
   if (value === undefined || value === null) return undefined;
   if (typeof value !== 'object' || Array.isArray(value)) throw new Error('bad augment progress');
-  const { level, acquiredLevels, abilityTargets, questsDone, madScientist, heartsteelStacks, heartsteelRewarded } = value as Record<string, unknown>;
+  const { level, acquiredLevels, abilityTargets, questsDone, madScientist, heartsteelStacks, heartsteelRewarded, destinyItem } = value as Record<string, unknown>;
   const validLevel = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 3 && n <= MAYHEM_MAX_LEVEL;
   if (level !== undefined && !validLevel(level)) throw new Error('bad augment level');
   const history: Record<number, number> = {};
@@ -70,8 +72,9 @@ export function parseAugmentProgress(value: unknown): AugmentProgress | undefine
   if (questsDone !== undefined && (!Array.isArray(questsDone) || questsDone.length > 6 || new Set(questsDone).size !== questsDone.length || !questsDone.every((id) => Number.isSafeInteger(id) && id > 0))) throw new Error('bad augment quests');
   if (madScientist !== undefined && madScientist !== 'grow' && madScientist !== 'shrink') throw new Error('bad augment state');
   if (heartsteelRewarded !== undefined && heartsteelRewarded !== true) throw new Error('bad heartsteel stacks');
+  if (destinyItem !== undefined && !(typeof destinyItem === 'number' && Number.isSafeInteger(destinyItem) && destinyItem > 0)) throw new Error('bad destiny item');
   if (heartsteelStacks !== undefined && (typeof heartsteelStacks !== 'number' || !Number.isInteger(heartsteelStacks) || heartsteelStacks < 0 || heartsteelStacks > 20000)) throw new Error('bad heartsteel stacks');
-  return { ...(level === undefined ? {} : { level }), acquiredLevels: history, ...(abilityTargets === undefined ? {} : { abilityTargets: targets }), ...(questsDone === undefined ? {} : { questsDone: [...questsDone] as number[] }), ...(madScientist === undefined ? {} : { madScientist }), ...(heartsteelStacks === undefined ? {} : { heartsteelStacks }), ...(heartsteelRewarded ? { heartsteelRewarded } : {}) };
+  return { ...(level === undefined ? {} : { level }), acquiredLevels: history, ...(abilityTargets === undefined ? {} : { abilityTargets: targets }), ...(questsDone === undefined ? {} : { questsDone: [...questsDone] as number[] }), ...(madScientist === undefined ? {} : { madScientist }), ...(heartsteelStacks === undefined ? {} : { heartsteelStacks }), ...(heartsteelRewarded ? { heartsteelRewarded } : {}), ...(destinyItem === undefined ? {} : { destinyItem: destinyItem as number }) };
 }
 
 export function augmentStage(held: number[], progress?: AugmentProgress) {

@@ -90,7 +90,7 @@ const itemsRead = [1, 2].flatMap((n) => lines(`knowledge/item-math-${n}.jsonl`))
 }) })).filter((p) => p.ops.length);
 const items = mergeRows(itemsRead, overrides.items, overrides.expectedInputs.items);
 // How many times a cast hits one target, or which of its numbers is the normal one: read from each ability's text and calculation names.
-const hitsRead = Object.fromEntries([1, 2, 3].flatMap((n) => lines(`knowledge/spell-hits-${n}.jsonl`)).map((h) => [h.path, { hits: h.hits ?? 1, ...(h.calc ? { calc: h.calc } : {}), ...(h.flat ? { flat: h.flat } : {}), ...(h.share ? { share: h.share } : {}), ...(h.current ? { current: true } : {}), ...(h.healthUnit ? { healthUnit: h.healthUnit } : {}), ...(h.notModelled ? { notModelled: h.notModelled } : {}) }]));
+const hitsRead = Object.fromEntries([1, 2, 3].flatMap((n) => lines(`knowledge/spell-hits-${n}.jsonl`)).map((h) => [h.path, { hits: h.hits ?? 1, ...(h.calc ? { calc: h.calc } : {}), ...(h.flat ? { flat: h.flat } : {}), ...(h.share ? { share: h.share } : {}), ...(h.current ? { current: true } : {}), ...(h.buff ? { buff: h.buff } : {}), ...(h.missing ? { missing: true } : {}), ...(h.healthUnit ? { healthUnit: h.healthUnit } : {}), ...(h.notModelled ? { notModelled: h.notModelled } : {}) }]));
 for (const key of Object.keys(overrides.spellHits)) {
   if (!Object.hasOwn(overrides.expectedInputs.spellHits, key)) throw new Error('missing expected spell hit input');
   unchangedInput(hitsRead[key], overrides.expectedInputs.spellHits[key], key);
@@ -104,7 +104,7 @@ export const CARD_NUMBERS: (CardNumbers & { need?: CardNeed })[] = ${JSON.string
 
 export const PASSIVE_NUMBERS: { id: number; ops: CardOp[] }[] = ${JSON.stringify(passives)} as { id: number; ops: CardOp[] }[];
 
-export const SPELL_HITS: Record<string, { hits: number; calc?: string; targetBonusHealth?: boolean; notModelled?: string; rate?: 'second'; tick?: number; flat?: string; /** T192: a data value that is a share of the target's health (no calculation holds it: Dr. Mundo Q). */ share?: string; /** T192: the share is of current health, read as half the full health like a card's target_current_hp. */ current?: boolean; healthUnit?: 'percent' }> = ${JSON.stringify(hits)};
+export const SPELL_HITS: Record<string, { hits: number; calc?: string; targetBonusHealth?: boolean; notModelled?: string; rate?: 'second'; tick?: number; flat?: string; /** T192: a data value that is a share of the target's health (no calculation holds it: Dr. Mundo Q). */ share?: string; /** T192: the share is of current health, read as half the full health like a card's target_current_hp. */ current?: boolean; /** T203: a stat the cast gives for a while, both numbers read from the file at the ability's rank (Twitch R's BonusAD for Duration). */ buff?: { stat: string; value: string; duration: string }; /** T200: the share is of missing health, read as half the full health like a card's target_missing_hp (Garen R). */ missing?: boolean; healthUnit?: 'percent' }> = ${JSON.stringify(hits)};
 export const ITEM_NUMBERS: { id: number; ops: CardOp[] }[] = ${JSON.stringify(items)} as { id: number; ops: CardOp[] }[];
 `;
 let output = 'src/ai/cardMathData.ts', check = false;

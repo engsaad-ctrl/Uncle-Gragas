@@ -29,6 +29,7 @@ import { restorePicks } from './pickRestore.js';
 import { gameLiftLine, OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type OfferGroup } from './offerView.js';
 import { GAME_LIFT } from '../ai/gameLift.js';
 import { FIXED_ABILITY_KEY, needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
+import { destinyOptions } from './destinyOptions.js';
 
 applyRandomTheme(); // colours only: the overlay hides the background art
 const search = byId<HTMLInputElement>('ov-search');
@@ -61,7 +62,10 @@ const STEEL_YOUR_HEART = 1152, HEARTSTEEL = 3084;
 let heartsteelStacks: number | undefined;
 /** T155: that reading already holds Steel Your Heart's tripling (its quest ticked done). It stays with the reading when the card is unpicked. */
 let heartsteelRewarded = false;
-const progress = (): AugmentProgress => ({ level: data?.live?.level ?? manualLevel, acquiredLevels: { ...acquiredLevels }, abilityTargets: { ...abilityTargets }, ...(questsDone.size ? { questsDone: [...questsDone] } : {}), ...(madScientist && picked.has(MAD_SCIENTIST) ? { madScientist } : {}), ...(heartsteelStacks !== undefined ? { heartsteelStacks } : {}), ...(heartsteelRewarded ? { heartsteelRewarded } : {}) });
+/** T193: the item Weapon of Destiny made his weapon, as he names it; unset means unknown (its growth is not counted). */
+const WEAPON_OF_DESTINY = 3081;
+let destinyItem: number | undefined;
+const progress = (): AugmentProgress => ({ level: data?.live?.level ?? manualLevel, acquiredLevels: { ...acquiredLevels }, abilityTargets: { ...abilityTargets }, ...(questsDone.size ? { questsDone: [...questsDone] } : {}), ...(madScientist && picked.has(MAD_SCIENTIST) ? { madScientist } : {}), ...(destinyItem !== undefined && picked.has(WEAPON_OF_DESTINY) ? { destinyItem } : {}), ...(heartsteelStacks !== undefined ? { heartsteelStacks } : {}), ...(heartsteelRewarded ? { heartsteelRewarded } : {}) });
 const liveFinished = (items: number[], finished: Set<number>, champion?: number) => [...new Set(items.map((id) => finished.has(id) ? id : id % 10000).filter((id) => finished.has(id) || (champion === EZREAL && [TEAR, MANAMUNE, MURAMANA].includes(id % 10000))))];
 let restoredFor: number | undefined;
 const MAX_PICKS = 6;
@@ -208,6 +212,7 @@ function resetRun() {
   for (const id of Object.keys(abilityTargets)) delete abilityTargets[Number(id)];
   questsDone.clear();
   madScientist = undefined;
+  destinyItem = undefined;
   heartsteelStacks = undefined;
   heartsteelRewarded = false;
   cardMathFor = ''; cardMath.clear(); cardMathLoading = false; engineAsked = ''; engine = undefined; engineRetries = undefined; experimental = undefined;
@@ -260,10 +265,11 @@ function applyPicks(snap: PickSnapshot) {
   for (const id of Object.keys(abilityTargets)) if (!picked.has(Number(id))) delete abilityTargets[Number(id)];
   for (const id of [...questsDone]) if (!picked.has(id)) questsDone.delete(id);
   if (!picked.has(MAD_SCIENTIST)) madScientist = undefined;
+  if (!picked.has(WEAPON_OF_DESTINY)) destinyItem = undefined;
 }
 /** No log to write to: the marks stay on this page as before, the level from the game when just read, or typed in. */
 function markLocally(id: number, fresh: boolean) {
-  if (picked.has(id)) { picked.delete(id); delete acquiredLevels[id]; delete abilityTargets[id]; questsDone.delete(id); if (id === MAD_SCIENTIST) madScientist = undefined; }
+  if (picked.has(id)) { picked.delete(id); delete acquiredLevels[id]; delete abilityTargets[id]; questsDone.delete(id); if (id === MAD_SCIENTIST) madScientist = undefined; if (id === WEAPON_OF_DESTINY) destinyItem = undefined; }
   else if (picked.size < MAX_PICKS) {
     // Without a live/manual level leave history unknown; the calculator labels the unlock-level fallback as estimated.
     const level = fresh ? data?.live?.level : data?.live ? undefined : manualLevel;
@@ -801,6 +807,28 @@ function madScientistField(a: OverlayData['augments'][number]): HTMLElement | nu
   return label;
 }
 
+/** T193: which held item Weapon of Destiny made his weapon (his first completed legendary). The engine can't tell it from the inventory order. */
+function destinyItemField(a: OverlayData['augments'][number]): HTMLElement | null {
+  if (!a.ids.includes(WEAPON_OF_DESTINY)) return null;
+  const label = el('label', 'hint ov-quest-done');
+  const select = el('select', '') as HTMLSelectElement;
+  for (const o of destinyOptions(data?.live?.items ?? owned, data?.items ?? [], destinyItem)) {
+    const option = el('option', '', o.text) as HTMLOptionElement;
+    option.value = o.value;
+    option.selected = o.selected;
+    select.append(option);
+  }
+  select.addEventListener('change', () => {
+    destinyItem = select.value ? Number(select.value) : undefined;
+    path = undefined;
+    void refreshCardMath();
+    redrawBuild();
+    void refreshEngine();
+  });
+  label.append(el('span', '', `سلاح ${shownName(a)} (أول غرض أسطوري أكملته): `), select);
+  return label;
+}
+
 /** T153/T154: Heartsteel's stacks as the game shows them, whenever he holds Heartsteel or Steel Your Heart: they replace the engine's estimate of
  * Heartsteel's health. Steel Your Heart triples them from 300 until its quest is ticked done (then the game's number already holds it). Empty means unknown. */
 function heartsteelStacksField(): HTMLElement | null {
@@ -931,7 +959,7 @@ function adaptedSection(): HTMLElement[] {
   const heldRange = cardMathContext === cardContext() && !cardMathLoading ? [...cardMath.values()].map((r) => r.heldRange).find(Boolean) : undefined;
   if (heldRange) state.append(el('span', 'ov-range-held', `مدى هجومك العادي ${heldRange.total} (الأساسي ${heldRange.base}، مع ${heldRange.names.join('، ')})`));
   // With no marks yet one line says what to do; the log's state shows once there is something in it, or a mark was refused.
-  const head: HTMLElement[] = [state, ...(chosen.length ? [chosenChips(chosen), ...chosen.flatMap((a) => abilityTargetField(a) ?? []), ...chosen.flatMap((a) => questDoneField(a) ?? []), ...chosen.flatMap((a) => madScientistField(a) ?? []), ...pickStatus()] : [el('p', 'hint', NO_PICKS), ...(pickRefused ? pickStatus() : [])]), ...[heartsteelStacksField()].filter((x): x is HTMLElement => x !== null)];
+  const head: HTMLElement[] = [state, ...(chosen.length ? [chosenChips(chosen), ...chosen.flatMap((a) => abilityTargetField(a) ?? []), ...chosen.flatMap((a) => questDoneField(a) ?? []), ...chosen.flatMap((a) => madScientistField(a) ?? []), ...chosen.flatMap((a) => destinyItemField(a) ?? []), ...pickStatus()] : [el('p', 'hint', NO_PICKS), ...(pickRefused ? pickStatus() : [])]), ...[heartsteelStacksField()].filter((x): x is HTMLElement => x !== null)];
   const styleRow = styleSwitch();
   const stackRow = stacksField(() => { path = undefined; redrawBuild(); });
   const controls = [...(styleRow ? [styleRow] : []), ...(stackRow ? [stackRow] : [])];
@@ -998,7 +1026,7 @@ function stacksField(redraw: () => void): HTMLElement | null {
 function styleSwitch(): HTMLElement | null {
   const champion = data?.champion;
   if (!champion) return null;
-  const key = `${loadId}|${data?.game}|${pickedKey()}|${JSON.stringify(abilityTargets)}|${[...questsDone].join()}|${madScientist ?? ''}|${heartsteelStacks ?? ''}|${heartsteelRewarded}`;
+  const key = `${loadId}|${data?.game}|${pickedKey()}|${JSON.stringify(abilityTargets)}|${[...questsDone].join()}|${madScientist ?? ''}|${destinyItem ?? ''}|${heartsteelStacks ?? ''}|${heartsteelRewarded}`;
   if (styles?.champion !== champion.id || styles.key !== key) {
     styles = { champion: champion.id, key, list: styles?.champion === champion.id ? styles.list : [] };
     void window.lolh.buildStyles(champion.id, [...picked], progress()).then((x) => {

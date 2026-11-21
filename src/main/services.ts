@@ -739,7 +739,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const [all, bin, shop, shopNames] = await Promise.all([augments(), fightBin(v, entry.alias), loadGameItems(game, v), items('mayhem')]);
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number }; baseMoveSpeedModifiable?: { baseValue?: number } } | undefined;
-    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id], questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) } : undefined; };
+    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id], destinyItem: progress?.destinyItem, questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) } : undefined; };
     const stage = augmentStage(augmentIds, progress);
     const held = augmentIds.flatMap((id) => { const card = numbersOf(id); return card ? [{ ...card, acquiredLevel: stage.acquiredLevels[id], pickPlace: pickPlaceOf(id, augmentIds, progress) }] : []; });
     const knownItems = itemIds.flatMap((id) => shop[id] ? [id] : shop[id % 10000] ? [id % 10000] : []);
@@ -760,8 +760,9 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     // Keep inventory fixed until the player actually buys. No future augment is assumed to arrive.
     // T048: does a card make him attack only because it is on attacks (kitWithCards)? Not for a kit with its own pace (ATTACK_PACE).
     const ownKit = fightKitOf(championId);
-    const assumes = (kit: { attacks: boolean }, withCards: { attacks: boolean }) => ownKit.attackPace === undefined && !kit.attacks && withCards.attacks;
-    const heldAttacking = assumes(ownKit, base.kit) ? held.filter((c) => kitWithCards(ownKit, [c]).attacks).map((c) => c.name) : [];
+    const attacksAny = (k: { attacks: boolean; chargeAttacks?: boolean }) => k.attacks || !!k.chargeAttacks; // T196b: an after-cast charge attack is assumed too
+    const assumes = (kit: { attacks: boolean; chargeAttacks?: boolean }, withCards: { attacks: boolean; chargeAttacks?: boolean }) => ownKit.attackPace === undefined && !attacksAny(kit) && attacksAny(withCards);
+    const heldAttacking = assumes(ownKit, base.kit) ? held.filter((c) => attacksAny(kitWithCards(ownKit, [c]))).map((c) => c.name) : [];
     // T053: attack range, from the cards' live `add range` ops (T051: a death or unknown op gives no range or melee) (the melee values the files give). Melee is decided before any range gain: his own
     // range under 300, or a held card that makes him melee (its range is then the engine's 200). Held range comes first, so an offer adds to it.
     const rangeAdd = (c: CardNumbers) => liveCard(c).ops.reduce((n, x) => (x.op === 'add' && x.stat === 'range' && typeof x.value === 'number' ? n + x.value : n), 0);
@@ -875,7 +876,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const [all, bin, shop, shopNames] = await Promise.all([augments(), fightBin(v, entry.alias), loadGameItems(game, v), items('mayhem')]);
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined;
-    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id], questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) } : undefined; };
+    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id], destinyItem: progress?.destinyItem, questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) } : undefined; };
     const stage = augmentStage(augmentIds, progress); // settled once: every reading uses this level and these pick places
     const held = augmentIds.flatMap((id) => { const card = numbersOf(id); return card ? [{ ...card, acquiredLevel: stage.acquiredLevels[id], pickPlace: pickPlaceOf(id, augmentIds, progress) }] : []; });
     const focus = held.find((c) => c.id === focusId);
@@ -968,7 +969,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const passive = PASSIVE_NUMBERS.find((p) => p.id === championId)?.ops ?? [];
     const all = augmentIds.length ? await augments() : undefined;
     // With the held cards: a card that adds magic damage to his casts or attacks (Infernal Conduit, Marksmage) makes AP grow his damage (BodyThoseFools' AP Nasus, 2026-11-07).
-    const held = augmentIds.flatMap((id) => cardsOf(all?.augments ?? [], [id]).map((c) => ({ ...c, abilityKey: progress?.abilityTargets?.[id], questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) })));
+    const held = augmentIds.flatMap((id) => cardsOf(all?.augments ?? [], [id]).map((c) => ({ ...c, abilityKey: progress?.abilityTargets?.[id], destinyItem: progress?.destinyItem, questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) })));
     const skillPlan = await skillPlanFor(championId);
     const damage = (stat?: string) => fight({ bin, shop, kit: fightKit, passive, items: [], level: 13, skillPlan, cards: [...held, ...(stat ? [{ id: 0, name: stat, status: 'computed', ops: [{ op: 'add' as const, stat, value: 100 }] }] : [])] }).damage;
     const base = damage(), ap = damage('ap') - base, ad = damage('ad') - base;
@@ -1013,7 +1014,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       }).filter((id) => soldIds.has(id) || keptIds.has(id)))];
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
       const stage = augmentStage(augmentIds, progress);
-      const cards = progress ? augmentIds.flatMap((id) => cardsOf(all.augments, [id]).map((c) => ({ ...c, acquiredLevel: stage.acquiredLevels[id], abilityKey: progress.abilityTargets?.[id], questDone: progress.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress.madScientist ? { state: progress.madScientist } : {}), pickPlace: pickPlaceOf(id, augmentIds, progress) }))) : cardsOf(all.augments, augmentIds);
+      const cards = progress ? augmentIds.flatMap((id) => cardsOf(all.augments, [id]).map((c) => ({ ...c, acquiredLevel: stage.acquiredLevels[id], abilityKey: progress.abilityTargets?.[id], destinyItem: progress.destinyItem, questDone: progress.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress.madScientist ? { state: progress.madScientist } : {}), pickPlace: pickPlaceOf(id, augmentIds, progress) }))) : cardsOf(all.augments, augmentIds);
       // A frontline mage holding a card that makes his AP pay in crits (Jeweled Gauntlet: abilities crit, AP into crit chance) builds as a damage dealer, all magic:
       // the owner's Swain (2026-11-08, «نعم صحيح»: Zwag's Zhonya's, Blackfire, Rite of Ruin, Rabadon's, Liandry's, Void).
       if (!style && kit?.damage === 'magic' && kit.traits.includes('frontline') && cards.some((c) => liveCard(c).ops.some((x) => x.op === 'crit_abilities' || (x.op === 'convert' && x.from === 'ap')))) style = 'ap';
