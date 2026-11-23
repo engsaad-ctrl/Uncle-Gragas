@@ -226,11 +226,14 @@ const REFUND_ON_HIT: Record<string, string> = { 'Characters/Ezreal/Spells/Ezreal
 /** Abilities whose landed hit immobilizes the champion it hits, with the field that holds the duration, each checked against its tooltip (16.22):
  * Morgana Q roots the first enemy hit, Lux Q the first two. Only these raise an immobilize event (trigger 'immobilize_hit'); an ability with the
  * Trait_ImmobilizingCCSpell tag that isn't here raises none, since the tag doesn't say whether its hit, its delay or a condition does the CC. */
-const IMMOBILIZE_ON_HIT: Record<string, { field: string; kind: 'root' }> = {
+/** T208: the checked table (knowledge/immobilize-1.jsonl, carried on SPELL_HITS rows as `cc`) joins the two first rows below (ccOf). */
+const IMMOBILIZE_ON_HIT: Record<string, { field: string; kind: CcKind }> = {
   'Characters/Morgana/Spells/MorganaQAbility/MorganaQ': { field: 'RootDuration', kind: 'root' },
   'Characters/Lux/Spells/LuxLightBindingAbility/LuxLightBinding': { field: 'RootDuration', kind: 'root' },
 };
-export interface CcEvent { source: 'ability'; key: string; path: string; target: 'main'; at: number; kind: 'root'; duration: number }
+const ccOf = (path: string) => SPELL_HITS[path]?.cc ?? IMMOBILIZE_ON_HIT[path];
+export type CcKind = 'stun' | 'root' | 'knockup' | 'suppression' | 'sleep';
+export interface CcEvent { source: 'ability'; key: string; path: string; target: 'main'; at: number; kind: CcKind; duration: number }
 const GRAGAS_BODY_SLAM = 'Characters/Gragas/Spells/GragasEAbility/GragasE';
 const HEALING_NAME = /heal|shield/i;
 const NOT_ANY_DAMAGE = /monster|minion|shield|heal|cap|tooltiponly/i;
@@ -1056,7 +1059,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
         if (one > 0 && pairWindow > 0) { if ([...lastHitBy].some(([k, at]) => k !== sl.key && t - at <= pairWindow)) fire('ability_pair', t, c, sl); lastHitBy.set(sl.key, t); }
         if (one > 0) { fire('ability_hit', t, c, sl); if (asAttack || etherealHit) fire('on_hit', t, c); if (etherealHit && !asAttack) fire('next_attack', t, c); }
         // A landed hit of a checked immobilizing ability roots the fight target: one event per cast on him, its duration from the file at this rank.
-        const cc = IMMOBILIZE_ON_HIT[sl.path];
+        const cc = ccOf(sl.path);
         const ccFor = cc && ((o.bin as Bin)[sl.path]?.mSpell?.DataValues ?? sl.spell.DataValues)?.find((v) => v.name === cc.field)?.values?.[sl.rank];
         // A known 0 is no root at this rank. No field, no value at this rank, or a value that isn't a number: the duration is unknown, so no
         // event is guessed and the limit is said (unreadCc, below) when a card waits on it.
@@ -1149,7 +1152,7 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const waiting = FIGHT.carryCooldowns ? Object.fromEntries(slots.flatMap((sl) => (sl.ready > FIGHT.seconds + FIGHT.gapSeconds ? [[sl.key, sl.ready - FIGHT.seconds - FIGHT.gapSeconds]] : []))) : {};
   const abilityHealPower = 1 + healPower + chainHeal + ops.reduce((m, x) => (x.op === 'add' && x.stat === 'heal_shield_power' ? m + scaled(x.value, o.level) : x.op === 'mana_amp' && x.scope === 'heal_shield' && Number.isFinite(fullMana) ? m + (x.per100 * fullMana) / 100 : m), 0);
   // A card waiting on an immobilize counts nothing from his abilities that weren't checked: say so rather than read that as "no CC".
-  const unchecked = slots.filter((sl) => !IMMOBILIZE_ON_HIT[sl.path] && ((sl.spell as { mSpellTags?: string[] }).mSpellTags ?? []).includes('Trait_ImmobilizingCCSpell')).map((sl) => sl.key);
+  const unchecked = slots.filter((sl) => !ccOf(sl.path) && ((sl.spell as { mSpellTags?: string[] }).mSpellTags ?? []).includes('Trait_ImmobilizingCCSpell')).map((sl) => sl.key);
   if (unchecked.length && ops.some((x) => 'trigger' in x && x.trigger === 'immobilize_hit')) notModelled.push(`شل الحركة: قدرات ${unchecked.join('، ')} تحمل وسم شل الحركة لكن إصابتها لم تُفحص، فآثار التعزيزات المشروطة به منها غير محسوبة`);
   if (unreadCc.size && ops.some((x) => 'trigger' in x && x.trigger === 'immobilize_hit')) notModelled.push(`شل الحركة: مدة التثبيت لقدرات ${[...unreadCc].join('، ')} غير مقروءة من ملف اللعبة في هذه الرتبة، فلم يُحسب حدث ولا آثار التعزيزات المشروطة به`);
   const result: FightResult = {

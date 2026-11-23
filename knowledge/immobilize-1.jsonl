@@ -1,0 +1,78 @@
+{"path":"Characters/Galio/Spells/GalioEAbility/GalioE","field":"KnockupDuration","kind":"knockup","why":"T208: Galio E - Dash knocks up enemies hit, stops on first champion."}
+{"path":"Characters/Galio/Spells/GalioRAbility/GalioR","field":"StunDurationOuter","kind":"knockup","why":"T208: Galio R - On landing knocks up enemies in the area."}
+{"path":"Characters/Urgot/Spells/UrgotEAbility/UrgotE","field":"StunDuration","kind":"stun","why":"T208: Urgot E - First champion hit is stunned and flung behind Urgot."}
+{"path":"Characters/Alistar/Spells/PulverizeAbility/Pulverize","field":"KnockupDuration","kind":"knockup","why":"T208: Alistar Q - Smashes ground, knocking up nearby enemies."}
+{"path":"Characters/Alistar/Spells/HeadbuttAbility/Headbutt","field":"KnockUpDuration","kind":"knockup","why":"T208: Alistar W - Headbutt knocks the target back (airborne)."}
+{"path":"Characters/Sion/Spells/SionRAbility/SionR","field":"MinStunDuration","kind":"stun","why":"T208: Sion R - Charge end stuns nearby enemies, 0.75-1.75 s by distance."}
+{"path":"Characters/Tristana/Spells/TristanaRAbility/TristanaR","field":"StunDuration","kind":"stun","why":"T208: Tristana R - Cannonball knocks back and stuns target and nearby enemies."}
+{"path":"Characters/Warwick/Spells/WarwickRAbility/WarwickR","field":"RDuration","kind":"suppression","why":"T208: Warwick R - Suppresses the first champion hit while channeling."}
+{"path":"Characters/Nunu/Spells/NunuWAbility/NunuW","field":"BaseKnockupDuration","kind":"knockup","why":"T208: Nunu W - Snowball knocks up the champion it hits; longer with roll distance."}
+{"path":"Characters/Ashe/Spells/EnchantedCrystalArrowAbility/EnchantedCrystalArrow","field":"MinStunDuration","kind":"stun","why":"T208: Ashe R - Stuns first champion hit; longer with distance, up to max."}
+{"path":"Characters/Morgana/Spells/MorganaQAbility/MorganaQ","field":"RootDuration","kind":"root","why":"T208: Morgana Q - Roots the first enemy hit."}
+{"path":"Characters/Amumu/Spells/BandageTossAbility/BandageToss","field":"StunDuration","kind":"stun","why":"T208: Amumu Q - Pulls to first enemy hit and stuns it."}
+{"path":"Characters/Amumu/Spells/CurseoftheSadMummyAbility/CurseoftheSadMummy","field":"RDuration","kind":"stun","why":"T208: Amumu R - Stuns all enemies around Amumu."}
+{"path":"Characters/Rammus/Spells/PowerBallAbility/PowerBall","field":"StunDuration","kind":"knockup","why":"T208: Rammus Q - Powerball knocks back enemies on collision."}
+{"path":"Characters/Sona/Spells/SonaRAbility/SonaR","field":"StunDuration","kind":"stun","why":"T208: Sona R - Crescendo stuns enemies hit."}
+{"path":"Characters/Janna/Spells/HowlingGaleAbility/HowlingGale","field":"BaseKnockup","kind":"knockup","why":"T208: Janna Q - Tornado knocks up enemies hit, longer when charged."}
+{"path":"Characters/Janna/Spells/ReapTheWhirlwindAbility/ReapTheWhirlwind","field":"KnockbackDuration","kind":"knockup","why":"T208: Janna R - Knocks back nearby enemies on cast."}
+{"path":"Characters/Taric/Spells/TaricEAbility/TaricE","field":"StunDuration","kind":"stun","why":"T208: Taric E - Delayed beam stuns enemies it hits."}
+{"path":"Characters/Swain/Spells/SwainEAbility/SwainE","field":"RootDuration","kind":"root","why":"T208: Swain E - Returning wave explodes on first enemy, rooting enemies in area."}
+{"path":"Characters/Blitzcrank/Spells/PowerFistAbility/PowerFist","field":"CCDuration","kind":"knockup","why":"T208: Blitzcrank E - Next attack knocks up the target."}
+{"path":"Characters/Malphite/Spells/UFSlashAbility/UFSlash","field":"KnockupDuration","kind":"knockup","why":"T208: Malphite R - Unstoppable charge knocks up enemies at the end."}
+{"path":"Characters/Maokai/Spells/MaokaiWAbility/MaokaiW","field":"RootDuration","kind":"root","why":"T208: Maokai W - Dashes to target and roots it."}
+{"path":"Characters/Maokai/Spells/MaokaiRAbility/MaokaiR","field":"MinRootDuration","kind":"root","why":"T208: Maokai R - Wave roots enemies, 0.75-2.25 s by distance travelled."}
+{"path":"Characters/Renekton/Spells/RenektonPreExecuteAbility/RenektonPreExecute","field":"StunDuration","kind":"stun","why":"T208: Renekton W - Next attack strikes twice and stuns (Fury: longer)."}
+{"path":"Characters/Elise/Spells/EliseHumanEAbility/EliseHumanE","field":"BaseStunDuration","kind":"stun","why":"T208: Elise E - Cocoon stuns the first enemy hit."}
+{"path":"Characters/Orianna/Spells/OrianaDetonateCommandAbility/OrianaDetonateCommand","field":"StunDuration","kind":"knockup","why":"T208: Orianna R - Shockwave flings nearby enemies toward the ball."}
+{"path":"Characters/MonkeyKing/Spells/MonkeyKingSpinToWinAbility/MonkeyKingSpinToWin","field":"KnockupDuration","kind":"knockup","why":"T208: MonkeyKing R - Spin knocks up nearby enemies."}
+{"path":"Characters/Skarner/Spells/SkarnerRAbility/SkarnerR","field":"Duration","kind":"suppression","why":"T208: Skarner R - Suppresses the first 3 champions hit."}
+{"path":"Characters/Udyr/Spells/UdyrEAbility/UdyrE","field":"StunDuration","kind":"stun","why":"T208: Udyr E - Stance attacks dash to and stun the target (per-target cooldown)."}
+{"path":"Characters/Poppy/Spells/PoppyRAbility/PoppyR","field":"KnockupDurationSnap","kind":"knockup","why":"T208: Poppy R - Release knocks up / back the first champion hit."}
+{"path":"Characters/Gragas/Spells/GragasEAbility/GragasE","field":"StunDuration","kind":"knockup","why":"T208: Gragas E - Body slam knocks up enemies near the first enemy hit."}
+{"path":"Characters/Pantheon/Spells/PantheonWAbility/PantheonW","field":"StunDuration","kind":"stun","why":"T208: Pantheon W - Leaps to target and stuns it."}
+{"path":"Characters/Leona/Spells/LeonaShieldOfDaybreakAbility/LeonaShieldOfDaybreak","field":"StunDuration","kind":"stun","why":"T208: Leona Q - Next attack stuns the target."}
+{"path":"Characters/Leona/Spells/LeonaZenithBladeAbility/LeonaZenithBlade","field":"RootDuration","kind":"root","why":"T208: Leona E - Roots the last champion hit."}
+{"path":"Characters/Malzahar/Spells/MalzaharRAbility/MalzaharR","field":"CCDuration","kind":"suppression","why":"T208: Malzahar R - Suppresses an enemy champion during the channel."}
+{"path":"Characters/Riven/Spells/RivenMartyrAbility/RivenMartyr","field":"StunDuration","kind":"stun","why":"T208: Riven W - Rune burst stuns nearby enemies."}
+{"path":"Characters/Lux/Spells/LuxLightBindingAbility/LuxLightBinding","field":"RootDuration","kind":"root","why":"T208: Lux Q - Roots the first two enemies hit."}
+{"path":"Characters/Xerath/Spells/XerathMageSpearAbility/XerathMageSpear","field":"MinStunDuration","kind":"stun","why":"T208: Xerath E - Stuns first enemy hit, up to max by distance."}
+{"path":"Characters/Volibear/Spells/VolibearQAbility/VolibearQ","field":"StunDuration","kind":"stun","why":"T208: Volibear Q - Next attack stuns the target."}
+{"path":"Characters/Varus/Spells/VarusRAbility/VarusR","field":"RootDuration","kind":"root","why":"T208: Varus R - Roots the first champion hit."}
+{"path":"Characters/Nautilus/Spells/NautilusGrandLineAbility/NautilusGrandLine","field":"StunDuration","kind":"knockup","why":"T208: Nautilus R - Knocks up and stuns the target champion."}
+{"path":"Characters/Sejuani/Spells/SejuaniQAbility/SejuaniQ","field":"KnockupDurationTOOLTIPONLY","kind":"knockup","why":"T208: Sejuani Q - Dash knocks up enemies hit."}
+{"path":"Characters/Sejuani/Spells/SejuaniRAbility/SejuaniR","field":"BaseStunDuration","kind":"stun","why":"T208: Sejuani R - Stuns the first champion hit; longer past 25% range."}
+{"path":"Characters/Lulu/Spells/LuluRAbility/LuluR","field":"KnockbackDuration","kind":"knockup","why":"T208: Lulu R - Enlarged ally knocks up enemies around it."}
+{"path":"Characters/Draven/Spells/DravenDoubleShotAbility/DravenDoubleShot","field":"KnockbackDuration","kind":"knockup","why":"T208: Draven E - Axe knocks back and slows enemies hit."}
+{"path":"Characters/Jayce/Spells/JayceThunderingBlowAbility/JayceThunderingBlow","field":"KnockbackDuration","kind":"knockup","why":"T208: Jayce E - Hammer-form blow knocks back the target."}
+{"path":"Characters/Lissandra/Spells/LissandraWAbility/LissandraW","field":"SnareDuration","kind":"root","why":"T208: Lissandra W - Ice field roots nearby enemies."}
+{"path":"Characters/Lissandra/Spells/LissandraRAbility/LissandraR","field":"EnemyCastDuration","kind":"stun","why":"T208: Lissandra R - Enemy cast stuns the target in ice."}
+{"path":"Characters/AurelionSol/Spells/AurelionSolRAbility/AurelionSolR","field":"StunDuration","kind":"stun","why":"T208: AurelionSol R - Star stuns enemies in the area."}
+{"path":"Characters/Zoe/Spells/ZoeEAbility/ZoeE","field":"SleepDuration","kind":"sleep","why":"T208: Zoe E - Bubble hit makes the target drowsy, then asleep."}
+{"path":"Characters/Zyra/Spells/ZyraEAbility/ZyraE","field":"RootDuration","kind":"root","why":"T208: Zyra E - Vines root enemies hit."}
+{"path":"Characters/Zac/Spells/ZacEAbility/ZacE","field":"MinimumStun","kind":"knockup","why":"T208: Zac E - Landing knocks up enemies, longer with charge."}
+{"path":"Characters/Zac/Spells/ZacRAbility/ZacR","field":"KnockupDuration","kind":"knockup","why":"T208: Zac R - First bounce on each enemy knocks it back."}
+{"path":"Characters/Velkoz/Spells/VelkozEAbility/VelkozE","field":"StunDuration","kind":"knockup","why":"T208: Velkoz E - Area knocks up enemies (knocked back if close)."}
+{"path":"Characters/Belveth/Spells/BelvethWAbility/BelvethW","field":"Duration","kind":"knockup","why":"T208: Belveth W - Tail slam knocks up enemies hit."}
+{"path":"Characters/Braum/Spells/BraumRWrapperAbility/BraumRWrapper","field":"KnockupDuration","kind":"knockup","why":"T208: Braum R - Fissure knocks up enemies; first target longer by distance."}
+{"path":"Characters/TahmKench/Spells/TahmKenchWAbility/TahmKenchW","field":"KnockUpDuration","kind":"knockup","why":"T208: TahmKench W - Emerging knocks up enemies in the area."}
+{"path":"Characters/Briar/Spells/BriarQAbility/BriarQ","field":"StunDuration","kind":"stun","why":"T208: Briar Q - Leaps to target and stuns it."}
+{"path":"Characters/Viego/Spells/ViegoWAbility/ViegoW","field":"StunDuration","kind":"stun","why":"T208: Viego W - Released mist stuns first enemy hit, longer with charge."}
+{"path":"Characters/Senna/Spells/SennaWAbility/SennaW","field":"RootDuration","kind":"root","why":"T208: Senna W - First enemy hit is rooted after DelayTime."}
+{"path":"Characters/Vi/Spells/ViQAbility/ViQ","field":"KnockbackDuration","kind":"knockup","why":"T208: Vi Q - Punch knocks back the champion hit."}
+{"path":"Characters/Vi/Spells/ViRAbility/ViR","field":"RStunDuration","kind":"knockup","why":"T208: Vi R - Knocks up the target champion."}
+{"path":"Characters/Nami/Spells/NamiQAbility/NamiQ","field":"StunDuration","kind":"stun","why":"T208: Nami Q - Bubble stuns enemies hit."}
+{"path":"Characters/Nami/Spells/NamiRAbility/NamiR","field":"KnockupDuration","kind":"knockup","why":"T208: Nami R - Wave knocks up enemies hit."}
+{"path":"Characters/Thresh/Spells/ThreshQAbility/ThreshQ","field":"TauntLength","kind":"stun","why":"T208: Thresh Q - Stuns and pulls the first unit hit."}
+{"path":"Characters/Ivern/Spells/IvernQAbility/IvernQ","field":"RootDuration","kind":"root","why":"T208: Ivern Q - Vine roots the first enemy hit."}
+{"path":"Characters/Rakan/Spells/RakanWAbility/RakanW","field":"KnockupDuration","kind":"knockup","why":"T208: Rakan W - Dash knocks up enemies hit."}
+{"path":"Characters/Neeko/Spells/NeekoEAbility/NeekoE","field":"MinRootDuration","kind":"root","why":"T208: Neeko E - Roots enemies hit; longer after passing an enemy."}
+{"path":"Characters/Neeko/Spells/NeekoRAbility/NeekoR","field":"StunDuration","kind":"stun","why":"T208: Neeko R - After a short leap, slam stuns nearby enemies."}
+{"path":"Characters/Rell/Spells/RellQAbility/RellQ","field":"StunDuration","kind":"stun","why":"T208: Rell Q - Lance dash stuns targets hit."}
+{"path":"Characters/Rell/Spells/RellW_DismountAbility/RellW_Dismount","field":"CrashDownKnockupDuration","kind":"knockup","why":"T208: Rell W - Dismount knocks up enemies hit."}
+{"path":"Characters/Pyke/Spells/PykeEAbility/PykeE","field":"BaseStunDuration","kind":"stun","why":"T208: Pyke E - Returning phantom stuns champions it passes."}
+{"path":"Characters/Yone/Spells/YoneRAbility/YoneR","field":"RKnockupDuration","kind":"knockup","why":"T208: Yone R - Knocks up the last champion hit toward Yone."}
+{"path":"Characters/Ambessa/Spells/AmbessaRAbility/AmbessaR","field":"Suppress_Duration","kind":"suppression","why":"T208: Ambessa R - Suppresses the target, then stuns it."}
+{"path":"Characters/Sett/Spells/SettRAbility/SettR","field":"GrabDuration","kind":"suppression","why":"T208: Sett R - Grabs and carries the champion, then slams."}
+{"path":"Characters/Renata/Spells/RenataQAbility/RenataQ","field":"RootDuration","kind":"root","why":"T208: Renata Q - Roots the first enemy hit."}
+{"path":"Characters/KSante/Spells/KSanteWAbility/KSanteW","field":"MinKnockbackDuration","kind":"stun","why":"T208: KSante W - Dash knocks back and stuns enemies hit, longer with charge."}
+{"path":"Characters/KSante/Spells/KSanteRAbility/KSanteR","field":"NoWallStunDuration","kind":"knockup","why":"T208: KSante R - Kicks the champion back; wall carry stuns longer."}
