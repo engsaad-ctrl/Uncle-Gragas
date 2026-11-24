@@ -53,12 +53,17 @@ describe('explicit attack access (T120b)', () => {
     const a = run({ cards: [range(150)], access: at(1000) }), b = run({ cards: [range(100), range(50)], access: at(1000) });
     expect(b.attacks).toBe(a.attacks); expect(b.damage).toBeCloseTo(a.damage, 9);
   });
-  it('the three real range cards each give extra attacks when they cross the contact boundary', () => {
-    // 1600 gives 6 attacks and 1550 gives 7 (probed): the 75 of Scoped Weapons already crosses that boundary.
-    const base = run({ access: at(1600) });
-    for (const id of [1170, 1071, 1115]) {
-      const c = CARD_NUMBERS.find((x) => x.id === id)!;
-      expect(run({ cards: [c], access: at(1600) }).attacks, c.name).toBeGreaterThan(base.attacks);
+  it('the three real range cards each raise the value, whether or not one more whole attack fits (T213)', () => {
+    // T213: the walk is repeated after each kill-time switch, so the whole-attack boundaries moved; with the waited share of the next attack
+    // credited (card values), any earlier contact is worth more, at a boundary or not.
+    for (const d of [600, 1000, 1600]) {
+      const base = fight({ bin: melee, shop: {}, kit, items: [], cards: [], level: 1, attackAccess: at(d), partialLastCast: true });
+      for (const id of [1170, 1071, 1115]) {
+        const c = CARD_NUMBERS.find((x) => x.id === id)!;
+        const r = fight({ bin: melee, shop: {}, kit, items: [], cards: [c], level: 1, attackAccess: at(d), partialLastCast: true });
+        expect(r.damage, `${c.name} at ${d}`).toBeGreaterThan(base.damage);
+        expect(r.attacks, `${c.name} at ${d}`).toBeGreaterThanOrEqual(base.attacks);
+      }
     }
   });
   it('stacked bonuses each count once; crossing 300 keeps him melee (mode stats unchanged)', () => {

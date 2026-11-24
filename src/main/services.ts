@@ -20,7 +20,7 @@ import { compareAugmentPlan, kitWithCards, type AugmentPlan } from '../ai/augmen
 import { explainBuild } from '../ai/buildExplanation.js';
 import { itemExplanationWords } from '../app/buildExplanation.js';
 import { partInteraction, partnerTerms, recommend } from '../ai/partners.js';
-import { enemyDpsAt, enemyTeam, fightValue, inventoryOf, LEVEL_BY_ITEMS, mathBuild as itemsByMath, SLOTS, teamPlace, type BuildStyle } from '../ai/itemMath.js';
+import { enemyDpsAt, enemyTeam, fightValue, THREAT_MIX, inventoryOf, LEVEL_BY_ITEMS, mathBuild as itemsByMath, SLOTS, teamPlace, type BuildStyle } from '../ai/itemMath.js';
 import { composeChampionPage, type ChampionPage, type PageMode } from '../app/championPage.js';
 import { diskCache } from '../diskCache.js';
 import { EZREAL, MANAMUNE, MURAMANA } from '../app/ezrealPurchases.js';
@@ -739,7 +739,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const [all, bin, shop, shopNames] = await Promise.all([augments(), fightBin(v, entry.alias), loadGameItems(game, v), items('mayhem')]);
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number }; baseMoveSpeedModifiable?: { baseValue?: number } } | undefined;
-    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id], destinyItem: progress?.destinyItem, questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) } : undefined; };
+    const destiny = destinyTarget(progress, itemIds, shopNames.list); // T212
+    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id], ...destiny, questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) } : undefined; };
     const stage = augmentStage(augmentIds, progress);
     const held = augmentIds.flatMap((id) => { const card = numbersOf(id); return card ? [{ ...card, acquiredLevel: stage.acquiredLevels[id], pickPlace: pickPlaceOf(id, augmentIds, progress) }] : []; });
     const knownItems = itemIds.flatMap((id) => shop[id] ? [id] : shop[id % 10000] ? [id % 10000] : []);
@@ -793,7 +794,13 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       // Bread and Cheese on Qiyana). Only here: the item search and the plans keep whole casts, as the owner's item cases were set on them (T139: case 17).
       const input = { ...base, level, enemy: facts2.enemy, incomingDps: at.share * at.enemyDps * (at.draw ?? 1), partialLastCast: true };
       const result = fight(input);
-      return { input, result, place: at, value: fightValue(result, at) };
+      // T211: the same fight under heavier focus (THREAT_MIX), its own incoming damage and place.
+      const heavyAt = { ...at, enemyDps: at.enemyDps * THREAT_MIX.heavyFactor };
+      const heavyInput = { ...input, incomingDps: input.incomingDps * THREAT_MIX.heavyFactor };
+      const heavyResult = THREAT_MIX.heavyWeight > 0 ? fight(heavyInput) : undefined; // kept: its limits go into the row's notes (T211 v3)
+      const heavy = heavyResult ? fightValue(heavyResult, heavyAt) : 0;
+      const value = fightValue(result, at);
+      return { input, result, place: at, value, heavyInput, heavyAt, heavyResult, mixed: (1 - THREAT_MIX.heavyWeight) * value + THREAT_MIX.heavyWeight * heavy };
     });
     const rows: AugmentValue[] = all.augments.flatMap((a) => {
       // T050: the candidate is the entry's Mayhem id (mayhemIdOf), not the merged entry's first id: a twin's Arena id never stands for it, and
@@ -812,10 +819,16 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       // Its tags (src/ai/augmentTags.ts) weigh its value (src/ai/tagWeight.ts); a card with a condition the fight doesn't check is never certain.
       const tags = AUGMENT_TAGS[cid]; // T050 v4: the candidate id's own tags
       const { weight, unread, open } = tagWeight(tags, card.ops, card.need?.class === 'ability_kind' ? holds : undefined);
-      const gains = after.map((r, i) => weight * (fightValue(r, before[i]!.place) / Math.max(before[i]!.value, 1e-9) - 1));
+      const heavyAfter = before.map((b) => (b.heavyResult ? fight({ ...b.heavyInput, kit: kitWithCards(base.kit, [candidate]), cards: [...held, candidate] }) : undefined));
+      const gains = after.map((r, i) => {
+        const b = before[i]!, h = heavyAfter[i];
+        const mixedAfter = (1 - THREAT_MIX.heavyWeight) * fightValue(r, b.place) + THREAT_MIX.heavyWeight * (h ? fightValue(h, b.heavyAt) : 0);
+        return weight * (mixedAfter / Math.max(b.mixed, 1e-9) - 1);
+      });
       const first = before[0]!.result, now = after[0]!;
       // The fight already lists each card's own note (cardMath notModelled, prefixed with its name); adding card.not_modelled again showed it twice.
-      const missing = [...new Set([...first.notModelled, ...now.notModelled]), ...(scenario ? [SCENARIO_NOTE] : []), ...open.map((c) => `شرط لا يفحصه القتال: ${c}؛ القيمة إن تحقق، واحتمال تحققه غير مقاس`), ...augmentIds.flatMap((id) => {
+      // T211 v3 (Codex T211 v2 answer 2): the heavy scenario's before/after limits too, only while its weight is above 0 (the kept results, no new fights).
+      const missing = [...new Set([...first.notModelled, ...now.notModelled, ...(before[0]!.heavyResult?.notModelled ?? []), ...(heavyAfter[0]?.notModelled ?? [])]), ...(scenario ? [SCENARIO_NOTE] : []), ...open.map((c) => `شرط لا يفحصه القتال: ${c}؛ القيمة إن تحقق، واحتمال تحققه غير مقاس`), ...augmentIds.flatMap((id) => {
         const heldCard = numbersOf(id);
         if (!heldCard?.ops.length) return ['تعزيز مختار لا يملك معادلات؛ أثره وروابطه غير محسوبة'];
         return heldCard.not_modelled ? [`${heldCard.name}: ${heldCard.not_modelled}`] : heldCard.status !== 'computed' ? [`${heldCard.name}: أثره المختار جزئي أو مشروط`] : [];
@@ -849,6 +862,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
         if (!baselineItems.length || !items.length) { row.planError = 'لا تتوفر أيتمات كافية لحساب خطة البناء'; continue; }
         const level = Math.max(15, stage.level);
         const at = { ...withWindow, enemyDps: enemyDpsAt(level) }; // T078: the plan is a build, so it keeps the burst window the items were chosen on
+        // T212: taken before any legendary, the cards carry destinyFrom (destinyTarget), so the plan's fights take its first legendary (purchase order).
         row.plan = { ...compareAugmentPlan({ base: { ...base, level, enemy: facts2.enemy, incomingDps: at.share * at.enemyDps * (at.draw ?? 1) }, candidate, baselineItems, items, place: at }), baselineOwned, itemsOwned: ownedRows(rows), baselineBuys, buys: rows.filter((r) => !r.consumes).map((r) => r.item.id), itemsWhy: rows.filter((r) => !r.why.includes('owned')).map((r) => ({ id: r.item.id, why: r.why })) };
         const a = all.augments.find((a) => a.id === row.id)!;
         row.plan.value *= tagWeight(AUGMENT_TAGS[row.id], card.ops, card.need?.class === 'ability_kind' ? needHolds(card.need, facts) : undefined).weight;
@@ -876,7 +890,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const [all, bin, shop, shopNames] = await Promise.all([augments(), fightBin(v, entry.alias), loadGameItems(game, v), items('mayhem')]);
     const kit = CHAMPION_KITS.find((k) => k.id === championId);
     const record = championRecord(bin) as { attackRangeModifiable?: { baseValue?: number } } | undefined;
-    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id], destinyItem: progress?.destinyItem, questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) } : undefined; };
+    const destiny = destinyTarget(progress, itemIds, shopNames.list); // T212
+    const numbersOf = (id: number) => { const card = cardsOf(all.augments, [id])[0]; return card ? { ...card, abilityKey: progress?.abilityTargets?.[id], ...destiny, questDone: progress?.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress?.madScientist ? { state: progress.madScientist } : {}) } : undefined; };
     const stage = augmentStage(augmentIds, progress); // settled once: every reading uses this level and these pick places
     const held = augmentIds.flatMap((id) => { const card = numbersOf(id); return card ? [{ ...card, acquiredLevel: stage.acquiredLevels[id], pickPlace: pickPlaceOf(id, augmentIds, progress) }] : []; });
     const focus = held.find((c) => c.id === focusId);
@@ -895,9 +910,21 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const facts = { owned: knownItems.flatMap((id) => shopNames.list.find((i) => i.id === id)?.enName ?? []), ranged: (record?.attackRangeModifiable?.baseValue ?? 0) >= 300, traits: [...(kit?.traits ?? []), ...spellTraits(bin), ...(kitC.buffsAllies ? ['heal_ally', 'shield_ally'] : [])] };
     const facts2 = await teamFacts(teams, shop);
     const place = { ...teamPlace({ championId, bin, shop, kit: kitC, passive, enemy: facts2.enemy, allies: facts2.allies, style }), enemyDps: enemyDpsAt(stage.level), window: undefined }; // Cards and partners use the same full-fight value; item plans keep their own window.
-    const input = { bin, shop, level: stage.level, items: knownItems, itemOps: ITEM_OPS, stacks, ...heartsteelOf(progress), knownRanks: knownRanksOf(progress), skillPlan: await skillPlanFor(championId), passive, enemy: facts2.enemy, incomingDps: place.share * place.enemyDps * (place.draw ?? 1) };
+    const input = { bin, shop, level: stage.level, items: knownItems, itemOps: ITEM_OPS, stacks, ...heartsteelOf(progress), knownRanks: knownRanksOf(progress), skillPlan: await skillPlanFor(championId), passive, enemy: facts2.enemy, incomingDps: place.share * place.enemyDps * (place.draw ?? 1), partialLastCast: true }; // T213: the same waited share as cardValues, so G is its value
     let fights = 0;
-    const run = (cards: typeof held) => { fights++; const r = fight({ ...input, kit: kitWithCards(ownKit, cards), cards }); return { r, f: fightValue(r, place) }; };
+    // T211: partners read the same threat mix as the offer value (THREAT_MIX), so G stays the offer's own value. Both scenarios' results are kept:
+    // the parts that explain a row are mixed the same way (absolute values), and the limits come from both (Codex T211: a pair that interacts
+    // only under heavier focus was counted unexplained and dropped).
+    const w = THREAT_MIX.heavyWeight;
+    const heavyPlace = { ...place, enemyDps: place.enemyDps * THREAT_MIX.heavyFactor };
+    const run = (cards: typeof held) => {
+      fights++;
+      const r = fight({ ...input, kit: kitWithCards(ownKit, cards), cards });
+      const h = w > 0 ? fight({ ...input, incomingDps: input.incomingDps * THREAT_MIX.heavyFactor, kit: kitWithCards(ownKit, cards), cards }) : r;
+      return { r, h, f: (1 - w) * fightValue(r, place) + w * (w > 0 ? fightValue(h, heavyPlace) : 0) };
+    };
+    const mixOf = (x: ReturnType<typeof run>, k: 'damage' | 'effectiveHp' | 'healedHp' | 'abilityHealing' | 'healingDenied') => (1 - w) * x.r[k] + w * x.h[k];
+    const notesOf = (x: ReturnType<typeof run>) => (w > 0 ? [...x.r.notModelled, ...x.h.notModelled] : x.r.notModelled);
     const R = held.map((c) => (c.id === focusId ? { ...c, ops: [] } : c)); // only A's effect off
     const fC = run(held), fR = run(R);
     // The state's limits, settled once (partnerState): the level and history estimates, and each held card's partial status, unknown parts and
@@ -913,7 +940,7 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     const heldStates = held.map((c) => cardState(c));
     // A held id without a numeric row remains part of the state when another card is focused.
     const unreadHeld = augmentIds.filter((id) => !held.some((c) => c.id === id)).map((id) => `${all.augments.find((a) => a.ids.includes(id))?.name ?? id}: لا توجد معادلات لهذا التعزيز المختار؛ أثره وروابطه غير محسوبة`);
-    const stateLimits = [...unreadHeld, ...(stage.estimatedLevel ? ['المستوى مقدّر'] : []), ...(stage.estimatedHistory ? ['توقيت الاختيارات السابقة مقدّر'] : []), ...heldStates.flatMap((s) => s.limits), ...fR.r.notModelled.filter((n) => n.startsWith('Steel Your Heart:') && n.includes('غير قابلة للفصل'))]; // T156: the answer keeps it even when no partner row survives
+    const stateLimits = [...unreadHeld, ...(stage.estimatedLevel ? ['المستوى مقدّر'] : []), ...(stage.estimatedHistory ? ['توقيت الاختيارات السابقة مقدّر'] : []), ...heldStates.flatMap((s) => s.limits), ...new Set(notesOf(fR).filter((n) => n.startsWith('Steel Your Heart:') && n.includes('غير قابلة للفصل')))]; // T156: the answer keeps it even when no partner row survives
     const stateConditions = heldStates.flatMap((s) => s.conditions);
     // Attacks the engine assumes (T048): the cards that make him attack when his own kit doesn't, in the readings with B (held cards or B).
     const assumedBy = (cards: typeof held) => (ownKit.attackPace === undefined && !ownKit.attacks ? cards.filter((c) => kitWithCards(ownKit, [c]).attacks).map((c) => c.name) : []);
@@ -938,11 +965,11 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       if (!terms) { coverage.notComparable++; continue; }
       coverage.compared++;
       const b = cardState(card, card.need?.class === 'ability_kind' ? holds : undefined);
-      const readNotes = [...new Set([...fC.r.notModelled, ...cb.r.notModelled, ...fR.r.notModelled, ...rb.r.notModelled])];
+      const readNotes = [...new Set([fC, cb, fR, rb].flatMap(notesOf))];
       const limits = [...stateLimits, ...b.limits, ...readNotes];
       const conditions = [...stateConditions, ...b.conditions];
       const group = limits.length ? 'limited' : conditions.length ? 'open' : 'settled';
-      const part = (k: 'damage' | 'effectiveHp' | 'healedHp' | 'abilityHealing' | 'healingDenied') => partInteraction(fC.r[k], cb.r[k], fR.r[k], rb.r[k]);
+      const part = (k: 'damage' | 'effectiveHp' | 'healedHp' | 'abilityHealing' | 'healingDenied') => partInteraction(mixOf(fC, k), mixOf(cb, k), mixOf(fR, k), mixOf(rb, k));
       const parts = { damage: part('damage'), effectiveHp: part('effectiveHp'), healedHp: part('healedHp'), abilityHealing: part('abilityHealing'), healingDenied: part('healingDenied') };
       const explained = Object.values(parts).some((x) => x > PART_EPS);
       coverage[group]++;
@@ -956,6 +983,16 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
     return answer({ settled: shown('settled'), open: shown('open'), limited: shown('limited'), stateLimits, coverage, fights, ms: Date.now() - t0 });
   }
   // T050 v4: an id's own numbers only, never its twin's; the entry's file data only when the entry is led by that id (it is that id's own).
+  /** T212: Weapon of Destiny's target (the owner, 2026-11-21: the first legendary of his game). Named in F7, that one; holding exactly one legendary,
+   * that one (taken late, it is already bought); holding none, the first legendary in his items' order (destinyFrom: the search's and the plan's
+   * purchase order, so the search resolves it too, Codex T212); two or more held with no purchase order: unknown, as before (Codex T191 answer 3).
+   * T212 v3 (Codex): none held at his level now, the weapon is completed later, so it counts no kill from before it (destinyAfter, cardMath). */
+  const destinyTarget = (progress: AugmentProgress | undefined, itemIds: number[], list: { id: number; group: string }[]): { destinyItem?: number; destinyFrom?: number[]; destinyAfter?: number } => {
+    if (progress?.destinyItem !== undefined) return { destinyItem: progress.destinyItem };
+    const legendary = [...new Set(list.filter((i) => i.group === 'legendary').map((i) => i.id % 10000))];
+    const held = [...new Set(itemIds.map((id) => id % 10000).filter((id) => legendary.includes(id)))];
+    return held.length === 1 ? { destinyItem: held[0] } : held.length === 0 ? { destinyFrom: legendary, ...(progress?.level === undefined ? {} : { destinyAfter: progress.level }) } : {};
+  };
   const cardsOf = (list: { id: number; ids?: number[]; game?: AugmentGameData }[], augmentIds: number[]) => augmentIds.flatMap((id) => { const entry = list.find((a) => a.id === id); const card = CARD_NUMBERS.find((c) => c.id === id); return card ? [cardFromFiles(card, entry?.game)] : []; });
   /** The ways his kit can be built besides its own: magic or physical when his damage grows with that stat at least half as much as with the other (100 of each, no items), and tank for everyone (the owner: Katarina has all three). */
   /** Magic also when a held card works on AP or on damage over time (the owner: Miss Fortune with Vulnerability builds AP and burns). */
@@ -1014,7 +1051,8 @@ export function createServices(opts: { cacheDir: string; fetchImpl: typeof fetch
       }).filter((id) => soldIds.has(id) || keptIds.has(id)))];
       const kit = CHAMPION_KITS.find((k) => k.id === championId);
       const stage = augmentStage(augmentIds, progress);
-      const cards = progress ? augmentIds.flatMap((id) => cardsOf(all.augments, [id]).map((c) => ({ ...c, acquiredLevel: stage.acquiredLevels[id], abilityKey: progress.abilityTargets?.[id], destinyItem: progress.destinyItem, questDone: progress.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress.madScientist ? { state: progress.madScientist } : {}), pickPlace: pickPlaceOf(id, augmentIds, progress) }))) : cardsOf(all.augments, augmentIds);
+      const destiny = destinyTarget(progress, owned, list.list); // T212 (Codex): resolved during the search too, for each item set it tries
+      const cards = progress ? augmentIds.flatMap((id) => cardsOf(all.augments, [id]).map((c) => ({ ...c, acquiredLevel: stage.acquiredLevels[id], abilityKey: progress.abilityTargets?.[id], ...destiny, questDone: progress.questsDone?.includes(id), ...(id === MAD_SCIENTIST && progress.madScientist ? { state: progress.madScientist } : {}), pickPlace: pickPlaceOf(id, augmentIds, progress) }))) : cardsOf(all.augments, augmentIds).map((c) => ({ ...c, ...destiny })); // T212 v3: both branches (Codex)
       // A frontline mage holding a card that makes his AP pay in crits (Jeweled Gauntlet: abilities crit, AP into crit chance) builds as a damage dealer, all magic:
       // the owner's Swain (2026-11-08, «نعم صحيح»: Zwag's Zhonya's, Blackfire, Rite of Ruin, Rabadon's, Liandry's, Void).
       if (!style && kit?.damage === 'magic' && kit.traits.includes('frontline') && cards.some((c) => liveCard(c).ops.some((x) => x.op === 'crit_abilities' || (x.op === 'convert' && x.from === 'ap')))) style = 'ap';

@@ -24,6 +24,10 @@ export const BURST = { window: 3 };
 export const FRONT_DRAW = { value: 1.38 };
 /** Fights in a row with no trip back: by the third a champion with no mana item has settled at what his mana allows (Lux at 15: 6300, 5349, 3302, 3302), which two fights' first seconds hid. */
 export const FIGHTS = { inARow: 3 };
+/** T211 (Codex T206 answer 1): a card's offer value over a mix of threat levels, not one. With the usual enemy damage a champion who already
+ * outlasts the fight gains nothing from survival; under heavier focus he may not. Value = sum(w x value with the card) / sum(w x value without) - 1,
+ * both sides over the same mix, each level its own fight. shortcut: UNCALIBRATED, factor and weight are set by hand (Codex T211: calibrate on separate development games, then freeze and test on held-out games; the 99 -> 103/308 sample is development only); card values and partners only (items keep one level). */
+export const THREAT_MIX = { heavyFactor: 3, heavyWeight: 0.3 };
 const isBurst = (traits: string[] = []) => traits.includes('burst') && !traits.includes('sustained') && !traits.includes('frontline');
 
 export const LEVEL_BY_ITEMS = [5, 9, 12, 15, 17, 18, 18];
@@ -120,13 +124,16 @@ export const fightValue = (r: FightResult, p: TeamPlace) => {
 };
 
 /** The best set when items multiply each other, so one strong pair can beat two strong singles: keep the best few sets at each size, then swap items while that helps. No guarantee of the very best set. */
-export function searchSet(o: { start: number[]; candidates: number[]; slots: number; value: (ids: number[]) => number; fits: (id: number, held: number[]) => boolean; width: number; swaps: boolean }): number[] {
+/** T212 v3 (Codex): `orderKey` names what of a set's order its value depends on (Weapon of Destiny's weapon is its first legendary): sets that differ
+ * there are different states, never one under the sorted key. */
+export function searchSet(o: { start: number[]; candidates: number[]; slots: number; value: (ids: number[]) => number; fits: (id: number, held: number[]) => boolean; width: number; swaps: boolean; orderKey?: (ids: number[]) => string }): number[] {
   const known = new Map<string, number>();
-  const valueOf = (ids: number[]) => { const key = [...ids].sort((a, b) => a - b).join(); let v = known.get(key); if (v === undefined) { v = o.value(ids); known.set(key, v); } return v; };
+  const keyOf = (ids: number[]) => `${o.orderKey?.(ids) ?? ''}|${[...ids].sort((a, b) => a - b).join()}`;
+  const valueOf = (ids: number[]) => { const key = keyOf(ids); let v = known.get(key); if (v === undefined) { v = o.value(ids); known.set(key, v); } return v; };
   let beam = [o.start], best = o.start;
   for (let size = o.start.length; size < o.slots; size++) {
     const next = new Map<string, number[]>();
-    for (const held of beam) for (const id of o.candidates) if (o.fits(id, held)) { const ids = [...held, id]; next.set([...ids].sort((a, b) => a - b).join(), ids); }
+    for (const held of beam) for (const id of o.candidates) if (o.fits(id, held)) { const ids = [...held, id]; next.set(keyOf(ids), ids); }
     beam = [...next.values()].sort((a, b) => valueOf(b) - valueOf(a)).slice(0, o.width);
     if (!beam.length) break;
     // A flat or weaker intermediate set can unlock a strong combination at the next depth.
@@ -193,7 +200,11 @@ export function mathBuild(o: { /** The live level is a floor: a late purchase ne
   // The owner's rule: a mage starts with a mana item (Luden's, Blackfire Torch), as his mana runs out fast without one; which one, by the full build.
   const mana = (id: number) => (o.shop[id]?.DataValues?.find((d) => d.name === 'FlatMPPoolMod')?.values?.[0] ?? 0) > 0;
   // A mage's mana item carries damage: Winter's Approach and Frozen Heart are tank items (the owner on Zilean).
-  const search = (start: number[]) => searchSet({ start, candidates: o.pool.filter((i) => !i.boots).map((i) => i.id), slots: start.some(isBoots) || o.noBoots ? SLOTS : SLOTS - 1, width: BEAM_WIDTH, swaps: true, value: (ids) => fightValue(run(ids, FULL_BUILD_LEVEL), o.place), fits: (id, held) => allowed(o.pool.find((p) => p.id === id)!, held) });
+  // T212 v3: Weapon of Destiny with no weapon named and none held (destinyFrom) takes the first legendary of the set's order as its weapon, so the
+  // search keeps that weapon in its states and keys, and the purchase order below buys it first (the order the search valued).
+  const destinyFrom = o.cards.find((c) => c.destinyItem === undefined && c.destinyFrom && c.ops.some((x) => x.op === 'destiny'))?.destinyFrom;
+  const weaponOf = (ids: number[]) => (destinyFrom ? ids.find((id) => destinyFrom.includes(id % 10000)) : undefined);
+  const search = (start: number[]) => searchSet({ start, candidates: o.pool.filter((i) => !i.boots).map((i) => i.id), slots: start.some(isBoots) || o.noBoots ? SLOTS : SLOTS - 1, width: BEAM_WIDTH, swaps: true, value: (ids) => fightValue(run(ids, FULL_BUILD_LEVEL), o.place), fits: (id, held) => allowed(o.pool.find((p) => p.id === id)!, held), ...(destinyFrom ? { orderKey: (ids: number[]) => String(weaponOf(ids) ?? '') } : {}) });
   // Which mana item, by the whole build it leads: alone Luden's burst beat Blackfire Torch, whose AP per burning enemy pays with the rest (the owner on Brand, 2026-11-08).
   // shortcut: the three best alone get a full search each; the rest are dropped.
   // One item of each group a card needs, chosen by the whole build it leads to, as the mana item is; the shop's own limits still hold, the build's kind rules don't (a card's need comes first).
@@ -230,6 +241,9 @@ export function mathBuild(o: { /** The live level is a floor: a late purchase ne
     steps.push({ id, damage: a.damage ? b.damage / a.damage - 1 : 0, health: a.effectiveHp ? b.effectiveHp / a.effectiveHp - 1 : 0, reason });
     held.push(id);
   };
+  // T212 v3: the weapon the search valued (its set's first legendary) is bought before any other legendary, so the build is the one it valued.
+  const weapon = weaponOf(set);
+  if (weapon !== undefined && !held.includes(weapon) && weaponOf(held) === undefined) buy(weapon, 'augment');
   // T166: the missing ingredients, the last one straight to the merged inventory (no fight stage holds all of them), then the merge row.
   for (const m of merges) {
     const mergeNow = (from: number[]) => { const after = [...held.filter((x) => !m.from.includes(x)), m.into]; held.splice(0, held.length, ...after); steps.push({ id: m.into, damage: 0, health: 0, reason: 'merge', consumes: [...from] }); };

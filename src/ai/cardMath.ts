@@ -85,7 +85,7 @@ export type CardOp = { eligibility?: OpEligibility; eligibilityWhy?: string; /**
   | { op: 'bolts'; ranged: number; melee: number; ad: number; after_quest?: boolean }
   /** T193: Weapon of Destiny. The named weapon item's own stats grow `unit` x upgrades[stat] per `per` event since the pick, for each stat family
    * the item has (AD: FlatPhysicalDamageMod, omnivamp: PercentOmnivampMod). Only these two families are seen on screen (T180); others are not counted. */
-  | { op: 'destiny'; per: string; unit: number; upgrades: { ad?: number; omnivamp?: number }; after_quest?: boolean }
+  | { op: 'destiny'; per: string; unit: number; upgrades: Partial<Record<keyof typeof DESTINY_FIELDS, number>>; after_quest?: boolean }
   | { op: 'timed'; trigger: string; afterCastWindow?: number; stat: string; value: Amount; mode: 'add' | 'percent'; /** A gain that stays after the fight (Soul Eater's health): carried into the next fight of the chain. */ permanent?: boolean; /** T049: a defence his own, its event proven in the fight: its armor/MR counts in effective health for the time it is held. */ self?: boolean; duration: number; decays?: boolean; stacks_max?: number | null; refresh?: boolean; internal_cooldown?: number | null; repeatOnHitEvery?: number; after_quest?: boolean });
 
 /** T051 v2: an op acts in the fight only while he lives (no eligibility means live). */
@@ -97,7 +97,7 @@ export const multipliesHealth = (c: CardNumbers) => liveCard(c).ops.some((x) => 
 const inState = (c: { state?: 'grow' | 'shrink' }) => (x: CardOp) => isLiveOp(x) && (!x.state || x.state === c.state);
 export const liveCard = <C extends { ops: CardOp[]; state?: 'grow' | 'shrink' }>(c: C): C => (c.ops.every(inState(c)) ? c : { ...c, ops: c.ops.filter(inState(c)) });
 
-export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null; /** Actual or explicitly estimated choice level; only this card's lifetime stacks start here. */ acquiredLevel?: number; abilityKey?: TargetAbility; /** T134: the player marked this card's hit or takedown quest finished. */ questDone?: boolean; /** T150: the card's state as the player set it (Mad Scientist). */ state?: 'grow' | 'shrink'; /** Which augment this was in the order taken (1 = first), only when the order is proven; unset when it isn't. */ pickPlace?: number; /** T193: the item Weapon of Destiny made his weapon, as the player names it (progress.destinyItem). */ destinyItem?: number }
+export interface CardNumbers { id: number; name: string; status: string; ops: CardOp[]; needs?: string | null; not_modelled?: string | null; /** Actual or explicitly estimated choice level; only this card's lifetime stacks start here. */ acquiredLevel?: number; abilityKey?: TargetAbility; /** T134: the player marked this card's hit or takedown quest finished. */ questDone?: boolean; /** T150: the card's state as the player set it (Mad Scientist). */ state?: 'grow' | 'shrink'; /** Which augment this was in the order taken (1 = first), only when the order is proven; unset when it isn't. */ pickPlace?: number; /** T193: the item Weapon of Destiny made his weapon, as the player names it (progress.destinyItem). */ destinyItem?: number; /** T212: no weapon named and no legendary held: the first of his items (in order) whose base id is here, the legendaries (services destinyTarget). */ destinyFrom?: number[]; /** T212 v3: with destinyFrom, his level when he held no legendary yet: the weapon is completed no earlier. */ destinyAfter?: number }
 
 /** The fixed fight. Assumptions, all visible: changing them changes every card alike, not who is popular. */
 /** incomingDps: the enemies' damage a second on him before his resists, when the caller doesn't pass his own (itemMath passes his share of the enemy's damage): a typical share 0.2 of ENEMY_DPS 2530 in itemMath.ts. It says when his health falls below a mark (Sterak's, Maw, Escape Plan). */
@@ -117,6 +117,10 @@ export const FIGHT = { areaTargets: 2, manaFights: 3, boltHitShare: 0.5, partial
  * Smolder's 250 is his; the rest are Claude's estimates raised on his word, to check on his screens. No cap: they keep growing with level past 15. */
 /** Stored games, 176,930 players: 0.67 kills a level (2.16 takedowns, kills and assists, is the 2.2 above); Hubris stacks on kills, not takedowns (2026-11-06). */
 const KILLS_PER_LEVEL = 0.67;
+/** T196e (Codex T196e answer 2): Weapon of Destiny counts kills from the later of its pick and the weapon's completion (his first legendary).
+ * The completion is not read from the match, so it is estimated at the level of a first item (itemMath LEVEL_BY_ITEMS[1]), never above his level now.
+ * shortcut: estimated, and said so in the fight's notes; a completion level read from the match would replace it. */
+const DESTINY_COMPLETED_AT = 9;
 /** Triggers that come from an attack: their damage heals through life steal as the attack does. */
 const ON_ATTACK = new Set(['on_hit', 'attack', 'crit', 'next_attack']);
 export const STACKS_AT_15: Record<string, number> = { Nasus: 700, Smolder: 250, AurelionSol: 150, Thresh: 150, Kindred: 15, Chogath: 20, Draven: 60, Veigar: 300, Senna: 150, Swain: 60 };
@@ -254,6 +258,8 @@ function formula(d: DamageFormula, s: BuildStats, level: number, t = FIGHT.targe
   return (d.flat === undefined ? 0 : scaled(d.flat, level)) + (d.mana ?? 0) * (s.mana ?? 0) + (d.ap ?? 0) * s.ap + (d.ad ?? 0) * s.ad + (d.bonus_ad ?? 0) * s.bonusAd + (d.hp ?? 0) * s.hp + (d.bonus_hp ?? 0) * s.bonusHp + (d.armor ?? 0) * s.armor + (d.mr ?? 0) * s.mr + (d.bonus_armor ?? 0) * s.bonusArmor + (d.bonus_mr ?? 0) * s.bonusMr + (d.target_max_hp ?? 0) * t + (d.target_missing_hp ?? 0) * (t / 2) + (d.target_current_hp ?? 0) * (t / 2) + (d.ap_per_bonus_hp ?? 0) * s.ap * s.bonusHp + (d.ad_crit ?? 0) * s.ad * s.crit * Math.max(0, s.critDamage - 1) + (d.crit ?? 0) * s.crit;
 }
 
+// T196e: Weapon of Destiny's file upgrades by the fight stat they add to and the item field that says the weapon has that family.
+const DESTINY_FIELDS = { ad: 'FlatPhysicalDamageMod', ap: 'FlatMagicDamageMod', crit: 'FlatCritChanceMod', crit_damage: 'FlatCritDamageMod', attack_speed: 'PercentAttackSpeedMod', haste: 'AbilityHasteMod', armor: 'FlatArmorMod', mr: 'FlatSpellBlockMod', lethality: 'PhysicalLethality', armor_pen: 'PercentArmorPenetrationMod', magic_pen: 'PercentMagicPenetrationMod', life_steal: 'PercentLifeStealMod', omnivamp: 'PercentOmnivampMod', mana: 'FlatMPPoolMod', hp: 'FlatHPPoolMod' } as const;
 const STAT_ADD: Record<string, (s: BuildStats, v: number) => void> = {
   ap: (s, v) => { s.ap += v; },
   ad: (s, v) => { s.ad += v; s.bonusAd += v; },
@@ -352,7 +358,6 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   const rewardHeld = (card: CardNumbers) => REWARD_ITEM[card.id] !== undefined && o.items.some((id) => id === REWARD_ITEM[card.id]);
   // T193: ops a card expands into here (Weapon of Destiny's per_stack growth) keep the card's acquired level, as its own ops do.
   const expandedAcquired = new Map<CardOp, number>();
-  const DESTINY_FIELDS = { ad: 'FlatPhysicalDamageMod', omnivamp: 'PercentOmnivampMod' } as const;
   const cardOps = (card: CardNumbers) => card.ops.filter((x) => (noQuest(x) || (questDone(card) && !rewardHeld(card))) && (!x.state || x.state === card.state)).flatMap((x): CardOp[] => {
     // T153: Steel Your Heart's reward waits on the stacks he reads in game; marked done, the reading already holds it. Unread: nothing, said.
     if (x.op === 'heartsteel_stacks') {
@@ -360,15 +365,22 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       if (o.heartsteelStacks === undefined) { targetMissing.push(`${card.name}: تكدسات Heartsteel غير مكتوبة في F7؛ أثره غير محسوب`); return []; }
       return [x];
     }
-    // T193: Weapon of Destiny grows the named weapon's own AD and omnivamp per kill since the pick. No weapon named, or not held: nothing, said.
+    // T193/T196e: Weapon of Destiny grows every stat family the named weapon has, per kill from the later of the pick and the weapon's (estimated)
+    // completion. No weapon named, or not held: nothing, said. T212: none named and none held, the first legendary in his items' order (the search's
+    // and the plan's purchase order), so the target is resolved for every item set the search tries, not only after it.
     if (x.op === 'destiny') {
-      if (card.destinyItem === undefined) { targetMissing.push(`${card.name}: سلاح المصير غير محدد (أول غرض أسطوري مكتمل)؛ نموه غير محسوب`); return []; }
-      const id = held.find((h) => h % 10000 === card.destinyItem! % 10000);
-      if (id === undefined) { targetMissing.push(`${card.name}: سلاح المصير المحدد ليس بين أغراضه؛ نموه غير محسوب`); return []; }
+      const unset = `${card.name}: سلاح المصير غير محدد (أول غرض أسطوري مكتمل)؛ نموه غير محسوب`;
+      if (card.destinyItem === undefined && !card.destinyFrom) { targetMissing.push(unset); return []; }
+      const id = card.destinyItem !== undefined ? held.find((h) => h % 10000 === card.destinyItem! % 10000) : held.find((h) => card.destinyFrom!.includes(h % 10000));
+      if (id === undefined) { targetMissing.push(card.destinyItem !== undefined ? `${card.name}: سلاح المصير المحدد ليس بين أغراضه؛ نموه غير محسوب` : unset); return []; }
       const has = (field: string) => (o.shop[id]?.DataValues?.find((d) => d.name === field)?.values?.[0] ?? 0) > 0;
       const grown = (Object.keys(DESTINY_FIELDS) as (keyof typeof DESTINY_FIELDS)[]).filter((stat) => x.upgrades[stat] && has(DESTINY_FIELDS[stat]))
         .map((stat): CardOp => ({ op: 'per_stack', stat, value: x.unit * x.upgrades[stat]!, mode: 'add', per: x.per, cap: null }));
-      if (card.acquiredLevel !== undefined) for (const y of grown) expandedAcquired.set(y, card.acquiredLevel);
+      if (grown.length) {
+        const completed = Math.min(o.level, Math.max(DESTINY_COMPLETED_AT, card.destinyAfter ?? 0)); // T212 v3: no legendary at his level now, none before it
+        for (const y of grown) expandedAcquired.set(y, Math.max(card.acquiredLevel ?? 0, completed));
+        targetMissing.push(`${card.name}: وقت اكتمال السلاح غير معروف، فعدّ القتلات يبدأ من الأحدث بين أخذه واكتمال السلاح المقدّر بالمستوى ${completed}؛ و0.2 وحدة لكل قتل تقديرية`);
+      }
       return grown;
     }
     // A reward for being the Nth augment taken counts only when the order is proven; an unknown order gives nothing and says so.
@@ -705,6 +717,8 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
   // T120b: with an explicit approach, a read melee state (decided before any range bonus) waits for contact before its first basic attack, then
   // attacks without the aggregate attackUptime (the scenario's access replaces it; never both). Unsupported states keep the default and say so.
   let access: RangeAccess | undefined;
+  let approachLeft = 0, lastHit = 0, intervalEnd = Infinity;
+  const baseMoveSpeed = Number((record as { baseMoveSpeedModifiable?: { baseValue?: number } }).baseMoveSpeedModifiable?.baseValue) || 0;
   if (o.attackAccess) {
     const { distance, moveSpeed } = o.attackAccess;
     if (!Number.isFinite(distance) || distance < 0 || !Number.isFinite(moveSpeed) || moveSpeed < 0) throw new RangeError('attack access needs a finite non-negative distance and speed');
@@ -712,8 +726,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     if (rs.known && rs.melee) {
       const bonus = ops.reduce((n, x) => (x.op === 'add' && x.stat === 'range' && typeof x.value === 'number' ? n + x.value : n), 0);
       access = rangeAccess({ distance, moveSpeed, beforeRange: rs.range, afterRange: rs.range + bonus, windowSeconds: FIGHT.seconds });
-      const contact = access.after.contactSeconds;
-      if (Number.isFinite(nextAttack)) nextAttack = contact === null ? Infinity : Math.max(nextAttack, contact);
+      // T213 (owner: «السرعه تقرب للخصم», speed brings him to the enemy): the approach is walked step by step at his live speed (approachSpeed),
+      // and walked again after each kill-time target switch, so move speed shortens it. access keeps the constant-speed figures for the page.
+      approachLeft = access.after.travelDistance;
     } else notModelled.push(`سيناريو الوصول إلى الهدف لا ينطبق: ${rs.known ? 'بطل بعيد المدى، والسيناريو للمشاة فقط' : `مداه غير مقروء (${rs.reason})`}؛ الضربات تبقى على نسبة الالتحام الافتراضية`);
   }
   const uptime = access ? 1 : melee ? FIGHT.attackUptime.melee : FIGHT.attackUptime.ranged;
@@ -871,7 +886,9 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     }
     return false;
   };
+  let lastTick = 0;
   for (let t = 0; t < FIGHT.seconds; t += dt) {
+    lastTick = t;
     const c = current(t);
     // T049: the same state and clock as current(t); each step counts dt while the gain is held, [start, end) so a 7.5 s gain counts 7.5 s.
     for (const x of selfDefense) {
@@ -893,6 +910,14 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       for (let i = dots.length - 1; i >= 0; i--) if (!dots[i]!.fromAbility) dots.splice(i, 1);
       fire('takedown', t, c);
       fire('kill', t, c);
+      // shortcut: the next target stands at the scenario's distance again; upgrade with read positions between targets.
+      if (access) approachLeft = access.after.travelDistance;
+    }
+    // T213: while he walks to the target no basic attack lands. His speed is read at this step: the scenario's speed scaled by his live speed over
+    // his record's base, so with no speed gain the walk matches the constant-speed contact of T120b.
+    if (approachLeft > 1e-9) {
+      if (Number.isFinite(nextAttack)) nextAttack = Math.max(nextAttack, t + dt);
+      approachLeft -= o.attackAccess!.moveSpeed * (baseMoveSpeed > 0 ? c.moveSpeed / baseMoveSpeed : 1) * dt;
     }
     // A mage or support who doesn't fight with attacks makes none (the owner: Ahri, Soraka); a physical non-attacker attacks between casts only, an assumption.
     // Codex T196b review: a charge attack still pending when another hit (an attack-flagged ability) has spent the charge is dropped.
@@ -906,9 +931,11 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
       lastAttackAt = t;
       chargeOnly = false;
       nextAttack = t + 1 / (c.attackSpeed * (o.kit.attackPace ?? (o.kit.attacks ? 1 : o.kit.damage === 'magic' && !passiveOnAttack ? 0 : 0.25)) * uptime);
+      intervalEnd = nextAttack;
       // The AD term of the hit, replaced by the ability's own hit damage when her record says the attack is that ability (Zeri's Q).
       const hitBase = attackHit ? attackHit.flat + attackHit.ratio * c.ad : c.ad;
-      fromAttacks += hitBase * (1 + c.crit * (c.critDamage - 1)) * amp('attacks', t) * taken.physical * (1 + boltAdAt(t));
+      lastHit = hitBase * (1 + c.crit * (c.critDamage - 1)) * amp('attacks', t) * taken.physical * (1 + boltAdAt(t));
+      fromAttacks += lastHit;
       critCarry += c.crit;
       const critical = critCarry >= 1;
       if (critical) {
@@ -1122,6 +1149,17 @@ export function fight(o: { bin: Record<string, unknown>; shop: Record<number, Ga
     fromAbilities += part;
     if (damageBySecond.length) damageBySecond[damageBySecond.length - 1]! += part;
     if (ownBySecond.length) ownBySecond[ownBySecond.length - 1]! += part; // T138: delayed omnivamp reads his own damage by second too
+  }
+  // T213: the same for basic attacks. A whole-attack count made an earlier start (range, speed) worth exactly zero unless one more attack fit in
+  // 15 s (Scoped Weapons on Garen: every attack 0.22 s sooner, the next one at 14.97 s, none gained). The waited share of the next attack counts,
+  // only when that attack was due by his attack interval (not held by a walk or a dropped charge). shortcut: its on-hit procs are not credited.
+  // Codex T213: an attack due after the last step but before 15 s was neither made nor credited; it counts too (due after lastTick), capped at one hit.
+  // One due at or before the last step and still not made was blocked there (a cast lock), and gets nothing.
+  if ((o.partialLastCast ?? FIGHT.partialLastCast) && attacks > 0 && nextAttack === intervalEnd && intervalEnd > lastTick && approachLeft <= 1e-9 && Number.isFinite(intervalEnd)) {
+    const part = lastHit * Math.min(1, (FIGHT.seconds - lastAttackAt) / (intervalEnd - lastAttackAt));
+    fromAttacks += part;
+    if (damageBySecond.length) damageBySecond[damageBySecond.length - 1]! += part;
+    if (ownBySecond.length) ownBySecond[ownBySecond.length - 1]! += part;
   }
   // An anti-heal item prevents healing; this is not damage and cannot generate omnivamp.
   // Includes healing on allies and assumes the healing is reached; per-enemy hit and debuff uptime remain unmodelled. Shields are excluded in enemyTeam.
