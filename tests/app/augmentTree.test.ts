@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildLine, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { buildLine, enemyCounts, ENEMY_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -102,5 +102,21 @@ describe('build line', () => {
     expect(buildLine(tree, [3])?.name).toBe('Crit');
     expect(buildLine(tree, [3])?.items).toEqual(['IE']);
     expect(buildLine({ ...tree, lines: [] }, [])).toBeUndefined();
+  });
+});
+
+describe('enemy rules', () => {
+  const kits = [1, 2, 3, 4, 5].map((id) => ({ id, traits: id <= 3 ? ['frontline'] : [], relies: id >= 4 ? ['crowd_control'] : [] }));
+  const t: CompactTree = { lines: [], a: { 3150: [50, 'storm', []], 1001: [50, 'titan', []], 9: [50, 'plain', []] }, after: [] };
+  it('counts tanks and crowd control from the enemy kits', () => {
+    expect(enemyCounts(kits, [1, 2, 3, 4, 5])).toEqual({ tanks: 3, cc: 2 });
+    expect(enemyCounts(kits, [1, 99])).toEqual({ tanks: 1, cc: 0 });
+  });
+  it('raises a tank-buster only against 3+ tanks, and says why', () => {
+    expect(fitPercent(t, 3150, [], { tanks: 3, cc: 0 })).toBe(50 + ENEMY_STEP);
+    expect(fitPercent(t, 3150, [], { tanks: 2, cc: 0 })).toBe(50);
+    expect(fitPercent(t, 9, [], { tanks: 5, cc: 5 })).toBe(50);
+    expect(fitOffer(t, [1001], [], { tanks: 0, cc: 3 })[0].because).toHaveLength(1);
+    expect(fitPercent(t, 3150)).toBe(50);
   });
 });

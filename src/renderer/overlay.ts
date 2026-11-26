@@ -30,7 +30,7 @@ import { gameLiftLine, OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type O
 import { GAME_LIFT } from '../ai/gameLift.js';
 import { FIXED_ABILITY_KEY, needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 import { destinyOptions } from './destinyOptions.js';
-import { buildLine, fitOffer, fitPercent, heldLine, treeFor } from '../app/augmentTree.js';
+import { buildLine, enemyCounts, fitOffer, fitPercent, heldLine, treeFor, type EnemyCounts } from '../app/augmentTree.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
 import { keyedTo, readFor } from './championKeyed.js';
 
@@ -79,6 +79,8 @@ let effects = new Map<number, AugmentEffect>();
 let openPoints = new Map<number, number>();
 /** The Chinese server's win rate for this champion with each augment, and its games. */
 let openWin = keyedTo<{ win: number; games: number }>();
+// The enemy team's tanks and crowd control for the tree's enemy rules, read once the game is loaded (owner 2026-11-27); undefined before.
+let foes: EnemyCounts | undefined;
 const winOf = (id: number) => readFor(openWin, data?.champion?.id, id);
 /** How much more this champion's players take each augment than all players do; winning plays no part. */
 const mechOf = (a: { id: number; ids?: number[] }) => AUGMENT_MECHANICS.find((m) => (a.ids ?? [a.id]).includes(m.id));
@@ -375,7 +377,7 @@ function render() {
   // letter and reasons stay in the tooltip.
   const tree = treeFor(AUGMENT_TREES, data.mode, data.champion?.id);
   const held = [...picked];
-  const treeFit = (a: OverlayData['augments'][number]) => (tree ? fitPercent(tree, a.id, held) : 0);
+  const treeFit = (a: OverlayData['augments'][number]) => (tree ? fitPercent(tree, a.id, held, foes) : 0);
   const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : tree ? treeFit(a) : score(a));
   const pool = data.mode === 'mayhem' ? playedOnly(data.augments, effects, picked) : data.augments;
   const grades = gradesFor(pool, score);
@@ -705,12 +707,12 @@ function offerSection(): HTMLElement {
     if (cards.length) {
       const cardOf = new Map(cards.map((a) => [a.id, a]));
       const box = el('div', 'ov-adapted ov-offers ov-tree');
-      for (const f of fitOffer(tree, cards.map((a) => a.id), held)) {
+      for (const f of fitOffer(tree, cards.map((a) => a.id), held, foes)) {
         const a = cardOf.get(f.id)!;
         const r = el('div', 'ov-adapted-row');
         const txt = el('div', 'ov-name');
         const head = el('div', 'ov-tree-head');
-        head.append(el('b', '', shownName(a)), fitBar(fitPercent(tree, f.id, held)), el('small', '', `بين المعروضة ${f.pct}%`));
+        head.append(el('b', '', shownName(a)), fitBar(fitPercent(tree, f.id, held, foes)), el('small', '', `بين المعروضة ${f.pct}%`));
         txt.append(head);
         txt.append(el('small', f.why ? '' : 'missing', f.why ?? 'ليست في شجرة بطلك: درجتها محايدة 50.'));
         if (f.because.length) txt.append(el('small', '', `مع ما اخترته: ${f.because.join(' · ')}`));
@@ -1320,7 +1322,9 @@ async function load() {
   // Restored marks no longer open the AI build on their own (T036): the engine is the page; AI is asked from its button only.
   void refreshCardMath();
   void refreshFit();
+  foes = undefined; // a new champion or match: the old enemy team no longer applies
   if (reply.mode === 'mayhem') {
+    void window.lolh.gameTeams().then((t) => { if (id !== loadId) return; foes = !isError(t) && t ? enemyCounts(CHAMPION_KITS, t.enemy.map((p) => p.championId)) : undefined; render(); redrawBuild(); }, () => undefined);
     const [r, o] = await Promise.all([window.lolh.augmentEffects(), reply.champion ? window.lolh.openAugments(reply.champion.id) : []]);
     if (id !== loadId) return;
     if (!isError(r)) effects = new Map(r.map((x) => [x.id, x]));

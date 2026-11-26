@@ -32,7 +32,22 @@ export interface TreeFit {
   lines: string[];
 }
 
-export function fitOffer(tree: CompactTree, offered: number[], held: number[] = []): TreeFit[] {
+/** The enemy team as the tree reads it (owner 2026-11-27 «قواعد من النص بوزن صغير»): how many of the five are frontline tanks and how many
+ *  rely on crowd control, from their kits. */
+export interface EnemyCounts { tanks: number; cc: number }
+export const enemyCounts = (kits: readonly { id: number; traits: string[]; relies: string[] }[], foes: number[]): EnemyCounts => {
+  const of = foes.map((id) => kits.find((k) => k.id === id)).filter((k): k is NonNullable<typeof k> => !!k);
+  return { tanks: of.filter((k) => k.traits.includes('frontline')).length, cc: of.filter((k) => k.relies.includes('crowd_control')).length };
+};
+/** Text-read card classes (knowledge/tree-trial/measure/enemy-classes.mjs, hand-checked): with 3+ such enemies each class gets ENEMY_STEP.
+ *  A small weight by the owner's choice: the games show enemy effects are small (measure/enemy-rules.mjs), so this is an assumption to measure. */
+export const ENEMY_STEP = 5;
+const ENEMY_RULES: { feat: keyof EnemyCounts; ids: Set<number>; why: string }[] = [
+  { feat: 'tanks', ids: new Set([25, 28, 36, 84, 133, 195, 1025, 1028, 1036, 1084, 1133, 1195, 1321, 1325, 1409, 2098, 2133, 3016, 3150]), why: 'أمامك 3 مدرّعين أو أكثر: ضرر نسبة الصحة والضرر الحقيقي والاختراق أنفع.' },
+  { feat: 'cc', ids: new Set([112, 305, 1001, 1112, 1305]), why: 'فريق الخصم كثير التحكّم: الثبات ومقاومة الإبطاء أنفع.' },
+];
+
+export function fitOffer(tree: CompactTree, offered: number[], held: number[] = [], enemy?: EnemyCounts): TreeFit[] {
   const linesOf = (id: number) => tree.a[id]?.[2] ?? [];
   const heldPerLine = new Map<number, number>();
   for (const h of held) for (const l of linesOf(h)) heldPerLine.set(l, (heldPerLine.get(l) ?? 0) + 1);
@@ -45,7 +60,8 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
     const off = committed && mine.length && !mine.some((l) => heldPerLine.has(l)) ? -OFF_LINE : 0;
     const rules = tree.after.filter(([h, b]) => b === id && held.includes(h));
     const after = rules.reduce((s, r) => s + r[2], 0);
-    return { id, base, fit: base + line + off + after, pct: 0, why: row?.[1], because: rules.map((r) => r[3]), lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
+    const foes = enemy ? ENEMY_RULES.filter((r) => enemy[r.feat] >= 3 && r.ids.has(id)) : [];
+    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length, pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why)], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
   });
   if (!rows.length) return rows;
   const top = Math.max(...rows.map((r) => r.fit));
@@ -59,7 +75,7 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
 export const treeFor = (trees: TreeBundle, mode: string | null | undefined, champion: number | undefined) => (mode === 'mayhem' && champion !== undefined ? trees[String(champion)] : undefined);
 
 /** One card's fit with what is held, as a 0–100 bar value: base + line following + "after" rules, clamped. Moves with every pick. */
-export const fitPercent = (tree: CompactTree, id: number, held: number[] = []) => Math.max(0, Math.min(100, Math.round(fitOffer(tree, [id], held)[0].fit)));
+export const fitPercent = (tree: CompactTree, id: number, held: number[] = [], enemy?: EnemyCounts) => Math.max(0, Math.min(100, Math.round(fitOffer(tree, [id], held, enemy)[0].fit)));
 
 /** The line whose items the build page shows (owner 2026-11-27: the tree's build first): the line his picks point to, else the tree's first
  *  line, which the writers put first as the champion's main line. */
