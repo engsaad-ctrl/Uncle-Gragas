@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptItems, buildLine, enemyCounts, ENEMY_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -136,5 +136,16 @@ describe('item swaps for the enemy team', () => {
   it('picks by his damage and skips an item already held', () => {
     expect(adaptItems(['Infinity Edge', 'Berserker\'s Greaves', 'Lord Dominik\'s Regards', 'X'], { damage: 'physical', frontline: false }, { tanks: 4, cc: 0 }).swaps).toEqual([]);
     expect(adaptItems(['A', 'B', 'C', 'D'], { damage: 'physical', frontline: true }, { tanks: 0, cc: 0, healers: 3 }).items[3]).toBe('Thornmail');
+  });
+});
+
+describe('stat stacking (T270)', () => {
+  // 1097 gives AP, 1030 gives AP and haste, 1098 gives haste (src/ai/augmentTags.ts).
+  const t: CompactTree = { lines: [], a: { 1097: [50, 'ap', []], 1030: [50, 'ap haste', []], 1098: [50, 'haste', []], 9: [50, 'none', []] }, after: [] };
+  it('adds a step per stat shared with held cards, and says so', () => {
+    expect(fitPercent(t, 1030, [1097])).toBe(50 + STAT_STEP);
+    expect(fitPercent(t, 1030, [1097, 1098])).toBe(50 + 2 * STAT_STEP);
+    expect(fitPercent(t, 9, [1097])).toBe(50);
+    expect(fitOffer(t, [1030], [1097])[0].because.at(-1)).toContain('AP');
   });
 });

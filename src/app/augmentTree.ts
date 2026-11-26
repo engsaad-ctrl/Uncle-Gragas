@@ -1,3 +1,4 @@
+import { AUGMENT_TAGS } from '../ai/augmentTags.js';
 // The augment tree (owner 2026-11-26): one fit score per card for each champion, drawn from the principles in knowledge/tree-trial/,
 // and the fit changes with every augment already taken: base score + line following + specific "after" rules.
 // Percentages are fit percentages over the offered cards (softmax), not win chances.
@@ -49,6 +50,12 @@ const ENEMY_RULES: { feat: keyof EnemyCounts; ids: Set<number>; why: string }[] 
   { feat: 'cc', ids: new Set([112, 305, 1001, 1112, 1305]), why: 'فريق الخصم كثير التحكّم: الثبات ومقاومة الإبطاء أنفع.' },
 ];
 
+/** T270 (owner «طبّقها وانشر»): each stat the offered card gives that a held card also gives (style tags, src/ai/augmentTags.ts), up to 3,
+ *  adds STAT_STEP: stacking one stat. Chosen on 881 creator rounds; on 118 unseen rounds top-1 60% -> 61%. */
+export const STAT_STEP = 6;
+const STAT_AR: Record<string, string> = { ap: 'AP', ad: 'AD', attackspeed: 'سرعة الهجوم', haste: 'تسريع المهارات', crit: 'الضربة الحرجة', health: 'الصحة', tank: 'التحمّل', onhit: 'تأثير عند الضرب', mana: 'المانا', lethality: 'الفتك' };
+const stylesOf = (id: number) => (AUGMENT_TAGS[id]?.tags ?? []).filter((t) => t.startsWith('style:')).map((t) => t.slice(6));
+
 export function fitOffer(tree: CompactTree, offered: number[], held: number[] = [], enemy?: EnemyCounts): TreeFit[] {
   const linesOf = (id: number) => tree.a[id]?.[2] ?? [];
   const heldPerLine = new Map<number, number>();
@@ -62,8 +69,10 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
     const off = committed && mine.length && !mine.some((l) => heldPerLine.has(l)) ? -OFF_LINE : 0;
     const rules = tree.after.filter(([h, b]) => b === id && held.includes(h));
     const after = AFTER_WEIGHT * rules.reduce((s, r) => s + r[2], 0);
+    const heldStyles = new Set(held.flatMap(stylesOf));
+    const shared = stylesOf(id).filter((st) => heldStyles.has(st)).slice(0, 3);
     const foes = enemy ? ENEMY_RULES.filter((r) => (enemy[r.feat] ?? 0) >= 3 && r.ids.has(id)) : [];
-    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length, pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why)], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
+    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length + STAT_STEP * shared.length, pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why), ...(shared.length ? [`يجمع ${shared.map((st) => STAT_AR[st] ?? st).join(' و')} مع ما عندك.`] : [])], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
   });
   if (!rows.length) return rows;
   const top = Math.max(...rows.map((r) => r.fit));
