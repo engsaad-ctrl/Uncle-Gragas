@@ -11,10 +11,12 @@ export interface CompactTree {
 export type TreeBundle = Record<string, CompactTree>;
 
 /** Each held card in a line raises the line's other cards by this much (up to 3 held per line). */
-export const LINE_STEP = 6;
+export const LINE_STEP = 10; // T269: halfway from 6 to the 15 creator picks preferred (owner «طبّقه بنصف القوة»)
 /** Once a line holds 2+ cards, a card from another line drops by this much. A card in no line (gold, anvils, pure utility, traps)
  *  is exempt on purpose: it never belonged to a line, and FIT_T was fitted with this exemption (knowledge/tree-trial/fit.mjs). */
-export const OFF_LINE = 6;
+export const OFF_LINE = 3; // T269: halfway from 6 to 0
+/** Weight of the after rules' deltas (T269: halfway from 1 to the learned 1.5). */
+export const AFTER_WEIGHT = 1.25;
 /** Softmax temperature fitted on creator offers (knowledge/tree-trial/win-test-plan.md, addendum 2). */
 export const FIT_T = 36;
 
@@ -59,7 +61,7 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
     const line = mine.reduce((s, l) => s + LINE_STEP * Math.min(3, heldPerLine.get(l) ?? 0), 0);
     const off = committed && mine.length && !mine.some((l) => heldPerLine.has(l)) ? -OFF_LINE : 0;
     const rules = tree.after.filter(([h, b]) => b === id && held.includes(h));
-    const after = rules.reduce((s, r) => s + r[2], 0);
+    const after = AFTER_WEIGHT * rules.reduce((s, r) => s + r[2], 0);
     const foes = enemy ? ENEMY_RULES.filter((r) => (enemy[r.feat] ?? 0) >= 3 && r.ids.has(id)) : [];
     return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length, pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why)], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
   });

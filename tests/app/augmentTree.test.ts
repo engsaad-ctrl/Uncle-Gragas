@@ -26,7 +26,7 @@ describe('augment tree fit', () => {
   it('an after rule applies only when its card is held, and says why', () => {
     expect(fitOffer(tree, [3])[0].fit).toBe(50);
     const r = fitOffer(tree, [3], [5]);
-    expect(r[0].fit).toBe(70);
+    expect(r[0].fit).toBe(50 + 1.25 * 20); // AFTER_WEIGHT 1.25 (T269)
     expect(r[0].because).toEqual(['combo']);
   });
   it('an unknown card reads 50 and the shares still add up', () => {
@@ -79,7 +79,7 @@ describe('bundled trees', () => {
 describe('fit bar value', () => {
   it('moves with the picks and stays within 0-100', () => {
     expect(fitPercent(tree, 3)).toBe(50);
-    expect(fitPercent(tree, 3, [5])).toBe(70);
+    expect(fitPercent(tree, 3, [5])).toBe(75); // AFTER_WEIGHT 1.25 (T269)
     expect(fitPercent(tree, 2, [1])).toBe(50 + LINE_STEP);
     expect(fitPercent({ ...tree, after: [[5, 3, 90, 'big']] }, 3, [5])).toBe(100);
     expect(fitPercent({ ...tree, after: [[5, 3, -90, 'trap']] }, 3, [5])).toBe(0);
