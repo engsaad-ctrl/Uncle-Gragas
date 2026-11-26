@@ -30,7 +30,7 @@ import { gameLiftLine, OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type O
 import { GAME_LIFT } from '../ai/gameLift.js';
 import { FIXED_ABILITY_KEY, needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 import { destinyOptions } from './destinyOptions.js';
-import { fitOffer, fitPercent, heldLine, treeFor } from '../app/augmentTree.js';
+import { buildLine, fitOffer, fitPercent, heldLine, treeFor } from '../app/augmentTree.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
 import { keyedTo, readFor } from './championKeyed.js';
 
@@ -434,10 +434,8 @@ function render() {
       grade.title = why.join('\n');
       if (tree) {
         const bar = fitBar(treeFit(a));
-        bar.title = [`الشجرة: ${tree.a[a.id]?.[1] ?? 'ليست في شجرة بطلك: درجتها محايدة 50.'}`, `المحرك: ${letter}`, ...why].join('\n');
-        if (clashes.length) tags.append(el('span', 'ov-mech', '⚠'));
-        if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
-        if (isOpen(a.id)) tags.append(el('span', 'ov-mech', 'مشروط'));
+        // Owner 2026-11-27 «فقط يظهر لي الشجرة المرنه»: the tree's reason alone; the engine's letter, reasons and badges are not shown.
+        bar.title = tree.a[a.id]?.[1] ?? 'ليست في شجرة بطلك: درجتها محايدة 50.';
         // Owner 2026-11-26: the win rate with this champion beside the bar (Chinese server data), small; the bar stays the fit.
         const win = winOf(a.id);
         if (win) tags.append(el('small', 'fit-win', `${(100 * win.win).toFixed(1)}% فوز`));
@@ -723,17 +721,11 @@ function offerSection(): HTMLElement {
       lead.push(box, el('p', 'hint', 'الشريط ملاءمة البطاقة لبطلك ولما اخترته، من 100. و«بين المعروضة» حصتها بين البطاقات المعروضة فقط. ولا هذا ولا ذاك احتمال فوز.'));
     }
   }
-  let engine: HTMLElement = rows;
-  if (tree && cards.length) {
-    const old = el('details', 'plan-reason') as HTMLDetailsElement;
-    old.open = openFolds.has('engine-old');
-    old.addEventListener('toggle', () => (old.open ? openFolds.add('engine-old') : openFolds.delete('engine-old')));
-    old.append(el('summary', '', 'تفاصيل المحرك القديم'), rows);
-    engine = old;
-  }
   if (offer.size) openFolds.add('offer');
+  // Owner 2026-11-27: with a tree only the tree shows; the engine rows and their note stay for champions with no tree.
+  if (tree && cards.length) return fold('offer', `مقارنة البطاقات المعروضة (${offer.size})`, findCard.label, findCard.box, ...lead);
   return fold('offer', offer.size ? `مقارنة البطاقات المعروضة (${offer.size})` : 'قارن البطاقات المعروضة عليك (اختياري)',
-    findCard.label, findCard.box, ...lead, engine,
+    findCard.label, findCard.box, ...lead, rows,
     el('p', 'hint', 'الأرقام هنا من حساب المحرك، وليست احتمال فوز. «الآن» بأغراضك الحالية، و«الخطة المكتملة» تعيد البحث عن الأغراض لكل بطاقة بلا تعزيزات قادمة. حرف S–C في قائمة التعزيزات من نتائج المباريات والمواقع، ومنفصل عن هذه الأرقام.'));
 }
 
@@ -1004,6 +996,18 @@ function partnersSection(): HTMLElement | null {
 
 /** The main page (T036, the owner: «its the main page»): his state in one line, the engine's next item and its reason, the rest of the plan;
  * then the optional parts (cards on offer, items typed in without a match) and how it is computed, folded. */
+/** Owner 2026-11-27: the build page leads with the tree's items for the line his picks point to; the engine's build folds under it. */
+function treeBuildSection(): HTMLElement | null {
+  const d = data!;
+  const tree = treeFor(AUGMENT_TREES, d.mode, d.champion?.id);
+  const line = tree && buildLine(tree, [...picked]);
+  if (!line) return null;
+  const pool = [...(d.items ?? []), ...(d.boots ?? [])];
+  const row = el('div', 'ov-tree-items');
+  row.append(...line.items.map((n) => { const it = pool.find((i) => i.enName === n); return it ? ic(it) : el('span', 'missing', n); }));
+  return section(`بناء الشجرة: ${line.name}`, el('p', 'hint', `${picked.size ? '' : 'قبل أي تعزيز: الخط الأول في شجرة بطلك. '}${line.why}`), row);
+}
+
 function adaptedSection(): HTMLElement[] {
   const d = data!;
   const chosen = d.augments.filter((a) => picked.has(a.id));
@@ -1200,7 +1204,8 @@ function renderBuild(p?: ChampionPage) {
   const focused = document.activeElement instanceof HTMLInputElement && document.activeElement.id ? document.activeElement.id : undefined;
   const out: HTMLElement[] = [];
   const mayhem = data?.mode === 'mayhem';
-  if (mayhem && data?.champion) out.push(...adaptedSection(), fold('ai', 'بناء الذكاء الاصطناعي (اختياري)', aiSection()));
+  const treeBuild = mayhem && data?.champion ? treeBuildSection() : null;
+  if (mayhem && data?.champion) out.push(...(treeBuild ? [treeBuild] : adaptedSection()), fold('ai', 'بناء الذكاء الاصطناعي (اختياري)', aiSection()));
   if (p?.buildError) out.push(el('p', mayhem ? 'hint' : 'missing', mayhem ? `بناء الموقع غير متاح: ${p.buildError}` : p.buildError));
   else if (p) {
     const stats = p.stats && el('p', 'en', `نسبة الفوز ${pct(p.stats.winRate)} · ${p.stats.games.toLocaleString('en')} مباراة`);

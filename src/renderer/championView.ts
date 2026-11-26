@@ -12,6 +12,7 @@ import { FIT_POINTS, fitOf, gradesFor, outsidePoints, playedOnly } from './fit.j
 import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
+import { buildLine } from '../app/augmentTree.js';
 
 const MODES: [PageMode, string][] = [
   ['ranked', 'Ranked'], ['flex', 'Flex'], ['aram', 'ARAM'], ['mayhem', 'ARAM Mayhem'],
@@ -108,13 +109,26 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
   let all: AugmentText[] = p.augments;
   let items: ItemEntry[] = [];
   let run = 0;
+  // Owner 2026-11-27: the tree's build first (the line his picks point to, else the tree's first line); the engine's build folds under it.
+  const tree = AUGMENT_TREES[String(p.champion.id)];
+  const treeEl = el('div');
+  let shop: ItemEntry[] | undefined;
+  async function drawTree() {
+    const line = tree && buildLine(tree, [...picked.keys()]);
+    if (!line) return void treeEl.replaceChildren();
+    if (!shop) { const l = await window.lolh.listItems('mayhem'); shop = isError(l) ? [] : l.list; }
+    const row = el('div', 'icons');
+    row.append(...line.items.map((n) => { const it = shop!.find((i) => i.enName === n); return it ? iconOf(it) : el('span', 'missing', n); }));
+    treeEl.replaceChildren(el('h3', 'sub-title', `بناء الشجرة: ${line.name}`), el('p', 'hint', `${picked.size ? '' : 'قبل أي تعزيز: الخط الأول في شجرة البطل. '}${line.why}`), row);
+  }
 
   const toggle = (a: AugmentText) => {
     if (picked.has(a.id)) picked.delete(a.id);
     else if (picked.size < MAX_PICKS) picked.set(a.id, a);
     run++; // an answer still on its way is for the old picks
     draw();
-    void refreshEngine();
+    if (!tree) void refreshEngine();
+    void drawTree();
   };
   async function refreshEngine() {
     const id = ++engineRun;
@@ -166,7 +180,10 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
     drawList();
   });
   draw();
-  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, engineTitle, stackBox, engineEl, box);
+  void drawTree();
+  let engineBox: HTMLElement[] = [engineTitle, stackBox, engineEl];
+  if (tree) engineBox = []; // owner 2026-11-27: only the tree shows
+  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, treeEl, ...engineBox, box);
   return s;
 }
 
@@ -265,8 +282,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
           grid.append(...list.map((a, i) => {
             if (tree) {
               const why = tree.a[a.id] ? tree.a[a.id][1] : 'ليست في شجرة هذا البطل: درجتها محايدة 50.';
-              const letter = ours?.grades.get(a.id);
-              const tags = () => [...(why ? [el('span', '', why)] : []), ...(letter ? [el('span', '', `المحرك: ${letter}`)] : []), ...augmentTags(a)];
+              const tags = () => [el('span', '', why), ...augmentTags(a)];
               const chip = augmentChip(a, false, () => detail.show(a, { tags: tags(), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }));
               chip.querySelector('small.mode')?.remove();
               chip.append(fitBar(treeBase(a)));
@@ -308,7 +324,7 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     section.append(groups);
     // Each group shows 6 at first: offer the rest whenever any group has more.
     if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
-    if (tree) section.append(el('p', 'hint', 'الترتيب والشريط من شجرة هذا البطل: ملاءمة كل تعزيز من 100 قبل أي اختيار، وتتغير في نافذة اللعب مع كل تعزيز تأخذه. اضغط التعزيز ليظهر السبب وحرف المحرك.'));
+    if (tree) section.append(el('p', 'hint', 'الترتيب والشريط من شجرة هذا البطل: ملاءمة كل تعزيز من 100 قبل أي اختيار، وتتغير في نافذة اللعب مع كل تعزيز تأخذه. اضغط التعزيز ليظهر السبب.'));
     else section.append(el('p', 'hint', 'الحرف كما في F7، من مبارياتنا (20%) ونِسب هذا البطل في AramHex وARAMKit (80%): S الأفضل و C الأضعف بين تعزيزات الندرة نفسها.'));
     body.push(section, aiPanel(p, iconButton, ranking)); // our games feed the calculator; they are not shown as a list
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { buildLine, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -93,5 +93,14 @@ describe('tree only in Mayhem', () => {
     expect(treeFor(trees, 'arena', 1)).toBeUndefined();
     expect(treeFor(trees, 'aram', 1)).toBeUndefined();
     expect(treeFor(trees, 'mayhem', undefined)).toBeUndefined();
+  });
+});
+
+describe('build line', () => {
+  it('follows the picks, else the first line', () => {
+    expect(buildLine(tree, [])?.name).toBe('Burn');
+    expect(buildLine(tree, [3])?.name).toBe('Crit');
+    expect(buildLine(tree, [3])?.items).toEqual(['IE']);
+    expect(buildLine({ ...tree, lines: [] }, [])).toBeUndefined();
   });
 });

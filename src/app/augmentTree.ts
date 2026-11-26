@@ -61,6 +61,10 @@ export const treeFor = (trees: TreeBundle, mode: string | null | undefined, cham
 /** One card's fit with what is held, as a 0–100 bar value: base + line following + "after" rules, clamped. Moves with every pick. */
 export const fitPercent = (tree: CompactTree, id: number, held: number[] = []) => Math.max(0, Math.min(100, Math.round(fitOffer(tree, [id], held)[0].fit)));
 
+/** The line whose items the build page shows (owner 2026-11-27: the tree's build first): the line his picks point to, else the tree's first
+ *  line, which the writers put first as the champion's main line. */
+export const buildLine = (tree: CompactTree, held: number[]) => heldLine(tree, held) ?? (tree.lines[0] ? { name: tree.lines[0][0], why: tree.lines[0][1], items: tree.lines[0][2] } : undefined);
+
 /** The line the held cards point to most (ties: the earlier line), with its items; undefined before any held card serves a line. */
 export function heldLine(tree: CompactTree, held: number[]): { name: string; why: string; items: string[] } | undefined {
   const count = new Map<number, number>();
