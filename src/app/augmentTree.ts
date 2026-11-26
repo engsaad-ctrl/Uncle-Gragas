@@ -55,6 +55,12 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
   return rows.sort((x, y) => y.fit - x.fit);
 }
 
+/** The champion's tree, only in Mayhem: Arena and the other modes keep their own order (T261 review). */
+export const treeFor = (trees: TreeBundle, mode: string | null | undefined, champion: number | undefined) => (mode === 'mayhem' && champion !== undefined ? trees[String(champion)] : undefined);
+
+/** One card's fit with what is held, as a 0–100 bar value: base + line following + "after" rules, clamped. Moves with every pick. */
+export const fitPercent = (tree: CompactTree, id: number, held: number[] = []) => Math.max(0, Math.min(100, Math.round(fitOffer(tree, [id], held)[0].fit)));
+
 /** The line the held cards point to most (ties: the earlier line), with its items; undefined before any held card serves a line. */
 export function heldLine(tree: CompactTree, held: number[]): { name: string; why: string; items: string[] } | undefined {
   const count = new Map<number, number>();

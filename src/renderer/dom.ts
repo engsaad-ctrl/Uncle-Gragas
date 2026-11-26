@@ -92,6 +92,18 @@ export const isError = <T>(r: Reply<T>): r is { error: string } => typeof r === 
 
 export const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
+/** A fit bar like the stat sites': filled to pct (0–100), labelled as a fit out of 100 so it is not read as a win chance. */
+export function fitBar(pct: number): HTMLElement {
+  const box = el('span', 'fit-bar-box');
+  const bar = el('span', 'fit-bar');
+  const fill = el('i');
+  fill.style.width = `${pct}%`;
+  fill.className = pct >= 70 ? 'hi' : pct >= 45 ? 'mid' : 'lo';
+  bar.append(fill);
+  box.append(bar, el('b', '', `ملاءمة ${pct}/100`));
+  return box;
+}
+
 export function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
   if (className) node.className = className;

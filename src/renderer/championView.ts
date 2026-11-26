@@ -7,10 +7,11 @@ import { pickPanel } from './pickPanel.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
-import { applyLines, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stackInput, stagger, withTooltip, type Describable } from './dom.js';
+import { applyLines, fitBar, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stackInput, stagger, withTooltip, type Describable } from './dom.js';
 import { FIT_POINTS, fitOf, gradesFor, outsidePoints, playedOnly } from './fit.js';
 import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
+import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
 
 const MODES: [PageMode, string][] = [
   ['ranked', 'Ranked'], ['flex', 'Flex'], ['aram', 'ARAM'], ['mayhem', 'ARAM Mayhem'],
@@ -249,15 +250,30 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     const showAll = el('button', 'more', 'عرض كل التعزيزات');
     showAll.type = 'button';
     const groups = el('div');
+    const tree = AUGMENT_TREES[String(c.id)];
+    const treeBase = (a: AugmentText) => tree?.a[a.id]?.[0] ?? 50;
     // The site's ranking until ours loads, or if it can't: then the label says whose it is.
     let ours: Awaited<ReturnType<typeof rankAugments>> = null;
     const renderGroups = (limit: number) =>
       groups.replaceChildren(
         ...AUGMENT_GROUPS.flatMap(([rarity, label]) => {
-          const list: AugmentText[] = (ours?.list ?? p.augments).filter((a) => a.rarity === rarity).slice(0, limit);
+          const pool: AugmentText[] = (ours?.list ?? p.augments).filter((a) => a.rarity === rarity);
+          // Owner 2026-11-26: the tree leads; the engine's letter moves into the card's details.
+          const list = (tree ? [...pool].sort((x, y) => treeBase(y) - treeBase(x)) : pool).slice(0, limit);
           if (!list.length) return [];
           const grid = el('div', 'grid');
           grid.append(...list.map((a, i) => {
+            if (tree) {
+              const why = tree.a[a.id] ? tree.a[a.id][1] : 'ليست في شجرة هذا البطل: درجتها محايدة 50.';
+              const letter = ours?.grades.get(a.id);
+              const tags = () => [...(why ? [el('span', '', why)] : []), ...(letter ? [el('span', '', `المحرك: ${letter}`)] : []), ...augmentTags(a)];
+              const chip = augmentChip(a, false, () => detail.show(a, { tags: tags(), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }));
+              chip.querySelector('small.mode')?.remove();
+              chip.append(fitBar(treeBase(a)));
+              const win = ours?.wins.get(a.id);
+              if (win !== undefined) chip.append(el('small', 'fit-win', `${(100 * win).toFixed(1)}% فوز`));
+              return stagger(chip, i);
+            }
             const site = a as RatedAugment;
             const letter = ours?.grades.get(a.id);
             const win = ours?.wins.get(a.id);
@@ -292,7 +308,8 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     section.append(groups);
     // Each group shows 6 at first: offer the rest whenever any group has more.
     if (AUGMENT_GROUPS.some(([r]) => p.augments.filter((a) => a.rarity === r).length > 6)) section.append(showAll);
-    section.append(el('p', 'hint', 'الحرف كما في F7، من مبارياتنا (20%) ونِسب هذا البطل في AramHex وARAMKit (80%): S الأفضل و C الأضعف بين تعزيزات الندرة نفسها.'));
+    if (tree) section.append(el('p', 'hint', 'الترتيب والشريط من شجرة هذا البطل: ملاءمة كل تعزيز من 100 قبل أي اختيار، وتتغير في نافذة اللعب مع كل تعزيز تأخذه. اضغط التعزيز ليظهر السبب وحرف المحرك.'));
+    else section.append(el('p', 'hint', 'الحرف كما في F7، من مبارياتنا (20%) ونِسب هذا البطل في AramHex وARAMKit (80%): S الأفضل و C الأضعف بين تعزيزات الندرة نفسها.'));
     body.push(section, aiPanel(p, iconButton, ranking)); // our games feed the calculator; they are not shown as a list
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitOffer, heldLine, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -73,5 +73,25 @@ describe('bundled trees', () => {
     const before = fitOffer(k, [1156, 2127, 3118]);
     const after = fitOffer(k, [1156, 2127, 3118], [1030]);
     expect(after.find((r) => r.id === 1156)!.pct).toBeGreaterThan(before.find((r) => r.id === 1156)!.pct);
+  });
+});
+
+describe('fit bar value', () => {
+  it('moves with the picks and stays within 0-100', () => {
+    expect(fitPercent(tree, 3)).toBe(50);
+    expect(fitPercent(tree, 3, [5])).toBe(70);
+    expect(fitPercent(tree, 2, [1])).toBe(50 + LINE_STEP);
+    expect(fitPercent({ ...tree, after: [[5, 3, 90, 'big']] }, 3, [5])).toBe(100);
+    expect(fitPercent({ ...tree, after: [[5, 3, -90, 'trap']] }, 3, [5])).toBe(0);
+  });
+});
+
+describe('tree only in Mayhem', () => {
+  it('Arena and other modes get no tree', () => {
+    const trees = { 1: tree };
+    expect(treeFor(trees, 'mayhem', 1)).toBe(tree);
+    expect(treeFor(trees, 'arena', 1)).toBeUndefined();
+    expect(treeFor(trees, 'aram', 1)).toBeUndefined();
+    expect(treeFor(trees, 'mayhem', undefined)).toBeUndefined();
   });
 });

@@ -20,7 +20,7 @@ import type { AugmentEffect, AugmentValue, ExperimentalBuild, GameTeams, Overlay
 import type { PickSnapshot } from '../main/pickLog.js';
 import { adviceNodes, AI_HINT, AI_LOADING, EXPERIMENTAL_TITLE, experimentalHint, WHY_AR } from './aiAdvice.js';
 import { RARITY_LABEL } from './augmentsView.js';
-import { byId, el, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, stackInput, withTooltip, type Describable } from './dom.js';
+import { byId, el, fitBar, getFlashKey, getNameLang, icon, isError, MODE_TITLE, pct, pills, shownName, stackInput, withTooltip, type Describable } from './dom.js';
 import { filterAugments, findOfferMatches } from './search.js';
 import { applyRandomTheme } from './theme.js';
 import { progressRequests } from './progressRequests.js';
@@ -30,8 +30,9 @@ import { gameLiftLine, OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type O
 import { GAME_LIFT } from '../ai/gameLift.js';
 import { FIXED_ABILITY_KEY, needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 import { destinyOptions } from './destinyOptions.js';
-import { fitOffer, heldLine } from '../app/augmentTree.js';
+import { fitOffer, fitPercent, heldLine, treeFor } from '../app/augmentTree.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
+import { keyedTo, readFor } from './championKeyed.js';
 
 applyRandomTheme(); // colours only: the overlay hides the background art
 const search = byId<HTMLInputElement>('ov-search');
@@ -77,7 +78,8 @@ let effects = new Map<number, AugmentEffect>();
 /** What each augment adds to this champion in the open data, in points. */
 let openPoints = new Map<number, number>();
 /** The Chinese server's win rate for this champion with each augment, and its games. */
-let openWin = new Map<number, { win: number; games: number }>();
+let openWin = keyedTo<{ win: number; games: number }>();
+const winOf = (id: number) => readFor(openWin, data?.champion?.id, id);
 /** How much more this champion's players take each augment than all players do; winning plays no part. */
 const mechOf = (a: { id: number; ids?: number[] }) => AUGMENT_MECHANICS.find((m) => (a.ids ?? [a.id]).includes(m.id));
 const NO_MECH: Mechanic = { id: -1, name: '', gives: [], scales: [], converts: [], relies: [], needs: [], note: '' };
@@ -369,7 +371,12 @@ function render() {
     const chain = trial && !picked.has(a.id) ? healthChain(pickedMechs.map((m) => m.id), mechOf(a)?.id) : 0;
     return (effects.get(a.id)?.points ?? 0) + outsidePoints(openPoints.get(a.id), a.tierLabel) + FIT_POINTS * kit + nextToPicked(linksOf(a).reduce((s, l) => s + l.strength, 0) + chain, f && f.games >= FIT_GAMES ? f.lift : undefined, trial);
   };
-  const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : score(a));
+  // Owner 2026-11-26: with a tree for this champion, its fit (moving with the picks) orders the list and fills the bar; the engine's
+  // letter and reasons stay in the tooltip.
+  const tree = treeFor(AUGMENT_TREES, data.mode, data.champion?.id);
+  const held = [...picked];
+  const treeFit = (a: OverlayData['augments'][number]) => (tree ? fitPercent(tree, a.id, held) : 0);
+  const fits = (a: OverlayData['augments'][number]) => (picked.has(a.id) ? Infinity : tree ? treeFit(a) : score(a));
   const pool = data.mode === 'mayhem' ? playedOnly(data.augments, effects, picked) : data.augments;
   const grades = gradesFor(pool, score);
   const places = mathPlaces(pool);
@@ -377,7 +384,7 @@ function render() {
   const groups = (Object.keys(RARITY_LABEL) as (keyof typeof RARITY_LABEL)[]).filter((r) => shownRarity === 'all' || r === shownRarity).flatMap((rarity) => {
     const list = all
       .filter((a) => a.rarity === rarity)
-      .sort((x, y) => (effects.size || picked.size ? fits(y) - fits(x) || 0 : 0) || rated(x) - rated(y) || (x.rank ?? 0) - (y.rank ?? 0) || shownName(x).localeCompare(shownName(y), getNameLang()));
+      .sort((x, y) => (tree || effects.size || picked.size ? fits(y) - fits(x) || 0 : 0) || rated(x) - rated(y) || (x.rank ?? 0) - (y.rank ?? 0) || shownName(x).localeCompare(shownName(y), getNameLang()));
     if (!list.length) return [];
     return [el('h3', `ov-group r-${rarity}`, RARITY_LABEL[rarity]), ...list.map(row)];
   });
@@ -415,7 +422,7 @@ function render() {
         ...(compat === undefined ? [] : [`ترتيب نسبي بين ${isOpen(a.id) ? 'المشروطة من ' : ''}نفس الندرة ${compat}%: ${mathWords(a.id)}. ليس احتمال فوز أو نسبة توافق مثبتة.${isOpen(a.id) ? ` مشروطة: ${cardMath.get(a.id)!.open.join('، ')}؛ القيمة إن تحقق الشرط.` : ''}`]),
         ...(onLine ? [lineText(onLine)] : []),
         ...(e ? [`أثره على فوز الفريق: ${e.points.toFixed(1)} نقطة من ${e.games} لاعباً في مبارياتنا.`] : []),
-        ...(openWin.has(a.id) ? [`فوزه مع هذا البطل في السيرفر الصيني: ${(100 * openWin.get(a.id)!.win).toFixed(1)}% من ${openWin.get(a.id)!.games.toLocaleString('en')} مباراة.`] : []),
+        ...(winOf(a.id) ? [`فوزه مع هذا البطل في السيرفر الصيني: ${(100 * winOf(a.id)!.win).toFixed(1)}% من ${winOf(a.id)!.games.toLocaleString('en')} مباراة.`] : []),
         ...(openPoints.has(a.id) ? [`مع هذا البطل في AramHex وARAMKit: ${openPoints.get(a.id)!.toFixed(1)} نقطة.`] : a.tierLabel ? [`تقييم الموقع لهذا البطل: ${a.tierLabel}.`] : []),
         ...(f && f.games >= FIT_GAMES ? [`مع اختياراتك: ${Math.round(100 * f.lift)}% من ${f.games} لاعباً.`] : []),
         ...(kit?.reasons ?? []),
@@ -425,10 +432,22 @@ function render() {
       const letter = known ? (grades.get(a.id) ?? '–') : '–';
       const grade = el('span', `ov-grade g-${letter}`, letter);
       grade.title = why.join('\n');
-      // The letter comes last, against the row's end, so the letters of all rows line up.
-      if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
-      if (compat !== undefined) tags.append(el('span', 'ov-mech', `${clashes.length ? '⚠ ' : ''}${compat}%${isOpen(a.id) ? ' مشروط' : ''}`));
-      tags.append(grade);
+      if (tree) {
+        const bar = fitBar(treeFit(a));
+        bar.title = [`الشجرة: ${tree.a[a.id]?.[1] ?? 'ليست في شجرة بطلك: درجتها محايدة 50.'}`, `المحرك: ${letter}`, ...why].join('\n');
+        if (clashes.length) tags.append(el('span', 'ov-mech', '⚠'));
+        if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
+        if (isOpen(a.id)) tags.append(el('span', 'ov-mech', 'مشروط'));
+        // Owner 2026-11-26: the win rate with this champion beside the bar (Chinese server data), small; the bar stays the fit.
+        const win = winOf(a.id);
+        if (win) tags.append(el('small', 'fit-win', `${(100 * win.win).toFixed(1)}% فوز`));
+        tags.append(bar);
+      } else {
+        // The letter comes last, against the row's end, so the letters of all rows line up.
+        if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
+        if (compat !== undefined) tags.append(el('span', 'ov-mech', `${clashes.length ? '⚠ ' : ''}${compat}%${isOpen(a.id) ? ' مشروط' : ''}`));
+        tags.append(grade);
+      }
       r.append(tags);
       const on = picked.has(a.id);
       r.append(el('span', `ov-pick${on ? ' on' : ''}`, on ? '✓' : '+'));
@@ -692,14 +711,16 @@ function offerSection(): HTMLElement {
         const a = cardOf.get(f.id)!;
         const r = el('div', 'ov-adapted-row');
         const txt = el('div', 'ov-name');
-        txt.append(el('b', '', `${shownName(a)} · ملاءمة ${f.pct}%`));
+        const head = el('div', 'ov-tree-head');
+        head.append(el('b', '', shownName(a)), fitBar(fitPercent(tree, f.id, held)), el('small', '', `بين المعروضة ${f.pct}%`));
+        txt.append(head);
         txt.append(el('small', f.why ? '' : 'missing', f.why ?? 'ليست في شجرة بطلك: درجتها محايدة 50.'));
         if (f.because.length) txt.append(el('small', '', `مع ما اخترته: ${f.because.join(' · ')}`));
         if (f.lines.length) txt.append(el('small', '', `الخط: ${f.lines.join('، ')}`));
         r.append(ic(a), txt, pill('اخترته', () => choose(a)), pill('✕', () => drop(a), 'pill ghost'));
         box.append(r);
       }
-      lead.push(box, el('p', 'hint', 'النسبة هنا ملاءمة البطاقة لبطلك ولما اخترته، بين البطاقات المعروضة فقط، وليست احتمال فوز.'));
+      lead.push(box, el('p', 'hint', 'الشريط ملاءمة البطاقة لبطلك ولما اخترته، من 100. و«بين المعروضة» حصتها بين البطاقات المعروضة فقط. ولا هذا ولا ذاك احتمال فوز.'));
     }
   }
   let engine: HTMLElement = rows;
@@ -1299,7 +1320,7 @@ async function load() {
     if (id !== loadId) return;
     if (!isError(r)) effects = new Map(r.map((x) => [x.id, x]));
     openPoints = new Map(isError(o) ? [] : o.map((x) => [x.id, x.points]));
-    openWin = new Map(isError(o) ? [] : o.flatMap((x) => (x.win === undefined || x.games === undefined ? [] : [[x.id, { win: x.win, games: x.games }]])));
+    openWin = keyedTo(reply.champion?.id, new Map(isError(o) ? [] : o.flatMap((x) => (x.win === undefined || x.games === undefined ? [] : [[x.id, { win: x.win, games: x.games }]]))));
     render();
   }
 }
