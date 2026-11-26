@@ -34,10 +34,10 @@ export interface TreeFit {
 
 /** The enemy team as the tree reads it (owner 2026-11-27 «قواعد من النص بوزن صغير»): how many of the five are frontline tanks and how many
  *  rely on crowd control, from their kits. */
-export interface EnemyCounts { tanks: number; cc: number }
+export interface EnemyCounts { tanks: number; cc: number; magic?: number; healers?: number }
 export const enemyCounts = (kits: readonly { id: number; traits: string[]; relies: string[] }[], foes: number[]): EnemyCounts => {
   const of = foes.map((id) => kits.find((k) => k.id === id)).filter((k): k is NonNullable<typeof k> => !!k);
-  return { tanks: of.filter((k) => k.traits.includes('frontline')).length, cc: of.filter((k) => k.relies.includes('crowd_control')).length };
+  return { tanks: of.filter((k) => k.traits.includes('frontline')).length, cc: of.filter((k) => k.relies.includes('crowd_control')).length, magic: of.filter((k) => (k as { damage?: string }).damage === 'magic').length, healers: of.filter((k) => k.relies.includes('healing')).length };
 };
 /** Text-read card classes (knowledge/tree-trial/measure/enemy-classes.mjs, hand-checked): with 3+ such enemies each class gets ENEMY_STEP.
  *  A small weight by the owner's choice: the games show enemy effects are small (measure/enemy-rules.mjs), so this is an assumption to measure. */
@@ -60,7 +60,7 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
     const off = committed && mine.length && !mine.some((l) => heldPerLine.has(l)) ? -OFF_LINE : 0;
     const rules = tree.after.filter(([h, b]) => b === id && held.includes(h));
     const after = rules.reduce((s, r) => s + r[2], 0);
-    const foes = enemy ? ENEMY_RULES.filter((r) => enemy[r.feat] >= 3 && r.ids.has(id)) : [];
+    const foes = enemy ? ENEMY_RULES.filter((r) => (enemy[r.feat] ?? 0) >= 3 && r.ids.has(id)) : [];
     return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length, pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why)], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
   });
   if (!rows.length) return rows;
@@ -88,4 +88,31 @@ export function heldLine(tree: CompactTree, held: number[]): { name: string; why
   const best = [...count].sort((x, y) => y[1] - x[1] || x[0] - y[0])[0];
   const l = best && tree.lines[best[0]];
   return l ? { name: l[0], why: l[1], items: l[2] } : undefined;
+}
+
+/** Owner 2026-11-27 «اكمل»: the tree line's items answer the enemy team with one swap per need, from the end of the list (boots and the
+ *  first items stay): anti-heal against 2+ healers, penetration against 3+ tanks, magic resist against 3+ magic damage dealers. The item
+ *  for each need follows his own damage (magic, physical, or a frontline tank) and whether the line already crits. */
+const CRIT = new Set(['Infinity Edge', 'Navori Flickerblade', "Yun Tal Wildarrows", 'Phantom Dancer', 'Statikk Shiv', 'Essence Reaver', 'The Collector', 'Rapid Firecannon', 'Bloodthirster']);
+const BOOTS = /Boots|Greaves|Treads|Steelcaps|Shoes|Swiftness|Lucidity|Symbiotic|Synchronized|Gunmetal|Crimson|Spellslinger|Armored Advance|Chainlaced|Forever Forward/;
+export interface ItemSwap { out: string; in: string; why: string }
+export function adaptItems(items: string[], me: { damage: string; frontline: boolean }, enemy?: EnemyCounts): { items: string[]; swaps: ItemSwap[] } {
+  const out = [...items], swaps: ItemSwap[] = [];
+  if (!enemy) return { items: out, swaps };
+  const magic = me.damage === 'magic', crit = items.some((i) => CRIT.has(i));
+  const needs: [boolean, string, string][] = [
+    [(enemy.healers ?? 0) >= 2, magic ? 'Morellonomicon' : me.frontline ? 'Thornmail' : crit ? 'Mortal Reminder' : 'Chempunk Chainsword', 'في فريق الخصم معالجون: غرض يقطع العلاج.'],
+    [enemy.tanks >= 3, magic ? 'Void Staff' : me.frontline ? 'Black Cleaver' : crit ? "Lord Dominik's Regards" : "Serylda's Grudge", 'أمامك 3 مدرّعين أو أكثر: غرض اختراق.'],
+    [(enemy.magic ?? 0) >= 3, me.frontline ? 'Force of Nature' : magic ? "Banshee's Veil" : 'Maw of Malmortius', '3 من الخصوم أو أكثر ضررهم سحري: غرض مقاومة سحر.'],
+  ];
+  let slot = out.length - 1;
+  for (const [need, item, why] of needs) {
+    if (!need || out.includes(item)) continue;
+    while (slot >= 2 && (BOOTS.test(out[slot]) || swaps.some((s) => s.in === out[slot]))) slot--;
+    if (slot < 2) break;
+    swaps.push({ out: out[slot], in: item, why });
+    out[slot] = item;
+    slot--;
+  }
+  return { items: out, swaps };
 }

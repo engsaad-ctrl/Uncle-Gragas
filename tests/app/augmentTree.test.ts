@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildLine, enemyCounts, ENEMY_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, buildLine, enemyCounts, ENEMY_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -109,8 +109,8 @@ describe('enemy rules', () => {
   const kits = [1, 2, 3, 4, 5].map((id) => ({ id, traits: id <= 3 ? ['frontline'] : [], relies: id >= 4 ? ['crowd_control'] : [] }));
   const t: CompactTree = { lines: [], a: { 3150: [50, 'storm', []], 1001: [50, 'titan', []], 9: [50, 'plain', []] }, after: [] };
   it('counts tanks and crowd control from the enemy kits', () => {
-    expect(enemyCounts(kits, [1, 2, 3, 4, 5])).toEqual({ tanks: 3, cc: 2 });
-    expect(enemyCounts(kits, [1, 99])).toEqual({ tanks: 1, cc: 0 });
+    expect(enemyCounts(kits, [1, 2, 3, 4, 5])).toEqual({ tanks: 3, cc: 2, magic: 0, healers: 0 });
+    expect(enemyCounts(kits, [1, 99])).toEqual({ tanks: 1, cc: 0, magic: 0, healers: 0 });
   });
   it('raises a tank-buster only against 3+ tanks, and says why', () => {
     expect(fitPercent(t, 3150, [], { tanks: 3, cc: 0 })).toBe(50 + ENEMY_STEP);
@@ -118,5 +118,23 @@ describe('enemy rules', () => {
     expect(fitPercent(t, 9, [], { tanks: 5, cc: 5 })).toBe(50);
     expect(fitOffer(t, [1001], [], { tanks: 0, cc: 3 })[0].because).toHaveLength(1);
     expect(fitPercent(t, 3150)).toBe(50);
+  });
+});
+
+describe('item swaps for the enemy team', () => {
+  const line = ['Luden\'s Echo', 'Sorcerer\'s Shoes', 'Shadowflame', 'Rabadon\'s Deathcap', 'Zhonya\'s Hourglass', 'Liandry\'s Torment'];
+  it('changes nothing without an enemy team or need', () => {
+    expect(adaptItems(line, { damage: 'magic', frontline: false }).swaps).toEqual([]);
+    expect(adaptItems(line, { damage: 'magic', frontline: false }, { tanks: 1, cc: 0, magic: 1, healers: 0 }).items).toEqual(line);
+  });
+  it('swaps from the end, keeps boots and the first two, once per need', () => {
+    const r = adaptItems(line, { damage: 'magic', frontline: false }, { tanks: 3, cc: 0, magic: 3, healers: 2 });
+    expect(r.swaps.map((s) => s.in)).toEqual(['Morellonomicon', 'Void Staff', "Banshee's Veil"]);
+    expect(r.items.slice(0, 2)).toEqual(line.slice(0, 2));
+    expect(r.items).toContain("Sorcerer's Shoes");
+  });
+  it('picks by his damage and skips an item already held', () => {
+    expect(adaptItems(['Infinity Edge', 'Berserker\'s Greaves', 'Lord Dominik\'s Regards', 'X'], { damage: 'physical', frontline: false }, { tanks: 4, cc: 0 }).swaps).toEqual([]);
+    expect(adaptItems(['A', 'B', 'C', 'D'], { damage: 'physical', frontline: true }, { tanks: 0, cc: 0, healers: 3 }).items[3]).toBe('Thornmail');
   });
 });

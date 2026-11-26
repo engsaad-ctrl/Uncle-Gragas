@@ -30,7 +30,7 @@ import { gameLiftLine, OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type O
 import { GAME_LIFT } from '../ai/gameLift.js';
 import { FIXED_ABILITY_KEY, needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 import { destinyOptions } from './destinyOptions.js';
-import { buildLine, enemyCounts, fitOffer, fitPercent, heldLine, treeFor, type EnemyCounts } from '../app/augmentTree.js';
+import { adaptItems, buildLine, enemyCounts, fitOffer, fitPercent, heldLine, treeFor, type EnemyCounts } from '../app/augmentTree.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
 import { keyedTo, readFor } from './championKeyed.js';
 
@@ -1005,9 +1005,12 @@ function treeBuildSection(): HTMLElement | null {
   const line = tree && buildLine(tree, [...picked]);
   if (!line) return null;
   const pool = [...(d.items ?? []), ...(d.boots ?? [])];
+  const kit = CHAMPION_KITS.find((k) => k.id === d.champion?.id);
+  const { items, swaps } = adaptItems(line.items, { damage: kit?.damage ?? 'mixed', frontline: !!kit?.traits.includes('frontline') }, foes);
   const row = el('div', 'ov-tree-items');
-  row.append(...line.items.map((n) => { const it = pool.find((i) => i.enName === n); return it ? ic(it) : el('span', 'missing', n); }));
-  return section(`بناء الشجرة: ${line.name}`, el('p', 'hint', `${picked.size ? '' : 'قبل أي تعزيز: الخط الأول في شجرة بطلك. '}${line.why}`), row);
+  row.append(...items.map((n) => { const it = pool.find((i) => i.enName === n); return it ? ic(it) : el('span', 'missing', n); }));
+  const notes = swaps.map((s) => el('p', 'hint', `${s.why} ${s.in} بدل ${s.out}.`));
+  return section(`بناء الشجرة: ${line.name}`, el('p', 'hint', `${picked.size ? '' : 'قبل أي تعزيز: الخط الأول في شجرة بطلك. '}${line.why}`), row, ...notes);
 }
 
 function adaptedSection(): HTMLElement[] {
