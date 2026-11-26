@@ -33,6 +33,10 @@ import { destinyOptions } from './destinyOptions.js';
 import { adaptItems, buildLine, enemyCounts, fitOffer, fitPercent, heldLine, treeFor, type EnemyCounts } from '../app/augmentTree.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
 import { keyedTo, readFor } from './championKeyed.js';
+import { AUGMENT_WINS } from '../ai/augmentWinsData.js';
+// Owner 2026-11-27 «نسبة الفوز للتعزيز بشكل عام»: the augment's win rate over every champion in our games, beside the fit bar.
+const winAll = (a: { id: number; ids?: number[] }) => [a.id, ...(a.ids ?? [])].map((i) => AUGMENT_WINS[i]).find(Boolean);
+const winTag = (a: { id: number; ids?: number[] }) => { const w = winAll(a); return w ? [el('small', 'fit-win', `${w[0]}% فوز`)] : []; };
 
 applyRandomTheme(); // colours only: the overlay hides the background art
 const search = byId<HTMLInputElement>('ov-search');
@@ -438,7 +442,7 @@ function render() {
         const bar = fitBar(treeFit(a));
         // Owner 2026-11-27 «فقط يظهر لي الشجرة المرنه»: the tree's reason alone; the engine's letter, reasons and badges are not shown.
         bar.title = tree.a[a.id]?.[1] ?? 'ليست في شجرة بطلك: درجتها محايدة 50.';
-        tags.append(bar);
+        tags.append(...winTag(a), bar);
       } else {
         // The letter comes last, against the row's end, so the letters of all rows line up.
         if (links.length) tags.append(el('span', 'ov-mech', '⚙ يتكامل'));
@@ -709,7 +713,7 @@ function offerSection(): HTMLElement {
         const r = el('div', 'ov-adapted-row');
         const txt = el('div', 'ov-name');
         const head = el('div', 'ov-tree-head');
-        head.append(el('b', '', shownName(a)), fitBar(fitPercent(tree, f.id, held, foes))); // owner 2026-11-27: one number, one bar
+        head.append(el('b', '', shownName(a)), fitBar(fitPercent(tree, f.id, held, foes)), ...winTag(a));
         txt.append(head);
         txt.append(el('small', f.why ? '' : 'missing', f.why ?? 'ليست في شجرة بطلك: درجتها محايدة 50.'));
         if (f.because.length) txt.append(el('small', '', `مع ما اخترته: ${f.because.join(' · ')}`));
@@ -1207,12 +1211,13 @@ function renderBuild(p?: ChampionPage) {
   const out: HTMLElement[] = [];
   const mayhem = data?.mode === 'mayhem';
   const treeBuild = mayhem && data?.champion ? treeBuildSection() : null;
-  if (mayhem && data?.champion) out.push(...(treeBuild ? [treeBuild] : adaptedSection()), fold('ai', 'بناء الذكاء الاصطناعي (اختياري)', aiSection()));
+  // Owner 2026-11-27 «مابي تشتت»: with a tree, its one build is the only build shown (no AI or site build beside it).
+  if (mayhem && data?.champion) out.push(...(treeBuild ? [treeBuild] : [...adaptedSection(), fold('ai', 'بناء الذكاء الاصطناعي (اختياري)', aiSection())]));
   if (p?.buildError) out.push(el('p', mayhem ? 'hint' : 'missing', mayhem ? `بناء الموقع غير متاح: ${p.buildError}` : p.buildError));
   else if (p) {
     const stats = p.stats && el('p', 'en', `نسبة الفوز ${pct(p.stats.winRate)} · ${p.stats.games.toLocaleString('en')} مباراة`);
     const items = baseItems(p);
-    if (mayhem) {
+    if (mayhem && treeBuild) { /* one build only: the tree's */ } else if (mayhem) {
       // Without the site's Mayhem build the ARAM one is shown: say so, or it looks like a wrong mode.
       out.push(fold('site', 'البناء المعتاد للموقع',
         el('p', 'hint', p.siteBuild ? 'ما يشتريه لاعبو البطل عادةً، ولا يتغير بتعزيزاتك؛ ليس حساب المحرك.' : 'لا يتوفر بناء خاص بهذا الطور الآن، فهذا أقرب بناء متاح، وليس حساب المحرك.'),

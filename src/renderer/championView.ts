@@ -13,6 +13,7 @@ import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
 import { buildLine } from '../app/augmentTree.js';
+import { AUGMENT_WINS } from '../ai/augmentWinsData.js';
 
 const MODES: [PageMode, string][] = [
   ['ranked', 'Ranked'], ['flex', 'Flex'], ['aram', 'ARAM'], ['mayhem', 'ARAM Mayhem'],
@@ -183,7 +184,7 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
   void drawTree();
   let engineBox: HTMLElement[] = [engineTitle, stackBox, engineEl];
   if (tree) engineBox = []; // owner 2026-11-27: only the tree shows
-  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, treeEl, ...engineBox, box);
+  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, treeEl, ...engineBox, ...(tree ? [] : [box]));
   return s;
 }
 
@@ -286,6 +287,9 @@ function renderPage(p: ChampionPage): HTMLElement[] {
               const chip = augmentChip(a, false, () => detail.show(a, { tags: tags(), className: `r-${a.rarity}`, missing: AUGMENT_MISSING }));
               chip.querySelector('small.mode')?.remove();
               chip.append(fitBar(treeBase(a)));
+              // Owner 2026-11-27 «نسبة الفوز للتعزيز بشكل عام»: the augment's win rate over every champion in our games, beside the fit bar.
+              const gw = [a.id, ...((a as { ids?: number[] }).ids ?? [])].map((i) => AUGMENT_WINS[i]).find(Boolean);
+              if (gw) chip.append(el('small', 'fit-win', `${gw[0]}% فوز`));
               return stagger(chip, i);
             }
             const site = a as RatedAugment;
@@ -410,7 +414,8 @@ function renderPage(p: ChampionPage): HTMLElement[] {
     slot('خيارات الأيتم الخامس', p.fifth),
     slot('خيارات الأيتم السادس', p.sixth),
   ].filter((s): s is HTMLElement => s !== null);
-  if (slots.length) {
+  // Owner 2026-11-27 «مابي تشتت»: for a Mayhem champion with a tree, the tree's build is the only build (no site item rows).
+  if (slots.length && !(p.mode === 'mayhem' && AUGMENT_TREES[String(c.id)])) {
     items.append(...slots);
     body.push(items);
   }
