@@ -438,9 +438,6 @@ function render() {
         const bar = fitBar(treeFit(a));
         // Owner 2026-11-27 «فقط يظهر لي الشجرة المرنه»: the tree's reason alone; the engine's letter, reasons and badges are not shown.
         bar.title = tree.a[a.id]?.[1] ?? 'ليست في شجرة بطلك: درجتها محايدة 50.';
-        // Owner 2026-11-26: the win rate with this champion beside the bar (Chinese server data), small; the bar stays the fit.
-        const win = winOf(a.id);
-        if (win) tags.append(el('small', 'fit-win', `${(100 * win.win).toFixed(1)}% فوز`));
         tags.append(bar);
       } else {
         // The letter comes last, against the row's end, so the letters of all rows line up.
@@ -712,7 +709,7 @@ function offerSection(): HTMLElement {
         const r = el('div', 'ov-adapted-row');
         const txt = el('div', 'ov-name');
         const head = el('div', 'ov-tree-head');
-        head.append(el('b', '', shownName(a)), fitBar(fitPercent(tree, f.id, held, foes)), el('small', '', `بين المعروضة ${f.pct}%`));
+        head.append(el('b', '', shownName(a)), fitBar(fitPercent(tree, f.id, held, foes))); // owner 2026-11-27: one number, one bar
         txt.append(head);
         txt.append(el('small', f.why ? '' : 'missing', f.why ?? 'ليست في شجرة بطلك: درجتها محايدة 50.'));
         if (f.because.length) txt.append(el('small', '', `مع ما اخترته: ${f.because.join(' · ')}`));
@@ -720,7 +717,7 @@ function offerSection(): HTMLElement {
         r.append(ic(a), txt, pill('اخترته', () => choose(a)), pill('✕', () => drop(a), 'pill ghost'));
         box.append(r);
       }
-      lead.push(box, el('p', 'hint', 'الشريط ملاءمة البطاقة لبطلك ولما اخترته، من 100. و«بين المعروضة» حصتها بين البطاقات المعروضة فقط. ولا هذا ولا ذاك احتمال فوز.'));
+      lead.push(box, el('p', 'hint', 'الشريط رقم واحد من 100 يجمع الشجرة ونتائج مبارياتنا واختيارات صنّاع المحتوى، لبطلك ولما اخترته. ليس احتمال فوز.'));
     }
   }
   if (offer.size) openFolds.add('offer');
