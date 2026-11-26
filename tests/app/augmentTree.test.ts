@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -147,5 +147,16 @@ describe('stat stacking (T270)', () => {
     expect(fitPercent(t, 1030, [1097, 1098])).toBe(50 + 2 * STAT_STEP);
     expect(fitPercent(t, 9, [1097])).toBe(50);
     expect(fitOffer(t, [1030], [1097])[0].because.at(-1)).toContain('AP');
+  });
+});
+
+describe('items a held card asks for', () => {
+  it('reads needs_item and quest tags and puts the item in, before enemy swaps', () => {
+    const need = neededItems([{ ids: [1320], name: 'Upgrade Collector' }, { ids: [9], name: 'Plain' }]);
+    expect(need).toEqual([{ card: 'Upgrade Collector', items: ['The Collector'] }]);
+    const r = adaptItems(['A', 'B', 'C', 'D', 'E', 'F'], { damage: 'physical', frontline: false }, { tanks: 3, cc: 0 }, need);
+    expect(r.items[5]).toBe('The Collector');
+    expect(r.swaps[0].why).toContain('Upgrade Collector');
+    expect(adaptItems(['The Collector', 'B'], { damage: 'physical', frontline: false }, undefined, need).swaps).toEqual([]);
   });
 });

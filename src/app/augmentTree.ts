@@ -107,8 +107,28 @@ export function heldLine(tree: CompactTree, held: number[]): { name: string; why
 const CRIT = new Set(['Infinity Edge', 'Navori Flickerblade', "Yun Tal Wildarrows", 'Phantom Dancer', 'Statikk Shiv', 'Essence Reaver', 'The Collector', 'Rapid Firecannon', 'Bloodthirster']);
 const BOOTS = /Boots|Greaves|Treads|Steelcaps|Shoes|Swiftness|Lucidity|Symbiotic|Synchronized|Gunmetal|Crimson|Spellslinger|Armored Advance|Chainlaced|Forever Forward/;
 export interface ItemSwap { out: string; in: string; why: string }
-export function adaptItems(items: string[], me: { damage: string; frontline: boolean }, enemy?: EnemyCounts): { items: string[]; swaps: ItemSwap[] } {
+/** Items a held card asks for (owner 2026-11-27 «نعم، أضفه»): its needs_item and quest tags (src/ai/augmentTags.ts); any one of a card's
+ *  items answers it. held: each held card's ids (twins) and name. */
+export function neededItems(held: { ids: number[]; name: string }[]): { card: string; items: string[] }[] {
+  return held.flatMap((h) => {
+    const tags = h.ids.flatMap((id) => AUGMENT_TAGS[id]?.tags ?? []);
+    const items = [...new Set(tags.flatMap((t) => (t.startsWith('needs_item:') ? [t.slice(11)] : t.startsWith('quest:') ? t.slice(6).split('|') : [])))];
+    return items.length ? [{ card: h.name, items }] : [];
+  });
+}
+
+export function adaptItems(items: string[], me: { damage: string; frontline: boolean }, enemy?: EnemyCounts, need: { card: string; items: string[] }[] = []): { items: string[]; swaps: ItemSwap[] } {
   const out = [...items], swaps: ItemSwap[] = [];
+  let slot = out.length - 1;
+  // A held card's own item comes first: it is the card's point (an upgrade, a quest).
+  for (const n of need) {
+    if (n.items.some((i) => out.includes(i))) continue;
+    while (slot >= 1 && BOOTS.test(out[slot])) slot--;
+    if (slot < 1) break;
+    swaps.push({ out: out[slot], in: n.items[0], why: `تعزيز ${n.card} يحتاج ${n.items.join(' أو ')}.` });
+    out[slot] = n.items[0];
+    slot--;
+  }
   if (!enemy) return { items: out, swaps };
   const magic = me.damage === 'magic', crit = items.some((i) => CRIT.has(i));
   const needs: [boolean, string, string][] = [
@@ -116,7 +136,6 @@ export function adaptItems(items: string[], me: { damage: string; frontline: boo
     [enemy.tanks >= 3, magic ? 'Void Staff' : me.frontline ? 'Black Cleaver' : crit ? "Lord Dominik's Regards" : "Serylda's Grudge", 'أمامك 3 مدرّعين أو أكثر: غرض اختراق.'],
     [(enemy.magic ?? 0) >= 3, me.frontline ? 'Force of Nature' : magic ? "Banshee's Veil" : 'Maw of Malmortius', '3 من الخصوم أو أكثر ضررهم سحري: غرض مقاومة سحر.'],
   ];
-  let slot = out.length - 1;
   for (const [need, item, why] of needs) {
     if (!need || out.includes(item)) continue;
     while (slot >= 2 && (BOOTS.test(out[slot]) || swaps.some((s) => s.in === out[slot]))) slot--;
