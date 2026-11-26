@@ -47,4 +47,5 @@ contextBridge.exposeInMainWorld('lolh', {
   pickDeclare: (game, championId) => ipcRenderer.invoke('picks:declare', game, championId),
   pickLog: (game, championId, wait) => ipcRenderer.invoke('picks:get', game, championId, wait === true),
   setWebPage: (on) => ipcRenderer.invoke('web:enabled', on === true),
+  allowPhoneFirewall: () => ipcRenderer.invoke('web:firewall'),
 });

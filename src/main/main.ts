@@ -4,6 +4,7 @@ import { lanAddress, WEB_PORT, webServer, type Handler } from './webPage.js';
 import { readFile, writeFile } from 'node:fs/promises';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
+import { execFile } from 'node:child_process';
 import { applyAll, toPayloads } from '../lcu/apply.js';
 import { findClient, lcuCaller, lcuGetter } from '../lcu/client.js';
 import { mayhemAugmentCheck } from '../lcu/diagnostics.js';
@@ -371,6 +372,24 @@ handle('web:enabled', (_e, on: unknown) =>
     server.on('error', (err) => logError('web', err));
     web = server;
     return { url: `http://${ip}:${WEB_PORT}/?k=${await webKey()}` };
+  }),
+);
+// A friend's phone could not open the page (owner 2026-11-27): the old hint said to pick private networks in Windows' firewall prompt, but a
+// home network often counts as public, and a cancelled prompt leaves a block rule that beats any allow. One elevated netsh run (Windows asks
+// first) drops this app's inbound rules and allows it, and its port, on every network type. Never served to the phone (not in WEB_CHANNELS).
+handle('web:firewall', () =>
+  reply(async () => {
+    if (process.platform !== 'win32') return { ok: false };
+    const exe = process.execPath;
+    const rule = (s: string) => `netsh advfirewall firewall ${s}`;
+    const cmd = [
+      rule('delete rule name="uncle gragas.exe" dir=in'), rule('delete rule name="Uncle Gragas phone" dir=in'), rule('delete rule name="Uncle Gragas phone port" dir=in'),
+      rule(`add rule name="Uncle Gragas phone" dir=in action=allow program="${exe}" enable=yes profile=any`),
+      rule(`add rule name="Uncle Gragas phone port" dir=in action=allow protocol=TCP localport=${WEB_PORT} profile=any`),
+    ].join(' & ');
+    // shortcut: Start-Process gives no exit code of the elevated cmd; a declined UAC prompt is the only failure reported.
+    await new Promise<void>((ok, fail) => execFile('powershell.exe', ['-NoProfile', '-Command', `Start-Process cmd -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList '/c ${cmd.replace(/'/g, "''")}'`], (err) => (err ? fail(new Error('لم يُسمح بالتغيير (رُفض طلب ويندوز).')) : ok())));
+    return { ok: true };
   }),
 );
 const updates = appUpdater(() => mainWindow);

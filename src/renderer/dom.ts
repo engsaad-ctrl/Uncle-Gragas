@@ -78,6 +78,9 @@ declare global {
       pickLog(game: number, championId: number, wait?: boolean): Promise<Reply<PickSnapshot | null>>;
       /** F7 on the phone: starts or stops the page; its link (with the access key) while on. */
       setWebPage(on: boolean): Promise<Reply<{ url: string | null }>>;
+      /** Windows Firewall: replace any rule for this app (a block from a cancelled prompt, or one for private networks only) with an allow rule
+       *  for every network type, once, after Windows asks the player (UAC). */
+      allowPhoneFirewall(): Promise<Reply<{ ok: boolean }>>;
       updateStatus(): Promise<{ version: string; status: UpdateStatus }>;
       checkUpdate(): Promise<UpdateStatus>;
       installUpdate(): Promise<void>;

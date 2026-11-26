@@ -214,7 +214,7 @@ void window.lolh.setShareGames(storedShare()).then((offered) => {
   if (offered && !askedShare()) askShare();
 });
 // F7 on the phone (off by default): the link carries the access key, so it is shown only here.
-const WEB_HINT = 'يفتح نافذة F7 في متصفح جوالك على نفس الواي فاي. اكتب الرابط في متصفح الجوال مرة واحدة واحفظه. إن سألك ويندوز عن الجدار الناري فاختر «الشبكات الخاصة». لا تشارك الرابط: فيه رمز الدخول.';
+const WEB_HINT = 'يفتح نافذة F7 في متصفح جوالك على نفس الواي فاي. اكتب الرابط في متصفح الجوال مرة واحدة واحفظه. إن لم تفتح الصفحة في الجوال فاضغط «اسمح للجوال في جدار ويندوز» ووافق على طلب ويندوز، وتأكد أن الجوال على نفس الواي فاي لا على بيانات الجوال. لا تشارك الرابط: فيه رمز الدخول.';
 const webLink = el('p', 'hint en web-link');
 const webNote = el('p', 'hint', WEB_HINT);
 const storedWeb = () => {
@@ -230,6 +230,14 @@ const setWeb = async (on: boolean) => {
   webNote.textContent = isError(r) ? `تعذّر التشغيل: ${r.error}` : WEB_HINT;
 };
 void setWeb(storedWeb());
+const firewallButton = el('button', 'pill', 'اسمح للجوال في جدار ويندوز');
+firewallButton.type = 'button';
+firewallButton.addEventListener('click', async () => {
+  firewallButton.disabled = true;
+  const r = await window.lolh.allowPhoneFirewall();
+  firewallButton.disabled = false;
+  webNote.textContent = isError(r) ? `تعذّر: ${r.error}` : 'تم السماح في جدار ويندوز لكل أنواع الشبكات. افتح الرابط في الجوال مرة أخرى.';
+});
 function askedShare() {
   try {
     return localStorage.getItem('shareGames') !== null;
@@ -326,6 +334,7 @@ settings.append(
     }),
     webLink,
     webNote,
+    firewallButton,
   ),
   section('مفتاح Gemini (بناء Mayhem بالذكاء الاصطناعي)', aiKeyInput, aiKeySave, aiKeyNote),
   section('التشخيص', exportButton, exportNote),
