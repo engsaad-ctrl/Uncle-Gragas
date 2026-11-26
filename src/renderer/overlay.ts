@@ -30,6 +30,8 @@ import { gameLiftLine, OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type O
 import { GAME_LIFT } from '../ai/gameLift.js';
 import { FIXED_ABILITY_KEY, needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 import { destinyOptions } from './destinyOptions.js';
+import { fitOffer, heldLine } from '../app/augmentTree.js';
+import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
 
 applyRandomTheme(); // colours only: the overlay hides the background art
 const search = byId<HTMLInputElement>('ov-search');
@@ -582,6 +584,11 @@ function offerSection(): HTMLElement {
   const groupOf = (a: OverlayData['augments'][number]): OfferGroup => (percent(a) === undefined ? 'unmeasured' : isOpen(a.id) ? 'open' : 'settled');
   const groups = new Set(cards.map(groupOf));
   let lastGroup: OfferGroup | undefined;
+  const choose = (a: OverlayData['augments'][number]) => {
+    for (const id of offer) if (id !== a.id && !picked.has(id)) delete abilityTargets[id];
+    offer.clear(); comparePartialOffer = false; void toggleMark(a.id); redrawBuild();
+  };
+  const drop = (a: OverlayData['augments'][number]) => { offer.delete(a.id); comparePartialOffer = false; delete abilityTargets[a.id]; void refreshCardMath(); redrawBuild(); };
   for (const a of cards) {
     const g = groupOf(a);
     if (g !== lastGroup && (groups.size > 1 || g !== 'settled')) rows.append(el('p', 'hint ov-offer-group', OFFER_GROUP_TITLE[g]));
@@ -634,10 +641,7 @@ function offerSection(): HTMLElement {
     } else if (m?.planError) txt.append(el('small', 'missing', m.planError));
     const targetField = abilityTargetField(a);
     if (targetField) txt.append(targetField);
-    r.append(ic(a), txt, pill('اخترته', () => {
-      for (const id of offer) if (id !== a.id && !picked.has(id)) delete abilityTargets[id];
-      offer.clear(); comparePartialOffer = false; void toggleMark(a.id); redrawBuild();
-    }), pill('✕', () => { offer.delete(a.id); comparePartialOffer = false; delete abilityTargets[a.id]; void refreshCardMath(); redrawBuild(); }, 'pill ghost'));
+    r.append(ic(a), txt, pill('اخترته', () => choose(a)), pill('✕', () => drop(a), 'pill ghost'));
     rows.append(r);
   }
   const availableOffers = pool.filter((a) => !offer.has(a.id) && !picked.has(a.id));
@@ -673,9 +677,42 @@ function offerSection(): HTMLElement {
     event.preventDefault();
     findCard.box.querySelector('button')?.click();
   });
+  // Owner 2026-11-26: the champion's augment tree leads (fit share among the offered cards, its reasons, the line his picks point to);
+  // the engine rows above fold under it, with their buttons unchanged.
+  const tree = d.champion ? AUGMENT_TREES[String(d.champion.id)] : undefined;
+  const lead: HTMLElement[] = [];
+  if (tree) {
+    const held = [...picked];
+    const line = heldLine(tree, held);
+    if (line) lead.push(el('p', 'hint ov-tree-line', `خطك الآن: ${line.name}. ${line.why} الأغراض: ${line.items.join(' › ')}`));
+    if (cards.length) {
+      const cardOf = new Map(cards.map((a) => [a.id, a]));
+      const box = el('div', 'ov-adapted ov-offers ov-tree');
+      for (const f of fitOffer(tree, cards.map((a) => a.id), held)) {
+        const a = cardOf.get(f.id)!;
+        const r = el('div', 'ov-adapted-row');
+        const txt = el('div', 'ov-name');
+        txt.append(el('b', '', `${shownName(a)} · ملاءمة ${f.pct}%`));
+        txt.append(el('small', f.why ? '' : 'missing', f.why ?? 'ليست في شجرة بطلك: درجتها محايدة 50.'));
+        if (f.because.length) txt.append(el('small', '', `مع ما اخترته: ${f.because.join(' · ')}`));
+        if (f.lines.length) txt.append(el('small', '', `الخط: ${f.lines.join('، ')}`));
+        r.append(ic(a), txt, pill('اخترته', () => choose(a)), pill('✕', () => drop(a), 'pill ghost'));
+        box.append(r);
+      }
+      lead.push(box, el('p', 'hint', 'النسبة هنا ملاءمة البطاقة لبطلك ولما اخترته، بين البطاقات المعروضة فقط، وليست احتمال فوز.'));
+    }
+  }
+  let engine: HTMLElement = rows;
+  if (tree && cards.length) {
+    const old = el('details', 'plan-reason') as HTMLDetailsElement;
+    old.open = openFolds.has('engine-old');
+    old.addEventListener('toggle', () => (old.open ? openFolds.add('engine-old') : openFolds.delete('engine-old')));
+    old.append(el('summary', '', 'تفاصيل المحرك القديم'), rows);
+    engine = old;
+  }
   if (offer.size) openFolds.add('offer');
   return fold('offer', offer.size ? `مقارنة البطاقات المعروضة (${offer.size})` : 'قارن البطاقات المعروضة عليك (اختياري)',
-    findCard.label, findCard.box, rows,
+    findCard.label, findCard.box, ...lead, engine,
     el('p', 'hint', 'الأرقام هنا من حساب المحرك، وليست احتمال فوز. «الآن» بأغراضك الحالية، و«الخطة المكتملة» تعيد البحث عن الأغراض لكل بطاقة بلا تعزيزات قادمة. حرف S–C في قائمة التعزيزات من نتائج المباريات والمواقع، ومنفصل عن هذه الأرقام.'));
 }
 
