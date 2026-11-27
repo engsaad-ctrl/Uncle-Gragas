@@ -192,3 +192,14 @@ describe('quest cards need every item', () => {
     expect(r.items).toContain("Rabadon's Deathcap");
   });
 });
+
+describe('item facts from the game files', () => {
+  it('reads crit from item text: Statikk Shiv gives none, Essence Reaver 25%', () => {
+    const t: CompactTree = { lines: [['l', '', ['Statikk Shiv', 'Essence Reaver', 'Bloodthirster']]], a: {}, after: [] };
+    expect(critHeld(t, [])).toBe(25);
+  });
+  it("Black Cleaver shares the Last Whisper group with Lord Dominik's", () => {
+    const d = adaptItems(['A', 'B', "Lord Dominik's Regards", 'Black Cleaver'], { damage: 'physical', frontline: false });
+    expect(d.items.filter((i) => ["Lord Dominik's Regards", 'Black Cleaver'].includes(i))).toEqual(["Lord Dominik's Regards"]);
+  });
+});

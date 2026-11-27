@@ -5,3 +5,9 @@ export const AUGMENT_TREES: TreeBundle = JSON.parse("{\"1\":{\"lines\":[[\"تر�
 
 /** Crit chance (percent) each card gives, from its text. */
 export const AUGMENT_CRIT: Record<string, number> = {"1047":50,"1048":25,"1077":25,"1080":25,"1092":25,"1118":25,"1328":25,"1356":25,"1415":25,"2009":25,"2010":25,"3123":25};
+
+/** Crit chance (percent) each finished Mayhem item gives, from the game item text. */
+export const ITEM_CRIT: Record<string, number> = {"Fiendhunter Bolts":25,"Hexoptics C44":25,"Infinity Edge":25,"Yun Tal Wildarrows":25,"Mortal Reminder":25,"Lord Dominik's Regards":25,"Atma's Reckoning":20,"Phantom Dancer":25,"Runaan's Hurricane":25,"Rapid Firecannon":25,"Stormrazor":25,"Essence Reaver":25,"Immortal Shieldbow":25,"Navori Flickerblade":25,"The Collector":25};
+
+/** Items that share a unique limit in the game item file: one of each group can be held. */
+export const ITEM_GROUPS: string[][] = [["Dusk and Dawn","Essence Reaver","Iceborn Gauntlet","Lich Bane","Trinity Force"],["Archangel's Staff","Immortal Shieldbow","Maw of Malmortius","Protoplasm Harness","Sterak's Gage"],["Archangel's Staff","Manamune","Winter's Approach"],["Black Cleaver","Lord Dominik's Regards","Mortal Reminder","Serylda's Grudge","Terminus"],["Hollow Radiance","Sunfire Aegis"],["Profane Hydra","Ravenous Hydra","Stridebreaker","Titanic Hydra"],["Banshee's Veil","Edge of Night"],["Bloodletter's Curse","Cryptbloom","Terminus","Void Staff"]];

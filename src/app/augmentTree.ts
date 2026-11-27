@@ -1,5 +1,5 @@
 import { AUGMENT_TAGS } from '../ai/augmentTags.js';
-import { AUGMENT_CRIT } from '../ai/augmentTreesData.js';
+import { AUGMENT_CRIT, ITEM_CRIT, ITEM_GROUPS } from '../ai/augmentTreesData.js';
 // The augment tree (owner 2026-11-26): one fit score per card for each champion, drawn from the principles in knowledge/tree-trial/,
 // and the fit changes with every augment already taken: base score + line following + specific "after" rules.
 // Percentages are fit percentages over the offered cards (softmax), not win chances.
@@ -61,9 +61,9 @@ const stylesOf = (id: number) => (AUGMENT_TAGS[id]?.tags ?? []).filter((t) => t.
  *  is what he will have; the part of an offered card's crit above 100% is lost, CRIT_CAP_STEP per 25 points, and it no longer counts as
  *  stacking crit. Champions whose kit changes crit (Yasuo, Yone) are not modelled. */
 export const CRIT_CAP_STEP = 10;
-const CRIT_ITEMS = new Set(['Infinity Edge', 'Navori Flickerblade', 'Yun Tal Wildarrows', 'Phantom Dancer', 'Statikk Shiv', 'The Collector', 'Rapid Firecannon', "Runaan's Hurricane", "Lord Dominik's Regards", 'Mortal Reminder']);
+// Item crit comes from the game item text (ITEM_CRIT, made by bundle-trees.mjs), not a hand list.
 const critOf = (id: number) => AUGMENT_CRIT[String(id)] ?? 0;
-export const critHeld = (tree: CompactTree, held: number[]) => 25 * (buildLine(tree, held)?.items.filter((i) => CRIT_ITEMS.has(i)).length ?? 0) + held.reduce((s, h) => s + critOf(h), 0);
+export const critHeld = (tree: CompactTree, held: number[]) => (buildLine(tree, held)?.items.reduce((s, i) => s + (ITEM_CRIT[i] ?? 0), 0) ?? 0) + held.reduce((s, h) => s + critOf(h), 0);
 
 export function fitOffer(tree: CompactTree, offered: number[], held: number[] = [], enemy?: EnemyCounts): TreeFit[] {
   const linesOf = (id: number) => tree.a[id]?.[2] ?? [];
@@ -116,16 +116,15 @@ export function heldLine(tree: CompactTree, held: number[]): { name: string; why
 /** Owner 2026-11-27 «اكمل»: the tree line's items answer the enemy team with one swap per need, from the end of the list (boots and the
  *  first items stay): anti-heal against 2+ healers, penetration against 3+ tanks, magic resist against 3+ magic damage dealers. The item
  *  for each need follows his own damage (magic, physical, or a frontline tank) and whether the line already crits. */
-const CRIT = new Set(['Infinity Edge', 'Navori Flickerblade', "Yun Tal Wildarrows", 'Phantom Dancer', 'Statikk Shiv', 'Essence Reaver', 'The Collector', 'Rapid Firecannon', 'Bloodthirster']);
 const BOOTS = /Boots|Greaves|Treads|Steelcaps|Shoes|Swiftness|Lucidity|Symbiotic|Synchronized|Gunmetal|Crimson|Spellslinger|Armored Advance|Chainlaced|Forever Forward/;
 export interface ItemSwap { out: string; in: string; why: string }
 /** Items that share one unique passive: only one of each group can be held (owner 2026-11-27: Lord Dominik's and Mortal Reminder together). */
-// Owner, same day: «وكثير ايمات نفس الشي من عائله واحدة» — also Spellblade, Hydras (unless a held card's quest asks for them), Immolate, Quicksilver.
-const UNIQUE_GROUPS = [["Lord Dominik's Regards", 'Mortal Reminder', "Serylda's Grudge"], ["Sterak's Gage", 'Maw of Malmortius', 'Immortal Shieldbow'],
-  ['Manamune', "Archangel's Staff", "Winter's Approach", 'Muramana', "Seraph's Embrace", 'Fimbulwinter'], ['Trinity Force', 'Lich Bane', 'Essence Reaver', 'Iceborn Gauntlet', 'Dusk and Dawn'],
-  ['Ravenous Hydra', 'Titanic Hydra', 'Profane Hydra'], ['Sunfire Aegis', 'Hollow Radiance'], ['Quicksilver Sash', 'Mercurial Scimitar', 'Silvermere Dawn']];
+// Owner, same day: «وكثير ايمات نفس الشي من عائله واحدة»; Hydras stay allowed together when a held card's quest asks for them.
+// The groups come from the game item file's unique limits (ITEM_GROUPS, made by bundle-trees.mjs).
+const UNIQUE_GROUPS = ITEM_GROUPS;
 let questItems = new Set<string>(); // set by adaptItems: a held card's quest lifts its group's limit (Ultra Hydra needs all three Hydras)
-const groupOf = (item: string) => UNIQUE_GROUPS.find((g) => g.includes(item) && !g.some((x) => questItems.has(x)));
+// An item in two groups (Archangel's, Terminus) conflicts with both: its group is their union.
+const groupOf = (item: string) => { const gs = UNIQUE_GROUPS.filter((g) => g.includes(item) && !g.some((x) => questItems.has(x))); return gs.length ? [...new Set(gs.flat())] : undefined; };
 const FILLERS: Record<string, string[]> = { magic: ["Zhonya's Hourglass", "Banshee's Veil", "Rabadon's Deathcap", 'Void Staff', 'Shadowflame', "Liandry's Torment"], physical: ['Guardian Angel', "Death's Dance", 'Black Cleaver', 'Spear of Shojin', 'Spirit Visage'], tank: ["Thornmail", "Force of Nature", "Randuin's Omen", "Spirit Visage", "Kaenic Rookern", "Jak'Sho, The Protean"] };
 /** Items a held card asks for (owner 2026-11-27 «نعم، أضفه»): its needs_item and quest tags (src/ai/augmentTags.ts); any one of a card's
  *  items answers it. held: each held card's ids (twins) and name. */
@@ -157,7 +156,7 @@ export function adaptItems(items: string[], me: { damage: string; frontline: boo
     }
   }
   if (!enemy) return uniqueOnly(out, swaps, me);
-  const magic = me.damage === 'magic', crit = items.some((i) => CRIT.has(i));
+  const magic = me.damage === 'magic', crit = items.some((i) => (ITEM_CRIT[i] ?? 0) > 0);
   const needs: [boolean, string, string][] = [
     [(enemy.healers ?? 0) >= 2, magic ? 'Morellonomicon' : me.frontline ? 'Thornmail' : crit ? 'Mortal Reminder' : 'Chempunk Chainsword', 'في فريق الخصم معالجون: غرض يقطع العلاج.'],
     [enemy.tanks >= 3, magic ? 'Void Staff' : me.frontline ? 'Black Cleaver' : crit ? "Lord Dominik's Regards" : "Serylda's Grudge", 'أمامك 3 مدرّعين أو أكثر: غرض اختراق.'],
@@ -183,7 +182,7 @@ function uniqueOnly(items: string[], swaps: ItemSwap[], me: { damage: string; fr
   out.forEach((x, k) => {
     const g = groupOf(x); if (!g) return;
     if (out.findIndex((y) => g.includes(y)) === k) return;
-    const f = fill.find((c) => !out.includes(c)); if (!f) return;
+    const f = fill.find((c) => !out.includes(c) && !out.some((y) => groupOf(c)?.includes(y))); if (!f) return;
     swaps.push({ out: x, in: f, why: `${x} لا يُجمع مع ${out.find((y) => g.includes(y))}: ميزة واحدة لا تتكرر.` });
     out[k] = f;
   });
