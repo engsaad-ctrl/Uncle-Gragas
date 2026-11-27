@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, altLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -224,5 +224,15 @@ describe('line choice from the data table (owner 2026-11-27)', () => {
     expect(heldLine(t, [1, 2])!.name).toBe('B');
     expect(heldLine({ ...t, lt: undefined }, [1])!.name).toBe('A');
     expect(heldLine(t, [])).toBeUndefined();
+  });
+});
+
+describe('alternative build (owner 2026-11-27)', () => {
+  it('offers the best line that really differs from the shown one', () => {
+    const t: CompactTree = { lines: [['AP', '', ['a', 'b', 'c', 'd', 'e']], ['AP2', '', ['a', 'b', 'c', 'd', 'f']], ['Support', '', ['p', 'q', 'r', 's', 't']]], a: {}, after: [], lt: { 1: [90, 5, 5] } };
+    expect(buildLine(t, [])!.name).toBe('AP');
+    expect(altLine(t, [])!.name).toBe('Support');
+    expect(altLine(t, [1])!.name).toBe('Support');
+    expect(altLine({ lines: [['A', '', ['a']]], a: {}, after: [] }, [])).toBeUndefined();
   });
 });

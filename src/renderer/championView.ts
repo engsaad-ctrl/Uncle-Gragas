@@ -12,7 +12,7 @@ import { FIT_POINTS, fitOf, gradesFor, outsidePoints, playedOnly } from './fit.j
 import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
-import { adaptItems, buildLine, fitPercent, neededItems } from '../app/augmentTree.js';
+import { adaptItems, altLine, buildLine, fitPercent, neededItems } from '../app/augmentTree.js';
 import { AUGMENT_TAGS } from '../ai/augmentTags.js';
 import { AUGMENT_WINS } from '../ai/augmentWinsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
@@ -142,7 +142,12 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
     const { items: shown, swaps } = adaptItems(line.items, { damage: kit?.damage ?? 'mixed', frontline: !!kit?.traits.includes('frontline') }, undefined, need);
     const row = el('div', 'icons');
     row.append(...shown.map((n) => { const it = shop!.find((i) => i.enName === n); return it ? iconOf(it) : el('span', 'missing', n); }));
-    treeEl.replaceChildren(el('h3', 'sub-title', `بناء الشجرة: ${line.name}`), el('p', 'hint', `${picked.size ? '' : 'قبل أي تعزيز: الخط الأول في شجرة البطل. '}${line.why}`), row, ...swaps.map((s) => el('p', 'hint', `${s.why} ${s.in} بدل ${s.out}.`)));
+    // Owner 2026-11-27 «1، بلد بديل»: a second build that really differs, under the main one.
+    const alt = altLine(tree, [...picked.keys()]);
+    const altRow = el('div', 'icons');
+    if (alt) altRow.append(...adaptItems(alt.items, { damage: kit?.damage ?? 'mixed', frontline: !!kit?.traits.includes('frontline') }, undefined, need).items.map((n) => { const it = shop!.find((i) => i.enName === n); return it ? iconOf(it) : el('span', 'missing', n); }));
+    treeEl.replaceChildren(el('h3', 'sub-title', `بناء الشجرة: ${line.name}`), el('p', 'hint', `${picked.size ? '' : 'قبل أي تعزيز: الخط الأول في شجرة البطل. '}${line.why}`), row, ...swaps.map((s) => el('p', 'hint', `${s.why} ${s.in} بدل ${s.out}.`)),
+      ...(alt ? [el('h3', 'sub-title', `بلد بديل: ${alt.name}`), el('p', 'hint', alt.why), altRow] : []));
   }
 
   const toggle = (a: AugmentText) => {

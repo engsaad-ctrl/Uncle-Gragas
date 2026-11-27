@@ -30,7 +30,7 @@ import { gameLiftLine, OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type O
 import { GAME_LIFT } from '../ai/gameLift.js';
 import { FIXED_ABILITY_KEY, needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 import { destinyOptions } from './destinyOptions.js';
-import { abilityFits, adaptItems, neededItems, buildLine, enemyCounts, fitOffer, fitPercent, heldLine, isChosenAbility, treeFor, type AbilityKey3, type EnemyCounts } from '../app/augmentTree.js';
+import { abilityFits, altLine, adaptItems, neededItems, buildLine, enemyCounts, fitOffer, fitPercent, heldLine, isChosenAbility, treeFor, type AbilityKey3, type EnemyCounts } from '../app/augmentTree.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
 import { keyedTo, readFor } from './championKeyed.js';
 import { AUGMENT_WINS } from '../ai/augmentWinsData.js';
@@ -1023,7 +1023,12 @@ function treeBuildSection(): HTMLElement | null {
   const row = el('div', 'ov-tree-items');
   row.append(...items.map((n) => { const it = pool.find((i) => i.enName === n); return it ? ic(it) : el('span', 'missing', n); }));
   const notes = swaps.map((s) => el('p', 'hint', `${s.why} ${s.in} بدل ${s.out}.`));
-  return section(`بناء الشجرة: ${line.name}`, el('p', 'hint', `${picked.size ? '' : 'قبل أي تعزيز: الخط الأول في شجرة بطلك. '}${line.why}`), row, ...notes);
+  // Owner 2026-11-27 «1، بلد بديل»: a second build that really differs, small, under the main one.
+  const alt = altLine(tree, [...picked]);
+  const altRow = el('div', 'ov-tree-items ov-tree-alt');
+  if (alt) altRow.append(...adaptItems(alt.items, { damage: kit?.damage ?? 'mixed', frontline: !!kit?.traits.includes('frontline') }, foes, need).items.map((n) => { const it = pool.find((i) => i.enName === n); return it ? ic(it) : el('span', 'missing', n); }));
+  const altPart = alt ? [el('p', 'hint', `بلد بديل: ${alt.name}. ${alt.why}`), altRow] : [];
+  return section(`بناء الشجرة: ${line.name}`, el('p', 'hint', `${picked.size ? '' : 'قبل أي تعزيز: الخط الأول في شجرة بطلك. '}${line.why}`), row, ...notes, ...altPart);
 }
 
 function adaptedSection(): HTMLElement[] {

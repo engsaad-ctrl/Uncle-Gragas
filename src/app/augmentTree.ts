@@ -150,6 +150,20 @@ export function heldLine(tree: CompactTree, held: number[]): { name: string; why
   return l ? { name: l[0], why: l[1], items: l[2] } : undefined;
 }
 
+/** Owner 2026-11-27 «1، بلد بديل»: a second build under the shown one, the best-scored line that really differs from it (shares at most 3 of
+ *  its non-boot items). Scores: the data table's Bayes with his cards (the champion's prior alone before any card), else the tree's order. */
+export function altLine(tree: CompactTree, held: number[]): { name: string; why: string; items: string[] } | undefined {
+  const shown = buildLine(tree, held); if (!shown) return undefined;
+  const L = tree.lines.length, rows = held.map((h) => tree.lt?.[String(h)]).filter((r): r is number[] => !!r && r.length === L);
+  const prior = new Array<number>(L).fill(0); for (const r of Object.values(tree.lt ?? {})) if (r.length === L) r.forEach((x, i) => (prior[i] += x));
+  const ptot = prior.reduce((a, b) => a + b, 0), lp = (i: number) => (ptot ? Math.log((prior[i] + 1) / (ptot + L)) : -i);
+  const score = tree.lines.map((_, i) => lp(i) + rows.reduce((s, r) => s + Math.log((r[i] + 1) / (r.reduce((a, b) => a + b, 0) + L)) - lp(i), 0));
+  const core = (items: string[]) => items.filter((n) => !BOOTS.test(n));
+  const mine = new Set(core(shown.items));
+  const pick = tree.lines.map((l, i) => ({ l, s: score[i] })).filter(({ l }) => l[0] !== shown.name && core(l[2]).filter((n) => mine.has(n)).length <= 3).sort((x, y) => y.s - x.s)[0];
+  return pick ? { name: pick.l[0], why: pick.l[1], items: pick.l[2] } : undefined;
+}
+
 /** Owner 2026-11-27 «اكمل»: the tree line's items answer the enemy team with one swap per need, from the end of the list (boots and the
  *  first items stay): anti-heal against 2+ healers, penetration against 3+ tanks, magic resist against 3+ magic damage dealers. The item
  *  for each need follows his own damage (magic, physical, or a frontline tank) and whether the line already crits. */
