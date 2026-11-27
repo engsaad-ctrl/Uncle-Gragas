@@ -7,12 +7,13 @@ import { pickPanel } from './pickPanel.js';
 import type { NamedText } from '../texts/champions.js';
 import { AUGMENT_MISSING, augmentChip, augmentTags } from './augmentsView.js';
 import type { LcuState } from '../lcu/state.js';
-import { applyLines, fitBar, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stackInput, stagger, withTooltip, type Describable } from './dom.js';
+import { applyLines, fitBar, pills, champLink, detailPanel, el, getFlashKey, icon, pageSignal, isError, lcuNow, nameEl, pct, searchBox, shownName, stackInput, stagger, withTooltip, type Describable } from './dom.js';
 import { FIT_POINTS, fitOf, gradesFor, outsidePoints, playedOnly } from './fit.js';
 import { filterAugments } from './search.js';
 import { placeFlash } from '../lcu/apply.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
-import { adaptItems, buildLine, neededItems } from '../app/augmentTree.js';
+import { adaptItems, buildLine, fitPercent, neededItems } from '../app/augmentTree.js';
+import { AUGMENT_TAGS } from '../ai/augmentTags.js';
 import { AUGMENT_WINS } from '../ai/augmentWinsData.js';
 import { CHAMPION_KITS } from '../ai/championKits.js';
 
@@ -93,8 +94,25 @@ async function rankAugments(championId: number, site: RatedAugment[]): Promise<{
 /** Mayhem without a game: pick any augments and see the engine's build at once; Gemini's opinion on demand. */
 function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranking: ReturnType<typeof rankAugments>): HTMLElement {
   const s = el('section', 'panel');
-  s.append(el('h2', '', 'ابنِ بناءك حسب تعزيزاتك'), el('p', 'hint', `اختر حتى ${MAX_PICKS} تعزيزات كأنك أخذتها في المباراة، فيظهر البناء المحسوب لها فوراً.`));
+  s.append(el('h2', '', 'جرّب الشجرة'), el('p', 'hint', `اختر حتى ${MAX_PICKS} تعزيزات كأنك أخذتها في المباراة: يتغير رقم التوافق لكل تعزيز والبناء فوراً، بلا دخول للعبة.`));
   const search = searchBox('ابحث عن تعزيز');
+  // Owner 2026-11-27: a simulator like lol.ps: filter by rarity and by kind, every card with its fit to what is picked, best first.
+  let rarity = 'all', kind = 'all', limit = 30;
+  const KINDS: [string, string][] = [['all', 'كل الأنواع'], ['ap', 'AP'], ['ad', 'AD'], ['crit', 'ضربة حرجة'], ['attackspeed', 'سرعة هجوم'], ['onhit', 'عند الضرب'], ['haste', 'تسريع'], ['tank', 'تحمّل'], ['heal', 'علاج ودرع'], ['ult', 'الألتي'], ['other', 'أخرى']];
+  const tagsOf = (a: AugmentText) => [a.id, ...((a as { ids?: number[] }).ids ?? [])].flatMap((id) => AUGMENT_TAGS[id]?.tags ?? []);
+  const isKind = (a: AugmentText) => {
+    if (kind === 'all') return true;
+    const t = tagsOf(a);
+    if (kind === 'heal') return t.includes('heal_shield');
+    if (kind === 'ult') return t.some((x) => x === 'ult_focus' || x === 'ult_locked');
+    if (kind === 'other') return !t.some((x) => x.startsWith('style:') || x === 'heal_shield' || x === 'ult_focus' || x === 'ult_locked');
+    return t.includes(`style:${kind}`);
+  };
+  const filters = el('div');
+  filters.append(
+    pills('الندرة', [['all', 'كل الندرات'], ['silver', 'فضي'], ['gold', 'ذهبي'], ['prismatic', 'منشوري']], rarity, (v) => { rarity = v; limit = 30; drawList(); }),
+    pills('النوع', KINDS, kind, (v) => { kind = v; limit = 30; drawList(); }),
+  );
   const chosenEl = el('div', 'grid');
   const listEl = el('div', 'grid');
   const box = el('div', 'ov-ai');
@@ -157,8 +175,15 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
   }
   const drawList = () => {
     chosenEl.replaceChildren(...[...picked.values()].map((a) => augmentChip(a, true, () => toggle(a))));
-    const found = filterAugments(all, search.input.value, 'all').filter((a) => !picked.has(a.id)).slice(0, 12);
-    listEl.replaceChildren(...(found.length ? found.map((a) => augmentChip(a, false, () => toggle(a))) : [el('p', 'missing', 'لا يوجد تعزيز بهذا الاسم.')]));
+    const held = [...picked.keys()];
+    const pool = filterAugments(all, search.input.value, rarity).filter((a) => !picked.has(a.id) && isKind(a));
+    const fit = new Map(pool.map((a) => [a.id, tree ? fitPercent(tree, a.id, held) : 0]));
+    const found = tree ? [...pool].sort((x, y) => fit.get(y.id)! - fit.get(x.id)!) : pool;
+    const shown = found.slice(0, limit).map((a) => { const c = augmentChip(a, false, () => toggle(a)); if (tree) c.append(fitBar(fit.get(a.id)!)); return c; });
+    const more = el('button', 'pill', `عرض المزيد (${found.length - limit})`);
+    more.type = 'button';
+    more.addEventListener('click', () => { limit += 30; drawList(); });
+    listEl.replaceChildren(...(found.length ? [...shown, ...(found.length > limit ? [more] : [])] : [el('p', 'missing', 'لا يوجد تعزيز بهذا البحث.')]));
   };
   const draw = () => {
     drawList();
@@ -188,7 +213,7 @@ function aiPanel(p: ChampionPage, iconOf: (x: Describable) => HTMLElement, ranki
   void drawTree();
   let engineBox: HTMLElement[] = [engineTitle, stackBox, engineEl];
   if (tree) engineBox = []; // owner 2026-11-27: only the tree shows
-  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, listEl, treeEl, ...engineBox, ...(tree ? [] : [box]));
+  s.append(el('h3', 'sub-title', 'تعزيزاتك'), chosenEl, search.node, filters, listEl, treeEl, ...engineBox, ...(tree ? [] : [box]));
   return s;
 }
 
