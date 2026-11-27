@@ -216,3 +216,13 @@ describe('chosen-ability cards (owner 2026-11-27)', () => {
     expect(f.find((x) => x.key === 'E')!.pct).toBeLessThan(60);
   });
 });
+
+describe('line choice from the data table (owner 2026-11-27)', () => {
+  it('shows the line the holders of his cards built, and falls back to the lines a card serves without data', () => {
+    const t: CompactTree = { lines: [['A', '', ['x']], ['B', '', ['y']]], a: { 1: [50, '', [0]], 2: [50, '', [0]] }, after: [], lt: { 1: [10, 90], 2: [20, 80] } };
+    expect(heldLine(t, [1])!.name).toBe('B');
+    expect(heldLine(t, [1, 2])!.name).toBe('B');
+    expect(heldLine({ ...t, lt: undefined }, [1])!.name).toBe('A');
+    expect(heldLine(t, [])).toBeUndefined();
+  });
+});

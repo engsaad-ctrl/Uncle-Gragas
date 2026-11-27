@@ -9,6 +9,8 @@ export interface CompactTree {
   lines: [string, string, string[]][];
   a: Record<string, [number, string, number[]]>;
   after: [number, number, number, string][];
+  /** Per card, how many of its holders' finished items matched each line best (knowledge/tree-trial/line-table.mjs). */
+  lt?: Record<string, number[]>;
 }
 export type TreeBundle = Record<string, CompactTree>;
 
@@ -123,7 +125,24 @@ export const abilityFits = (tree: CompactTree, champion: number | undefined, id:
 export const buildLine = (tree: CompactTree, held: number[]) => heldLine(tree, held) ?? (tree.lines[0] ? { name: tree.lines[0][0], why: tree.lines[0][1], items: tree.lines[0][2] } : undefined);
 
 /** The line the held cards point to most (ties: the earlier line), with its items; undefined before any held card serves a line. */
+/** Weight of the tree's own line membership in the line choice, in nats per held card (knowledge/two-keys/line-follow.mjs part 4). */
+export const LINE_LOGIC = 0; // owner 2026-11-27: Brand burns with everything (Wooglet's adds burn) and Jinx builds crit always, as the data says; logic weight off
+
 export function heldLine(tree: CompactTree, held: number[]): { name: string; why: string; items: string[] } | undefined {
+  // Owner 2026-11-27 «نعم، طبّقه»: with the data table, Bayes over the lines: the champion's prior (all rows summed) counted once, plus
+  // how far each held card moves the share of each line. On held-out games: players' items matched 45.7% (old count 43.2%), and the shown
+  // line leaves his most common line 58.8% of the time (summing raw shares gave 48.0% but stayed on the common line 93% of the time).
+  const L = tree.lines.length, rows = held.map((h) => tree.lt?.[String(h)]).filter((r): r is number[] => !!r && r.length === L);
+  if (rows.length) {
+    const prior = new Array<number>(L).fill(0); for (const r of Object.values(tree.lt ?? {})) if (r.length === L) r.forEach((x, i) => (prior[i] += x));
+    const ptot = prior.reduce((a, b) => a + b, 0), lp = (i: number) => Math.log((prior[i] + 1) / (ptot + L));
+    // Logic counts too (owner: Jinx builds crit always, with Hexoptics when she plays range): LINE_LOGIC nats per held card the tree writes
+    // into the line. Held-out cost 0.4 points of item match (45.3%), and the line follows the cards more often (64.5%).
+    const logic = (i: number) => LINE_LOGIC * held.filter((h) => (tree.a[h]?.[2] ?? []).includes(i)).length;
+    const score = tree.lines.map((_, i) => lp(i) + logic(i) + rows.reduce((s, r) => s + Math.log((r[i] + 1) / (r.reduce((a, b) => a + b, 0) + L)) - lp(i), 0));
+    const l = tree.lines[score.indexOf(Math.max(...score))];
+    return { name: l[0], why: l[1], items: l[2] };
+  }
   const count = new Map<number, number>();
   for (const h of held) for (const l of tree.a[h]?.[2] ?? []) count.set(l, (count.get(l) ?? 0) + 1);
   const best = [...count].sort((x, y) => y[1] - x[1] || x[0] - y[0])[0];
