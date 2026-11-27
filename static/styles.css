@@ -523,6 +523,8 @@ body.overlay.large .ov-main.both .ov-list { grid-template-columns: repeat(2, min
 
 /* Fit bar (owner 2026-11-26): the tree's fit for this champion and the picks so far. */
 .fit-bar-box { display: inline-flex; align-items: center; gap: 4px; flex: none; font-size: 11px; }
+.chip:has(> .fit-bar-box) { flex-wrap: wrap; } /* the fit bar takes its own row so the card name is not squeezed (owner screenshot 11-27) */
+.chip > .fit-bar-box { flex-basis: 100%; }
 .fit-bar { display: inline-block; width: 56px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .fit-bar > i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
 .fit-bar > i.hi { background: var(--heal, #3fbf7f); } .fit-bar > i.lo { background: var(--muted); }
