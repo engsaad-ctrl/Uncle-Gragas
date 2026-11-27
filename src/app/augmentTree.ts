@@ -200,7 +200,8 @@ const UNIQUE_GROUPS = ITEM_GROUPS;
 let questItems = new Set<string>(); // set by adaptItems: a held card's quest lifts its group's limit (Ultra Hydra needs all three Hydras)
 // An item in two groups (Archangel's, Terminus) conflicts with both: its group is their union.
 const groupOf = (item: string) => { const gs = UNIQUE_GROUPS.filter((g) => g.includes(item) && !g.some((x) => questItems.has(x))); return gs.length ? [...new Set(gs.flat())] : undefined; };
-const FILLERS: Record<string, string[]> = { magic: ["Zhonya's Hourglass", "Banshee's Veil", "Rabadon's Deathcap", 'Void Staff', 'Shadowflame', "Liandry's Torment"], physical: ['Guardian Angel', "Death's Dance", 'Black Cleaver', 'Spear of Shojin', 'Spirit Visage'], tank: ["Thornmail", "Force of Nature", "Randuin's Omen", "Spirit Visage", "Kaenic Rookern", "Jak'Sho, The Protean"] };
+// T302: Guardian Angel left the fillers; Mayhem does not sell it (0 holders in 16,254 games on 16.23+).
+const FILLERS: Record<string, string[]> = { magic: ["Zhonya's Hourglass", "Banshee's Veil", "Rabadon's Deathcap", 'Void Staff', 'Shadowflame', "Liandry's Torment"], physical: ["Sterak's Gage", "Death's Dance", 'Black Cleaver', 'Spear of Shojin', 'Spirit Visage'], tank: ["Thornmail", "Force of Nature", "Randuin's Omen", "Spirit Visage", "Kaenic Rookern", "Jak'Sho, The Protean"] };
 /** Items a held card asks for (owner 2026-11-27 «نعم، أضفه»): its needs_item and quest tags (src/ai/augmentTags.ts); any one of a card's
  *  items answers it. held: each held card's ids (twins) and name. */
 // A quest (Wooglet's: Rabadon's and Zhonya's; Ultra Hydra: all three Hydras) needs every item: all is true and each missing one goes in.

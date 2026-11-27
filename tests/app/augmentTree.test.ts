@@ -167,7 +167,7 @@ describe('one item per unique group', () => {
     const r = adaptItems(line, { damage: 'physical', frontline: false }, { tanks: 0, cc: 0, healers: 3 });
     expect(r.items.filter((i) => ["Lord Dominik's Regards", 'Mortal Reminder'].includes(i))).toEqual(['Mortal Reminder']);
     const d = adaptItems(['A', 'B', "Sterak's Gage", 'Maw of Malmortius'], { damage: 'physical', frontline: false });
-    expect(d.items).toEqual(['A', 'B', "Sterak's Gage", 'Guardian Angel']);
+    expect(d.items).toEqual(['A', 'B', "Sterak's Gage", "Death's Dance"]); // T302: Guardian Angel is not sold in Mayhem
   });
 });
 
