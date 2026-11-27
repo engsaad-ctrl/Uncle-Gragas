@@ -516,6 +516,7 @@ body.overlay.large .ov-main.both .ov-list { grid-template-columns: repeat(2, min
 .ov-build .search input { width: 100%; min-width: 0; box-sizing: border-box; }
 .ov-ability-target { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .ov-ability-target select { font: inherit; max-width: 100%; }
+.ov-ability-fit { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
 .stack-field { display: flex; align-items: center; gap: 8px; margin: 6px 0; } .stack-field input { width: 90px; padding: 4px 6px; font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; }
 .web-link { direction: ltr; user-select: text; word-break: break-all; color: var(--text); }
 

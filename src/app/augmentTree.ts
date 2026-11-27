@@ -1,5 +1,5 @@
 import { AUGMENT_TAGS } from '../ai/augmentTags.js';
-import { AUGMENT_CRIT, ITEM_CRIT, ITEM_GROUPS } from '../ai/augmentTreesData.js';
+import { ABILITY_FIT, AUGMENT_CRIT, CHOSEN_ABILITY, ITEM_CRIT, ITEM_GROUPS } from '../ai/augmentTreesData.js';
 // The augment tree (owner 2026-11-26): one fit score per card for each champion, drawn from the principles in knowledge/tree-trial/,
 // and the fit changes with every augment already taken: base score + line following + specific "after" rules.
 // Percentages are fit percentages over the offered cards (softmax), not win chances.
@@ -65,7 +65,20 @@ export const CRIT_CAP_STEP = 10;
 const critOf = (id: number) => AUGMENT_CRIT[String(id)] ?? 0;
 export const critHeld = (tree: CompactTree, held: number[]) => (buildLine(tree, held)?.items.reduce((s, i) => s + (ITEM_CRIT[i] ?? 0), 0) ?? 0) + held.reduce((s, h) => s + critOf(h), 0);
 
-export function fitOffer(tree: CompactTree, offered: number[], held: number[] = [], enemy?: EnemyCounts): TreeFit[] {
+/** Owner 2026-11-27 «اضف نسبة توافق مع كل ابلتي»: Mayhem picks Q, W or E for a chosen-ability card on every offer. With the key he reads
+ *  on the card, its fit drops by up to ABILITY_STEP below the champion's best key for that card (ABILITY_FIT from his ability sheet). */
+export const ABILITY_STEP = 20;
+export type AbilityKey3 = 'Q' | 'W' | 'E';
+export const isChosenAbility = (id: number) => CHOSEN_ABILITY[String(id)] !== undefined;
+export function abilityShift(champion: number | undefined, id: number, key: AbilityKey3 | undefined): number {
+  const kind = CHOSEN_ABILITY[String(id)], w = champion === undefined ? undefined : ABILITY_FIT[String(champion)]?.[kind ?? 'd'];
+  if (!kind || !key || !w) return 0;
+  const best = Math.max(...w);
+  return best > 0 ? ABILITY_STEP * (w[['Q', 'W', 'E'].indexOf(key)] / best - 1) : 0;
+}
+export interface AbilityPick { champion?: number; keys: Partial<Record<number, AbilityKey3>> }
+
+export function fitOffer(tree: CompactTree, offered: number[], held: number[] = [], enemy?: EnemyCounts, ability?: AbilityPick): TreeFit[] {
   const linesOf = (id: number) => tree.a[id]?.[2] ?? [];
   const have = critHeld(tree, held);
   const heldPerLine = new Map<number, number>();
@@ -84,7 +97,8 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
     const shared = stylesOf(id).filter((st) => heldStyles.has(st) && !(st === 'crit' && lost > 0)).slice(0, 3);
     const foes = enemy ? ENEMY_RULES.filter((r) => (enemy[r.feat] ?? 0) >= 3 && r.ids.has(id)) : [];
     const cap = (CRIT_CAP_STEP * lost) / 25;
-    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length + STAT_STEP * shared.length - cap, pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why), ...(shared.length ? [`يجمع ${shared.map((st) => STAT_AR[st] ?? st).join(' و')} مع ما عندك.`] : []), ...(lost ? [`الضربة الحرجة تصل إلى 100% بما عندك: يضيع ${lost}% من هذا التعزيز.`] : [])], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
+    const key = ability?.keys[id], shift = abilityShift(ability?.champion, id, key);
+    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length + STAT_STEP * shared.length - cap + shift, pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why), ...(shared.length ? [`يجمع ${shared.map((st) => STAT_AR[st] ?? st).join(' و')} مع ما عندك.`] : []), ...(lost ? [`الضربة الحرجة تصل إلى 100% بما عندك: يضيع ${lost}% من هذا التعزيز.`] : []), ...(key && shift < 0 ? [`على ${key}: أقل من أنسب مهارة لبطلك.`] : [])], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
   });
   if (!rows.length) return rows;
   const top = Math.max(...rows.map((r) => r.fit));
@@ -98,7 +112,11 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
 export const treeFor = (trees: TreeBundle, mode: string | null | undefined, champion: number | undefined) => (mode === 'mayhem' && champion !== undefined ? trees[String(champion)] : undefined);
 
 /** One card's fit with what is held, as a 0–100 bar value: base + line following + "after" rules, clamped. Moves with every pick. */
-export const fitPercent = (tree: CompactTree, id: number, held: number[] = [], enemy?: EnemyCounts) => Math.max(0, Math.min(100, Math.round(fitOffer(tree, [id], held, enemy)[0].fit)));
+export const fitPercent = (tree: CompactTree, id: number, held: number[] = [], enemy?: EnemyCounts, ability?: AbilityPick) => Math.max(0, Math.min(100, Math.round(fitOffer(tree, [id], held, enemy, ability)[0].fit)));
+
+/** The card's 0-100 fit on each of Q, W and E, for a chosen-ability card. */
+export const abilityFits = (tree: CompactTree, champion: number | undefined, id: number, held: number[] = [], enemy?: EnemyCounts) =>
+  (['Q', 'W', 'E'] as const).map((key) => ({ key, pct: fitPercent(tree, id, held, enemy, { champion, keys: { [id]: key } }) }));
 
 /** The line whose items the build page shows (owner 2026-11-27: the tree's build first): the line his picks point to, else the tree's first
  *  line, which the writers put first as the champion's main line. */

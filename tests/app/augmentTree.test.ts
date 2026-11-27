@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -201,5 +201,18 @@ describe('item facts from the game files', () => {
   it("Black Cleaver shares the Last Whisper group with Lord Dominik's", () => {
     const d = adaptItems(['A', 'B', "Lord Dominik's Regards", 'Black Cleaver'], { damage: 'physical', frontline: false });
     expect(d.items.filter((i) => ["Lord Dominik's Regards", 'Black Cleaver'].includes(i))).toEqual(["Lord Dominik's Regards"]);
+  });
+});
+
+describe('chosen-ability cards (owner 2026-11-27)', () => {
+  it('Bread And Jam on Ryze: W (long cooldown) is best, Q and E fall below it; a plain card does not move', () => {
+    expect(abilityShift(13, 1150, 'W')).toBe(0);
+    expect(abilityShift(13, 1150, 'E')).toBeLessThan(0);
+    expect(abilityShift(13, 1150, 'E')).toBeGreaterThanOrEqual(-ABILITY_STEP);
+    expect(abilityShift(13, 1097, 'Q')).toBe(0);
+    const t: CompactTree = { lines: [], a: { 1150: [60, '', []] }, after: [] };
+    const f = abilityFits(t, 13, 1150);
+    expect(f.find((x) => x.key === 'W')!.pct).toBe(60);
+    expect(f.find((x) => x.key === 'E')!.pct).toBeLessThan(60);
   });
 });

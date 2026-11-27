@@ -30,7 +30,7 @@ import { gameLiftLine, OFFER_GROUP_TITLE, offerTradeoff, rangeComparison, type O
 import { GAME_LIFT } from '../ai/gameLift.js';
 import { FIXED_ABILITY_KEY, needsAbilityTarget, type TargetAbility } from '../ai/abilityTarget.js';
 import { destinyOptions } from './destinyOptions.js';
-import { adaptItems, neededItems, buildLine, enemyCounts, fitOffer, fitPercent, heldLine, treeFor, type EnemyCounts } from '../app/augmentTree.js';
+import { abilityFits, adaptItems, neededItems, buildLine, enemyCounts, fitOffer, fitPercent, heldLine, isChosenAbility, treeFor, type AbilityKey3, type EnemyCounts } from '../app/augmentTree.js';
 import { AUGMENT_TREES } from '../ai/augmentTreesData.js';
 import { keyedTo, readFor } from './championKeyed.js';
 import { AUGMENT_WINS } from '../ai/augmentWinsData.js';
@@ -708,13 +708,24 @@ function offerSection(): HTMLElement {
     if (cards.length) {
       const cardOf = new Map(cards.map((a) => [a.id, a]));
       const box = el('div', 'ov-adapted ov-offers ov-tree');
-      for (const f of fitOffer(tree, cards.map((a) => a.id), held, foes)) {
+      // Owner 2026-11-27: a chosen-ability card's fit depends on the key the game shows on it (Q, W or E); he picks it here.
+      const keys = Object.fromEntries(Object.entries(abilityTargets).filter(([, k]) => k !== 'R')) as Partial<Record<number, AbilityKey3>>;
+      const ability = { champion: d.champion?.id, keys };
+      for (const f of fitOffer(tree, cards.map((a) => a.id), held, foes, ability)) {
         const a = cardOf.get(f.id)!;
         const r = el('div', 'ov-adapted-row');
         const txt = el('div', 'ov-name');
         const head = el('div', 'ov-tree-head');
-        head.append(el('b', '', shownName(a)), fitBar(fitPercent(tree, f.id, held, foes)), ...winTag(a));
+        head.append(el('b', '', shownName(a)), fitBar(fitPercent(tree, f.id, held, foes, ability)), ...winTag(a));
         txt.append(head);
+        if (isChosenAbility(f.id)) {
+          const row = el('div', 'ov-ability-fit');
+          row.append(el('small', '', 'المهارة على البطاقة في اللعبة:'));
+          for (const { key, pct } of abilityFits(tree, d.champion?.id, f.id, held, foes)) {
+            row.append(pill(`${key} ${pct}`, () => { if (abilityTargets[a.id] === key) delete abilityTargets[a.id]; else abilityTargets[a.id] = key; redrawBuild(); }, abilityTargets[a.id] === key ? 'pill on' : 'pill ghost'));
+          }
+          txt.append(row);
+        }
         txt.append(el('small', f.why ? '' : 'missing', f.why ?? 'ليست في شجرة بطلك: درجتها محايدة 50.'));
         if (f.because.length) txt.append(el('small', '', `مع ما اخترته: ${f.because.join(' · ')}`));
         if (f.lines.length) txt.append(el('small', '', `الخط: ${f.lines.join('، ')}`));
