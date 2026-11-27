@@ -160,3 +160,13 @@ describe('items a held card asks for', () => {
     expect(adaptItems(['The Collector', 'B'], { damage: 'physical', frontline: false }, undefined, need).swaps).toEqual([]);
   });
 });
+
+describe('one item per unique group', () => {
+  it('an anti-heal swap replaces the Last Whisper item in place, and a line duplicate becomes a filler', () => {
+    const line = ['Infinity Edge', "Berserker's Greaves", "Lord Dominik's Regards", 'Bloodthirster', 'X', 'Y'];
+    const r = adaptItems(line, { damage: 'physical', frontline: false }, { tanks: 0, cc: 0, healers: 3 });
+    expect(r.items.filter((i) => ["Lord Dominik's Regards", 'Mortal Reminder'].includes(i))).toEqual(['Mortal Reminder']);
+    const d = adaptItems(['A', 'B', "Sterak's Gage", 'Maw of Malmortius'], { damage: 'physical', frontline: false });
+    expect(d.items).toEqual(['A', 'B', "Sterak's Gage", 'Guardian Angel']);
+  });
+});

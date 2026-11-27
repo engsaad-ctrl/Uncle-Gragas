@@ -107,6 +107,14 @@ export function heldLine(tree: CompactTree, held: number[]): { name: string; why
 const CRIT = new Set(['Infinity Edge', 'Navori Flickerblade', "Yun Tal Wildarrows", 'Phantom Dancer', 'Statikk Shiv', 'Essence Reaver', 'The Collector', 'Rapid Firecannon', 'Bloodthirster']);
 const BOOTS = /Boots|Greaves|Treads|Steelcaps|Shoes|Swiftness|Lucidity|Symbiotic|Synchronized|Gunmetal|Crimson|Spellslinger|Armored Advance|Chainlaced|Forever Forward/;
 export interface ItemSwap { out: string; in: string; why: string }
+/** Items that share one unique passive: only one of each group can be held (owner 2026-11-27: Lord Dominik's and Mortal Reminder together). */
+// Owner, same day: «وكثير ايمات نفس الشي من عائله واحدة» — also Spellblade, Hydras (unless a held card's quest asks for them), Immolate, Quicksilver.
+const UNIQUE_GROUPS = [["Lord Dominik's Regards", 'Mortal Reminder', "Serylda's Grudge"], ["Sterak's Gage", 'Maw of Malmortius', 'Immortal Shieldbow'],
+  ['Manamune', "Archangel's Staff", "Winter's Approach", 'Muramana', "Seraph's Embrace", 'Fimbulwinter'], ['Trinity Force', 'Lich Bane', 'Essence Reaver', 'Iceborn Gauntlet', 'Dusk and Dawn'],
+  ['Ravenous Hydra', 'Titanic Hydra', 'Profane Hydra'], ['Sunfire Aegis', 'Hollow Radiance'], ['Quicksilver Sash', 'Mercurial Scimitar', 'Silvermere Dawn']];
+let questItems = new Set<string>(); // set by adaptItems: a held card's quest lifts its group's limit (Ultra Hydra needs all three Hydras)
+const groupOf = (item: string) => UNIQUE_GROUPS.find((g) => g.includes(item) && !g.some((x) => questItems.has(x)));
+const FILLERS: Record<string, string[]> = { magic: ["Zhonya's Hourglass", "Banshee's Veil", "Rabadon's Deathcap", 'Void Staff', 'Shadowflame', "Liandry's Torment"], physical: ['Guardian Angel', "Death's Dance", 'Black Cleaver', 'Spear of Shojin', 'Spirit Visage'], tank: ["Thornmail", "Force of Nature", "Randuin's Omen", "Spirit Visage", "Kaenic Rookern", "Jak'Sho, The Protean"] };
 /** Items a held card asks for (owner 2026-11-27 «نعم، أضفه»): its needs_item and quest tags (src/ai/augmentTags.ts); any one of a card's
  *  items answers it. held: each held card's ids (twins) and name. */
 export function neededItems(held: { ids: number[]; name: string }[]): { card: string; items: string[] }[] {
@@ -119,6 +127,7 @@ export function neededItems(held: { ids: number[]; name: string }[]): { card: st
 
 export function adaptItems(items: string[], me: { damage: string; frontline: boolean }, enemy?: EnemyCounts, need: { card: string; items: string[] }[] = []): { items: string[]; swaps: ItemSwap[] } {
   const out = [...items], swaps: ItemSwap[] = [];
+  questItems = new Set(need.flatMap((n) => (n.items.length > 1 ? n.items : [])));
   let slot = out.length - 1;
   // A held card's own item comes first: it is the card's point (an upgrade, a quest).
   for (const n of need) {
@@ -129,7 +138,7 @@ export function adaptItems(items: string[], me: { damage: string; frontline: boo
     out[slot] = n.items[0];
     slot--;
   }
-  if (!enemy) return { items: out, swaps };
+  if (!enemy) return uniqueOnly(out, swaps, me);
   const magic = me.damage === 'magic', crit = items.some((i) => CRIT.has(i));
   const needs: [boolean, string, string][] = [
     [(enemy.healers ?? 0) >= 2, magic ? 'Morellonomicon' : me.frontline ? 'Thornmail' : crit ? 'Mortal Reminder' : 'Chempunk Chainsword', 'في فريق الخصم معالجون: غرض يقطع العلاج.'],
@@ -144,5 +153,21 @@ export function adaptItems(items: string[], me: { damage: string; frontline: boo
     out[slot] = item;
     slot--;
   }
+  return uniqueOnly(out, swaps, me);
+}
+
+/** Keeps one item of each unique group: a swapped-in item replaces its group's earlier item in place; a second item of a group already in
+ *  the line becomes a filler of his damage kind not yet held. */
+function uniqueOnly(items: string[], swaps: ItemSwap[], me: { damage: string; frontline: boolean }): { items: string[]; swaps: ItemSwap[] } {
+  const out = [...items];
+  for (const s of swaps) { const g = groupOf(s.in); if (!g) continue; const i = out.findIndex((x, k) => g.includes(x) && x !== s.in && k !== out.indexOf(s.in)); if (i >= 0 && i < out.indexOf(s.in)) { out[out.indexOf(s.in)] = s.out; out[i] = s.in; s.out = items[i]; } }
+  const fill = FILLERS[me.frontline ? 'tank' : me.damage === 'magic' ? 'magic' : 'physical'];
+  out.forEach((x, k) => {
+    const g = groupOf(x); if (!g) return;
+    if (out.findIndex((y) => g.includes(y)) === k) return;
+    const f = fill.find((c) => !out.includes(c)); if (!f) return;
+    swaps.push({ out: x, in: f, why: `${x} لا يُجمع مع ${out.find((y) => g.includes(y))}: ميزة واحدة لا تتكرر.` });
+    out[k] = f;
+  });
   return { items: out, swaps };
 }
