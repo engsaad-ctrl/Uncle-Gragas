@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, altLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, altLine, buildKind, KIND_STEP, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -234,5 +234,15 @@ describe('alternative build (owner 2026-11-27)', () => {
     expect(altLine(t, [])!.name).toBe('Support');
     expect(altLine(t, [1])!.name).toBe('Support');
     expect(altLine({ lines: [['A', '', ['a']]], a: {}, after: [] }, [])).toBeUndefined();
+  });
+});
+
+describe('build kind (owner 2026-11-27)', () => {
+  it('an AD card loses KIND_STEP once his cards point to an AP build', () => {
+    expect(buildKind(["Rabadon's Deathcap", 'Void Staff', 'Shadowflame', "Sorcerer's Shoes"])).toBe('ap');
+    // 1007 Blunt Force is style:ad; 1097 is style:ap (src/ai/augmentTags.ts).
+    const t: CompactTree = { lines: [['AP', '', ["Rabadon's Deathcap", 'Void Staff', 'Shadowflame']]], a: { 1007: [60, '', []], 1097: [60, '', [0]] }, after: [] };
+    expect(fitPercent(t, 1007, [])).toBe(60);
+    expect(fitPercent(t, 1007, [1097])).toBe(60 - KIND_STEP);
   });
 });
