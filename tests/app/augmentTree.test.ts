@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, altLine, buildKind, KIND_STEP, NO_MANA_STEP, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, altLine, buildKind, KIND_STEP, NO_MANA_STEP, NO_CRIT_STEP, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -260,5 +260,16 @@ describe('no mana (T293)', () => {
     expect(fitPercent(t, 3036)).toBe(60);
     expect(fitPercent({ ...t, nm: 1 }, 3036)).toBe(60 - NO_MANA_STEP);
     expect(fitOffer({ ...t, nm: 1 }, [3036])[0].because.join(' ')).toContain('بلا مانا');
+  });
+});
+
+describe('no crit (T294)', () => {
+  it('a card that grows with held crit loses NO_CRIT_STEP while the build and cards give no crit', () => {
+    // 2024 Crit 'n Cast: haste equal to 40% of crit chance.
+    const none: CompactTree = { lines: [['AP', '', ["Rabadon's Deathcap", 'Void Staff']]], a: { 2024: [60, '', []] }, after: [] };
+    expect(fitPercent(none, 2024)).toBe(60 - NO_CRIT_STEP);
+    const some: CompactTree = { ...none, lines: [['AD', '', ['Infinity Edge', 'The Collector']]] };
+    expect(fitPercent(some, 2024)).toBe(60);
+    expect(fitOffer(none, [2024])[0].because.join(' ')).toContain('بلا ضربة حرجة');
   });
 });
