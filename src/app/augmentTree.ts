@@ -1,4 +1,5 @@
 import { AUGMENT_TAGS } from '../ai/augmentTags.js';
+import { AUGMENT_CRIT } from '../ai/augmentTreesData.js';
 // The augment tree (owner 2026-11-26): one fit score per card for each champion, drawn from the principles in knowledge/tree-trial/,
 // and the fit changes with every augment already taken: base score + line following + specific "after" rules.
 // Percentages are fit percentages over the offered cards (softmax), not win chances.
@@ -56,8 +57,17 @@ export const STAT_STEP = 6;
 const STAT_AR: Record<string, string> = { ap: 'AP', ad: 'AD', attackspeed: 'سرعة الهجوم', haste: 'تسريع المهارات', crit: 'الضربة الحرجة', health: 'الصحة', tank: 'التحمّل', onhit: 'تأثير عند الضرب', mana: 'المانا', lethality: 'الفتك' };
 const stylesOf = (id: number) => (AUGMENT_TAGS[id]?.tags ?? []).filter((t) => t.startsWith('style:')).map((t) => t.slice(6));
 
+/** Owner 2026-11-27 «نعم، أصلحها»: crit chance stops at 100%. The build line's crit items (25% each) plus the held cards' crit (their text)
+ *  is what he will have; the part of an offered card's crit above 100% is lost, CRIT_CAP_STEP per 25 points, and it no longer counts as
+ *  stacking crit. Champions whose kit changes crit (Yasuo, Yone) are not modelled. */
+export const CRIT_CAP_STEP = 10;
+const CRIT_ITEMS = new Set(['Infinity Edge', 'Navori Flickerblade', 'Yun Tal Wildarrows', 'Phantom Dancer', 'Statikk Shiv', 'The Collector', 'Rapid Firecannon', "Runaan's Hurricane", "Lord Dominik's Regards", 'Mortal Reminder']);
+const critOf = (id: number) => AUGMENT_CRIT[String(id)] ?? 0;
+export const critHeld = (tree: CompactTree, held: number[]) => 25 * (buildLine(tree, held)?.items.filter((i) => CRIT_ITEMS.has(i)).length ?? 0) + held.reduce((s, h) => s + critOf(h), 0);
+
 export function fitOffer(tree: CompactTree, offered: number[], held: number[] = [], enemy?: EnemyCounts): TreeFit[] {
   const linesOf = (id: number) => tree.a[id]?.[2] ?? [];
+  const have = critHeld(tree, held);
   const heldPerLine = new Map<number, number>();
   for (const h of held) for (const l of linesOf(h)) heldPerLine.set(l, (heldPerLine.get(l) ?? 0) + 1);
   const committed = [...heldPerLine.values()].some((n) => n >= 2);
@@ -70,9 +80,11 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
     const rules = tree.after.filter(([h, b]) => b === id && held.includes(h));
     const after = AFTER_WEIGHT * rules.reduce((s, r) => s + r[2], 0);
     const heldStyles = new Set(held.flatMap(stylesOf));
-    const shared = stylesOf(id).filter((st) => heldStyles.has(st)).slice(0, 3);
+    const lost = Math.min(critOf(id), Math.max(0, have + critOf(id) - 100));
+    const shared = stylesOf(id).filter((st) => heldStyles.has(st) && !(st === 'crit' && lost > 0)).slice(0, 3);
     const foes = enemy ? ENEMY_RULES.filter((r) => (enemy[r.feat] ?? 0) >= 3 && r.ids.has(id)) : [];
-    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length + STAT_STEP * shared.length, pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why), ...(shared.length ? [`يجمع ${shared.map((st) => STAT_AR[st] ?? st).join(' و')} مع ما عندك.`] : [])], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
+    const cap = (CRIT_CAP_STEP * lost) / 25;
+    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length + STAT_STEP * shared.length - cap, pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why), ...(shared.length ? [`يجمع ${shared.map((st) => STAT_AR[st] ?? st).join(' و')} مع ما عندك.`] : []), ...(lost ? [`الضربة الحرجة تصل إلى 100% بما عندك: يضيع ${lost}% من هذا التعزيز.`] : [])], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
   });
   if (!rows.length) return rows;
   const top = Math.max(...rows.map((r) => r.fit));
@@ -117,26 +129,32 @@ const groupOf = (item: string) => UNIQUE_GROUPS.find((g) => g.includes(item) && 
 const FILLERS: Record<string, string[]> = { magic: ["Zhonya's Hourglass", "Banshee's Veil", "Rabadon's Deathcap", 'Void Staff', 'Shadowflame', "Liandry's Torment"], physical: ['Guardian Angel', "Death's Dance", 'Black Cleaver', 'Spear of Shojin', 'Spirit Visage'], tank: ["Thornmail", "Force of Nature", "Randuin's Omen", "Spirit Visage", "Kaenic Rookern", "Jak'Sho, The Protean"] };
 /** Items a held card asks for (owner 2026-11-27 «نعم، أضفه»): its needs_item and quest tags (src/ai/augmentTags.ts); any one of a card's
  *  items answers it. held: each held card's ids (twins) and name. */
-export function neededItems(held: { ids: number[]; name: string }[]): { card: string; items: string[] }[] {
+// A quest (Wooglet's: Rabadon's and Zhonya's; Ultra Hydra: all three Hydras) needs every item: all is true and each missing one goes in.
+export function neededItems(held: { ids: number[]; name: string }[]): { card: string; items: string[]; all?: boolean }[] {
   return held.flatMap((h) => {
     const tags = h.ids.flatMap((id) => AUGMENT_TAGS[id]?.tags ?? []);
-    const items = [...new Set(tags.flatMap((t) => (t.startsWith('needs_item:') ? [t.slice(11)] : t.startsWith('quest:') ? t.slice(6).split('|') : [])))];
+    const quest = [...new Set(tags.flatMap((t) => (t.startsWith('quest:') ? t.slice(6).split('|') : [])))];
+    if (quest.length) return [{ card: h.name, items: quest, all: true }];
+    const items = [...new Set(tags.flatMap((t) => (t.startsWith('needs_item:') ? [t.slice(11)] : [])))];
     return items.length ? [{ card: h.name, items }] : [];
   });
 }
 
-export function adaptItems(items: string[], me: { damage: string; frontline: boolean }, enemy?: EnemyCounts, need: { card: string; items: string[] }[] = []): { items: string[]; swaps: ItemSwap[] } {
+export function adaptItems(items: string[], me: { damage: string; frontline: boolean }, enemy?: EnemyCounts, need: { card: string; items: string[]; all?: boolean }[] = []): { items: string[]; swaps: ItemSwap[] } {
   const out = [...items], swaps: ItemSwap[] = [];
-  questItems = new Set(need.flatMap((n) => (n.items.length > 1 ? n.items : [])));
+  questItems = new Set(need.flatMap((n) => (n.all ? n.items : [])));
   let slot = out.length - 1;
   // A held card's own item comes first: it is the card's point (an upgrade, a quest).
+  const pinned = new Set(need.flatMap((n) => n.items));
   for (const n of need) {
-    if (n.items.some((i) => out.includes(i))) continue;
-    while (slot >= 1 && BOOTS.test(out[slot])) slot--;
-    if (slot < 1) break;
-    swaps.push({ out: out[slot], in: n.items[0], why: `تعزيز ${n.card} يحتاج ${n.items.join(' أو ')}.` });
-    out[slot] = n.items[0];
-    slot--;
+    const add = n.all ? n.items.filter((i) => !out.includes(i)) : n.items.some((i) => out.includes(i)) ? [] : [n.items[0]];
+    for (const item of add) {
+      while (slot >= 1 && (BOOTS.test(out[slot]) || pinned.has(out[slot]))) slot--;
+      if (slot < 1) break;
+      swaps.push({ out: out[slot], in: item, why: `تعزيز ${n.card} يحتاج ${n.items.join(n.all ? ' و' : ' أو ')}.` });
+      out[slot] = item;
+      slot--;
+    }
   }
   if (!enemy) return uniqueOnly(out, swaps, me);
   const magic = me.damage === 'magic', crit = items.some((i) => CRIT.has(i));

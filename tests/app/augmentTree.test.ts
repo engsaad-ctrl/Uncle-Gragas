@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, fitOffer, fitPercent, heldLine, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -168,5 +168,27 @@ describe('one item per unique group', () => {
     expect(r.items.filter((i) => ["Lord Dominik's Regards", 'Mortal Reminder'].includes(i))).toEqual(['Mortal Reminder']);
     const d = adaptItems(['A', 'B', "Sterak's Gage", 'Maw of Malmortius'], { damage: 'physical', frontline: false });
     expect(d.items).toEqual(['A', 'B', "Sterak's Gage", 'Guardian Angel']);
+  });
+});
+
+describe('crit chance cap (owner 2026-11-27)', () => {
+  // 1047 It's Critical gives 50% crit, 1077 Soul Siphon 25% (card texts); the line builds Infinity Edge and The Collector (25% each).
+  const t: CompactTree = { lines: [['crit', '', ['Infinity Edge', 'The Collector', 'X']]], a: { 1047: [60, '', [0]], 1077: [60, '', [0]] }, after: [] };
+  it('counts line items and held cards, and takes off the crit above 100%', () => {
+    expect(critHeld(t, [1077])).toBe(75);
+    expect(fitPercent(t, 1047, [])).toBe(60);
+    const f = fitOffer(t, [1047], [1077])[0];
+    expect(f.fit).toBe(60 + 10 - (CRIT_CAP_STEP * 25) / 25);
+    expect(f.because.at(-1)).toContain('25%');
+  });
+});
+
+describe('quest cards need every item', () => {
+  it("Wooglet's Witchcap puts in both Rabadon's and Zhonya's, and a held one stays", () => {
+    const need = neededItems([{ ids: [1156], name: "Wooglet's Witchcap" }]);
+    expect(need[0].all).toBe(true);
+    const r = adaptItems(['A', 'B', "Rabadon's Deathcap", 'D', 'E'], { damage: 'magic', frontline: false }, undefined, need);
+    expect(r.items).toContain("Zhonya's Hourglass");
+    expect(r.items).toContain("Rabadon's Deathcap");
   });
 });
