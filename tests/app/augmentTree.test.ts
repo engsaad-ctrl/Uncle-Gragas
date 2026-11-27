@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, altLine, buildKind, KIND_STEP, NO_MANA_STEP, NO_CRIT_STEP, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, altLine, buildKind, KIND_STEP, NO_MANA_STEP, NO_CRIT_STEP, NO_COND_STEP, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -271,5 +271,15 @@ describe('no crit (T294)', () => {
     const some: CompactTree = { ...none, lines: [['AD', '', ['Infinity Edge', 'The Collector']]] };
     expect(fitPercent(some, 2024)).toBe(60);
     expect(fitOffer(none, [2024])[0].because.join(' ')).toContain('بلا ضربة حرجة');
+  });
+});
+
+describe('card conditions (T301)', () => {
+  it('a card whose condition the champion cannot meet loses NO_COND_STEP', () => {
+    // 2129 Terrain'd needs an ability that makes terrain.
+    const t: CompactTree = { lines: [['L', '', []]], a: { 2129: [60, '', []] }, after: [] };
+    expect(fitPercent(t, 2129)).toBe(60);
+    expect(fitPercent({ ...t, nc: [2129] }, 2129)).toBe(60 - NO_COND_STEP);
+    expect(fitOffer({ ...t, nc: [2129] }, [2129])[0].because.join(' ')).toContain('شرط');
   });
 });

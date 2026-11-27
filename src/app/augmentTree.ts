@@ -13,6 +13,8 @@ export interface CompactTree {
   lt?: Record<string, number[]>;
   /** Set when the champion has no mana (T293). */
   nm?: 1;
+  /** Cards whose condition this champion's abilities cannot meet (T301). */
+  nc?: number[];
 }
 export type TreeBundle = Record<string, CompactTree>;
 
@@ -93,6 +95,8 @@ const manaCards = new Set(MANA_CARDS);
 /** T294: a card whose effect grows with crit chance already held (Twin Fire, Crit 'n Cast) is weak while the build and cards give none. */
 export const NO_CRIT_STEP = 15; // 980 creator rounds: 0, 15, 20, 30 keep 64.5%; 5 and 10 give 64.4%
 const critScale = new Set(CRIT_SCALE);
+/** T301: a card whose condition the champion's abilities cannot meet (Terrain'd without terrain, ally heals without one). */
+export const NO_COND_STEP = 20; // 980 creator rounds: 0 gives 64.6%, 10 to 40 give 64.8%
 export function buildKind(items: string[]): 'ap' | 'ad' | null {
   const k = items.map((n) => ITEM_KIND[n]); const ap = k.filter((x) => x === 'ap' || x === 'both').length, ad = k.filter((x) => x === 'ad' || x === 'both').length;
   return ap >= 3 && ad <= 1 ? 'ap' : ad >= 3 && ap <= 1 ? 'ad' : null;
@@ -119,8 +123,8 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
     const foes = enemy ? ENEMY_RULES.filter((r) => (enemy[r.feat] ?? 0) >= 3 && r.ids.has(id)) : [];
     const cap = (CRIT_CAP_STEP * lost) / 25;
     const key = ability?.keys[id], shift = abilityShift(ability?.champion, id, key);
-    const ck = cardKind(id), wrongKind = !!kindNow && !!ck && ck !== kindNow, noMana = !!tree.nm && manaCards.has(id), noCrit = have === 0 && critScale.has(id);
-    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length + STAT_STEP * shared.length - cap + shift - (wrongKind ? KIND_STEP : 0) - (noMana ? NO_MANA_STEP : 0) - (noCrit ? NO_CRIT_STEP : 0), pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why), ...(shared.length ? [`يجمع ${shared.map((st) => STAT_AR[st] ?? st).join(' و')} مع ما عندك.`] : []), ...(lost ? [`الضربة الحرجة تصل إلى 100% بما عندك: يضيع ${lost}% من هذا التعزيز.`] : []), ...(key && shift < 0 ? [`على ${key}: أقل من أنسب مهارة لبطلك.`] : []), ...(noCrit ? ['بلدك بلا ضربة حرجة: قوة هذا التعزيز تكبر مع الضربة الحرجة.'] : []), ...(noMana ? ['بطلك بلا مانا: هذا التعزيز يعتمد على المانا فلا يعطيه شيئًا.'] : []), ...(wrongKind ? [`بلدك ${kindNow === 'ap' ? 'AP' : 'AD'}: هذا التعزيز يعطي ${ck === 'ap' ? 'AP' : 'AD'} لا يفيده.`] : [])], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
+    const ck = cardKind(id), wrongKind = !!kindNow && !!ck && ck !== kindNow, noMana = !!tree.nm && manaCards.has(id), noCrit = have === 0 && critScale.has(id), noCond = !!tree.nc?.includes(id);
+    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length + STAT_STEP * shared.length - cap + shift - (wrongKind ? KIND_STEP : 0) - (noMana ? NO_MANA_STEP : 0) - (noCrit ? NO_CRIT_STEP : 0) - (noCond ? NO_COND_STEP : 0), pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why), ...(shared.length ? [`يجمع ${shared.map((st) => STAT_AR[st] ?? st).join(' و')} مع ما عندك.`] : []), ...(lost ? [`الضربة الحرجة تصل إلى 100% بما عندك: يضيع ${lost}% من هذا التعزيز.`] : []), ...(key && shift < 0 ? [`على ${key}: أقل من أنسب مهارة لبطلك.`] : []), ...(noCond ? ['شرط هذا التعزيز لا تحققه مهارات بطلك.'] : []), ...(noCrit ? ['بلدك بلا ضربة حرجة: قوة هذا التعزيز تكبر مع الضربة الحرجة.'] : []), ...(noMana ? ['بطلك بلا مانا: هذا التعزيز يعتمد على المانا فلا يعطيه شيئًا.'] : []), ...(wrongKind ? [`بلدك ${kindNow === 'ap' ? 'AP' : 'AD'}: هذا التعزيز يعطي ${ck === 'ap' ? 'AP' : 'AD'} لا يفيده.`] : [])], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
   });
   if (!rows.length) return rows;
   const top = Math.max(...rows.map((r) => r.fit));
