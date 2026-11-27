@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, altLine, buildKind, KIND_STEP, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
+import { adaptItems, neededItems, buildLine, enemyCounts, ENEMY_STEP, STAT_STEP, CRIT_CAP_STEP, critHeld, abilityFits, abilityShift, ABILITY_STEP, fitOffer, fitPercent, heldLine, altLine, buildKind, KIND_STEP, NO_MANA_STEP, treeFor, LINE_STEP, OFF_LINE, type CompactTree } from '../../src/app/augmentTree.js';
 import { AUGMENT_TREES } from '../../src/ai/augmentTreesData.js';
 
 const tree: CompactTree = {
@@ -240,9 +240,25 @@ describe('alternative build (owner 2026-11-27)', () => {
 describe('build kind (owner 2026-11-27)', () => {
   it('an AD card loses KIND_STEP once his cards point to an AP build', () => {
     expect(buildKind(["Rabadon's Deathcap", 'Void Staff', 'Shadowflame', "Sorcerer's Shoes"])).toBe('ap');
-    // 1007 Blunt Force is style:ad; 1097 is style:ap (src/ai/augmentTags.ts).
+    // 1007 Blunt Force has an AD ratio; 1097 an AP one (CARD_KIND, from the card texts).
     const t: CompactTree = { lines: [['AP', '', ["Rabadon's Deathcap", 'Void Staff', 'Shadowflame']]], a: { 1007: [60, '', []], 1097: [60, '', [0]] }, after: [] };
     expect(fitPercent(t, 1007, [])).toBe(60);
     expect(fitPercent(t, 1007, [1097])).toBe(60 - KIND_STEP);
+  });
+  it('a card that gives attack speed or crit chance is not cut on either build (T293)', () => {
+    // 2009 Zealot: crit chance and attack speed, scaling with AP; it once read as AP from its tag.
+    const t: CompactTree = { lines: [['AD', '', ['Infinity Edge', 'The Collector', "Lord Dominik's Regards"]]], a: { 2009: [60, '', []], 1007: [60, '', [0]] }, after: [] };
+    expect(buildKind(t.lines[0][2])).toBe('ad');
+    expect(fitPercent(t, 2009, [1007])).toBe(60);
+  });
+});
+
+describe('no mana (T293)', () => {
+  it('a mana-share card loses NO_MANA_STEP on a champion without mana', () => {
+    // 3036 Double Time deals a share of mana and grants max mana.
+    const t: CompactTree = { lines: [['L', '', []]], a: { 3036: [60, '', []] }, after: [] };
+    expect(fitPercent(t, 3036)).toBe(60);
+    expect(fitPercent({ ...t, nm: 1 }, 3036)).toBe(60 - NO_MANA_STEP);
+    expect(fitOffer({ ...t, nm: 1 }, [3036])[0].because.join(' ')).toContain('بلا مانا');
   });
 });

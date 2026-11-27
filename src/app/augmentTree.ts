@@ -1,5 +1,5 @@
 import { AUGMENT_TAGS } from '../ai/augmentTags.js';
-import { ABILITY_FIT, AUGMENT_CRIT, CHOSEN_ABILITY, ITEM_CRIT, ITEM_GROUPS, ITEM_KIND } from '../ai/augmentTreesData.js';
+import { ABILITY_FIT, AUGMENT_CRIT, CHOSEN_ABILITY, ITEM_CRIT, ITEM_GROUPS, ITEM_KIND, CARD_KIND, MANA_CARDS } from '../ai/augmentTreesData.js';
 // The augment tree (owner 2026-11-26): one fit score per card for each champion, drawn from the principles in knowledge/tree-trial/,
 // and the fit changes with every augment already taken: base score + line following + specific "after" rules.
 // Percentages are fit percentages over the offered cards (softmax), not win chances.
@@ -11,6 +11,8 @@ export interface CompactTree {
   after: [number, number, number, string][];
   /** Per card, how many of its holders' finished items matched each line best (knowledge/tree-trial/line-table.mjs). */
   lt?: Record<string, number[]>;
+  /** Set when the champion has no mana (T293). */
+  nm?: 1;
 }
 export type TreeBundle = Record<string, CompactTree>;
 
@@ -82,9 +84,12 @@ export interface AbilityPick { champion?: number; keys: Partial<Record<number, A
 
 /** Owner 2026-11-27 (Shyvana's AP build offered Blunt Force at 61): once his cards point to a build, a card of the other damage kind
  *  (only AD styles on an AP build, only AP styles on an AD build) loses KIND_STEP. Build kind: 3+ items of one kind and at most 1 of the
- *  other (ITEM_KIND from the game item text); card kind from its style tags. */
+ *  other (ITEM_KIND from the game item text); card kind from its own ratios (CARD_KIND, T293). */
 export const KIND_STEP = 8; // 980 creator rounds: 8 keeps 64.5%, 15 gives 64.3%, 25 gives 64.2%
-const cardKind = (id: number) => { const st = stylesOf(id); return st.includes('ap') && !st.includes('ad') ? 'ap' : st.includes('ad') && !st.includes('ap') ? 'ad' : null; };
+const cardKind = (id: number) => CARD_KIND[String(id)] ?? null;
+/** T293: a card whose effect is a share of mana gives nothing to a champion without mana. Measured on 980 creator rounds. */
+export const NO_MANA_STEP = 30;
+const manaCards = new Set(MANA_CARDS);
 export function buildKind(items: string[]): 'ap' | 'ad' | null {
   const k = items.map((n) => ITEM_KIND[n]); const ap = k.filter((x) => x === 'ap' || x === 'both').length, ad = k.filter((x) => x === 'ad' || x === 'both').length;
   return ap >= 3 && ad <= 1 ? 'ap' : ad >= 3 && ap <= 1 ? 'ad' : null;
@@ -111,8 +116,8 @@ export function fitOffer(tree: CompactTree, offered: number[], held: number[] = 
     const foes = enemy ? ENEMY_RULES.filter((r) => (enemy[r.feat] ?? 0) >= 3 && r.ids.has(id)) : [];
     const cap = (CRIT_CAP_STEP * lost) / 25;
     const key = ability?.keys[id], shift = abilityShift(ability?.champion, id, key);
-    const ck = cardKind(id), wrongKind = !!kindNow && !!ck && ck !== kindNow;
-    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length + STAT_STEP * shared.length - cap + shift - (wrongKind ? KIND_STEP : 0), pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why), ...(shared.length ? [`يجمع ${shared.map((st) => STAT_AR[st] ?? st).join(' و')} مع ما عندك.`] : []), ...(lost ? [`الضربة الحرجة تصل إلى 100% بما عندك: يضيع ${lost}% من هذا التعزيز.`] : []), ...(key && shift < 0 ? [`على ${key}: أقل من أنسب مهارة لبطلك.`] : []), ...(wrongKind ? [`بلدك ${kindNow === 'ap' ? 'AP' : 'AD'}: هذا التعزيز يعطي ${ck === 'ap' ? 'AP' : 'AD'} لا يفيده.`] : [])], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
+    const ck = cardKind(id), wrongKind = !!kindNow && !!ck && ck !== kindNow, noMana = !!tree.nm && manaCards.has(id);
+    return { id, base, fit: base + line + off + after + ENEMY_STEP * foes.length + STAT_STEP * shared.length - cap + shift - (wrongKind ? KIND_STEP : 0) - (noMana ? NO_MANA_STEP : 0), pct: 0, why: row?.[1], because: [...rules.map((r) => r[3]), ...foes.map((r) => r.why), ...(shared.length ? [`يجمع ${shared.map((st) => STAT_AR[st] ?? st).join(' و')} مع ما عندك.`] : []), ...(lost ? [`الضربة الحرجة تصل إلى 100% بما عندك: يضيع ${lost}% من هذا التعزيز.`] : []), ...(key && shift < 0 ? [`على ${key}: أقل من أنسب مهارة لبطلك.`] : []), ...(noMana ? ['بطلك بلا مانا: هذا التعزيز يعتمد على المانا فلا يعطيه شيئًا.'] : []), ...(wrongKind ? [`بلدك ${kindNow === 'ap' ? 'AP' : 'AD'}: هذا التعزيز يعطي ${ck === 'ap' ? 'AP' : 'AD'} لا يفيده.`] : [])], lines: mine.map((l) => tree.lines[l]?.[0]).filter((n): n is string => !!n) };
   });
   if (!rows.length) return rows;
   const top = Math.max(...rows.map((r) => r.fit));
