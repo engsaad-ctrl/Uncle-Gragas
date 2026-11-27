@@ -33,7 +33,8 @@ export interface AugmentsResult {
 // 18 (T050): keeps each id's mode pools. 17 is T047's (Apex Inventor's file values), kept apart until both are reviewed. An older copy is rebuilt
 // online; offline or after a failed refresh diskCache still returns it, stale, and its modes are marked as from an old copy (membership).
 // 19: retains a readable identity for the recorded Pentakill generic; older catalogues omitted it.
-const CACHE_SCHEMA = 19;
+// 20 (owner 2026-11-27): Mayhem's Bread cards name their ability (Butter Q, Jam W, Cheese E).
+const CACHE_SCHEMA = 20;
 
 type MissileSpell = { mScriptName?: string; mSpell?: { mMissileSpec?: { movementComponent?: { mTravelTime?: number; mSpeed?: number } } } };
 
