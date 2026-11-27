@@ -98,18 +98,6 @@ describe('buildAugmentTexts', () => {
     expect(html(1007)).toBe('تكسب 20% ضرر هجوم.'); // the live "(@f1@)" aside dropped, not the whole line
   });
 
-  it("names the ability on Mayhem's Bread cards from the Arena twin (Bread And Jam is W)", async () => {
-    const entry = (id: number, augmentNameId: string): AugmentListEntry => ({ id, augmentNameId, nameTRA: 'خبز ومربى', augmentSmallIconPath: '', rarity: 'kGold' });
-    const data = (id: number, key: string) => ({ __type: 'AugmentData', AugmentPlatformId: id, DescriptionTra: key });
-    const r = await buildAugmentTexts({
-      listAr: [entry(150, 'BreadAndJam'), entry(1150, 'ARAM_BreadAndJam')],
-      listEn: [{ ...entry(150, 'BreadAndJam'), nameTRA: 'Bread And Jam' }, { ...entry(1150, 'ARAM_BreadAndJam'), nameTRA: 'Bread And Jam' }],
-      bins: [{ a: data(150, 'arena'), b: data(1150, 'mayhem') }, [{ __type: 'AugmentPool', source: 'kiwi', ids: [1150], unresolved: 0 }, { __type: 'AugmentPool', source: 'cherry', ids: [150], unresolved: 0 }]],
-      strings: { arena: 'تكسب قدرة W لديك 100 تسارع قدرة.', mayhem: 'تكسب تعويذة القدرة المختارة لديك 100 تسارع قدرة.' },
-    });
-    expect(r.find((a) => a.ids.includes(1150))?.html).toContain('W');
-  });
-
   it('builds CommunityDragon icon URLs', () => {
     expect(byId.get(1397)!.iconUrl).toBe(
       'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/ux/cherry/augments/icons/cerberus_small.png',

@@ -158,15 +158,6 @@ export async function buildAugmentTexts(src: AugmentSources): Promise<AugmentTex
     });
   }
 
-  // Owner 2026-11-27: Mayhem's Bread cards read "the chosen ability", but in game each is one ability (Butter Q, Jam W, Cheese E), as their
-  // Arena twins of the same English name say. A Mayhem text that names no ability takes the twin's text that does.
-  const CHOSEN = /المختارة/;
-  for (const t of out) {
-    if (!CHOSEN.test(t.html) || !(pools.get(t.id) ?? []).some((s) => POOL_MODE[s] === 'mayhem')) continue;
-    const fixed = out.find((o) => o !== t && o.enName.toLowerCase() === t.enName.toLowerCase() && !CHOSEN.test(o.html) && /\b[QWER]\b/.test(o.html));
-    if (fixed) t.html = fixed.html;
-  }
-
   // An augment that exists in both modes with the same text is shown once.
   const merged = new Map<string, AugmentText>();
   for (const t of out) {

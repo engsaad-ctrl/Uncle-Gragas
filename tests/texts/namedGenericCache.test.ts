@@ -17,6 +17,7 @@ it('does not treat the pre-naming cache as fresh while accepting the new naming 
   expect(tap.fresh).toBeTypeOf('function');
   expect(tap.fresh!({ key: '18:fixture' })).toBe(false);
   expect(tap.fresh!({ key: '19:fixture' })).toBe(false);
-  expect(tap.fresh!({ key: '20:fixture' })).toBe(true);
+  expect(tap.fresh!({ key: '20:fixture' })).toBe(false);
+  expect(tap.fresh!({ key: '21:fixture' })).toBe(true);
   expect(fetchImpl).not.toHaveBeenCalled();
 });
